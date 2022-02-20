@@ -27,6 +27,7 @@ def rel_time(edge_pos,model):
     if len(model) == 2:
         a = model[1]
         b = model[0]
+        c = 0
     elif len(model) ==3:
         a = model[2]
         b = model[1] 
@@ -91,25 +92,63 @@ def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
 
     return model
 
+def get_diagnostics(run, direct==True,roi=[]):
+    if direct == False:
+        ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y=roi)
+        ttAnalyze = TT.PyAnalyze(ttOptions)
+    
+    ds = psana.DataSource('exp=cxilz0720:run=' + str(run), module=ttAnalyze)
+    evr_det = psana.Detector('evr1')
+    edge_pos = []
+    amp = []
+    time = []
+    evt = []
+    stamp = []
+    tt_delay = []
+    abs_delay = []
 
-def get_delay(run_start, run_end, roi='30 50', expID, outDir, calib_model)
+    if direct = False:
+        ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y=roi)
+        ttAnalyze = TT.PyAnalyze(ttOptions)
+        for idx,evt in enumerate(ds.events()):
+            ec = evr_det.eventCodes(evt)
+            if ec is None: continue
+            ttdata = ttAnalyze.process(evt)
+            if ttdata is None: continue
+            edge_pos = np.append(edge_pos, ttdata.position_pixel())
+            edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
+            edge_amp = np.append(edge_amp,ttdata.amplitude())
+    if direct = True:
+        for idx,evt in enumerate(ds.events()):
+            ec = evr_det.eventCodes(evt)
+            if ec is None: continue
+            edge_pos = np.append(edge_pos,ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
+            edge_fwhm = np.append(edge_fwhm,ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
+            edge_amp = np.append(edge_amp,ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
+            
+    return edge_pos, edge_fwhm, edge_amp
+
+
+def get_delay(run_start, run_end, roi='30 50', expID, outDir, calib_model=[], diagnostics = False)
     """
     Function to determine the delay using the time tool:
     run_start, run_end: first and last run to analyze
     roi = region of interest on detector that is being used to determine the edge
     expID = experiment number including instrument (e.g. 'cxilz0720' for run LZ0720 at CXI)
     outDir = directory where output should be saved
-    calib_model = output from time tool calibration (using 'TTcalib')
+    calib_model = output from time tool calibration (using 'TTcalib'), if not empty TTanalysis is performed again (direct = False)
 
     saves .txt files linking a delay time to each shot, identified by a stamp 
     each row in the output file: ['644172952-167590310-79638','-1275.255309579068']
     """    
 
-    ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y=roi)
-    ttAnalyze = TT.PyAnalyze(ttOptions)
-    
-    if len(calib_model) == 2:
-        calib_model =     
+      
+    if len(calib_model) == 0:
+        direct = True
+    else:
+        direct = False
+        ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y=roi)
+        ttAnalyze = TT.PyAnalyze(ttOptions)
 
     runs = np.arange(run_start,run_end+1)
     for run_number in runs:
@@ -123,21 +162,40 @@ def get_delay(run_start, run_end, roi='30 50', expID, outDir, calib_model)
         tt_delay = []
         abs_delay = []
 
-        for idx,evt in enumerate(ds.events()):
-            ec = evr_det.eventCodes(evt)
-            if ec is None: continue
-            ttdata = ttAnalyze.process(evt)
-            if ttdata is None: continue
-            eid = evt.get(EventId)
-            fid = eid.fiducials()
-            sec = eid.time()[0]
-            stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
-            edge_pos = np.append(edge_pos, ttdata.position_pixel())
-            time = time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
+        if direct = False:
+            for idx,evt in enumerate(ds.events()):
+                ec = evr_det.eventCodes(evt)
+                if ec is None: continue
+                ttdata = ttAnalyze.process(evt)
+                if ttdata is None: continue
+                eid = evt.get(EventId)
+                fid = eid.fiducials()
+                sec = eid.time()[0]
+                stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
+                edge_pos = np.append(edge_pos, ttdata.position_pixel())
+                edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
+                edge_amp = np.append(edge_amp,ttdata.amplitude())
+                time = time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
+        if direct = True:
+            for idx,evt in enumerate(ds.events()):
+                ec = evr_det.eventCodes(evt)
+                if ec is None: continue
+                eid = evt.get(EventId)
+                fid = eid.fiducials()
+                sec = eid.time()[0]
+                stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
+                edge_pos = np.append(edge_pos,ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
+                edge_fwhm = np.append(edge_fwhm,ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
+                edge_amp = np.append(edge_amp,ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
+                time = time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
         tt_delay = rel_time(edge_pos, calib_model)
         abs_delay = absolute_time(time, tt_delay)
 
-        output = np.column_stack([stamp, abs_delay])
+        if diagnostics == True:
+            output = np.column_stack([stamp, abs_delay, edge_pos, edge_fwhm, edge_amp])
+        else:
+            output = np.column_stack([stamp, abs_delay])
         fn = 'outDir' + str(run_number) + '.txt'
-        fOn = np.savetxt(fn, output, delimiter=',', fmt = '%s')    
+        fOn = np.savetxt(fn, output, delimiter=',', fmt = '%s')  
+        
 
