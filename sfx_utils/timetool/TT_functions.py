@@ -82,7 +82,7 @@ def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
             model_time = model[0]**2*edge_pos + model[1]*edge_pos + model[2]
         else:
             print('polynomial not defined, use 1st or 2nd order')
-            break
+            
    
         plt.plot(edge_pos,time, 'o', color='black',label='edge position')
         plt.plot(edge_pos, model_time, color='red',label = 'calibration fit')
@@ -129,7 +129,7 @@ def get_diagnostics(run, direct==True,roi=[]):
     return edge_pos, edge_fwhm, edge_amp
 
 
-def get_delay(run_start, run_end, roi='30 50', expID, outDir, calib_model=[], diagnostics = False)
+def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], diagnostics = False):
     """
     Function to determine the delay using the time tool:
     run_start, run_end: first and last run to analyze
