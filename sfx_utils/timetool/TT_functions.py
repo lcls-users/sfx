@@ -43,7 +43,7 @@ def absolute_time(rel_time, nom_time):
      
     """
 
-    delay = (nom_time + rel_time)*1e06
+    delay = -(nom_time + rel_time)*1e06
     return delay
 
 def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
