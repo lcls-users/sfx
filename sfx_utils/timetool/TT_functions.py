@@ -162,7 +162,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
         tt_delay = []
         abs_delay = []
 
-        if direct = False:
+        if not direct:
             for idx,evt in enumerate(ds.events()):
                 ec = evr_det.eventCodes(evt)
                 if ec is None: continue
@@ -176,7 +176,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
                 edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
                 edge_amp = np.append(edge_amp,ttdata.amplitude())
                 time = time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
-        if direct = True:
+        if direct:
             for idx,evt in enumerate(ds.events()):
                 ec = evr_det.eventCodes(evt)
                 if ec is None: continue
