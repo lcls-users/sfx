@@ -159,12 +159,10 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
             ds = psana.DataSource(psana_keyword, module=ttAnalyze)
         evr_det = psana.Detector('evr1')
         edge_pos = []
-        amp = []
+        edge_amp = []
+        edge_fwhm = []
         time = []
-        evt = []
         stamp = []
-        tt_delay = []
-        abs_delay = []
 
         for idx,evt in enumerate(ds.events()):
             ec = evr_det.eventCodes(evt)
