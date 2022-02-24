@@ -129,7 +129,7 @@ def get_diagnostics(run, direct=True,roi=[]):
     return edge_pos, edge_fwhm, edge_amp
 
 
-def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], diagnostics = False):
+def get_delay(run_start, run_end, expID, outDir, roi='30 50', redoTT=False, calib_model=[], diagnostics = False):
     """
     Function to determine the delay using the time tool:
     run_start, run_end: first and last run to analyze
@@ -145,10 +145,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
     if not os.path.exists(outDir):
         os.makedirs(outDir)
       
-    if len(calib_model) == 0:
-        direct = True
-    else:
-        direct = False
+    if redoTT:
         ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y=roi)
         ttAnalyze = TT.PyAnalyze(ttOptions)
 
@@ -156,7 +153,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
     for run_number in runs:
         psana_keyword=f'exp={expID}:run={run_number}'
         print(psana_keyword)
-        if direct:
+        if not redoTT:
             ds = psana.DataSource(f'{psana_keyword}:smd')
         else:
             ds = psana.DataSource(psana_keyword, module=ttAnalyze)
@@ -171,7 +168,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
         for idx,evt in enumerate(ds.events()):
             ec = evr_det.eventCodes(evt)
             if ec is None: continue
-            if not direct:
+            if redoTT:
                 ttdata = ttAnalyze.process(evt)
                 if ttdata is None: continue
             eid = evt.get(EventId)
@@ -179,9 +176,12 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
             sec = eid.time()[0]
             nsec = eid.time()[1]
             stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
-            if direct:
+            if not redoTT:
                 edge_pos = np.append(edge_pos, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
-                tt_delay = np.append(tt_delay, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS_PS')*1000)
+                if len(model) == 0:
+                    tt_delay = np.append(tt_delay, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS_PS')*1000)
+                else:
+                    tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
                 edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
                 edge_amp = np.append(edge_amp, ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
             else:
