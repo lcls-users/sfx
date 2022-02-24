@@ -93,7 +93,7 @@ def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
     return model
 
 def get_diagnostics(run, direct=True,roi=[]):
-    if direct == False:
+    if not direct:
         ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y=roi)
         ttAnalyze = TT.PyAnalyze(ttOptions)
     
@@ -107,7 +107,7 @@ def get_diagnostics(run, direct=True,roi=[]):
     tt_delay = []
     abs_delay = []
 
-    if direct = False:
+    if not direct:
         ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y=roi)
         ttAnalyze = TT.PyAnalyze(ttOptions)
         for idx,evt in enumerate(ds.events()):
@@ -118,7 +118,7 @@ def get_diagnostics(run, direct=True,roi=[]):
             edge_pos = np.append(edge_pos, ttdata.position_pixel())
             edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
             edge_amp = np.append(edge_amp,ttdata.amplitude())
-    if direct = True:
+    if direct:
         for idx,evt in enumerate(ds.events()):
             ec = evr_det.eventCodes(evt)
             if ec is None: continue
@@ -191,7 +191,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
         tt_delay = rel_time(edge_pos, calib_model)
         abs_delay = absolute_time(time, tt_delay)
 
-        if diagnostics == True:
+        if diagnostics:
             output = np.column_stack([stamp, abs_delay, edge_pos, edge_fwhm, edge_amp])
         else:
             output = np.column_stack([stamp, abs_delay])
