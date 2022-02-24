@@ -92,7 +92,7 @@ def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
 
     return model
 
-def get_diagnostics(run, direct==True,roi=[]):
+def get_diagnostics(run, direct=True,roi=[]):
     if direct == False:
         ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y=roi)
         ttAnalyze = TT.PyAnalyze(ttOptions)
