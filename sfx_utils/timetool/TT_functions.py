@@ -152,7 +152,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
 
     runs = np.arange(run_start,run_end+1)
     for run_number in runs:
-        psana_keyword=f'exp={exp}:run={run_number}'
+        psana_keyword=f'exp={expID}:run={run_number}'
         if direct:
             ds = psana.DataSource(f'{psana_keyword}:smd')
         else:
