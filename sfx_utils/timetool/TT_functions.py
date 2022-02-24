@@ -57,9 +57,9 @@ def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
     returns model that can be used to determine the delay using the function 'rel_time'
     """
 
-    ttOptions = TT.TimeTool.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y='30 50')
-    ttAnalyze = TT.TimeTool.PyAnalyze(ttOptions)
-    analyze = TT.TimeTool.PyAnalyze(ttOptions)
+    ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y='30 50')
+    ttAnalyze = TT.PyAnalyze(ttOptions)
+    analyze = TT.PyAnalyze(ttOptions)
     ds = psana.DataSource(f'exp={exp}:run={calib_run}', module=ttAnalyze)
     
     edge_pos = []
