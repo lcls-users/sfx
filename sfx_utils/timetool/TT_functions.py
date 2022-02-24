@@ -166,32 +166,26 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
         tt_delay = []
         abs_delay = []
 
-        if not direct:
-            for idx,evt in enumerate(ds.events()):
-                ec = evr_det.eventCodes(evt)
-                if ec is None: continue
+        for idx,evt in enumerate(ds.events()):
+            ec = evr_det.eventCodes(evt)
+            if ec is None: continue
+            if not direct:
                 ttdata = ttAnalyze.process(evt)
                 if ttdata is None: continue
-                eid = evt.get(EventId)
-                fid = eid.fiducials()
-                sec = eid.time()[0]
-                stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
+            eid = evt.get(EventId)
+            fid = eid.fiducials()
+            sec = eid.time()[0]
+            nsec = eid.time()[1]
+            stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
+            if direct:
+                edge_pos = np.append(edge_pos, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
+                edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
+                edge_amp = np.append(edge_amp, ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
+            else:
                 edge_pos = np.append(edge_pos, ttdata.position_pixel())
                 edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
                 edge_amp = np.append(edge_amp,ttdata.amplitude())
-                time = time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
-        if direct:
-            for idx,evt in enumerate(ds.events()):
-                ec = evr_det.eventCodes(evt)
-                if ec is None: continue
-                eid = evt.get(EventId)
-                fid = eid.fiducials()
-                sec = eid.time()[0]
-                stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
-                edge_pos = np.append(edge_pos,ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
-                edge_fwhm = np.append(edge_fwhm,ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
-                edge_amp = np.append(edge_amp,ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
-                time = time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
+            time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
         tt_delay = rel_time(edge_pos, calib_model)
         abs_delay = absolute_time(time, tt_delay)
 
