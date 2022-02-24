@@ -178,7 +178,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
             stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
             if direct:
                 edge_pos = np.append(edge_pos, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
-                tt_delay = np.append(tt_delay, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS_PS'))
+                tt_delay = np.append(tt_delay, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS_PS')*1000)
                 edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
                 edge_amp = np.append(edge_amp, ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
             else:
@@ -193,7 +193,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
             output = np.column_stack([stamp, abs_delay, edge_pos, edge_fwhm, edge_amp])
         else:
             output = np.column_stack([stamp, abs_delay])
-        fn = 'outDir' + str(run_number) + '.txt'
-        fOn = np.savetxt(fn, output, delimiter=',', fmt = '%s')  
-        
+        fn = f'{outDir}/{run_number}'
+        #fOn = np.savetxt(fn, output, delimiter=',', fmt = '%s')
+        np.save(fn, output)
 
