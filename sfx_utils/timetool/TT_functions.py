@@ -163,6 +163,7 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
         edge_fwhm = []
         time = []
         stamp = []
+        tt_delay = []
 
         for idx,evt in enumerate(ds.events()):
             ec = evr_det.eventCodes(evt)
@@ -177,14 +178,15 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
             stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
             if direct:
                 edge_pos = np.append(edge_pos, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
+                tt_delay = np.append(tt_delay, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS_PS'))
                 edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
                 edge_amp = np.append(edge_amp, ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
             else:
                 edge_pos = np.append(edge_pos, ttdata.position_pixel())
+                tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
                 edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
                 edge_amp = np.append(edge_amp,ttdata.amplitude())
             time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
-        tt_delay = rel_time(edge_pos, calib_model)
         abs_delay = absolute_time(time, tt_delay)
 
         if diagnostics:
