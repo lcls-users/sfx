@@ -140,8 +140,10 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', calib_model=[], di
 
     saves .txt files linking a delay time to each shot, identified by a stamp 
     each row in the output file: ['644172952-167590310-79638','-1275.255309579068']
-    """    
+    """
 
+    if not os.path.exists(outDir):
+        os.makedirs(outDir)
       
     if len(calib_model) == 0:
         direct = True
