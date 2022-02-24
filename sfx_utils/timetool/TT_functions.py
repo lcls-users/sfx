@@ -76,9 +76,9 @@ def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
     model = polyfit(edge_pos, time, poly)
 
     if make_plot:
-        if poly = 1:
+        if poly == 1:
             model_time = model[0]*edge_pos+model[1]
-        elif poly = 2:
+        elif poly == 2:
             model_time = model[0]**2*edge_pos + model[1]*edge_pos + model[2]
         else:
             print('polynomial not defined, use 1st or 2nd order')
