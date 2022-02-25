@@ -188,7 +188,7 @@ def get_delay(run_start, run_end,
             stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
             if not redoTT:
                 edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
-                if not model:
+                if len(calib_model) == 0:
                     tt_delay = np.append(tt_delay, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS_PS')*1000)
                 else:
                     tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
