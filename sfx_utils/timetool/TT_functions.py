@@ -60,6 +60,7 @@ def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
     poly = polynomial used for fitting calibration curve, 1 or 2, default 2 as in confluence documentation
     returns model that can be used to determine the delay using the function 'rel_time'
     """
+    psana_keyword=f'exp={exp}:run={calib_run}'
     
     ds = psana.DataSource(f'exp={exp}:run={calib_run}', module=f'{psana_keyword}:smd')
     
