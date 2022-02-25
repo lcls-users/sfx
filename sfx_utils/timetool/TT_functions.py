@@ -94,7 +94,7 @@ def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
         plt.ylabel('laser delay')
         plt.legend()
 
-    return model
+    return model, time, edge_pos, amp
 
 def get_diagnostics(run, direct=True,roi=[]):
     if not direct:
