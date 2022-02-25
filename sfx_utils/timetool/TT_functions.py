@@ -217,7 +217,7 @@ def get_histo(run_start, run_end, expID, outDir, beamline, roi='30 50', redoTT=F
             get_delay(run, run, expID, outDir, beamline, roi='30 50', redoTT=False, calib_model=[], diagnostics = False)
     
         tmp = np.load(f'{outDir}/{run}.npy')
-        delays = np.append(delays, dat[:,1].astype('float'))
+        delays = np.append(delays, tmp[:,1].astype('float'))
         
     counts, bins = np.histogram(delays, bins=30)
     
