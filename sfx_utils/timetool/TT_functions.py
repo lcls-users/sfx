@@ -61,7 +61,7 @@ def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
     returns model that can be used to determine the delay using the function 'rel_time'
     """
     
-    ds = psana.DataSource(f'exp={exp}:run={calib_run}', module=ttAnalyze)
+    ds = psana.DataSource(f'exp={exp}:run={calib_run}', module=f'{psana_keyword}:smd'))
     
     edge_pos = []
     amp = []
