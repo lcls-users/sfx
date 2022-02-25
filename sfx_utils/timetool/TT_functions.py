@@ -167,7 +167,7 @@ def get_delay(run_start, run_end,
             ds = psana.DataSource(f'{psana_keyword}:smd')
         else:
             ds = psana.DataSource(psana_keyword, module=ttAnalyze)
-        evr_det = psana.Detector('evr1')
+        evr_det = psana.Detector('evr0')
         edge_pos = []
         edge_amp = []
         edge_fwhm = []
@@ -199,7 +199,7 @@ def get_delay(run_start, run_end,
                 tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
                 edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
                 edge_amp = np.append(edge_amp,ttdata.amplitude())
-            time = np.append(time, ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
+            time = np.append(time, ds.env().epicsStore().value('LAS:FS45:VIT:FS_TGT_TIME_DIAL'))
         abs_delay = absolute_time(time, tt_delay)
 
         if diagnostics:
