@@ -62,7 +62,7 @@ def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
     """
     psana_keyword=f'exp={exp}:run={calib_run}'
     
-    ds = psana.DataSource(f'exp={exp}:run={calib_run}', module=f'{psana_keyword}:smd')
+    ds = psana.DataSource(f'{psana_keyword}:smd')
     
     edge_pos = []
     amp = []
@@ -129,7 +129,10 @@ def get_diagnostics(run, direct=True,roi=[]):
     return edge_pos, edge_fwhm, edge_amp
 
 
-def get_delay(run_start, run_end, expID, outDir, beamline, roi='30 50', redoTT=False, calib_model=[], diagnostics = False):
+def get_delay(run_start, run_end,
+              expID, outDir, beamline,
+              roi='30 50', redoTT=False,
+              calib_model=[], diagnostics = False):
     """
     Function to determine the delay using the time tool:
     run_start, run_end: first and last run to analyze
