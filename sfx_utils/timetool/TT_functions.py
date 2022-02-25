@@ -49,12 +49,13 @@ def absolute_time(rel_time, nom_time):
     delay = -(nom_time + rel_time)*1e06
     return delay
 
-def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
+def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
     """
     Calibration of time tool:
     roi = region of interest on detector that is being used to determine the edge
     calib_run = run number of the calibration run
     exp = experiment number including instrument (e.g. 'cxilz0720' for run LZ0720 at CXI)
+    beamline = 'CXI', 'MFX',.... 
     make_plot: if true automatically plots the calibration curve and fit
     poly = polynomial used for fitting calibration curve, 1 or 2, default 2 as in confluence documentation
     returns model that can be used to determine the delay using the function 'rel_time'
@@ -72,7 +73,7 @@ def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
     for idx,evt in enumerate(ds.events()):
         ttdata = ttAnalyze.process(evt)
         if ttdata is None: continue
-        edge_pos = np.append(edge_pos, ttdata.position_pixel())
+        edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
         amp = np.append(amp,ttdata.amplitude())
         time = np.append(time,ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
 
@@ -125,21 +126,24 @@ def get_diagnostics(run, direct=True,roi=[]):
         for idx,evt in enumerate(ds.events()):
             ec = evr_det.eventCodes(evt)
             if ec is None: continue
-            edge_pos = np.append(edge_pos,ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
-            edge_fwhm = np.append(edge_fwhm,ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
-            edge_amp = np.append(edge_amp,ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
+            edge_pos = np.append(edge_pos,ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
+            edge_fwhm = np.append(edge_fwhm,ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOSFWHM'))
+            edge_amp = np.append(edge_amp,ds.env().epicsStore().value(f'{beamline}:TIMETOOL:AMPL'))
             
     return edge_pos, edge_fwhm, edge_amp
 
 
-def get_delay(run_start, run_end, expID, outDir, roi='30 50', redoTT=False, calib_model=[], diagnostics = False):
+def get_delay(run_start, run_end, expID, outDir, beamline, roi='30 50', redoTT=False, calib_model=[], diagnostics = False):
     """
     Function to determine the delay using the time tool:
     run_start, run_end: first and last run to analyze
     roi = region of interest on detector that is being used to determine the edge
     expID = experiment number including instrument (e.g. 'cxilz0720' for run LZ0720 at CXI)
     outDir = directory where output should be saved
+    beamline = 'MFX', 'CXI' or similar
+    redoTT = true if you need to redo the TT analysis (edge finding)
     calib_model = output from time tool calibration (using 'TTcalib'), if not empty TTanalysis is performed again (direct = False)
+    diagnostics = set true if you want amplitude and FWHM of TT edge as output
 
     saves .txt files linking a delay time to each shot, identified by a stamp 
     each row in the output file: ['644172952-167590310-79638','-1275.255309579068']
@@ -180,13 +184,13 @@ def get_delay(run_start, run_end, expID, outDir, roi='30 50', redoTT=False, cali
             nsec = eid.time()[1]
             stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
             if not redoTT:
-                edge_pos = np.append(edge_pos, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
+                edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
                 if len(model) == 0:
-                    tt_delay = np.append(tt_delay, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS_PS')*1000)
+                    tt_delay = np.append(tt_delay, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS_PS')*1000)
                 else:
                     tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
-                edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOSFWHM'))
-                edge_amp = np.append(edge_amp, ds.env().epicsStore().value('CXI:TIMETOOL:AMPL'))
+                edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOSFWHM'))
+                edge_amp = np.append(edge_amp, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:AMPL'))
             else:
                 edge_pos = np.append(edge_pos, ttdata.position_pixel())
                 tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
