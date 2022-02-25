@@ -209,4 +209,22 @@ def get_delay(run_start, run_end,
         fn = f'{outDir}/{run_number}'
         #fOn = np.savetxt(fn, output, delimiter=',', fmt = '%s')
         np.save(fn, output)
-
+        
+def get_histo(run_start, run_end, expID, outDir, beamline, roi='30 50', redoTT=False, calib_model=[], diagnostics = False):
+    delays = []
+    for run in np.arange(run_start, run_end+1):
+        if not os.path.exists(f'{outDir}/{run}.npy'):
+            get_delay(run, run, expID, outDir, beamline, roi='30 50', redoTT=False, calib_model=[], diagnostics = False)
+    
+        tmp = np.load(f'{outDir}/{run}.npy')
+        delays = np.append(delays, dat[:,1].astype('float'))
+        
+    counts, bins = np.histogram(delays, bins=30)
+    
+    plt.hist(bins[:-1], bins, weights=counts)
+    plt.ylabel('#shots')
+    plt.xlabel('time delay (fs)')
+    plt.show()
+        
+        
+        
