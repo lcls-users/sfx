@@ -49,7 +49,7 @@ def absolute_time(rel_time, nom_time):
     delay = -(nom_time + rel_time)*1e06
     return delay
 
-def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
+def TTcalib(calib_run, exp, beamline, make_plot=False, poly=2, parallel=False):
     """
     Calibration of time tool:
     roi = region of interest on detector that is being used to determine the edge
@@ -60,9 +60,13 @@ def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
     poly = polynomial used for fitting calibration curve, 1 or 2, default 2 as in confluence documentation
     returns model that can be used to determine the delay using the function 'rel_time'
     """
+
     psana_keyword=f'exp={exp}:run={calib_run}'
-    
-    ds = psana.DataSource(f'{psana_keyword}:smd')
+
+    if parallel:
+        ds = MPIDataSource(f'{psana_keyword}:smd')
+    else:
+        ds = psana.DataSource(f'{psana_keyword}:smd')
     
     edge_pos = []
     amp = []
