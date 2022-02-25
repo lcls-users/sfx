@@ -21,8 +21,11 @@ def relative_time(edge_pos,a,b,c):
 def rel_time(edge_pos,model):
     """
     Translate edge position into time
+    
+    edge_pos= from TT analysis or psana (see ttdata.position_pixel() or ds.env().epicsStore().value('CXI:TIMETOOL:FLTPOS'))
+    model= output from 'TTcalib' 
      
-    from docs >> fs_result = a + b*x + c*x^2, x is edge position
+    from docs >> ns_result = a + b*x + c*x^2, x is edge position
     """
     if len(model) == 2:
         a = model[1]
@@ -73,7 +76,7 @@ def TTcalib(roi, calib_run, exp, make_plot=False, poly=2):
         amp = np.append(amp,ttdata.amplitude())
         time = np.append(time,ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
 
-    model = polyfit(edge_pos, time, poly)
+    model = np.polyfit(edge_pos, time, poly)
 
     if make_plot:
         if poly == 1:
