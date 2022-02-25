@@ -60,10 +60,7 @@ def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
     poly = polynomial used for fitting calibration curve, 1 or 2, default 2 as in confluence documentation
     returns model that can be used to determine the delay using the function 'rel_time'
     """
-
-    ttOptions = TT.AnalyzeOptions(get_key='Timetool', eventcode_nobeam=13, sig_roi_y='30 50')
-    ttAnalyze = TT.PyAnalyze(ttOptions)
-    analyze = TT.PyAnalyze(ttOptions)
+    
     ds = psana.DataSource(f'exp={exp}:run={calib_run}', module=ttAnalyze)
     
     edge_pos = []
@@ -71,10 +68,8 @@ def TTcalib(roi, calib_run, exp, beamline, make_plot=False, poly=2):
     time = []
 
     for idx,evt in enumerate(ds.events()):
-        ttdata = ttAnalyze.process(evt)
-        if ttdata is None: continue
         edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
-        amp = np.append(amp,ttdata.amplitude())
+        amp = np.append(amp,ds.env().epicsStore().value(f'{beamline}:TIMETOOL:AMPL'))
         time = np.append(time,ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
 
     model = np.polyfit(edge_pos, time, poly)
