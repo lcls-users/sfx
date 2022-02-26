@@ -199,7 +199,7 @@ def get_delay(run_start, run_end,
                 if not redoTT:
                     edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
                     if len(calib_model) == 0:
-                        tt_delay = np.append(tt_delay, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS_PS'))
+                        tt_delay = np.append(tt_delay, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS_PS')/1e6)
                     else:
                         tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
                     edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOSFWHM'))
@@ -214,7 +214,13 @@ def get_delay(run_start, run_end,
         
         if TTfilter:
             mask = np.where((edge_amp > 0.05) & (edge_fwhm < 300), True, False)
-
+            stamp = stamp[mask]
+            abs_delay = abs_delay[mask]
+            edge_pos = edge_pos[mask]
+            edge_fwhm = edge_fwhm[mask]
+            edge_amp = edge_amp[mask]
+            
+            
         if diagnostics:
             output = np.column_stack([stamp, abs_delay, edge_pos, edge_fwhm, edge_amp])
         else:
