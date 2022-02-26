@@ -199,7 +199,7 @@ def get_delay(run_start, run_end,
                 if not redoTT:
                     edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
                     if len(calib_model) == 0:
-                        tt_delay = np.append(tt_delay, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS_PS')/1e6)
+                        tt_delay = np.append(tt_delay, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS_PS'))
                     else:
                         tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
                     edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOSFWHM'))
