@@ -75,7 +75,7 @@ def TTcalib(calib_run, exp, beamline, make_plot=False, poly=2, parallel=False):
     for idx,evt in enumerate(ds.events()):
         edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
         amp = np.append(amp,ds.env().epicsStore().value(f'{beamline}:TIMETOOL:AMPL'))
-        time = np.append(time,ds.env().epicsStore().value('LAS:FS5:VIT:FS_TGT_TIME_DIAL'))
+        time = np.append(time,ds.env().epicsStore().value('LAS:FS45:VIT:FS_TGT_TIME_DIAL'))
 
     model = np.polyfit(edge_pos, time, int(poly))
 
