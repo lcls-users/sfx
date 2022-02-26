@@ -136,7 +136,8 @@ def get_diagnostics(run, direct=True,roi=[]):
 def get_delay(run_start, run_end,
               expID, outDir, beamline, event_on,
               roi='30 50', redoTT=False,
-              calib_model=[], diagnostics = False,parallel=False):
+              calib_model=[], diagnostics = False,
+              parallel=False, TTfilter = True):
     """
     Function to determine the delay using the time tool:
     run_start, run_end: first and last run to analyze
@@ -210,6 +211,9 @@ def get_delay(run_start, run_end,
                     edge_amp = np.append(edge_amp,ttdata.amplitude())
                 time = np.append(time, ds.env().epicsStore().value('LAS:FS45:VIT:FS_TGT_TIME_DIAL'))
         abs_delay = absolute_time(time, tt_delay)
+        
+        if TTfilter:
+            mask = np.where((edge_amp > 0.05) & (edge_fwhm < 300), True, False)
 
         if diagnostics:
             output = np.column_stack([stamp, abs_delay, edge_pos, edge_fwhm, edge_amp])
