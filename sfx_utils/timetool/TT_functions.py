@@ -209,7 +209,7 @@ def get_delay(run_start, run_end,
                     edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
                     edge_amp = np.append(edge_amp,ttdata.amplitude())
                 time = np.append(time, ds.env().epicsStore().value('LAS:FS45:VIT:FS_TGT_TIME_DIAL'))
-            abs_delay = absolute_time(time, tt_delay)
+        abs_delay = absolute_time(time, tt_delay)
 
         if diagnostics:
             output = np.column_stack([stamp, abs_delay, edge_pos, edge_fwhm, edge_amp])
