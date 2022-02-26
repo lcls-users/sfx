@@ -136,7 +136,8 @@ def get_diagnostics(run, direct=True,roi=[]):
 def get_delay(run_start, run_end,
               expID, outDir, beamline,
               roi='30 50', redoTT=False,
-              calib_model=[], diagnostics = False):
+              calib_model=[], diagnostics = False,
+              parallel=False):
     """
     Function to determine the delay using the time tool:
     run_start, run_end: first and last run to analyze
@@ -163,10 +164,21 @@ def get_delay(run_start, run_end,
     for run_number in runs:
         psana_keyword=f'exp={expID}:run={run_number}'
         print(psana_keyword)
+        
+            if parallel:
+                ds = MPIDataSource(f'{psana_keyword}:smd')
+            else:
+                ds = psana.DataSource(f'{psana_keyword}:smd')
         if not redoTT:
-            ds = psana.DataSource(f'{psana_keyword}:smd')
+            if parallel:
+                ds = MPIDataSource(f'{psana_keyword}:smd')
+            else:
+                ds = psana.DataSource(f'{psana_keyword}:smd')
         else:
-            ds = psana.DataSource(psana_keyword, module=ttAnalyze)
+            if parallel:
+                ds = MPIDataSource(psana_keyword, module=ttAnalyze)
+            else:
+                ds = psana.DataSource(psana_keyword, module=ttAnalyze)
         evr_det = psana.Detector('evr0')
         edge_pos = []
         edge_amp = []
