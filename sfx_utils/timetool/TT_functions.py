@@ -136,8 +136,7 @@ def get_diagnostics(run, direct=True,roi=[]):
 def get_delay(run_start, run_end,
               expID, outDir, beamline,
               roi='30 50', redoTT=False,
-              calib_model=[], diagnostics = False,
-              parallel=False):
+              calib_model=[], diagnostics = False,parallel=False):
     """
     Function to determine the delay using the time tool:
     run_start, run_end: first and last run to analyze
