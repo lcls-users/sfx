@@ -163,11 +163,7 @@ def get_delay(run_start, run_end,
     for run_number in runs:
         psana_keyword=f'exp={expID}:run={run_number}'
         print(psana_keyword)
-        
-            if parallel:
-                ds = MPIDataSource(f'{psana_keyword}:smd')
-            else:
-                ds = psana.DataSource(f'{psana_keyword}:smd')
+
         if not redoTT:
             if parallel:
                 ds = MPIDataSource(f'{psana_keyword}:smd')
