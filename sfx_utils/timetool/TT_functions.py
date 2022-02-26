@@ -134,7 +134,7 @@ def get_diagnostics(run, direct=True,roi=[]):
 
 
 def get_delay(run_start, run_end,
-              expID, outDir, beamline,
+              expID, outDir, beamline, event_on,
               roi='30 50', redoTT=False,
               calib_model=[], diagnostics = False,parallel=False):
     """
@@ -185,29 +185,31 @@ def get_delay(run_start, run_end,
         for idx,evt in enumerate(ds.events()):
             ec = evr_det.eventCodes(evt)
             if ec is None: continue
-            if redoTT:
-                ttdata = ttAnalyze.process(evt)
-                if ttdata is None: continue
-            eid = evt.get(EventId)
-            fid = eid.fiducials()
-            sec = eid.time()[0]
-            nsec = eid.time()[1]
-            stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
-            if not redoTT:
-                edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
-                if len(calib_model) == 0:
-                    tt_delay = np.append(tt_delay, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS_PS')/1e6)
+            if evet_on in ec:
+                
+                if redoTT:
+                    ttdata = ttAnalyze.process(evt)
+                    if ttdata is None: continue
+                eid = evt.get(EventId)
+                fid = eid.fiducials()
+                sec = eid.time()[0]
+                nsec = eid.time()[1]
+                stamp = np.append(stamp, str(sec) + "-" + str(nsec) + "-" + str(fid))
+                if not redoTT:
+                    edge_pos = np.append(edge_pos, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS'))
+                    if len(calib_model) == 0:
+                        tt_delay = np.append(tt_delay, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOS_PS')/1e6)
+                    else:
+                        tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
+                    edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOSFWHM'))
+                    edge_amp = np.append(edge_amp, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:AMPL'))
                 else:
+                    edge_pos = np.append(edge_pos, ttdata.position_pixel())
                     tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
-                edge_fwhm = np.append(edge_fwhm, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:FLTPOSFWHM'))
-                edge_amp = np.append(edge_amp, ds.env().epicsStore().value(f'{beamline}:TIMETOOL:AMPL'))
-            else:
-                edge_pos = np.append(edge_pos, ttdata.position_pixel())
-                tt_delay = np.append(tt_delay, rel_time(edge_pos[-1], calib_model))
-                edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
-                edge_amp = np.append(edge_amp,ttdata.amplitude())
-            time = np.append(time, ds.env().epicsStore().value('LAS:FS45:VIT:FS_TGT_TIME_DIAL'))
-        abs_delay = absolute_time(time, tt_delay)
+                    edge_fwhm = np.append(edge_fwhm, ttdata.position_fwhm())
+                    edge_amp = np.append(edge_amp,ttdata.amplitude())
+                time = np.append(time, ds.env().epicsStore().value('LAS:FS45:VIT:FS_TGT_TIME_DIAL'))
+            abs_delay = absolute_time(time, tt_delay)
 
         if diagnostics:
             output = np.column_stack([stamp, abs_delay, edge_pos, edge_fwhm, edge_amp])
