@@ -185,7 +185,7 @@ def get_delay(run_start, run_end,
         for idx,evt in enumerate(ds.events()):
             ec = evr_det.eventCodes(evt)
             if ec is None: continue
-            if evet_on in ec:
+            if event_on in ec:
                 
                 if redoTT:
                     ttdata = ttAnalyze.process(evt)
