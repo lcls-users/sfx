@@ -99,7 +99,7 @@ class TimetoolInterface:
 
         """
         if hasattr(self, 'calib_model'):
-            model_time = self.calib_model[0]**2*self.edge_pos + self.calib_model[1]*self.edge_pos + self.calib_model[2]
+            model_time = self.calib_model[0] + self.calib_model[1]*self.edge_pos + self.calib_model[2]*self.edge_pos**2
         
         fig = plt.figure(figsize=(4,4), dpi=80)
         plt.plot(self.edge_pos, self.laser_time,
