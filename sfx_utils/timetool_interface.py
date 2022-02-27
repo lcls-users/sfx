@@ -98,9 +98,14 @@ class TimetoolInterface:
         -------
 
         """
+        if self.calib_model:
+            model_time = self.calib_model[0]**2*self.edge_pos + self.calib_model[1]*self.edge_pos + self.calib_model[2]
+        
         fig = plt.figure(figsize=(4,4), dpi=80)
         plt.plot(self.edge_pos, self.laser_time,
                  'o', color='black',label='edge position')
+        if self.calib_model:
+            plt.plot(self.edge_pos, self.model_time, color='red',label = 'calibration fit')
         plt.xlabel('pixel edge')
         plt.ylabel('laser delay')
         plt.legend()
@@ -108,3 +113,16 @@ class TimetoolInterface:
             plt.show()
         else:
             plt.savefig(png_output)
+            
+            
+    def fit_calib_data(self, poly=1):
+        """
+        Fits 1st or 2nd order polynomial to data
+        
+        Returns calibration constants covnerting px to ns
+        """
+        
+        self.model = np.polyfit(self.edge_pos, self.time, int(poly))
+        if poly == 1:
+            self.model = np.append(self.model, 0)
+        
