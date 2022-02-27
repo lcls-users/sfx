@@ -1,4 +1,4 @@
-import yaml
+import os,yaml
 from matplotlib import pyplot as plt
 
 from psana_interface import *
@@ -24,7 +24,18 @@ class TimetoolInterface:
         with open(path_config, "r") as config_file:
             self.config = AttrDict(yaml.safe_load(config_file))
 
+        self.init_job()
         self.init_calib_data()
+
+    def init_job(self):
+        """
+        Initialize job
+        Returns
+        -------
+
+        """
+        if not os.path.exists(self.config.work_dir):
+            os.makedirs(self.config.work_dir)
 
     def init_calib_data(self):
         """
@@ -38,7 +49,7 @@ class TimetoolInterface:
         self.amp = []
         self.laser_time = []
 
-    def retrieve_calib_data(self):
+    def retrieve_calib_data(self, save=False, overwrite=False):
         """
         Retrieve the pre-calculated edge position and laser timing from data source.
 
@@ -46,6 +57,14 @@ class TimetoolInterface:
         -------
 
         """
+        calib_data_file = f'{self.config.work_dir}calib_data_r{self.config.calib_run}'
+        if os.path.isfile(calib_data_file) and not overwrite:
+            data = np.load(calib_data_file)
+            self.edge_pos = data[0]
+            self.amp = data[1]
+            self.laser_time = data[2]
+            return
+
         psi = PsanaInterface(exp=self.config.exp,
                              run=self.config.calib_run,
                              parallel=self.config.parallel,
@@ -60,6 +79,10 @@ class TimetoolInterface:
                                  epics_store.value(self.config.pv_amp))
             self.laser_time = np.append(self.laser_time,
                                         epics_store.value(self.config.pv_lasertime))
+
+        if save:
+            np.save(calib_data_file,
+                    np.column_stack(self.edge_pos, self.amp, self.laser_time))
 
     def plot_calib_data(self, png_output=None):
         """

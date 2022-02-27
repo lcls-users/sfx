@@ -6,3 +6,5 @@ pv_amp: 'MFX:TIMETOOL:AMP'
 pv_lasertime: 'LAS:FS45:VIT:FS_TGT_TIME_DIAL'
 
 parallel: False
+
+work_dir: '/cds/data/psdm/mfx/mfxlz0420/scratch/fpoitevi/timetool/'
