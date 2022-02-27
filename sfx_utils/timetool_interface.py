@@ -58,13 +58,14 @@ class TimetoolInterface:
 
         """
         calib_data_file = f'{self.config.work_dir}calib_data_r{self.config.calib_run}'
-        if os.path.isfile(calib_data_file) and not overwrite:
-            print(f'reading calib data from {calib_data_file}')
-            data = np.load(calib_data_file, allow_pickle=True)
-            self.edge_pos = data[0]
-            self.amp = data[1]
-            self.laser_time = data[2]
-            return
+        if os.path.isfile(calib_data_file):
+            if not overwrite:
+                print(f'reading calib data from {calib_data_file}')
+                data = np.load(calib_data_file, allow_pickle=True)
+                self.edge_pos = data[0]
+                self.amp = data[1]
+                self.laser_time = data[2]
+                return
 
         psi = PsanaInterface(exp=self.config.exp,
                              run=self.config.calib_run,
