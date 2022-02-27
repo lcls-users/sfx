@@ -73,6 +73,7 @@ class TimetoolInterface:
         epics_store = psi.ds.env().epicsStore()
 
         for idx, evt in enumerate(psi.ds.events()):
+            if(idx==10):break
             self.edge_pos = np.append(self.edge_pos,
                                       epics_store.value(self.config.pv_fltpos))
             self.amp = np.append(self.amp,
@@ -82,7 +83,9 @@ class TimetoolInterface:
 
         if save:
             np.save(calib_data_file,
-                    np.column_stack(self.edge_pos, self.amp, self.laser_time))
+                    np.column_stack((self.edge_pos,
+                                     self.amp,
+                                     self.laser_time)))
 
     def plot_calib_data(self, png_output=None):
         """
