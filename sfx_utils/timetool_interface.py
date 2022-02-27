@@ -57,7 +57,7 @@ class TimetoolInterface:
         -------
 
         """
-        calib_data_file = f'{self.config.work_dir}calib_data_r{self.config.calib_run}'
+        calib_data_file = f'{self.config.work_dir}calib_data_r{self.config.calib_run}.npy'
         if os.path.isfile(calib_data_file):
             print(f'found {calib_data_file}')
             if not overwrite:
