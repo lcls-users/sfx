@@ -125,4 +125,14 @@ class TimetoolInterface:
         self.calib_model = np.polyfit(self.edge_pos.astype('float'), self.laser_time.astype('float'), int(poly))
         if poly == 1:
             self.calib_model = np.append(self.calib_model, 0)
+            
+     def filter_calib_data(self, edge_bound, time_bound):
+        """
+        Filters the data used for calibration
+        
+        """
+        calib_mask = np.where((self.edge_pos > edge_bound[0]) & (self.edge_pos <edge_bound[1]) & (self.laser_time > time_bound[0]) & (self.laser_time < time_bound[1]), True, False)
+        self.edge_pos = self.edge_pos[calib_mask]
+        self.laser_time = self.laser_time[calib_mask]
+
         
