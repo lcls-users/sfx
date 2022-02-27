@@ -59,7 +59,7 @@ class TimetoolInterface:
         """
         calib_data_file = f'{self.config.work_dir}calib_data_r{self.config.calib_run}'
         if os.path.isfile(calib_data_file) and not overwrite:
-            data = np.load(calib_data_file)
+            data = np.load(calib_data_file, allow_pickle=True)
             self.edge_pos = data[0]
             self.amp = data[1]
             self.laser_time = data[2]
@@ -85,7 +85,7 @@ class TimetoolInterface:
             np.save(calib_data_file,
                     np.column_stack((self.edge_pos,
                                      self.amp,
-                                     self.laser_time)))
+                                     self.laser_time)).T)
 
     def plot_calib_data(self, png_output=None):
         """
