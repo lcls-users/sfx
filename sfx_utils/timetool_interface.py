@@ -59,6 +59,7 @@ class TimetoolInterface:
         """
         calib_data_file = f'{self.config.work_dir}calib_data_r{self.config.calib_run}'
         if os.path.isfile(calib_data_file) and not overwrite:
+            print(f'reading calib data from {calib_data_file}')
             data = np.load(calib_data_file, allow_pickle=True)
             self.edge_pos = data[0]
             self.amp = data[1]
@@ -81,6 +82,7 @@ class TimetoolInterface:
                                         epics_store.value(self.config.pv_lasertime))
 
         if save:
+            print(f'saving calib data to {calib_data_file}')
             np.save(calib_data_file,
                     np.row_stack((self.edge_pos,
                                      self.amp,
