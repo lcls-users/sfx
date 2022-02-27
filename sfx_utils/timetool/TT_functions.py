@@ -59,6 +59,7 @@ def TTcalib(calib_run, exp, beamline, make_plot=False, poly=2, parallel=False):
     make_plot: if true automatically plots the calibration curve and fit
     poly = polynomial used for fitting calibration curve, 1 or 2, default 2 as in confluence documentation
     returns model that can be used to determine the delay using the function 'rel_time'
+    parallel = set tru to parallelise using MPI
     """
 
     psana_keyword=f'exp={exp}:run={calib_run}'
@@ -148,6 +149,8 @@ def get_delay(run_start, run_end,
     redoTT = true if you need to redo the TT analysis (edge finding)
     calib_model = output from time tool calibration (using 'TTcalib'), if not empty TTanalysis is performed again (direct = False)
     diagnostics = set true if you want amplitude and FWHM of TT edge as output
+    parallel = set tru to parallelise using MPI
+    TTfilter = if true creates a mask to filter out low ampltudes/large FWHM
 
     saves .txt files linking a delay time to each shot, identified by a stamp 
     each row in the output file: ['644172952-167590310-79638','-1275.255309579068']
