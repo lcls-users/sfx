@@ -6,7 +6,10 @@ import TimeTool as TT
 import psana
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
 from psana import *
+
+
 
 def relative_time(edge_pos,a,b,c):
     """
@@ -39,7 +42,6 @@ def rel_time(edge_pos,model):
     tt_correction = a + b*x + c*x**2
     return  tt_correction
 
-
 def absolute_time(rel_time, nom_time):
     """
     Calculate actual delay from nominal time and TT correction
@@ -48,6 +50,11 @@ def absolute_time(rel_time, nom_time):
 
     delay = -(nom_time + rel_time)*1e06
     return delay
+
+
+
+
+
 
 def TTcalib(calib_run, exp, beamline, make_plot=False, poly=2, parallel=False):
     """

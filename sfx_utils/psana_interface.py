@@ -1,18 +1,32 @@
 import numpy as np
 import psana
-from psana import DataSource
 from psana import EventId
 
 class PsanaInterface:
 
-    def __init__(self, exp, run, det_type, track_timestamps=False):
+    def __init__(self, exp, run,
+                 det_type=None,
+                 track_timestamps=False,
+                 parallel=False,
+                 small_data=False):
         self.exp = exp # experiment name, string
         self.run = run # run number, int
         self.det_type = det_type # detector name, string
         self.track_timestamps = track_timestamps # bool, keep event info
         self.seconds, self.nanoseconds, self.fiducials = [], [], []
-        self.ds = psana.DataSource(f'exp={exp}:run={run}')
-        self.det = psana.Detector(det_type, self.ds.env())
+
+        psana_keyword = f'exp={exp}:run={run}'
+        if small_data:
+            psana_keyword = f'{psana_keyword}:smd'
+
+        if parallel:
+            self.ds = psana.MPIDataSource(psana_keyword)
+        else:
+            self.ds = psana.DataSource(psana_keyword)
+
+        self.det = None
+        if det_type is not None:
+            self.det = psana.Detector(det_type, self.ds.env())
         
     def get_pixel_size(self):
         """
