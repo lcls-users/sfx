@@ -126,7 +126,8 @@ class TimetoolInterface:
         if poly == 1:
             self.calib_model = np.append(self.calib_model, 0)
             
-     def filter_calib_data(self, edge_bound, time_bound):
+    def filter_calib_data(self, edge_bound, time_bound):
+        
         """
         Filters the data used for calibration
         
