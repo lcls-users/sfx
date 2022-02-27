@@ -105,7 +105,7 @@ class TimetoolInterface:
         plt.plot(self.edge_pos, self.laser_time,
                  'o', color='black',label='edge position')
         if hasattr(self, 'calib_model'):
-            plt.plot(self.edge_pos, self.model_time, color='red',label = 'calibration fit')
+            plt.plot(self.edge_pos, model_time, color='red',label = 'calibration fit')
         plt.xlabel('pixel edge')
         plt.ylabel('laser delay')
         plt.legend()
