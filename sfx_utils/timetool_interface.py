@@ -98,13 +98,13 @@ class TimetoolInterface:
         -------
 
         """
-        if hasattr('tti', 'calib_model'):
+        if hasattr(self, 'calib_model'):
             model_time = self.calib_model[0]**2*self.edge_pos + self.calib_model[1]*self.edge_pos + self.calib_model[2]
         
         fig = plt.figure(figsize=(4,4), dpi=80)
         plt.plot(self.edge_pos, self.laser_time,
                  'o', color='black',label='edge position')
-        if hasattr('tti', 'calib_model'):
+        if hasattr(self, 'calib_model'):
             plt.plot(self.edge_pos, self.model_time, color='red',label = 'calibration fit')
         plt.xlabel('pixel edge')
         plt.ylabel('laser delay')
