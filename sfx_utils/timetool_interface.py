@@ -59,9 +59,8 @@ class TimetoolInterface:
         """
         calib_data_file = f'{self.config.work_dir}calib_data_r{self.config.calib_run}'
         if os.path.isfile(calib_data_file):
-            print(1)
+            print(f'found {calib_data_file}')
             if not overwrite:
-                print(2)
                 print(f'reading calib data from {calib_data_file}')
                 data = np.load(calib_data_file, allow_pickle=True)
                 self.edge_pos = data[0]
