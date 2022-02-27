@@ -73,7 +73,6 @@ class TimetoolInterface:
         epics_store = psi.ds.env().epicsStore()
 
         for idx, evt in enumerate(psi.ds.events()):
-            if(idx==10):break
             self.edge_pos = np.append(self.edge_pos,
                                       epics_store.value(self.config.pv_fltpos))
             self.amp = np.append(self.amp,
