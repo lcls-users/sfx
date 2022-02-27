@@ -122,7 +122,7 @@ class TimetoolInterface:
         Returns calibration constants covnerting px to ns
         """
         
-        self.model = np.polyfit(self.edge_pos.astype('float'), self.laser_time.astype('float'), int(poly))
+        self.calib_model = np.polyfit(self.edge_pos.astype('float'), self.laser_time.astype('float'), int(poly))
         if poly == 1:
-            self.model = np.append(self.model, 0)
+            self.calib_model = np.append(self.calib_model, 0)
         
