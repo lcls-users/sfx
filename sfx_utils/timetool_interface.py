@@ -83,9 +83,9 @@ class TimetoolInterface:
 
         if save:
             np.save(calib_data_file,
-                    np.column_stack((self.edge_pos,
+                    np.row_stack((self.edge_pos,
                                      self.amp,
-                                     self.laser_time)).T)
+                                     self.laser_time)))
 
     def plot_calib_data(self, png_output=None):
         """
