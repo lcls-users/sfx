@@ -146,7 +146,7 @@ class TimetoolInterface:
 
         psana_keyword=f'exp={self.config.exp}:run={run}'
         print(psana_keyword)
-        if self.parallel:
+        if self.config.parallel:
            ds = MPIDataSource(f'{psana_keyword}:smd')
         else:
            ds = psana.DataSource(f'{psana_keyword}:smd') 
@@ -192,7 +192,7 @@ class TimetoolInterface:
             else:
                 self.get_TTdiagnostics(run)
             
-            if self.redoTT:
+            if self.config.redoTT:
                 #here the TT analysis should be redone
                 continue
                 
