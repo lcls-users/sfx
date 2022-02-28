@@ -141,8 +141,6 @@ class TimetoolInterface:
         Retrieve TT output from psana
         """
         
-        
-        runs = np.arange(self.run_start, self.run_end+1)
             
         TTdata_file = f'{self.config.work_dir}TT_data_r{run}.npy'
 
