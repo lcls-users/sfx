@@ -144,7 +144,7 @@ class TimetoolInterface:
             
         TTdata_file = f'{self.config.work_dir}TT_data_r{run}.npy'
 
-        psana_keyword=f'exp={self.exp}:run={run}'
+        psana_keyword=f'exp={self.config.exp}:run={run}'
         print(psana_keyword)
         if self.parallel:
            ds = MPIDataSource(f'{psana_keyword}:smd')
