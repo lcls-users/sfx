@@ -48,6 +48,7 @@ class TimetoolInterface:
         self.edge_pos = []
         self.amp = []
         self.laser_time = []
+        self.TTtime = []
 
     def retrieve_calib_data(self, save=False, overwrite=False):
         """
