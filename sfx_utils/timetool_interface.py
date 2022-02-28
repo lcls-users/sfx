@@ -152,7 +152,7 @@ class TimetoolInterface:
            ds = psana.DataSource(f'{psana_keyword}:smd') 
 
         epics_store = ds.env().epicsStore()
-        for idx, evt in enumerate(psi.ds.events()):
+        for idx, evt in enumerate(ds.events()):
             self.edge_pos = np.append(self.edge_pos,
                                       epics_store.value(self.config.pv_fltpos))
             self.amp = np.append(self.amp,
