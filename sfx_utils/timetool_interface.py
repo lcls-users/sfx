@@ -165,7 +165,7 @@ class TimetoolInterface:
 
         if save:
             print(f'saving calib data to {TTdata_file}')
-            np.save(TTcalib_data_file,
+            np.save(TTdata_file,
                     np.row_stack((self.edge_pos,
                                   self.amp,
                                   self.laser_time,
