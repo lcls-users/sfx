@@ -180,7 +180,7 @@ class TimetoolInterface:
         """
         
         
-        runs = np.arange(self.run_start, self.run_end+1)
+        runs = np.arange(self.config.run_start, self.config.run_end+1)
         for run in runs:
             TTdata_file = f'{self.config.work_dir}TT_data_r{run}.npy'
             if os.path.isfile(TTdata_file):
