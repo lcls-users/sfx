@@ -133,8 +133,8 @@ class TimetoolInterface:
         
         """
         self.calib_mask = np.where((self.cali_edge_pos > edge_bound[0]) & (self.cali_edge_pos <edge_bound[1]) & (self.cali_laser_time > time_bound[0]) & (self.cali_laser_time < time_bound[1]), True, False)
-        self.edge_pos = self.cali_edge_pos[calib_mask]
-        self.laser_time = self.cali_laser_time[calib_mask]
+        self.edge_pos = self.cali_edge_pos[self.calib_mask]
+        self.laser_time = self.cali_laser_time[self.calib_mask]
         
     def get_TTdiagnostics(self, run, save=True):
         """
