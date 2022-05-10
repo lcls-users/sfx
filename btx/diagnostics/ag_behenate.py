@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as colors
 from matplotlib.colors import LogNorm
+from spatial_calib_xray.model   import OptimizeConcentricCircles, InitCircle
+from spatial_calib_xray.display import Display, DisplayConcentricCircles
 
 class AgBehenate:
     
@@ -87,11 +89,40 @@ class AgBehenate:
         if center is None:
             center = (int(powder.shape[1]/2), int(powder.shape[0]/2))
         
-        # determine peaks in radial intensity profile and associated positions in q
+        # determine init center and concentric circles...
+        iprofile = radial_profile(powder, center=center)
+        peaks_observed, properties = find_peaks(iprofile, prominence=1, distance=10)
+
+        # ___/ optimize center \___
+        # Create a concentric circle model...
+        cx, cy = center
+        r = peaks_observed
+        num = 200
+        model = OptimizeConcentricCircles(cx = cx, cy = cy, r = r, num = num)
+        model.generate_crds()
+        crds_init = model.crds.copy()
+        crds_init = crds_init.reshape(2, -1, num)
+
+        # Fitting...
+        img = (powder - np.mean(powder)) / np.std(powder)
+        res = model.fit(img)
+        model.report_fit(res)
+        crds = model.crds
+        crds = crds.reshape(2, -1, num)
+
+        disp_manager = DisplayConcentricCircles(img, figsize = (12, 12))
+        disp_manager.show(crds_init, crds, is_save = False)
+
+        # Update the center position...
+        cx = res.params['cx'].value
+        cy = res.params['cy'].value
+        center = (cx, cy)
+        
+        # use new center in radial intensity profile and associated positions in q
         iprofile = radial_profile(powder, center=center)
         peaks_observed, properties = find_peaks(iprofile, prominence=1, distance=10)
         qprofile = pix2q(np.arange(iprofile.shape[0]), wavelength, est_distance, pixel_size)
-        
+
         # optimize the detector distance based on inter-peak distances
         rings, scores = self.ideal_rings(qprofile[peaks_observed])
         peaks_predicted = q2pix(rings, wavelength, est_distance, pixel_size)
