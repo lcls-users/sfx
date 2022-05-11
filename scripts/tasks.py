@@ -87,7 +87,7 @@ def opt_geom(config):
     from btx.misc.metrology import modify_crystfel_header, generate_geom_file
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
-    task = config.opt_distance
+    task = config.opt_geom
     """ Optimize the detector distance from an AgBehenate run. """
     taskdir = os.path.join(setup.root_dir, 'geom')
     os.makedirs(taskdir, exist_ok=True)
