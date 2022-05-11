@@ -11,7 +11,7 @@ class GeomOpt:
                                           run=run, # run number, int
                                           det_type=det_type) # detector name, str
         
-    def opt_distance(self, powder, sample='AgBehenate', mask=None, center=None, plot=None):
+    def opt(self, powder, sample='AgBehenate', mask=None, center=None, plot=None):
         """
         Estimate the sample-detector distance based on the properties of the powder
         diffraction image. Currently only implemented for silver behenate.
@@ -55,15 +55,15 @@ class GeomOpt:
                 mask = assemble_image_stack_batch(mask, self.diagnostics.pixel_index_map)
 
         if sample == 'AgBehenate':
-            ag_behenate = AgBehenate()
-            distance = ag_behenate.opt_distance(powder_img,
-                                                self.diagnostics.psi.estimate_distance(),
-                                                self.diagnostics.psi.get_pixel_size(), 
-                                                self.diagnostics.psi.get_wavelength(),
-                                                mask=mask,
-                                                center=center,
-                                                plot=plot)
-            return distance
+            ag_behenate = AgBehenate(powder_img, 
+                                     mask       = mask,
+                                     pixel_size = self.diagnostics.psi.get_pixel_size(),
+                                     wavelength = self.diagnostics.psi.get_wavelength(),)
+            ag_behenate.opt_geom(distance_i   = self.diagnostics.psi.estimate_distance(),
+                                 n_iterations = 3,
+                                 center_i     = center,
+                                 plot         = plot)
+            return None
 
         else:
             print("Sorry, currently only implemented for silver behenate")

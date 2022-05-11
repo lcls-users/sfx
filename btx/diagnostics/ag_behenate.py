@@ -110,7 +110,7 @@ class AgBehenate:
         opt_distance = self.detector_distance(peaks_predicted[0])
         
         if plot is not None:
-            self.visualize_results(powder, mask=mask, center=self.centers[-1], 
+            self.visualize_results(self.powder, mask=self.mask, center=self.centers[-1], 
                                    peaks_predicted=peaks_predicted, peaks_observed=peaks_observed,
                                    scores=scores, Dq=self.delta_qs,
                                    radialprofile=iprofile, qprofile=qprofile, plot=plot)
@@ -129,7 +129,7 @@ class AgBehenate:
             radii of detected powder peaks in pixels
         """
         # Create a concentric circle model...
-        cx, cy = center
+        cx, cy = self.centers[-1]
         r = peaks_observed
         num = 200
         model = OptimizeConcentricCircles(cx = cx, cy = cy, r = r, num = num)
@@ -138,7 +138,7 @@ class AgBehenate:
         crds_init = crds_init.reshape(2, -1, num)
 
         # Fitting...
-        img = (powder - np.mean(powder)) / np.std(powder)
+        img = (self.powder - np.mean(self.powder)) / np.std(self.powder)
         res = model.fit(img)
         model.report_fit(res)
         crds = model.crds
@@ -170,13 +170,13 @@ class AgBehenate:
         """
         self.distances.append(distance_i)
         if center_i is None:
-            self.centers.append((int(powder.shape[1]/2), int(powder.shape[0]/2)))
+            self.centers.append((int(self.powder.shape[1]/2), int(self.powder.shape[0]/2)))
         else:
             self.centers.append(center_i)
             
         for niter in range(n_iterations):
-            peaks_pred, peaks_obs = self.opt_distance(plot=plot)
-            self.opt_center(peaks_pred, peaks_obs)
+            peaks_obs = self.opt_distance(plot=plot)
+            self.opt_center(peaks_obs)
     
     def visualize_results(self, image, mask=None, vmax=None,
                           center=None, peaks_predicted=None, peaks_observed=None,
