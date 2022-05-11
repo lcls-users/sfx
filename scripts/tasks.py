@@ -100,6 +100,7 @@ def opt_geom(config):
     logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
     dist = geom_opt.opt(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
                         center=task.center,
+                        mask=mask_file,
                         plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'))
     logger.info(f'Detector distance inferred from powder rings: {dist} mm')
     geom_in = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
