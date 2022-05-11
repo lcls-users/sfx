@@ -121,13 +121,29 @@ def q2pix(qvals, wavelength, distance, pixel_size):
 class ConcentricCircles:
 
     def __init__(self, cx, cy, r, num = 100):
+        """
+        Initialize object of concentric circles.
+
+        Parameters
+        ----------
+        cx : float
+            Beam center position in pixels along x-axis (axis = 1 in numpy format)
+        cy : float
+            Beam center position in pixels along y-axis
+        r  : List or float
+            List of radii for all concentric circles in pixels
+        num : int
+            Number of pixels sampled from a circle
+        """
         super().__init__()
 
-        self.cx  = cx                                # Beam center position in pixels along x-axis (axis = 1 in numpy format)
-        self.cy  = cy                                # Beam center position in pixels along y-axis
-        self.r   = np.array([r]).reshape(-1)         # List of radii for all concentric circles in pixels
-        self.num = num                               # Number of pixels sampled from a circle
+        self.cx  = cx
+        self.cy  = cy
+        self.r   = np.array([r]).reshape(-1)
+        self.num = num
         self.crds = np.zeros((2, num * len(self.r))) # Coordinates where pixels are sampled from all circles.  Unit is pixel.  2 is the size of (x, y)
+
+        return None
 
 
     def generate_crds(self):
@@ -163,6 +179,11 @@ class ConcentricCircles:
         ----------
         img : numpy.ndarray
             a powder image
+
+        Returns
+        -------
+        pvals : numpy.ndarray of pixel values.
+            pixel values at all location specified in self.crds
         """
         pvals = map_coordinates(img, self.crds)
 
@@ -184,10 +205,16 @@ class OptimizeConcentricCircles(ConcentricCircles):
         # Set up radius parameter based on number of circles...
         for i in range(len(r)): self.params.add(f"r{i:d}" , value = r[i] )
 
+        return None
+
 
     def init_params(self):
         """
         Initialize parameters for optimization.
+
+        Returns
+        -------
+        parameters : diciontary of parameters along with their initial values
         """
         return lmfit.Parameters()
 
@@ -200,6 +227,10 @@ class OptimizeConcentricCircles(ConcentricCircles):
         ----------
         params : dictionary
             parameters for optimization
+
+        Returns
+        -------
+        list of parameter values
         """
         return [ v.value  for _, v in params.items() ]
 
@@ -216,6 +247,10 @@ class OptimizeConcentricCircles(ConcentricCircles):
             a powder image
         kwargs : dictionary
             additional key-value arguments
+
+        Returns
+        -------
+        pvals : numpy.ndarray of pixel values subtracted by the max pixel value in the image
         """
         parvals = self.unpack_params(params)
         self.cx, self.cy = parvals[:2]
@@ -238,6 +273,10 @@ class OptimizeConcentricCircles(ConcentricCircles):
         ----------
         img : numpy.ndarray
             a powder image
+
+        Returns
+        -------
+        res : dictionary of optimization details (e.g. params, residual)
         """
         print(f"___/ Fitting \___")
         res = lmfit.minimize( self.residual_model,
@@ -260,3 +299,5 @@ class OptimizeConcentricCircles(ConcentricCircles):
             dictionary of optimization details
         """
         lmfit.report_fit(res)
+
+        return None
