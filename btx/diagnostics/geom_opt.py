@@ -63,7 +63,7 @@ class GeomOpt:
                                  n_iterations = 3,
                                  center_i     = center,
                                  plot         = plot)
-            return None
+            return ag_behenate.distances[-1]
 
         else:
             print("Sorry, currently only implemented for silver behenate")
