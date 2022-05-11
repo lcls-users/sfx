@@ -1,5 +1,8 @@
 import numpy as np
+import lmfit
+from math import sqrt
 from scipy.signal import sosfiltfilt, butter
+from scipy.ndimage import map_coordinates
 
 def get_radius_map(shape, center=None):
     """
@@ -111,3 +114,149 @@ def q2pix(qvals, wavelength, distance, pixel_size):
     """
     pix = np.arcsin(qvals*wavelength/2.)
     return 2*distance*pix/pixel_size
+
+
+
+
+class ConcentricCircles:
+
+    def __init__(self, cx, cy, r, num = 100):
+        super().__init__()
+
+        self.cx  = cx                                # Beam center position in pixels along x-axis (axis = 1 in numpy format)
+        self.cy  = cy                                # Beam center position in pixels along y-axis
+        self.r   = np.array([r]).reshape(-1)         # List of radii for all concentric circles in pixels
+        self.num = num                               # Number of pixels sampled from a circle
+        self.crds = np.zeros((2, num * len(self.r))) # Coordinates where pixels are sampled from all circles.  Unit is pixel.  2 is the size of (x, y)
+
+
+    def generate_crds(self):
+        """
+        Generate coordinates of sample points along each concentric circle
+        """
+        # Fetching initial values that define concentric circles...
+        cx = self.cx
+        cy = self.cy
+        r  = np.array([self.r]).reshape(-1, 1) # Facilitate broadcasting in calculting crds_x and crds_y
+
+        # Find all theta values for generating coordinates of sample points...
+        theta = np.linspace(0.0, 2 * np.pi, self.num)
+        if not isinstance(theta, np.ndarray): theta = np.array([theta]).reshape(-1)
+
+        # Generate coordinates...
+        crds_x = r * np.cos(theta) + cx
+        crds_y = r * np.sin(theta) + cy
+
+        # Reshape crds into one flat array to facilitate optimization routine...
+        self.crds[1] = crds_x.reshape(-1)
+        self.crds[0] = crds_y.reshape(-1)
+
+        return None
+
+
+    def get_pixel_values(self, img):
+        """
+        Get pixel values from all sample points.  If a sample point has 
+        subpixel coordinates, interpolation will take place.  
+
+        Parameters
+        ----------
+        img : numpy.ndarray
+            a powder image
+        """
+        pvals = map_coordinates(img, self.crds)
+
+        return pvals
+
+
+
+
+class OptimizeConcentricCircles(ConcentricCircles):
+
+    def __init__(self, cx, cy, r, num):
+        super().__init__(cx, cy, r, num)
+
+        # Provide parameters for optimization...
+        self.params = self.init_params()
+        self.params.add("cx", value = cx)
+        self.params.add("cy", value = cy)
+
+        # Set up radius parameter based on number of circles...
+        for i in range(len(r)): self.params.add(f"r{i:d}" , value = r[i] )
+
+
+    def init_params(self):
+        """
+        Initialize parameters for optimization.
+        """
+        return lmfit.Parameters()
+
+
+    def unpack_params(self, params):
+        """
+        Unpack all parameters from dictionary.
+
+        Parameters
+        ----------
+        params : dictionary
+            parameters for optimization
+        """
+        return [ v.value  for _, v in params.items() ]
+
+
+    def residual_model(self, params, img, **kwargs):
+        """
+        Calculate the residual for least square optimization.
+
+        Parameters
+        ----------
+        params : dictionary
+            parameters for optimization
+        img : numpy.ndarray
+            a powder image
+        kwargs : dictionary
+            additional key-value arguments
+        """
+        parvals = self.unpack_params(params)
+        self.cx, self.cy = parvals[:2]
+        self.r = parvals[2:]
+
+        self.generate_crds()
+
+        pvals = self.get_pixel_values(img)
+
+        pvals -= img.max()    # Measure the distance from the peak value
+
+        return pvals
+
+
+    def fit(self, img, **kwargs):
+        """
+        Fit the residual model.
+
+        Parameters
+        ----------
+        img : numpy.ndarray
+            a powder image
+        """
+        print(f"___/ Fitting \___")
+        res = lmfit.minimize( self.residual_model,
+                              self.params,
+                              method     = 'leastsq',
+                              nan_policy = 'omit',
+                              args       = (img, ),
+                              **kwargs )
+
+        return res
+
+
+    def report_fit(self, res):
+        """
+        Report details of the optimization.
+
+        Parameters
+        ----------
+        res : dictionary
+            dictionary of optimization details
+        """
+        lmfit.report_fit(res)
