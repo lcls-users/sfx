@@ -7,7 +7,7 @@ setup:
   event_receiver: 'evr0'
   event_code: 205
   event_logic: True
-  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/cco.cell'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/tr_all.cell'
 
 fetch_mask:
   dataset: '/entry_1/data_1/mask'
@@ -49,7 +49,7 @@ index:
   tag: 'light'
   int_radius: '3,4,5'
   methods: 'mosflm,xds,xgandalf'
-  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/cco.cell'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/tr_all.cell'
   tolerance: '5,5,5,1.5'
   no_revalidate: True
   multi: True

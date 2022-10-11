@@ -2,13 +2,12 @@ setup:
   queue: 'anaq'
   root_dir: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/'
   exp: 'mfxlx5520'
-  run: 146
+  run: 25
   det_type: 'Rayonix'
   event_receiver: 'evr0'
   event_code: 205
-  event_logic: False
-  which_dark: 1
-  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/tr_all.cell'
+  event_logic: True
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/ltp.cell'
 
 fetch_mask:
   dataset: '/entry_1/data_1/mask'
@@ -30,7 +29,7 @@ opt_geom:
   threshold: 1000000
 
 find_peaks:
-  tag: 'dark1'
+  tag: 'ltp_light'
   psana_mask: False
   min_peaks: 10
   max_peaks: 2048
@@ -46,39 +45,30 @@ find_peaks:
 
 index:
   ncores: 48
-  tag_cxi: 'dark1'
-  tag: 'dark1'
+  tag_cxi: 'ltp_light'
+  tag: 'ltp_light'
   int_radius: '3,4,5'
   methods: 'mosflm,xds,xgandalf'
-  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/tr_all.cell'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/ltp.cell'
   tolerance: '5,5,5,1.5'
   no_revalidate: True
   multi: True
   profile: True
 
 stream_analysis:
-  tag: 'dark1'
+  tag: 'ltp_light'
   cell_only: True
 
 merge:
-  tag: 'dark1'
+  tag: 'ltp_light'
   symmetry: '2/m_uab'
   iterations: 1
   model: 'unity'
   foms: 'CCstar Rsplit'
   nshells: 10
-  highres: 2.0
+  highres: 2.1
 
 solve:
-  tag: 'dark1'
+  tag: 'ltp_light'
   pdb: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/5NDC.pdb'
-
-refine_center:
-  runs: 146 290 5
-  dx: -2 2 5
-  dy: -2 2 5
- 
-refine_distance:
-  runs: 146 290
-  dz: -0.002 0.002 5
 
