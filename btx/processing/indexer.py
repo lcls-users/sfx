@@ -83,7 +83,7 @@ class Indexer:
         if addl_command is not None:
             command += f"\n{addl_command}"
 
-        js = JobScheduler(self.tmp_exe, ncores=self.ncores, jobname=f'idx_r{self.run:04}', queue=self.queue, time='1:00:00')
+        js = JobScheduler(self.tmp_exe, ncores=self.ncores, jobname=f'idx_r{self.run:04}', queue=self.queue, time='2:00:00')
         js.write_header()
         js.write_main(command, dependencies=['crystfel', 'xds', 'xgandalf'])
         js.clean_up()
