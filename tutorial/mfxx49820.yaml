@@ -1,8 +1,8 @@
 setup:
-  queue: ffbh3q
+  queue: 'anaq'
   root_dir: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/'
   exp: 'mfxx49820'
-  run: 8
+  run: 15
   det_type: 'epix10k2M'
 
 fetch_mask:
@@ -41,34 +41,44 @@ find_peaks:
   nsigm: 10.0
 
 index:
-  tag: 'sample1'
+  time: '3:00:00'
+  ncores: 64
+  tag: 'sample2'
   int_radius: '3,4,5'
   methods: 'mosflm'
   tolerance: '5,5,5,1.5'
   no_revalidate: True
   multi: True
   profile: True
+  cell: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/cell/sample2.cell'
 
 stream_analysis:
-  tag: 'sample1'
+  tag: 'sample2'
 
 determine_cell:
-  tag: 'sample1'
+  tag: 'sample2'
 
 merge:
-  tag: 'sample1'
-  symmetry: '2/m_uab'
+  tag: 'sample2'
+  symmetry: '4/mmm_uac'
   iterations: 1
   model: 'unity'
   foms: 'CCstar Rsplit'
   nshells: 10
-  highres: 2.5
+  highres: 1.6
+
+solve:
+  tag: 'sample2'
+  pdb: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/cell/193l.pdb'
 
 refine_center:
-  runs: 6 6
+  runs: 16 33
   dx: -1 1 3
   dy: -1 1 3
  
 refine_distance:
-  runs: 6 6 1
-  dz: -0.02 0.02 5
+  runs: 16 33 1
+  dz: -0.001 0.001 5
+
+elog_display:
+

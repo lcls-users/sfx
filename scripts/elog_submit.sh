@@ -94,6 +94,11 @@ esac
 
 QUEUE=${QUEUE:='ffbh3q'}
 CORES=${CORES:=1}
+# TODO: find_peaks needs to be handled from ischeduler. For now we do this...
+if [ ${TASK} != 'find_peaks' ]; then
+  CORES=1
+fi
+
 EXPERIMENT=${EXPERIMENT:='None'}
 RUN_NUM=${RUN_NUM:='None'}
 THIS_CONFIGFILE=${CONFIGFILE}
@@ -110,7 +115,13 @@ MAIN_PY="/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/python ${MAIN_PY}"
 fi
 
 UUID=$(cat /proc/sys/kernel/random/uuid)
-TMP_EXE="${SCRIPT_DIR}/task_${UUID}.sh"
+if [ "${HOME}" == '' ]; then
+  TMP_DIR="${SCRIPT_DIR}"
+else
+  TMP_DIR="${HOME}/.btx/"
+fi
+mkdir -p $TMP_DIR
+TMP_EXE="${TMP_DIR}/task_${UUID}.sh"
 
 #Submit to SLURM
 sbatch << EOF

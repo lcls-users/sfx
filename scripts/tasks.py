@@ -134,7 +134,8 @@ def find_peaks(config):
     pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, xtc_dir=setup.xtc_dir, outdir=os.path.join(taskdir ,f"r{setup.run:04}"),
                     tag=task.tag, mask=mask_file, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr, 
-                    son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm)
+                    son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm,
+                    calibdir=task.get('calibdir'))
     logger.debug(f'Performing peak finding for run {setup.run} of {setup.exp}...')
     pf.find_peaks()
     pf.curate_cxi()
@@ -156,7 +157,8 @@ def index(config):
     geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
     indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir, 
                           geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate, 
-                          multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64)
+                          multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64,
+                          time=task.get('time') if task.get('time') is not None else '1:00:00')
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.launch()
     logger.info(f'Indexing launched!')
@@ -182,7 +184,7 @@ def stream_analysis(config):
         write_cell_file(st.cell_params, os.path.join(celldir, f"{task.tag}.cell"), input_file=setup.get('cell'))
         logger.info(f'Wrote updated CrystFEL cell file to {celldir}')
         stream_cat = os.path.join(taskdir, f"{task.tag}.stream")
-        os.system(f"cat {stream_files} >> {stream_cat}")
+        os.system(f"cat {stream_files} > {stream_cat}")
         logger.info(f'Concatenated all stream files to {task.tag}.stream')
         logger.debug('Done!')
 
@@ -222,7 +224,8 @@ def merge(config):
     stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile, queue=setup.get('queue'), 
                                 ncores=task.get('ncores') if task.get('ncores') is not None else 16, 
                                 mtz_dir=os.path.join(setup.root_dir, "solve", f"{task.tag}"))
-    stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model, min_res=task.get('min_res'), push_res=task.get('push_res'))
+    stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model, 
+                                  min_res=task.get('min_res'), push_res=task.get('push_res'), max_adu=task.get('max_adu'))
     for ns in [1, task.nshells]:
         stream_to_mtz.cmd_compare_hkl(foms=foms, nshells=ns, highres=task.get('highres'))
     stream_to_mtz.cmd_get_hkl(highres=task.get('highres'))
@@ -260,6 +263,9 @@ def refine_geometry(config, task=None):
     if len(task.runs) == 2:
         task.runs = (*task.runs, 1)
     geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=task.runs[0])
+    cell_file = os.path.join(config.setup.root_dir, "cell", f"{config.index.tag}.cell")
+    if not os.path.isfile(cell_file):
+        cell_file = config.index.get('cell')
     logger.info(f'Scanning around geometry file {geom_file}')
     geopt = Geoptimizer(setup.queue,
                         taskdir,
@@ -269,7 +275,7 @@ def refine_geometry(config, task=None):
                         task.dx,
                         task.dy,
                         task.dz)
-    geopt.launch_indexing(setup.exp, setup.det_type, config.index)
+    geopt.launch_indexing(setup.exp, setup.det_type, config.index, cell_file)
     geopt.launch_stream_analysis(config.index.cell)    
     geopt.launch_merging(config.merge)
     geopt.save_results(setup.root_dir, config.merge.tag)
@@ -297,3 +303,20 @@ def refine_distance(config):
     task.dz = tuple([float(elem) for elem in task.dz.split()])
     task.dz = np.linspace(task.dz[0], task.dz[1], int(task.dz[2]))
     refine_geometry(config, task)
+
+def elog_display(config):
+    from btx.interfaces.ielog import eLogInterface
+    setup = config.setup
+    """ Updates the summary page in the eLog with most recent results. """
+    logger.info(f'Updating the reports in the eLog summary tab.')
+    eli = eLogInterface(setup)
+    eli.update_summary()
+    logger.debug('Done!')
+
+def clean_up(config):
+    setup = config.setup
+    task = config.clean_up
+    taskdir = os.path.join(setup.root_dir, 'index')
+    if os.path.isdir(taskdir):
+        os.system(f"rm -f {taskdir}/r*/*{task.tag}.cxi")
+    logger.debug('Done!')

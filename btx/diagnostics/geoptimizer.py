@@ -83,7 +83,7 @@ class Geoptimizer:
                         break                    
                 time.sleep(self.frequency)
 
-    def launch_indexing(self, exp, det_type, params):
+    def launch_indexing(self, exp, det_type, params, cell_file):
         """                                                                                         
         Launch indexing jobs.                                                        
 
@@ -95,6 +95,8 @@ class Geoptimizer:
             name of detector
         params : btx.misc.shortcuts.AttrDict 
             config.index object containing indexing parameters
+        cell_file : str 
+            path to cell file 
         """
         jobnames = list()
         statusfile = os.path.join(self.scan_dir,"status.sh")
@@ -110,8 +112,9 @@ class Geoptimizer:
                 gfile = os.path.join(self.scan_dir, f"geom/shift{num}.geom")
 
                 idxr = Indexer(exp=exp, run=run, det_type=det_type, tag=params.tag, tag_cxi=params.get('tag_cxi'), taskdir=self.task_dir, 
-                               geom=gfile, cell=params.get('cell'), int_rad=params.int_radius, methods=params.methods, tolerance=params.tolerance, no_revalidate=params.no_revalidate, 
-                               multi=params.multi, profile=params.profile, queue=self.queue, ncores=params.get('ncores') if params.get('ncores') is not None else 64)
+                               geom=gfile, cell=cell_file, int_rad=params.int_radius, methods=params.methods, tolerance=params.tolerance, no_revalidate=params.no_revalidate, 
+                               multi=params.multi, profile=params.profile, queue=self.queue, ncores=params.get('ncores') if params.get('ncores') is not None else 64,
+                               time=params.get('time') if params.get('time') is not None else '1:00:00')
                 idxr.tmp_exe = jobfile
                 idxr.stream = stream
                 idxr.launch(addl_command=f"echo {jobname} | tee -a {statusfile}\n",
@@ -301,7 +304,10 @@ if __name__ == '__main__':
                         np.linspace(params.dy[0], params.dy[1], int(params.dy[2])),
                         np.linspace(params.dz[0], params.dz[1], int(params.dz[2])))
     if not params.merge_only:
-        geopt.launch_indexing(config.setup.exp, config.setup.det_type, config.index)
-        geopt.launch_stream_analysis(config.index.cell)
+        cell_file = os.path.join(config.setup.root_dir, "cell", f"{config.index.tag}.cell")
+        if not os.path.isfile(cell_file):
+            cell_file = config.index.get('cell')
+        geopt.launch_indexing(config.setup.exp, config.setup.det_type, config.index, cell_file)
+        geopt.launch_stream_analysis(cell_file)
     geopt.launch_merging(config.merge)
     geopt.save_results(config.setup.root_dir, config.merge.tag)

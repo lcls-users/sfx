@@ -17,10 +17,10 @@ dag = DAG(
 
 # Tasks SETUP
 task_id='find_peaks'
-find_peaks = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+find_peaks = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 task_id='index'
-index = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+index = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 # Draw the DAG
 find_peaks >> index

@@ -12,7 +12,8 @@ class Indexer:
     """
 
     def __init__(self, exp, run, det_type, tag, taskdir, geom, cell=None, int_rad='4,5,6', methods='mosflm',
-                 tolerance='5,5,5,1.5', tag_cxi=None, no_revalidate=True, multi=True, profile=True, ncores=64, queue='ffbh3q'):
+                 tolerance='5,5,5,1.5', tag_cxi=None, no_revalidate=True, multi=True, profile=True,
+                 ncores=64, queue='ffbh3q', time='1:00:00'):
         
         # experiment parameters
         self.exp = exp
@@ -36,6 +37,7 @@ class Indexer:
         # submission parameters
         self.ncores = ncores # int, number of cores to parallelize indexing across
         self.queue = queue # str, submission queue
+        self.time = time # str, time limit
         self._retrieve_paths()
 
     def _retrieve_paths(self):
@@ -83,9 +85,9 @@ class Indexer:
         if addl_command is not None:
             command += f"\n{addl_command}"
 
-        js = JobScheduler(self.tmp_exe, ncores=self.ncores, jobname=f'idx_r{self.run:04}', queue=self.queue, time='1:00:00')
+        js = JobScheduler(self.tmp_exe, ncores=self.ncores, jobname=f'idx_r{self.run:04}', queue=self.queue, time=self.time)
         js.write_header()
-        js.write_main(command, dependencies=['crystfel', 'xds'])
+        js.write_main(command, dependencies=['crystfel', 'xds', 'xgandalf'])
         js.clean_up()
         js.submit()
         print(f"Indexing executable written to {self.tmp_exe}")
@@ -159,6 +161,7 @@ def parse_input():
     parser.add_argument('--profile', help='Display timing data', action='store_false')
     parser.add_argument('--ncores', help='Number of cores for parallelizing indexing', required=False, type=int, default=64)
     parser.add_argument('--queue', help='Submission queue', required=False, type=str, default='ffbh3q')
+    parser.add_argument('--time', help='Time limit', required=False, type=str, default='1:00:00')
 
     return parser.parse_args()
 
@@ -168,7 +171,8 @@ if __name__ == '__main__':
     
     indexer_obj = Indexer(exp=params.exp, run=params.run, det_type=params.det_type, tag=params.tag, taskdir=params.taskdir, geom=params.geom, 
                           cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, tag_cxi=params.tag_cxi,
-                          no_revalidate=params.no_revalidate, multi=params.multi, profile=params.profile, ncores=params.ncores, queue=params.queue)
+                          no_revalidate=params.no_revalidate, multi=params.multi, profile=params.profile, ncores=params.ncores, queue=params.queue,
+                          time=params.time)
     if not params.report:
         indexer_obj.launch()
     else:

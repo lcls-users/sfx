@@ -21,11 +21,13 @@ class JIDSlurmOperator( BaseOperator ):
   locations = {
     'SLAC': "http://psdm02:8446/jid_slac/jid/ws/",
     'SRCF_FFB': "http://drp-srcf-mds001:8446/jid_srcf_ffb/jid/ws/",
+    'NERSC': "http://psdm02:8446/jid_nersc/jid/ws/"
   }
 
   btx_locations = {
     'SLAC': "/cds/sw/package/autosfx/btx/",
     'SRCF_FFB': "/cds/sw/package/autosfx/btx/",
+    'NERSC': "/global/cfs/cdirs/lcls/btx/"
   }
   # "/sdf/group/lcls/ds/sw/autosfx/btx/",
 
@@ -38,7 +40,7 @@ class JIDSlurmOperator( BaseOperator ):
   @apply_defaults
   def __init__(self,
       user=getpass.getuser(),
-      run_at='SLAC',
+      #run_at='SLAC',
       slurm_script=None,
       poke_interval=30,
       *args, **kwargs ):
@@ -46,11 +48,12 @@ class JIDSlurmOperator( BaseOperator ):
     super(JIDSlurmOperator, self).__init__(*args, **kwargs)
 
     self.user = user
-    self.run_at = run_at
-    if slurm_script is None:
-      self.slurm_script = self.get_slurm_script()
-    else:
-      self.slurm_script = slurm_script
+    #self.run_at = run_at
+    #if slurm_script is None:
+    #  self.slurm_script = self.get_slurm_script()
+    #else:
+    #  self.slurm_script = slurm_script
+    self.slurm_script = slurm_script
     self.poke_interval = poke_interval
 
   def create_control_doc( self, context):
@@ -86,28 +89,33 @@ class JIDSlurmOperator( BaseOperator ):
       "def": {
         "_id" : str(uuid.uuid4()),
         "name" : self.task_id,
-        "executable" : self.slurm_script,
+        "executable" : self.get_slurm_script(context),
         "trigger" : "MANUAL",
-        "location" : self.run_at,
+        "location" : self.get_location(context),
         "parameters" : __slurm_parameters__(context.get('dag_run').conf.get('parameters', {}),
                                             self.task_id),
         "run_as_user" : self.user
       }
     }
 
-  def get_slurm_script(self, relative_path=None):
-    if not self.run_at in self.btx_locations:
-      raise AirflowException(f"BTX location {self.run_at} is not configured")
+  def get_location(self, context):
+    return context.get('dag_run').conf.get("ARP_LOCATION")
+
+  def get_slurm_script(self, context, relative_path=None):
+    location = self.get_location(context)
+    if not location in self.btx_locations:
+      raise AirflowException(f"BTX location {location} is not configured")
     if relative_path is None:
-      slurm_script = self.btx_locations[self.run_at] + "scripts/elog_submit.sh"
+      slurm_script = self.btx_locations[location] + "scripts/elog_submit.sh"
     else:
-      slurm_script = self.btx_locations[self.run_at] + f"scripts/{relative_path}"
+      slurm_script = self.btx_locations[location] + f"scripts/{relative_path}"
     return slurm_script
 
-  def get_file_uri( self, filepath ):
-    if not self.run_at in self.locations:
-      raise AirflowException(f"JID location {self.run_at} is not configured")
-    uri = self.locations[self.run_at] + self.endpoints['file'] + filepath
+  def get_file_uri( self, filepath, context ):
+    location = self.get_location(context)
+    if not location in self.locations:
+      raise AirflowException(f"JID location {location} is not configured")
+    uri = self.locations[location] + self.endpoints['file'] + filepath
     return uri
 
   def parse( self, resp ):
@@ -123,7 +131,7 @@ class JIDSlurmOperator( BaseOperator ):
       raise AirflowException(f"Response from JID not parseable: {e}")
 
   def put_file( self, path, content ):
-    uri = self.get_file_uri( path )
+    uri = self.get_file_uri( path , context )
     LOG.info( f"Calling {uri}..." )
     resp = requests.put( uri, data=content, **self.requests_opts )
     v = self.parse( resp )
@@ -133,10 +141,10 @@ class JIDSlurmOperator( BaseOperator ):
 
   def rpc( self, endpoint, control_doc, context, check_for_error=[] ):
 
-    if not self.run_at in self.locations:
-      raise AirflowException(f"JID location {self.run_at} is not configured")
+    if not self.get_location(context) in self.locations:
+      raise AirflowException(f"JID location {self.get_location(context)} is not configured")
 
-    uri = self.locations[self.run_at] + self.endpoints[endpoint]
+    uri = self.locations[self.get_location(context)] + self.endpoints[endpoint]
     uri = uri.format(experiment_name = context.get('dag_run').conf.get('experiment'))
     LOG.info( f"Calling {uri} with {control_doc}..." )
     resp = requests.post( uri, json=control_doc, headers={'Authorization': context.get('dag_run').conf.get('Authorization')} )
@@ -164,7 +172,7 @@ class JIDSlurmOperator( BaseOperator ):
     LOG.info("Queueing slurm job...")
     control_doc = self.create_control_doc( context )
     LOG.info(control_doc)
-    LOG.info(self.locations[self.run_at] + self.endpoints['start_job'])
+    LOG.info(self.locations[self.get_location(context)] + self.endpoints['start_job'])
     msg = self.rpc( 'start_job', control_doc , context)
     LOG.info(f"jobid {msg['tool_id']} successfully submitted!")
     jobs = [ msg, ]

@@ -1,6 +1,8 @@
 import numpy as np
 from types import SimpleNamespace
 import psana
+from psana import setOption
+from psana import EventId
 from psana import *
 try:
     from PSCalib.GeometryAccess import GeometryAccess
@@ -11,7 +13,7 @@ class PsanaInterface:
 
     def __init__(self, exp, run, det_type,
                  event_receiver=None, event_code=None, event_logic=True,
-                 ffb_mode=False, track_timestamps=False):
+                 ffb_mode=False, track_timestamps=False, calibdir=None):
         self.exp = exp # experiment name, str
         self.run = run # run number, int
         self.det_type = det_type # detector name, str
@@ -20,10 +22,10 @@ class PsanaInterface:
         self.event_receiver = event_receiver # 'evr0' or 'evr1', str
         self.event_code = event_code # event code, int
         self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
-        self.set_up(det_type, ffb_mode)
+        self.set_up(det_type, ffb_mode, calibdir)
         self.counter = 0
 
-    def set_up(self, det_type, ffb_mode):
+    def set_up(self, det_type, ffb_mode, calibdir=None):
         """
         Instantiate DataSource and Detector objects; use the run 
         functionality to retrieve all psana.EventTimes.
@@ -34,6 +36,8 @@ class PsanaInterface:
             detector type, e.g. epix10k2M or jungfrau4M
         ffb_mode : bool
             if True, set up in an FFB-compatible style
+        calibdir: str
+            directory to alternative calibration files
         """
         ds_args=f'exp={self.exp}:run={self.run}:idx'
         if ffb_mode:
@@ -46,6 +50,8 @@ class PsanaInterface:
         self.runner = next(self.ds.runs())
         self.times = self.runner.times()
         self.max_events = len(self.times)
+        if calibdir is not None:
+            setOption('psana.calib_dir', calibdir)
         self._calib_data_available()
 
     def _calib_data_available(self):
@@ -108,8 +114,11 @@ class PsanaInterface:
         """
         ebeam = psana.Detector('EBeam')
         photon_energy = ebeam.get(evt).ebeamPhotonEnergy()
-        lambda_m =  1.23984197386209e-06 / photon_energy # convert to meters using e=hc/lambda
-        return lambda_m * 1e10
+        if np.isinf(photon_energy):
+            return self.get_wavelength()
+        else:
+            lambda_m =  1.23984197386209e-06 / photon_energy # convert to meters using e=hc/lambda
+            return lambda_m * 1e10
 
     def estimate_distance(self):
         """

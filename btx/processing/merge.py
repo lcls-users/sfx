@@ -52,7 +52,7 @@ class StreamtoMtz:
         self.prefix = os.path.basename(self.stream).split("stream")[0][:-1]
         self.outhkl = os.path.join(self.hkl_dir, f"{self.prefix}.hkl")
 
-    def cmd_partialator(self, iterations=1, model='unity', min_res=None, push_res=None):
+    def cmd_partialator(self, iterations=1, model='unity', min_res=None, push_res=None, max_adu=None):
         """
         Write command to merge reflection data using CrystFEL's partialator.
         https://www.desy.de/~twhite/crystfel/manual-partialator.html.
@@ -69,12 +69,16 @@ class StreamtoMtz:
             resolution threshold for merging crystals in Angstrom
         push_res : float
             resolution threshold for merging reflections, up to push_res better than crystal's min_res
+        max_adu : float
+            intensity threshold for excluding saturated peaks
         """        
         command=f"partialator -j {self.ncores} -i {self.stream} -o {self.outhkl} --iterations={iterations} -y {self.symmetry} --model={model}"
         if min_res is not None:
             command += f" --min-res={min_res}"
             if push_res is not None:
-                command += f" --push-res={push_res}"        
+                command += f" --push-res={push_res}"
+        if max_adu is not None:
+            command += f" --max_adu={max_adu}"
         self.js.write_main(f"{command}\n", dependencies=['crystfel'])
             
     def cmd_compare_hkl(self, foms=['CCstar','Rsplit'], nshells=10, highres=None):
@@ -238,6 +242,7 @@ def parse_input():
     parser.add_argument('--iterations', default=1, type=int, help='Number of cycles of scaling and post-refinement to perform')
     parser.add_argument('--min_res', required=False, type=float, help='Minimum resolution for crystal to be merged')
     parser.add_argument('--push_res', required=False, type=float, help='Maximum resolution beyond min_res for reflection to be merged')
+    parser.add_argument('--max_adu', required=False, type=float, help='Intensity cut-off for excluding saturated peaks')
     # arguments for computing figures of merit
     parser.add_argument('--foms', required=False, default=['CCstar', 'Rsplit'], type=str, nargs='+', help='Figures of merit to calculate')
     parser.add_argument('--nshells', required=False, type=int, default=10, help='Number of resolution shells for computing figures of merit')
@@ -260,7 +265,7 @@ if __name__ == '__main__':
                                 ncores=params.ncores, queue=params.queue, mtz_dir=params.mtz_dir)
     if not params.report:
         stream_to_mtz.cmd_partialator(iterations=params.iterations, model=params.model, 
-                                      min_res=params.min_res, push_res=params.push_res)
+                                      min_res=params.min_res, push_res=params.push_res, max_adu=params.max_adu)
         for ns in [1, params.nshells]:
             stream_to_mtz.cmd_compare_hkl(foms=params.foms, nshells=ns, highres=params.highres)
         stream_to_mtz.cmd_report(foms=params.foms, nshells=params.nshells)

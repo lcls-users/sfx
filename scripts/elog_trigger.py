@@ -42,6 +42,7 @@ if __name__ == '__main__':
             "run_id": str(run_num) + datetime.datetime.utcnow().isoformat(),
             "JID_UPDATE_COUNTERS": os.environ["JID_UPDATE_COUNTERS"],
             "ARP_ROOT_JOB_ID": os.environ["ARP_JOB_ID"],
+            "ARP_LOCATION": os.environ["ARP_LOCATION"],
             "Authorization": auth_header,
             "user": getpass.getuser(),
             "parameters": {

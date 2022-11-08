@@ -64,11 +64,14 @@ class JobScheduler:
         if "crystfel" in dependencies:
             dep_paths += "export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH\n"
         if "ccp4" in dependencies:
-            dep_paths += "source /cds/sw/package/ccp4/ccp4-7.0/setup-scripts/ccp4.setup-sh"
+            dep_paths += "source /cds/sw/package/ccp4/ccp4-7.0/setup-scripts/ccp4.setup-sh\n"
         if "phenix" in dependencies:
             dep_paths += "source /cds/sw/package/phenix-1.13-2998/phenix_env.sh\n"
         if "xds" in dependencies:
-            dep_paths += "export PATH=/reg/common/package/XDS-INTEL64_Linux_x86_64:$PATH"
+            dep_paths += "export PATH=/reg/common/package/XDS-INTEL64_Linux_x86_64:$PATH\n"
+        if "xgandalf" in dependencies:
+            dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/:$PATH\n"
+            dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/eigen3/Eigen/:$PATH"
         dep_paths += "\n"
         
         with open(self.jobfile, 'a') as jfile:

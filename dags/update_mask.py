@@ -18,7 +18,7 @@ dag = DAG(
 # Tasks SETUP
 
 task_id='build_mask'
-build_mask = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+build_mask = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 # Draw the DAG
 build_mask

@@ -18,10 +18,10 @@ dag = DAG(
 # Tasks SETUP
 
 task_id='fetch_mask'
-fetch_mask = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+fetch_mask = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 task_id='fetch_geom'
-fetch_geom = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+fetch_geom = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 # Draw the DAG
 fetch_mask

@@ -532,6 +532,7 @@ def parse_input():
     parser.add_argument('--r0', help='Radius of ring for background evaluation in pixels', required=False, type=float, default=3.0)
     parser.add_argument('--dr', help='Width of ring for background evaluation in pixels', required=False, type=float, default=2.0)
     parser.add_argument('--nsigm', help='Intensity threshold to include pixel in connected group', required=False, type=float, default=7.0)
+    parser.add_argument('--calibdir', help='Alternative calibration directory', required=False, type=str)
     
     return parser.parse_args()
 
@@ -541,7 +542,8 @@ if __name__ == '__main__':
     pf = PeakFinder(exp=params.exp, run=params.run, det_type=params.det_type, xtc_dir=params.xtc_dir, outdir=params.outdir,
                     clen=params.clen, tag=params.tag, mask=params.mask, min_peaks=params.min_peaks, max_peaks=params.max_peaks,
                     npix_min=params.npix_min, npix_max=params.npix_max, amax_thr=params.amax_thr, atot_thr=params.atot_thr, 
-                    son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm)
+                    son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm,
+                    calibdir=params.calibdir)
     pf.find_peaks()
     pf.curate_cxi()
     pf.summarize()
