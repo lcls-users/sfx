@@ -1,0 +1,80 @@
+setup:
+  queue: 'anaq'
+  root_dir: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/debug/'
+  exp: 'mfxlx5520'
+  run: 28
+  det_type: 'Rayonix'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/debug/cell/tr_all.cell'
+
+fetch_mask:
+  dataset: '/entry_1/data_1/mask'
+
+fetch_geom:
+
+build_mask:
+  thresholds: -10 5000
+  n_images: 20
+  n_edge: 1
+  combine: True
+
+run_analysis:
+  max_events: -1
+
+opt_geom:
+  n_iterations: 5
+  n_peaks: 3
+  threshold: 1000000
+
+find_peaks:
+  tag: 'ltp_set1'
+  psana_mask: False
+  min_peaks: 10
+  max_peaks: 2048
+  npix_min: 2
+  npix_max: 30
+  amax_thr: 20.
+  atot_thr: 30.
+  son_min: 10.0
+  peak_rank: 5
+  r0: 5.0
+  dr: 2.0
+  nsigm: 10.0
+
+index:
+  ncores: 48
+  tag_cxi: 'ltp_set1'
+  tag: 'ltp_set1'
+  int_radius: '3,4,5'
+  methods: 'mosflm,xds,xgandalf'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/debug/cell/tr_all.cell'
+  tolerance: '5,5,5,1.5'
+  no_revalidate: True
+  multi: True
+  profile: True
+
+stream_analysis:
+  tag: 'ltp_set1'
+  cell_only: False
+
+merge:
+  tag: 'ltp_set1'
+  symmetry: '2/m_uab'
+  iterations: 1
+  model: 'unity'
+  foms: 'CCstar Rsplit'
+  nshells: 10
+  highres: 2.0
+
+solve:
+  tag: 'ltp_set1'
+  pdb: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/debug/cell/5NDC.pdb'
+
+refine_center:
+  runs: 28 56
+  dx: -2 2 5
+  dy: -2 2 5
+ 
+refine_distance:
+  runs: 28 56
+  dz: -0.002 0.002 5
+

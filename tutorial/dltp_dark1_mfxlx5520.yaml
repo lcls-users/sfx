@@ -1,0 +1,75 @@
+setup:
+  queue: 'anaq'
+  root_dir: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/debug/'
+  exp: 'mfxlx5520'
+  run: 28
+  det_type: 'Rayonix'
+  event_receiver: 'evr0'
+  event_code: 205
+  event_logic: False
+  which_dark: 1
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/debug/cell/ltp.cell'
+
+fetch_mask:
+  dataset: '/entry_1/data_1/mask'
+
+fetch_geom:
+
+build_mask:
+  thresholds: -10 5000
+  n_images: 20
+  n_edge: 1
+  combine: True
+
+run_analysis:
+  max_events: -1
+
+opt_geom:
+  n_iterations: 5
+  n_peaks: 3
+  threshold: 1000000
+
+find_peaks:
+  tag: 'ltp_dark1'
+  psana_mask: False
+  min_peaks: 10
+  max_peaks: 2048
+  npix_min: 2
+  npix_max: 30
+  amax_thr: 20.
+  atot_thr: 30.
+  son_min: 10.0
+  peak_rank: 5
+  r0: 5.0
+  dr: 2.0
+  nsigm: 10.0
+
+index:
+  ncores: 48
+  tag_cxi: 'ltp_dark1'
+  tag: 'ltp_dark1'
+  int_radius: '3,4,5'
+  methods: 'mosflm,xds,xgandalf'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/debug/cell/ltp.cell'
+  tolerance: '5,5,5,1.5'
+  no_revalidate: True
+  multi: True
+  profile: True
+
+stream_analysis:
+  tag: 'ltp_dark1'
+  cell_only: True
+
+merge:
+  tag: 'ltp_dark1'
+  symmetry: '2/m_uab'
+  iterations: 1
+  model: 'unity'
+  foms: 'CCstar Rsplit'
+  nshells: 10
+  highres: 2.1
+
+solve:
+  tag: 'ltp_dark1'
+  pdb: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/debug/cell/5NDC.pdb'
+
