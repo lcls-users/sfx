@@ -173,7 +173,7 @@ class Geoptimizer:
             instream = os.path.join(self.scan_dir, f'g{num}.stream')
             cellfile = os.path.join(self.scan_dir, f"cell/g{num}.cell")
             
-            stream_to_mtz = StreamtoMtz(instream, params.symmetry, mergedir, cellfile, queue=self.queue, 
+            stream_to_mtz = StreamtoMtz(instream, params.symmetry, mergedir, cellfile, queue=self.queue, tmp_exe=jobfile,
                                         ncores=params.get('ncores') if params.get('ncores') is not None else 16)
             stream_to_mtz.cmd_partialator(iterations=params.iterations, model=params.model, 
                                           min_res=params.get('min_res'), push_res=params.get('push_res'))
@@ -230,8 +230,8 @@ class Geoptimizer:
         cell_new = os.path.join(root_dir, "cell", f"{tag}.cell")
         
         mtz_opt = os.path.join(self.scan_dir, f"merge/g{num}.mtz")
-        mtz_new = os.path.join(root_dir, "solve", f"{tag}.mtz")
-        os.makedirs(os.path.join(root_dir, "solve"), exist_ok=True)
+        mtz_new = os.path.join(root_dir, "solve", f"{tag}", f"{tag}.mtz")
+        os.makedirs(os.path.join(root_dir, "solve", f"{tag}"), exist_ok=True)
 
         for opt,new in zip([geom_opt,cell_opt,mtz_opt],[geom_new,cell_new,mtz_new]):
             if os.path.exists(new):

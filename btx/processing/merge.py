@@ -14,8 +14,8 @@ class StreamtoMtz:
     including hkl, mtz, dat, and figures, inherit nomenclature from the
     input stream file.
     """
-    
-    def __init__(self, input_stream, symmetry, taskdir, cell, ncores=16, queue='ffbh3q', mtz_dir=None):
+
+    def __init__(self, input_stream, symmetry, taskdir, cell, ncores=16, queue='ffbh3q', tmp_exe=None, mtz_dir=None):
         self.stream = input_stream # file of unmerged reflections, str
         self.symmetry = symmetry # point group symmetry, str
         self.taskdir = taskdir # path for storing output, str
@@ -23,12 +23,17 @@ class StreamtoMtz:
         self.ncores = ncores # int, number of cores for merging
         self.queue = queue # cluster to submit job to
         self.mtz_dir = mtz_dir # directory to which to transfer mtz
-        self._set_up()
+        self._set_up(tmp_exe)
         
-    def _set_up(self):
+    def _set_up(self, tmp_exe):
         """
         Retrieve number of processors to run partialator and the temporary
         file to which to write the command to sbatch.
+
+        Parameters
+        ----------
+        tmp_exe : str
+            path to job submission file
         """
         # generate directories if they don't already exit
         os.makedirs(self.taskdir, exist_ok=True)
@@ -40,9 +45,7 @@ class StreamtoMtz:
             os.makedirs(self.mtz_dir, exist_ok=True)
 
         # make path to executable
-        if "TMP_EXE" in os.environ:
-            tmp_exe = os.environ['TMP_EXE']
-        else:
+        if tmp_exe is None:            
             tmp_exe = os.path.join(self.taskdir ,f'merge.sh')
         self.js = JobScheduler(tmp_exe, ncores=self.ncores, jobname=f'merge', queue=self.queue)
         self.js.write_header()
