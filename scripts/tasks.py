@@ -131,9 +131,8 @@ def find_peaks(config):
     taskdir = os.path.join(setup.root_dir, 'index')
     os.makedirs(taskdir, exist_ok=True)
     mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
-    pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, outdir=os.path.join(taskdir ,f"r{setup.run:04}"),
-                    event_receiver=setup.get('event_receiver'), event_code=setup.get('event_code'), event_logic=setup.get('event_logic'),
-                    tag=task.tag, mask=mask_file, psana_mask=task.psana_mask, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
+    pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, xtc_dir=setup.xtc_dir, outdir=os.path.join(taskdir ,f"r{setup.run:04}"),
+                    tag=task.tag, mask=mask_file, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr, 
                     son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm,
                     calibdir=task.get('calibdir'))

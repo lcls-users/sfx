@@ -5,7 +5,7 @@ import os
 import requests
 from mpi4py import MPI
 from btx.interfaces.psana_interface import *
-from psalgos.pypsalgos import PyAlgos
+from psana.peakFinder.pypsalg import *
 import matplotlib.pyplot as plt
 
 class PeakFinder:
@@ -16,16 +16,19 @@ class PeakFinder:
     https://confluence.slac.stanford.edu/display/PSDM/Hit+and+Peak+Finding+Algorithms
     """
     
-    def __init__(self, exp, run, det_type, outdir, event_receiver=None, event_code=None, event_logic=True,
-                 tag='', mask=None, psana_mask=True, camera_length=None,
-                 min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., atot_thr=120., 
-                 son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0, calibdir=None):
+    def __init__(self, exp, run, det_type, xtc_dir, outdir, clen=None, tag='', mask=None, 
+                 min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., 
+                 atot_thr=120., son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0):
         
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
         self.n_hits_per_rank = []
         self.n_hits_total = 0
+        if self.size > 2:
+            self.root = 2
+        else:
+            self.root = 0
         
         # peak-finding algorithm parameters
         self.npix_min = npix_min # int, min number of pixels in peak
@@ -39,17 +42,14 @@ class PeakFinder:
         self.nsigm = nsigm # intensity threshold to include pixel in connected group, float
         self.min_peaks = min_peaks # int, min number of peaks per image
         self.max_peaks = max_peaks # int, max number of peaks per image
-        self.clen = camera_length # float, clen distance in mm, or str for a pv code
+        self.clen = clen # float, clen distance in mm
         self.outdir = outdir # str, path for saving cxi files
 
         # set up class
-        self.set_up_psana_interface(exp, run, det_type,
-                                    event_receiver, event_code, event_logic, calibdir=calibdir)
-        self.set_up_cxi(tag)
-        self.set_up_algorithm(mask_file=mask, psana_mask=psana_mask)
+        self._set_up(exp, run, det_type, xtc_dir, mask)
+        self._initialize_cxi(tag)
         
-    def set_up_psana_interface(self, exp, run, det_type,
-                               event_receiver=None, event_code=None, event_logic=True, calibdir=None):
+    def _set_up(self, exp, run, det_type, xtc_dir, mask_file=None):
         """
         Set up PsanaInterface object and distribute events between ranks.
         
@@ -61,69 +61,40 @@ class PeakFinder:
             run number
         det_type : str
             detector name, e.g. jungfrau4M or epix10k2M
-        calibdir : str
-            directory to alternative calibration files
+        xtc_dir : str
+            path to xtc2 files
+        mask_file : str
+            path to mask in shape of unassembled detector, optional
         """
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
-                                  event_receiver=event_receiver, event_code=event_code, event_logic=event_logic,
-                                  calibdir=calibdir)
-        self.psi.distribute_events(self.rank, self.size)
-        self.n_events = self.psi.max_events
-
-        # additional self variables for tracking peak stats
-        self.iX = self.psi.det.indexes_x(self.psi.run).astype(np.int64)
-        self.iY = self.psi.det.indexes_y(self.psi.run).astype(np.int64)
+        # set up psana interface and its detector
+        print(f"xtc_dir: {xtc_dir}")
+        self.psi = Psana2Interface(exp, run, det_type, xtc_dir)
+        self.iX = self.psi.det.iX.astype(np.int64)
+        self.iY = self.psi.det.iY.astype(np.int64)
         if det_type == 'Rayonix':
             self.iX = np.expand_dims(self.iX, axis=0)
-            self.iY = np.expand_dims(self.iY, axis=0)
-        print(f"self.iX.shape = {self.iX.shape}")
-            
-        self.ipx, self.ipy = self.psi.det.point_indexes(self.psi.run, pxy_um=(0, 0))
+            self.iY = np.expand_dims(self.iY, axis=0)            
+        self.ipx, self.ipy = self.psi.det.ipx, self.psi.det.ipy
+        self.clen = self.psi.det.clen
 
-        # retrieve clen from psana if None or a PV code is supplied
-        if type(self.clen) != float:
-            self.clen = self.psi.get_camera_length(pv=self.clen)
-            print(f"Value of clen parameter is: {self.clen} mm")
+        self._generate_mask(mask_file)
+        self.n_hits, self.n_events = 0, 0
+        self.powder_hits, self.powder_misses = np.zeros(self.psi.det.shape), np.zeros(self.psi.det.shape)      
 
-    def _generate_mask(self, mask_file=None, psana_mask=True):
+    def _generate_mask(self, mask_file=None):
         """
-        Generate mask, optionally a combination of the psana-generated mask
-        and a user-supplied mask.
+        Generate mask.
         
         Parameters
         ----------
         mask_file : str
             path to mask in shape of unassembled detector, optional
-        psana_mask : bool
-            if True, retrieve mask from psana Detector object
         """
-        mask = np.ones(self.psi.det.shape()).astype(np.uint16)  
-        if psana_mask and self.psi.det_type!='Rayonix':
-            mask = self.psi.det.mask(self.psi.run, calib=False, status=True, 
-                                     edges=False, centra=False, unbond=False, 
-                                     unbondnbrs=False).astype(np.uint16)
+        self.mask = np.ones(self.psi.det.shape).astype(np.uint16)  
         if mask_file is not None:
-            mask *= np.load(mask_file).astype(np.uint16)
+            self.mask *= np.load(mask_file).astype(np.uint16)
         
-        self.mask = mask
-        
-    def set_up_algorithm(self, mask_file=None, psana_mask=True):
-        """
-        Set up the peak-finding algorithm. Currently only the adaptive
-        variant is supported. For more details, see:
-        https://github.com/lcls-psana/psalgos/blob/master/src/pypsalgos.py 
-        """
-        self._generate_mask(mask_file=mask_file, psana_mask=psana_mask)
-        self.alg = PyAlgos(mask=self.mask, pbits=0) # pbits controls verbosity
-        self.alg.set_peak_selection_pars(npix_min=self.npix_min,
-                                         npix_max=self.npix_max,
-                                         amax_thr=self.amax_thr,
-                                         atot_thr=self.atot_thr,
-                                         son_min=self.son_min)
-        self.n_hits = 0
-        self.powder_hits, self.powder_misses = np.zeros(self.psi.det.shape()), np.zeros(self.psi.det.shape())
-
-    def set_up_cxi(self, tag=''):
+    def _initialize_cxi(self, tag=''):
         """
         Set up the CXI files to which peak finding results will be saved.
         
@@ -144,16 +115,16 @@ class PeakFinder:
         entry_1 = outh5.create_group("entry_1")
         keys = ['nPeaks', 'peakXPosRaw', 'peakYPosRaw', 'rcent', 'ccent', 'rmin',
                 'rmax', 'cmin', 'cmax', 'peakTotalIntensity', 'peakMaxIntensity', 'peakRadius']
-        ds_expId = entry_1.create_dataset("experimental_identifier", (self.n_events,), maxshape=(None,), dtype=int)
+        ds_expId = entry_1.create_dataset("experimental_identifier", (10000,), maxshape=(None,), dtype=int)
         ds_expId.attrs["axes"] = "experiment_identifier"
         
         # for storing images in crystFEL format
-        det_shape = self.psi.det.shape()
+        det_shape = self.psi.det.shape
         if self.psi.det_type == 'Rayonix':
             dim0, dim1 = det_shape[0], det_shape[1]
         else:
             dim0, dim1 = det_shape[0] * det_shape[1], det_shape[2]
-        data_1 = entry_1.create_dataset('/entry_1/data_1/data', (self.n_events, dim0, dim1), chunks=(1, dim0, dim1),
+        data_1 = entry_1.create_dataset('/entry_1/data_1/data', (10000, dim0, dim1), chunks=(1, dim0, dim1),
                                         maxshape=(None, dim0, dim1),dtype=np.float32)
         data_1.attrs["axes"] = "experiment_identifier"
         
@@ -163,30 +134,30 @@ class PeakFinder:
         # peak-related keys
         for key in keys:
             if key == 'nPeaks':
-                ds_x = outh5.create_dataset(f'/entry_1/result_1/{key}', (self.n_events,), maxshape=(None,), dtype=int)
+                ds_x = outh5.create_dataset(f'/entry_1/result_1/{key}', (10000,), maxshape=(None,), dtype=int)
                 ds_x.attrs['minPeaks'] = self.min_peaks
                 ds_x.attrs['maxPeaks'] = self.max_peaks
             else:
-                ds_x = outh5.create_dataset(f'/entry_1/result_1/{key}', (self.n_events,self.max_peaks), 
+                ds_x = outh5.create_dataset(f'/entry_1/result_1/{key}', (10000,self.max_peaks), 
                                             maxshape=(None,self.max_peaks), chunks=(1,self.max_peaks), dtype=float)
             ds_x.attrs["axes"] = "experiment_identifier:peaks"
             
         # LCLS dataset to track event timestamps
         lcls_1 = outh5.create_group("LCLS")
-        keys = ['eventNumber', 'machineTime', 'machineTimeNanoSeconds', 'fiducial', 'photon_energy_eV']
+        keys = ['eventNumber', 'photon_energy_eV']
         for key in keys:
             if key == 'photon_energy_eV':
-                ds_x = lcls_1.create_dataset(f'{key}', (self.n_events,), maxshape=(None,), dtype=float)
+                ds_x = lcls_1.create_dataset(f'{key}', (10000,), maxshape=(None,), dtype=float)
             else:
-                ds_x = lcls_1.create_dataset(f'{key}', (self.n_events,), maxshape=(None,), dtype=int)
+                ds_x = lcls_1.create_dataset(f'{key}', (10000,), maxshape=(None,), dtype=int)
             ds_x.attrs["axes"] = "experiment_identifier"
-
-        ds_x = outh5.create_dataset('/LCLS/detector_1/EncoderValue', (self.n_events,), maxshape=(None,), dtype=float)
-        ds_x.attrs["axes"] = "experiment_identifier"
             
+        ds_x = outh5.create_dataset('/LCLS/detector_1/EncoderValue', (10000,), maxshape=(None,), dtype=float)
+        ds_x.attrs["axes"] = "experiment_identifier"
+
         outh5.close()
     
-    def store_event(self, outh5, img, peaks, phot_energy):
+    def store_event(self, outh5, img, peaks, phot_energy, timestamp):
         """
         Store event's peaks in CXI file, converting to Cheetah conventions.
         
@@ -200,10 +171,9 @@ class PeakFinder:
             results of peak finding algorithm for a single event
         phot_energy : float
             photon energy in eV
+        timestamp : int
+            timestamp of event
         """
-        if self.psi.det_type not in ['jungfrau4M', 'epix10k2M']:
-            print("Warning! Reformatting to Cheetah may not be correct")
-        
         ch_rows = peaks[:,0] * img.shape[1] + peaks[:,1]
         ch_cols = peaks[:,2]
         
@@ -225,10 +195,7 @@ class PeakFinder:
         outh5['/entry_1/result_1/peakRadius'][self.n_hits,:peaks.shape[0]] = self._compute_peak_radius(peaks)
         
         # LCLS dataset - currently omitting timetool information
-        outh5['/LCLS/eventNumber'][self.n_hits] = self.psi.counter
-        outh5['/LCLS/machineTime'][self.n_hits] = self.psi.seconds[-1]
-        outh5['/LCLS/machineTimeNanoSeconds'][self.n_hits] = self.psi.nanoseconds[-1]
-        outh5['/LCLS/fiducial'][self.n_hits] = self.psi.fiducials[-1]
+        outh5['/LCLS/eventNumber'][self.n_hits] = timestamp
         outh5['/LCLS/photon_energy_eV'][self.n_hits] = phot_energy
 
     def curate_cxi(self):
@@ -249,7 +216,7 @@ class PeakFinder:
             
         # add clen distance, then crop the LCLS keys
         outh5['/LCLS/detector_1/EncoderValue'][:] = self.clen
-        for key in ['eventNumber', 'machineTime', 'machineTimeNanoSeconds', 'fiducial', 'detector_1/EncoderValue', 'photon_energy_eV']:
+        for key in ['eventNumber', 'photon_energy_eV', 'detector_1/EncoderValue']:
             outh5[f'/LCLS/{key}'].resize((self.n_hits,))
 
         # add powders and mask, reshaping to match crystfel conventions
@@ -295,82 +262,65 @@ class PeakFinder:
         peaks : numpy.ndarray, shape (n_peaks, 17)
             results of peak finding algorithm for this image
         """
-        peaks = self.alg.peak_finder_v3r3(img, rank=self.peak_rank, 
-                                          r0=self.r0, dr=self.dr, nsigm=self.nsigm) 
-        return peaks
+        peaks = peaks_adaptive(img, self.mask, rank=self.peak_rank, r0=self.r0, dr=self.dr, 
+                               nsigm=self.nsigm, npix_min=self.npix_min, npix_max=self.npix_max, 
+                               amax_thr=self.amax_thr, atot_thr=self.atot_thr, son_min=self.son_min)
+        return np.array(list_of_peak_parameters(peaks))
     
     def find_peaks(self):
         """
         Find all peaks in the images assigned to this rank.
         """
         
-        start_idx, end_idx = self.psi.counter, self.psi.max_events
         outh5 = h5py.File(self.fname,"r+")
         empty_images = 0
 
-        for idx in np.arange(start_idx, end_idx):
-
-            # retrieve event and find out if we skip it
-            evt = self.psi.runner.event(self.psi.times[idx])
-            if not self.psi.skip_event(evt):
-
-                # retrieve calibrated image
-                self.psi.get_timestamp(evt.get(EventId))
-                img = self.psi.det.calib(evt=evt)
-                if img is None:
-                    empty_images += 1
-                    continue
-
-                # search for peaks and store if found
-                peaks = self.find_peaks_event(img)
-                if (peaks.shape[0] >= self.min_peaks) and (peaks.shape[0] <= self.max_peaks):
-                    try:
-                        phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength_evt(evt) / 10 / 1.0e9)
-                    except AttributeError:
-                        print(f"AttributeError, evt type: {type(evt)} for event {evt}")
-                        phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength() / 10 / 1.0e9)
-                    self.store_event(outh5, img, peaks, phot_energy)
-                    self.n_hits+=1
+        for nevt, evt in enumerate(self.psi.runner.events()):
+            img = self.psi.detector.raw.raw(evt)
+            if img is None:
+                empty_images += 1
+                continue
                 
-                # generate / update powders
-                if peaks.shape[0] >= self.min_peaks:
-                    if self.powder_hits is None:
-                        self.powder_hits = img
-                    else:
-                        self.powder_hits = np.maximum(self.powder_hits, img)
+            peaks = self.find_peaks_event(img)
+            if (peaks.shape[0] >= self.min_peaks) and (peaks.shape[0] <= self.max_peaks):
+                phot_energy = self.psi.detector.raw.photonEnergy(evt)
+                self.store_event(outh5, img, peaks, phot_energy, evt.timestamp)
+                self.n_hits+=1 
+                
+            self.n_events += 1
+            if peaks.shape[0] >= self.min_peaks:
+                if self.powder_hits is None:
+                    self.powder_hits = img
                 else:
-                    if self.powder_misses is None:
-                        self.powder_misses = img
-                    else:
-                        self.powder_misses = np.maximum(self.powder_misses, img)
-            
-            self.psi.counter+=1
-            if self.psi.counter == self.psi.max_events:
-                break
-
-        outh5.close()
-        self.comm.Barrier()
-
+                    self.powder_hits = np.maximum(self.powder_hits, img)
+            else:
+                if self.powder_misses is None:
+                    self.powder_misses = img
+                else:
+                    self.powder_misses = np.maximum(self.powder_misses, img)
+        
         if empty_images != 0:
             print(f"Rank {self.rank} encountered {empty_images} empty images.")
-
+        outh5.close()
+        self.comm.Barrier()
+                
     def summarize(self):
         """
         Summarize results and write to peakfinding.summary file.
         """
         # grab summary stats
-        self.n_hits_per_rank = self.comm.gather(self.n_hits, root=0)
-        self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM)
-        self.n_events_per_rank = self.comm.gather(self.n_events, root=0)
-        powder_hits_all = np.max(np.array(self.comm.gather(self.powder_hits, root=0)), axis=0)
-        powder_misses_all = np.max(np.array(self.comm.gather(self.powder_misses, root=0)), axis=0)
+        self.n_hits_per_rank = self.comm.gather(self.n_hits, root=self.root)
+        self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM, root=self.root)
+        self.n_events_per_rank = self.comm.gather(self.n_events, root=self.root)
+        powder_hits_all = np.max(np.array(self.comm.gather(self.powder_hits, root=self.root)), axis=0)
+        powder_misses_all = np.max(np.array(self.comm.gather(self.powder_misses, root=self.root)), axis=0)
 
-        if self.rank == 0:
+        if self.rank == 2:
             # write summary file
             with open(os.path.join(self.outdir, f'peakfinding{self.tag}.summary'), 'w') as f:
-                f.write(f"Number of events processed: {self.n_events_per_rank[-1]}\n")
+                f.write(f"Number of events processed: {np.sum(self.n_events_per_rank)}\n")
                 f.write(f"Number of hits found: {self.n_hits_total}\n")
-                f.write(f"Fractional hit rate: {(self.n_hits_total/self.n_events_per_rank[-1]):.2f}\n")
+                f.write(f"Fractional hit rate: {self.n_hits_total/np.sum(self.n_events_per_rank)}\n")
                 f.write(f'No. hits per rank: {self.n_hits_per_rank}')
 
             # add final powders, only needed in first and virtual cxis
@@ -382,19 +332,16 @@ class PeakFinder:
             # generate virtual dataset and list for
             vfname = os.path.join(self.outdir, f'{self.psi.exp}_r{self.psi.run:04}{self.tag}.cxi')
             self.generate_vds(vfname)
-            with open(os.path.join(self.outdir, f'r{self.psi.run:04}{self.tag}.lst'), 'w') as f:
-                f.write(f"{vfname}\n")
 
     def report(self, update_url):
         """
         Post summary to elog.
-
         Parameters
         ----------
         update_url : str
             elog URL for posting progress update
         """
-        if self.rank == 0:
+        if self.rank == 2:
             requests.post(update_url, json=[{ "key": "Number of events processed", "value": f"{self.n_events_per_rank[-1]}" },
                                             { "key": "Number of hits found", "value": f"{self.n_hits_total}"},
                                             { "key": "Fractional hit rate", "value": f"{(self.n_hits_total/self.n_events_per_rank[-1]):.2f}"}, ])
@@ -402,7 +349,6 @@ class PeakFinder:
     def add_virtual_dataset(self, vfname, fnames, dname, shape, dtype, mode='a'):
         """
         Add a virtual dataset to the hdf5 file.
-
         Parameters
         ----------
         vfname : str
@@ -433,7 +379,6 @@ class PeakFinder:
     def generate_vds(self, vfname):
         """
         Generate a virtual dataset to map all individual files for this run.
-
         Parameters
         ----------
         vfname : str
@@ -450,6 +395,9 @@ class PeakFinder:
         if len(fnames) == 0:
             sys.exit("No hits found")
         print(f"Files with peaks: {fnames}")
+        with open(os.path.join(self.outdir, f'r{self.psi.run:04}{self.tag}.lst'), 'w') as f:
+            for fn in fnames:
+                f.write(f"{fn}\n")
 
         # retrieve datasets to populate in virtual hdf5
         dname_list, key_list, shape_list, dtype_list = [], [], [], []
@@ -568,13 +516,11 @@ def parse_input():
     parser.add_argument('-e', '--exp', help='Experiment name', required=True, type=str)
     parser.add_argument('-r', '--run', help='Run number', required=True, type=int)
     parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M',  required=True, type=str)
+    parser.add_argument('-x', '--xtc_dir', help='Path to xtc2 folder', required=True, type=str)
     parser.add_argument('-o', '--outdir', help='Output directory for cxi files', required=True, type=str)
+    parser.add_argument('-c', '--clen', help='Distance between source and camera', required=False, type=float)
     parser.add_argument('-t', '--tag', help='Tag to append to cxi file names', required=False, type=str, default='')
     parser.add_argument('-m', '--mask', help='Binary mask', required=False, type=str)
-    parser.add_argument('--event_receiver', help='Event Receiver to be used: evr0 or evr1', required=False, type=str, default='None')
-    parser.add_argument('--event_code', help='Event code', required=False, type=int, default='None')
-    parser.add_argument('--event_logic', help='True if only the event code is processed. False if it is ignored.', type=bool, default=True)
-    parser.add_argument('--psana_mask', help='If True, apply mask from psana Detector object', required=False, type=bool, default=True)
     parser.add_argument('--min_peaks', help='Minimum number of peaks per image', required=False, type=int, default=2)
     parser.add_argument('--max_peaks', help='Maximum number of peaks per image', required=False, type=int, default=2048)
     parser.add_argument('--npix_min', help='Minimum number of pixels per peak', required=False, type=int, default=2)
@@ -593,9 +539,8 @@ def parse_input():
 if __name__ == '__main__':
     
     params = parse_input()
-    pf = PeakFinder(exp=params.exp, run=params.run, det_type=params.det_type, outdir=params.outdir,
-                    event_receiver=None, event_code=None, event_logic=True, tag=params.tag,
-                    mask=params.mask, psana_mask=params.psana_mask, min_peaks=params.min_peaks, max_peaks=params.max_peaks,
+    pf = PeakFinder(exp=params.exp, run=params.run, det_type=params.det_type, xtc_dir=params.xtc_dir, outdir=params.outdir,
+                    clen=params.clen, tag=params.tag, mask=params.mask, min_peaks=params.min_peaks, max_peaks=params.max_peaks,
                     npix_min=params.npix_min, npix_max=params.npix_max, amax_thr=params.amax_thr, atot_thr=params.atot_thr, 
                     son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm,
                     calibdir=params.calibdir)

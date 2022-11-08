@@ -18,7 +18,7 @@ class JobScheduler:
     def _find_python_path(self):
         """ Determine the relevant python path. """
         pythonpath=None
-        possible_paths = ["/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python"]
+        possible_paths = ["/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/python"]
     
         try:
             pythonpath = os.environ['WHICHPYTHON']
@@ -41,7 +41,8 @@ class JobScheduler:
                         "#SBATCH --error={error}\n"
                         "#SBATCH --ntasks={ncores}\n"
                         "#SBATCH --time={time}\n"
-                        "#SBATCH --exclusive\n\n")
+                        "#SBATCH --exclusive\n\n"
+                        "source /cds/home/a/apeck/btx/btx/conversion/env_psana2.sh\n")
         else:
             raise NotImplementedError('JobScheduler not implemented.')
 

@@ -1,8 +1,13 @@
 import numpy as np
+from types import SimpleNamespace
 import psana
 from psana import setOption
 from psana import EventId
-from PSCalib.GeometryAccess import GeometryAccess
+from psana import *
+try:
+    from PSCalib.GeometryAccess import GeometryAccess
+except ImportError:
+    from psana.pscalib.geometry.GeometryAccess import GeometryAccess
 
 class PsanaInterface:
 
@@ -276,6 +281,41 @@ class PsanaInterface:
                 self.counter += 1
              
         return images
+
+class Psana2Interface:
+    
+    def __init__(self, exp, run, det_type, xtc_dir):
+        self.exp = exp
+        self.run = run
+        self.det_type = det_type
+        self._set_up(xtc_dir)
+    
+    def _set_up(self, xtc_dir):
+        """
+        Set up objects associated with the datasource and detector.
+        The detector class is different in psana2, so its functions
+        are here split between a det variable that houses the pixel
+        mapping information and a detector variable from which the
+        events' images and photon energies can be retrieved.
+        Parameters
+        ----------
+        xtc_dir : str
+            path to the xtc2 data
+        """
+        self.ds = DataSource(exp=self.exp, run=self.run, dir=xtc_dir)
+        self.runner = next(self.ds.runs())
+
+        # extract dgram contents
+        contents = dict()
+        contents['iX'] = self.runner.beginruns[0].scan[0].raw.iX
+        contents['iY'] = self.runner.beginruns[0].scan[0].raw.iY
+        contents['ipx'] = self.runner.beginruns[0].scan[0].raw.ipx
+        contents['ipy'] = self.runner.beginruns[0].scan[0].raw.ipy
+        contents['shape'] = tuple(self.runner.beginruns[0].scan[0].raw.det_shape)
+        contents['clen'] = self.runner.beginruns[0].scan[0].raw.clen
+        
+        self.det = SimpleNamespace(**contents)
+        self.detector = self.runner.Detector(self.det_type)
 
 #### Miscellaneous functions ####
 
