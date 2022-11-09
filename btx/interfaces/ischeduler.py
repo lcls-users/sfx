@@ -34,19 +34,20 @@ class JobScheduler:
     def write_header(self):
         """ Write resource specification to submission script. """
         if(self.manager == 'SLURM'):
-            template = ("#!/bin/bash\n"
+            template = ("#!/bin/bash\n\n"
+                        "#SBATCH --image={image}\n"
                         "#SBATCH -p {queue}\n"
                         "#SBATCH --job-name={jobname}\n"
                         "#SBATCH --output={output}\n"
                         "#SBATCH --error={error}\n"
                         "#SBATCH --ntasks={ncores}\n"
                         "#SBATCH --time={time}\n"
-                        "#SBATCH --exclusive\n\n"
-                        "source /cds/home/a/apeck/btx/btx/conversion/env_psana2.sh\n")
+                        "#SBATCH --exclusive\n\n")
         else:
             raise NotImplementedError('JobScheduler not implemented.')
 
         context = {
+            "image": os.environ['BTX_IMAGE'],
             "queue": self.queue,
             "jobname": self.jobname,
             "output": os.path.join(self.logdir, f"{self.jobname}.out"),
@@ -79,8 +80,8 @@ class JobScheduler:
 
     def write_main(self, application, dependencies=[]):
         """ Write application and source requested dependencies. """
-        if dependencies:
-            self._write_dependencies(dependencies)
+        #if dependencies:
+        #    self._write_dependencies(dependencies)
 
         pythonpath = self._find_python_path()
         with open(self.jobfile, 'a') as jfile:

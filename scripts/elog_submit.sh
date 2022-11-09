@@ -83,16 +83,20 @@ FACILITY=${FACILITY:='SRCF_FFB'}
 case $FACILITY in
   'SLAC')
     SIT_PSDM_DATA_DIR='/cds/data/psdm/'
+    QUEUE=${QUEUE:='psanaq'}
     ;;
   'SRCF_FFB')
     SIT_PSDM_DATA_DIR='/cds/data/drpsrcf/'
+    QUEUE=${QUEUE:='anaq'}
     ;;
+  'NERSC')
+    SIT_PSDM_DATA_DIR='/global/cfs/cdirs/lcls/projecta/lcls/psdm/'
+    QUEUE=${QUEUE:='interactive'}
   *)
     echo "ERROR! $FACILITY is not recognized."
     ;;
 esac
 
-QUEUE=${QUEUE:='ffbh3q'}
 CORES=${CORES:=1}
 # TODO: find_peaks needs to be handled from ischeduler. For now we do this...
 if [ ${TASK} != 'find_peaks' ]; then
@@ -101,18 +105,20 @@ fi
 
 EXPERIMENT=${EXPERIMENT:='None'}
 RUN_NUM=${RUN_NUM:='None'}
+CONFIGFILE="${SIT_PSDM_DATA_DIR}${EXPERIMENT:0:3}/${EXPERIMENT}/scratch/${CONFIGFILE}"
 THIS_CONFIGFILE=${CONFIGFILE}
 if [ ${RUN_NUM} != 'None' ]; then
   THIS_CONFIGFILE="${CONFIGFILE%.*}_${RUN_NUM}.yaml"
 fi
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-MAIN_PY="${SCRIPT_DIR}/main.py"
-if [ ${CORES} -gt 1 ]; then
-MAIN_PY="/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/mpirun ${MAIN_PY}"
-else
-MAIN_PY="/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/python ${MAIN_PY}"
-fi
+#SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+#MAIN_PY="${SCRIPT_DIR}/main.py"
+#if [ ${CORES} -gt 1 ]; then
+#MAIN_PY="/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/mpirun ${MAIN_PY}"
+#else
+#MAIN_PY="/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/python ${MAIN_PY}"
+#fi
+MAIN_PY="srun -n ${CORES} shifter --entrypoint python main.py"
 
 UUID=$(cat /proc/sys/kernel/random/uuid)
 if [ "${HOME}" == '' ]; then
@@ -123,28 +129,24 @@ fi
 mkdir -p $TMP_DIR
 TMP_EXE="${TMP_DIR}/task_${UUID}.sh"
 
+BTX_IMAGE="docker:fpoitevi/psana2nersc:latest"
+
 #Submit to SLURM
 sbatch << EOF
 #!/bin/bash
 
+#SBATCH --image=${BTX_IMAGE}
 #SBATCH -p ${QUEUE}
 #SBATCH -t 10:00:00
 #SBATCH --exclusive
 #SBATCH --job-name ${TASK}
 #SBATCH --ntasks=${CORES}
 
-source /cds/home/a/apeck/btx/btx/conversion/env_psana2.sh
-export PS_SMD_CHUNKSIZE=64000000
-conda env list | grep '*'
-which mpirun
-which python
+export BTX_IMAGE=${BTX_IMAGE}
 export SIT_PSDM_DATA=${SIT_PSDM_DATA_DIR}
-export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
-export PATH=/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/python:$PATH
-export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
 export TMP_EXE=${TMP_EXE}
-export WHICHPYTHON='/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/python'
+export WHICHPYTHON=`which python`
 
 if [ ${RUN_NUM} != 'None' ]; then
   echo "new config file: ${THIS_CONFIGFILE}"

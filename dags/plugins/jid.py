@@ -74,8 +74,8 @@ class JIDSlurmOperator( BaseOperator ):
     def __params_to_args__(params):
       return " ".join(["--" + k + " " + str(v) for k, v in params.items()])
 
-    def __slurm_parameters__(params, task_id):
-      return __params_to_args__(params) + " --task " + task_id
+    def __slurm_parameters__(params, task_id, location):
+      return __params_to_args__(params) + " --task " + task_id + "--facility " + location
 
     return {
       "_id" : str(uuid.uuid4()),
@@ -93,7 +93,7 @@ class JIDSlurmOperator( BaseOperator ):
         "trigger" : "MANUAL",
         "location" : self.get_location(context),
         "parameters" : __slurm_parameters__(context.get('dag_run').conf.get('parameters', {}),
-                                            self.task_id),
+                                            self.task_id, self.get_location(context)),
         "run_as_user" : self.user
       }
     }
@@ -101,15 +101,17 @@ class JIDSlurmOperator( BaseOperator ):
   def get_location(self, context):
     return context.get('dag_run').conf.get("ARP_LOCATION")
 
-  def get_slurm_script(self, context, relative_path=None):
-    location = self.get_location(context)
-    if not location in self.btx_locations:
-      raise AirflowException(f"BTX location {location} is not configured")
-    if relative_path is None:
-      slurm_script = self.btx_locations[location] + "scripts/elog_submit.sh"
-    else:
-      slurm_script = self.btx_locations[location] + f"scripts/{relative_path}"
-    return slurm_script
+  def get_slurm_script(self) #, context, relative_path=None):
+    #location = self.get_location(context)
+    #if not location in self.btx_locations:
+    #  raise AirflowException(f"BTX location {location} is not configured")
+    #if relative_path is None:
+    #  slurm_script = self.btx_locations[location] + "scripts/elog_submit.sh"
+    #else:
+    #  slurm_script = self.btx_locations[location] + f"scripts/{relative_path}"
+    #return slurm_script
+    # REMARK: we are in a container for this demo:
+    return "elog_submit.sh"
 
   def get_file_uri( self, filepath, context ):
     location = self.get_location(context)
