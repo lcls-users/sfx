@@ -1,11 +1,11 @@
 import numpy as np
 from types import SimpleNamespace
 import psana
-from psana import setOption
-from psana import EventId
 from psana import *
 try:
     from PSCalib.GeometryAccess import GeometryAccess
+    from psana import EventId
+    from psana import setOption
 except ImportError:
     from psana.pscalib.geometry.GeometryAccess import GeometryAccess
 
