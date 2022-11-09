@@ -129,7 +129,7 @@ fi
 mkdir -p $TMP_DIR
 TMP_EXE="${TMP_DIR}/task_${UUID}.sh"
 
-BTX_IMAGE="docker:fpoitevi/psana2nersc:latest"
+BTX_IMAGE="docker:fpoitevi/btx2nersc:latest"
 
 #Submit to SLURM
 sbatch << EOF
