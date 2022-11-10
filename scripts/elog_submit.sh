@@ -92,6 +92,7 @@ case $FACILITY in
   'NERSC')
     SIT_PSDM_DATA_DIR='/global/cfs/cdirs/lcls/projecta/lcls/psdm/'
     QUEUE=${QUEUE:='interactive'}
+    ;;
   *)
     echo "ERROR! $FACILITY is not recognized."
     ;;
