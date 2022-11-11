@@ -168,7 +168,7 @@ class JIDSlurmOperator( BaseOperator ):
 
   def execute( self, context ):
 
-    LOG.info(f"Attempting to run at {self.run_at}...")
+    LOG.info(f"Attempting to run at {self.get_location(context)}...")
 
     # run job for it
     LOG.info("Queueing slurm job...")
