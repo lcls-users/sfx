@@ -21,7 +21,13 @@ def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16):
     os.makedirs(outdir, exist_ok=True)
     command = f"dimple {mtz} {pdb} {outdir}\n"
 
-    js = JobScheduler(os.path.join(outdir, "dimple.sh"),
+    # make path to executable
+    if "TMP_EXE" in os.environ:
+        tmp_exe = os.environ['TMP_EXE']
+    else:
+        tmp_exe = os.path.join(self.outdir, f'dimple.sh')
+
+    js = JobScheduler(tmp_exe,
                       logdir=outdir,
                       ncores=ncores, 
                       jobname=f'dimple', 
@@ -29,7 +35,7 @@ def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16):
     js.write_header()
     js.write_main(command, dependencies=['ccp4'])
     js.clean_up()
-    js.submit()
+    #js.submit()
 
 def parse_input():
     """

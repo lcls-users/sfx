@@ -89,7 +89,7 @@ class Indexer:
         js.write_header()
         js.write_main(command, dependencies=['crystfel', 'xds', 'xgandalf'])
         js.clean_up()
-        js.submit()
+        #js.submit()
         print(f"Indexing executable written to {self.tmp_exe}")
             
     def report(self, update_url=None):

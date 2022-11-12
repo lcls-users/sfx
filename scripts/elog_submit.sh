@@ -100,8 +100,10 @@ esac
 
 CORES=${CORES:=1}
 # TODO: find_peaks needs to be handled from ischeduler. For now we do this...
+SBATCH_2=0
 if [ ${TASK} != 'find_peaks' ]; then
   CORES=1
+  SBATCH_2=1
 fi
 
 EXPERIMENT=${EXPERIMENT:='None'}
@@ -159,5 +161,14 @@ if [ ${RUN_NUM} != 'None' ]; then
   rm -f ${THIS_CONFIGFILE}
 fi
 EOF
+
+if [ ${SBATCH_2} == 1 ]; then
+  while [ ! -f "${TMP_EXE}" ];
+  do
+    sleep 1
+  done
+  echo "sbatch ${TMP_EXE}"
+  sbatch ${TMP_EXE}
+fi
 
 echo "Job sent to queue"
