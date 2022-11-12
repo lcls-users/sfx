@@ -147,7 +147,7 @@ export BTX_IMAGE=${BTX_IMAGE}
 export SIT_PSDM_DATA=${SIT_PSDM_DATA_DIR}
 export NCORES=${CORES}
 export TMP_EXE=${TMP_EXE}
-export WHICHPYTHON='python
+export WHICHPYTHON='python'
 
 if [ ${RUN_NUM} != 'None' ]; then
   echo "new config file: ${THIS_CONFIGFILE}"
