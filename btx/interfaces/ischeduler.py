@@ -35,7 +35,6 @@ class JobScheduler:
         """ Write resource specification to submission script. """
         if(self.manager == 'SLURM'):
             template = ("#!/bin/bash\n\n"
-                        "#SBATCH --image={image}\n"
                         "#SBATCH -p {queue}\n"
                         "#SBATCH --job-name={jobname}\n"
                         "#SBATCH --output={output}\n"
@@ -47,7 +46,6 @@ class JobScheduler:
             raise NotImplementedError('JobScheduler not implemented.')
 
         context = {
-            "image": os.environ['BTX_IMAGE'],
             "queue": self.queue,
             "jobname": self.jobname,
             "output": os.path.join(self.logdir, f"{self.jobname}.out"),
@@ -82,10 +80,12 @@ class JobScheduler:
         """ Write application and source requested dependencies. """
         #if dependencies:
         #    self._write_dependencies(dependencies)
-
-        pythonpath = self._find_python_path()
+        #pythonpath = self._find_python_path()
+        #with open(self.jobfile, 'a') as jfile:
+        #    jfile.write(application.replace("python", pythonpath))
+        application = f"srun -n {self.ncores} shifter --image={os.environ['BTX_IMAGE']} --entrypoint " + application
         with open(self.jobfile, 'a') as jfile:
-            jfile.write(application.replace("python", pythonpath))
+            jfile.write(application)
 
     def submit(self):
         """ Submit to queue. """

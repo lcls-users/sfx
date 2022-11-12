@@ -119,7 +119,9 @@ fi
 #else
 #MAIN_PY="/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/python ${MAIN_PY}"
 #fi
-MAIN_PY="srun -n ${CORES} shifter --entrypoint python main.py"
+
+BTX_IMAGE="docker:fpoitevi/btx2nersc:latest"
+MAIN_PY="srun -n ${CORES} shifter --image=${BTX_IMAGE} --entrypoint python main.py"
 
 UUID=$(cat /proc/sys/kernel/random/uuid)
 if [ "${HOME}" == '' ]; then
@@ -130,13 +132,10 @@ fi
 mkdir -p $TMP_DIR
 TMP_EXE="${TMP_DIR}/task_${UUID}.sh"
 
-BTX_IMAGE="docker:fpoitevi/btx2nersc:latest"
-
 #Submit to SLURM
 sbatch << EOF
 #!/bin/bash
 
-#SBATCH --image=${BTX_IMAGE}
 #SBATCH -p ${QUEUE}
 #SBATCH -t 10:00:00
 #SBATCH --exclusive
@@ -147,7 +146,7 @@ export BTX_IMAGE=${BTX_IMAGE}
 export SIT_PSDM_DATA=${SIT_PSDM_DATA_DIR}
 export NCORES=${CORES}
 export TMP_EXE=${TMP_EXE}
-export WHICHPYTHON=`which python`
+export WHICHPYTHON='python
 
 if [ ${RUN_NUM} != 'None' ]; then
   echo "new config file: ${THIS_CONFIGFILE}"
