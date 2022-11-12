@@ -123,7 +123,7 @@ fi
 #fi
 
 BTX_IMAGE="docker:fpoitevi/btx2nersc:latest"
-MAIN_PY="srun -n ${CORES} shifter --image=${BTX_IMAGE} --entrypoint python main.py"
+MAIN_PY="srun -n ${CORES} shifter --image=${BTX_IMAGE} --entrypoint python /home/psana2-build/btx/scripts/main.py"
 
 UUID=$(cat /proc/sys/kernel/random/uuid)
 if [ "${HOME}" == '' ]; then
@@ -137,13 +137,12 @@ TMP_EXE="${TMP_DIR}/task_${UUID}.sh"
 #Submit to SLURM
 sbatch << EOF
 #!/bin/bash
-
-#SBATCH -p ${QUEUE}
-#SBATCH -t 10:00:00
-#SBATCH --exclusive
+###SBATCH -p ${QUEUE}
+#SBATCH -t 0:10:00
 #SBATCH --job-name ${TASK}
 #SBATCH --ntasks=${CORES}
-
+#SBATCH -A m2859
+#SBATCH -C haswell
 export BTX_IMAGE=${BTX_IMAGE}
 export SIT_PSDM_DATA=${SIT_PSDM_DATA_DIR}
 export NCORES=${CORES}
