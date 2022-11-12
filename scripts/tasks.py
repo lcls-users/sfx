@@ -134,8 +134,7 @@ def find_peaks(config):
     pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, xtc_dir=setup.xtc_dir, outdir=os.path.join(taskdir ,f"r{setup.run:04}"),
                     tag=task.tag, mask=mask_file, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr, 
-                    son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm,
-                    calibdir=task.get('calibdir'))
+                    son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm)
     logger.debug(f'Performing peak finding for run {setup.run} of {setup.exp}...')
     pf.find_peaks()
     pf.curate_cxi()
