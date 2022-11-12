@@ -40,8 +40,9 @@ class JobScheduler:
                         "#SBATCH --output={output}\n"
                         "#SBATCH --error={error}\n"
                         "#SBATCH --ntasks={ncores}\n"
-                        "#SBATCH --time={time}\n"
-                        "#SBATCH --exclusive\n\n")
+                        "#SBATCH -A m2859\n"
+                        "#SBATCH -C haswell\n"
+                        "#SBATCH --time={time}\n\n")
         else:
             raise NotImplementedError('JobScheduler not implemented.')
 
