@@ -80,8 +80,11 @@ class JobScheduler:
 
     def write_main(self, application, dependencies=[]):
         """ Write application and source requested dependencies. """
+        with open(self.jobfile, 'a') as jfile:
+            jfile.write(application)
         for line in fileinput.input([self.jobfile], inplace=True):
-            sys.stdout.write(f"srun -n {self.ncores} shifter --image={os.environ['BTX_IMAGE']} --entrypoint {line}")
+            if line[0] != "#" and line[0] != " ":
+                sys.stdout.write(f"srun -n {self.ncores} shifter --image={os.environ['BTX_IMAGE']} --entrypoint {line}")
 
     def submit(self):
         """ Submit to queue. """
