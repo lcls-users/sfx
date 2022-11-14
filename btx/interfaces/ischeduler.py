@@ -1,5 +1,6 @@
-import shutil
+import fileinput
 import os
+import sys
 
 """ Helper methods for job scheduling. """
 
@@ -79,14 +80,8 @@ class JobScheduler:
 
     def write_main(self, application, dependencies=[]):
         """ Write application and source requested dependencies. """
-        #if dependencies:
-        #    self._write_dependencies(dependencies)
-        #pythonpath = self._find_python_path()
-        #with open(self.jobfile, 'a') as jfile:
-        #    jfile.write(application.replace("python", pythonpath))
-        application = f"srun -n {self.ncores} shifter --image={os.environ['BTX_IMAGE']} --entrypoint " + application
-        with open(self.jobfile, 'a') as jfile:
-            jfile.write(application)
+        for line in fileinput.input([self.jobfile], inplace=True):
+            sys.stdout.write(f"srun -n {self.ncores} shifter --image={os.environ['BTX_IMAGE']} --entrypoint {line}")
 
     def submit(self):
         """ Submit to queue. """
