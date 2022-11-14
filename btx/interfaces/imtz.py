@@ -25,7 +25,7 @@ def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16):
     if "TMP_EXE" in os.environ:
         tmp_exe = os.environ['TMP_EXE']
     else:
-        tmp_exe = os.path.join(self.outdir, f'dimple.sh')
+        tmp_exe = os.path.join(outdir, f'dimple.sh')
 
     js = JobScheduler(tmp_exe,
                       logdir=outdir,
