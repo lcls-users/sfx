@@ -83,9 +83,8 @@ class JobScheduler:
         with open(self.jobfile, 'a') as jfile:
             jfile.write(application)
         for line in fileinput.FileInput([self.jobfile], inplace=True):
-        #for line in fileinput.input([self.jobfile], inplace=True):
             if line[0] != "#" and line[0] != " " and line != "\n":
-                sys.stdout.write(f"srun -n {self.ncores} shifter --image={os.environ['BTX_IMAGE']} --entrypoint {line}")
+                sys.stdout.write(f"srun -n 1 shifter --image={os.environ['BTX_IMAGE']} --entrypoint {line}")
             else:
                 sys.stdout.write(f"{line}")
 
