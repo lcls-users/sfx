@@ -34,6 +34,7 @@ def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16):
                       queue=queue)
     js.write_header()
     js.write_main(command, dependencies=['ccp4'])
+    js.shifterize()
     js.clean_up()
     #js.submit()
 

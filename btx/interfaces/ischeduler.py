@@ -82,6 +82,9 @@ class JobScheduler:
         """ Write application and source requested dependencies. """
         with open(self.jobfile, 'a') as jfile:
             jfile.write(application)
+
+    def shifterize(self):
+        """ Add the shifter command to relevant lines. """
         for line in fileinput.FileInput([self.jobfile], inplace=True):
             if line[0] != "#" and line[0] != " " and line != "\n":
                 sys.stdout.write(f"srun -n 1 shifter --image={os.environ['BTX_IMAGE']} --entrypoint {line}")

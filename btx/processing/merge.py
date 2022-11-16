@@ -136,6 +136,7 @@ class StreamtoMtz:
         """
         Write an indexing executable for submission to slurm.
         """   
+        self.js.shifterize()
         self.js.clean_up()
         #self.js.submit()
         
