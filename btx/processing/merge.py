@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 import os
 import sys
+import shutil
 import requests
 from btx.interfaces.ischeduler import *
 
