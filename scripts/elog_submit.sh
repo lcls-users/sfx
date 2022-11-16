@@ -129,12 +129,12 @@ TMP_EXE="${TMP_DIR}/task_${UUID}.sh"
 #Submit to SLURM
 sbatch << EOF
 #!/bin/bash
-###SBATCH -p ${QUEUE}
+#SBATCH -p ${QUEUE}
 #SBATCH -t 0:10:00
 #SBATCH --job-name ${TASK}
 #SBATCH --ntasks=${CORES}
 #SBATCH -A m2859
-#SBATCH -C haswell
+#SBATCH -C cpu
 export BTX_IMAGE=${BTX_IMAGE}
 export SIT_PSDM_DATA=${SIT_PSDM_DATA_DIR}
 export NCORES=${CORES}
