@@ -101,7 +101,7 @@ esac
 CORES=${CORES:=1}
 # TODO: find_peaks needs to be handled from ischeduler. For now we do this...
 SBATCH_2=0
-if [ ${TASK} != 'find_peaks' ]; then
+if [ ${TASK} != 'find_peaks' ] && [ ${TASK} != 'stream_analysis' ]; then
   CORES=1
   SBATCH_2=1
 fi
@@ -113,14 +113,6 @@ THIS_CONFIGFILE=${CONFIGFILE}
 if [ ${RUN_NUM} != 'None' ]; then
   THIS_CONFIGFILE="${CONFIGFILE%.*}_${RUN_NUM}.yaml"
 fi
-
-#SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-#MAIN_PY="${SCRIPT_DIR}/main.py"
-#if [ ${CORES} -gt 1 ]; then
-#MAIN_PY="/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/mpirun ${MAIN_PY}"
-#else
-#MAIN_PY="/cds/sw/ds/ana/conda2/inst/envs/ps-4.5.10/bin/python ${MAIN_PY}"
-#fi
 
 BTX_IMAGE="docker:fpoitevi/btx2nersc:latest"
 MAIN_PY="srun -n ${CORES} shifter --image=${BTX_IMAGE} --entrypoint python /home/psana2-build/btx/scripts/main.py"
