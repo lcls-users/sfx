@@ -141,7 +141,7 @@ sbatch << EOF
 #SBATCH -t 0:10:00
 #SBATCH --job-name ${TASK}
 #SBATCH --ntasks=${CORES}
-#SBATCH -A m2859
+#SBATCH -A lcls
 #SBATCH -C cpu
 export BTX_IMAGE=${BTX_IMAGE}
 export SIT_PSDM_DATA=${SIT_PSDM_DATA_DIR}

@@ -41,7 +41,7 @@ class JobScheduler:
                         "#SBATCH --output={output}\n"
                         "#SBATCH --error={error}\n"
                         "#SBATCH --ntasks={ncores}\n"
-                        "#SBATCH -A m2859\n"
+                        "#SBATCH -A lcls\n"
                         "#SBATCH -C cpu\n"
                         "#SBATCH --time={time}\n\n")
         else:

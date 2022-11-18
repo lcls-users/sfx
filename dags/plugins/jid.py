@@ -102,16 +102,16 @@ class JIDSlurmOperator( BaseOperator ):
     return context.get('dag_run').conf.get("ARP_LOCATION")
 
   def get_slurm_script(self) #, context, relative_path=None):
-    #location = self.get_location(context)
-    #if not location in self.btx_locations:
-    #  raise AirflowException(f"BTX location {location} is not configured")
-    #if relative_path is None:
-    #  slurm_script = self.btx_locations[location] + "scripts/elog_submit.sh"
-    #else:
-    #  slurm_script = self.btx_locations[location] + f"scripts/{relative_path}"
-    #return slurm_script
+    location = self.get_location(context)
+    if not location in self.btx_locations:
+      raise AirflowException(f"BTX location {location} is not configured")
+    if relative_path is None:
+      slurm_script = self.btx_locations[location] + "scripts/elog_submit.sh"
+    else:
+      slurm_script = self.btx_locations[location] + f"scripts/{relative_path}"
+    return slurm_script
     # REMARK: we are in a container for this demo:
-    return "elog_submit.sh"
+    #return "elog_submit.sh"
 
   def get_file_uri( self, filepath, context ):
     location = self.get_location(context)
