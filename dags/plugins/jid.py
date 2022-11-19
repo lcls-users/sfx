@@ -89,7 +89,7 @@ class JIDSlurmOperator( BaseOperator ):
       "def": {
         "_id" : str(uuid.uuid4()),
         "name" : self.task_id,
-        "executable" : self.get_slurm_script(context),
+        "executable" : "-C cpu -A lcls " + self.get_slurm_script(context),
         "trigger" : "MANUAL",
         "location" : self.get_location(context),
         "parameters" : __slurm_parameters__(context.get('dag_run').conf.get('parameters', {}),
