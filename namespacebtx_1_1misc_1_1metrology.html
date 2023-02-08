@@ -88,9 +88,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a766e4a9f278241f32d059268495567af"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1misc_1_1metrology.html#a766e4a9f278241f32d059268495567af">offset_geom</a> (<a class="el" href="namespacebtx_1_1misc_1_1metrology.html#ab64d7515971644e958fae1cc7761bcba">input_file</a>, output_file, dx, dy, dz)</td></tr>
 <tr class="memdesc:a766e4a9f278241f32d059268495567af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Modify the geometry in an input geom file by changing the center and coffset distance.  <a href="namespacebtx_1_1misc_1_1metrology.html#a766e4a9f278241f32d059268495567af">More...</a><br /></td></tr>
 <tr class="separator:a766e4a9f278241f32d059268495567af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3cfcfecc20fb938134c12376aaf0e5bb"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1misc_1_1metrology.html#a3cfcfecc20fb938134c12376aaf0e5bb">generate_geom_file</a> (exp, run, det_type, <a class="el" href="namespacebtx_1_1misc_1_1metrology.html#ab64d7515971644e958fae1cc7761bcba">input_file</a>, output_file, <a class="el" href="namespacebtx_1_1misc_1_1metrology.html#a670c21553283971ea062d7f28873517d">det_dist</a>=None)</td></tr>
-<tr class="memdesc:a3cfcfecc20fb938134c12376aaf0e5bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a Crystfel .geom file from either a psana .data or another Crystfel .geom file and set the coffset field for each panel based on the estimated detector distance: coffset [m] = 1e-3 * (distance - clen) Supplying det_dist will override the value pulled from the deployed geometry for this run, which is used to compute the coffset parameter.  <a href="namespacebtx_1_1misc_1_1metrology.html#a3cfcfecc20fb938134c12376aaf0e5bb">More...</a><br /></td></tr>
-<tr class="separator:a3cfcfecc20fb938134c12376aaf0e5bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb096137825b5dcfed1d507cc29dbaf8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1misc_1_1metrology.html#aeb096137825b5dcfed1d507cc29dbaf8">generate_geom_file</a> (exp, run, det_type, <a class="el" href="namespacebtx_1_1misc_1_1metrology.html#ab64d7515971644e958fae1cc7761bcba">input_file</a>, output_file, <a class="el" href="namespacebtx_1_1misc_1_1metrology.html#a670c21553283971ea062d7f28873517d">det_dist</a>=None, pv_camera_length=None)</td></tr>
+<tr class="memdesc:aeb096137825b5dcfed1d507cc29dbaf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a Crystfel .geom file from either a psana .data or another Crystfel .geom file and set the coffset field for each panel based on the estimated detector distance: coffset [m] = 1e-3 * (distance - clen) Supplying det_dist will override the value pulled from the deployed geometry for this run, which is used to compute the coffset parameter.  <a href="namespacebtx_1_1misc_1_1metrology.html#aeb096137825b5dcfed1d507cc29dbaf8">More...</a><br /></td></tr>
+<tr class="separator:aeb096137825b5dcfed1d507cc29dbaf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b35167b11a129182696686710aa4260"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1misc_1_1metrology.html#a4b35167b11a129182696686710aa4260">parse_input</a> ()</td></tr>
 <tr class="memdesc:a4b35167b11a129182696686710aa4260"><td class="mdescLeft">&#160;</td><td class="mdescRight">For command line use ####.  <a href="namespacebtx_1_1misc_1_1metrology.html#a4b35167b11a129182696686710aa4260">More...</a><br /></td></tr>
 <tr class="separator:a4b35167b11a129182696686710aa4260"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -107,8 +107,8 @@ Variables</h2></td></tr>
 <tr class="separator:a670c21553283971ea062d7f28873517d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a3cfcfecc20fb938134c12376aaf0e5bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3cfcfecc20fb938134c12376aaf0e5bb">&#9670;&nbsp;</a></span>generate_geom_file()</h2>
+<a id="aeb096137825b5dcfed1d507cc29dbaf8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb096137825b5dcfed1d507cc29dbaf8">&#9670;&nbsp;</a></span>generate_geom_file()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -147,7 +147,13 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>det_dist</em> = <code>None</code>&#160;</td>
+          <td class="paramname"><em>det_dist</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pv_camera_length</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -158,9 +164,9 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Generate a Crystfel .geom file from either a psana .data or another Crystfel .geom file and set the coffset field for each panel based on the estimated detector distance: coffset [m] = 1e-3 * (distance - clen) Supplying det_dist will override the value pulled from the deployed geometry for this run, which is used to compute the coffset parameter. </p>
-<h2><a class="anchor" id="autotoc_md102"></a>
+<h2><a class="anchor" id="autotoc_md101"></a>
 Parameters</h2>
-<p>exp : str experiment name run : int run number det_type : str detector name input_file : str input .geom or .data file output_file : str output .geom file det_dist : float estimated sample-detector distance in mm </p>
+<p>exp : str experiment name run : int run number det_type : str detector name input_file : str input .geom or .data file output_file : str output .geom file det_dist : float estimated sample-detector distance in mm pv_camera_length : str PV associated with the camera length </p>
 
 </div>
 </div>
@@ -204,7 +210,7 @@ Parameters</h2>
 
 <p>Overwrite the coffset and res entries in a CrystFEL .geom file. </p>
 <p>This is a hack to fix Rayonix geom files generated using the wrong pixel size.</p>
-<h2><a class="anchor" id="autotoc_md99"></a>
+<h2><a class="anchor" id="autotoc_md98"></a>
 Parameters</h2>
 <p>input_file : str input .geom file output_file : str output modified .geom file coffset : float coffset value in meters res : float pixel resolution in um </p>
 
@@ -238,7 +244,7 @@ Parameters</h2>
 
 <p>Modify the header of a psgeom-generated Crystfel (.geom) file, specifically 1. </p>
 <p>uncommenting lines indicating the mask file and LCLS parameters and 2. adding entries indicating the location of peaks in the cxi files.</p>
-<h2><a class="anchor" id="autotoc_md100"></a>
+<h2><a class="anchor" id="autotoc_md99"></a>
 Parameters</h2>
 <p>input_file : str input .geom file generated by psgeom output_file : str output modified .geom file </p>
 
@@ -290,7 +296,7 @@ Parameters</h2>
 
 <p>Modify the geometry in an input geom file by changing the center and coffset distance. </p>
 <p>Currently the same adjustments are applied to all panels.</p>
-<h2><a class="anchor" id="autotoc_md101"></a>
+<h2><a class="anchor" id="autotoc_md100"></a>
 Parameters</h2>
 <p>input_file : str input CrystFEL geom file output_file : str output geom file with updated metrology dx : float delta to adjust corner_x value by for all panels in pixels dy : float delta to adjust corner_y value by for all panels in pixels dz : float delta to adjust coffset value by for all panels in meters </p>
 
@@ -350,7 +356,7 @@ Parameters</h2>
 
 <p>Fetch latest geom file for this detector from mrxv. </p>
 <p>Currently assume that the file is in CrystFEL geom format. C</p>
-<h2><a class="anchor" id="autotoc_md98"></a>
+<h2><a class="anchor" id="autotoc_md97"></a>
 Parameters</h2>
 <p>det_type : str detector name mrxv_path : str path to mrxv geom folder </p>
 
@@ -416,7 +422,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Feb 5 2023 02:33:38 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Feb 8 2023 00:02:34 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

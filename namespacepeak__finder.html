@@ -171,7 +171,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Visualize a random selection of hits stored in the CXI file. </p>
-<h2><a class="anchor" id="autotoc_md142"></a>
+<h2><a class="anchor" id="autotoc_md141"></a>
 Parameters</h2>
 <p>fname : str path to CXI file exp : str experiment name run : int run number det_type : str detector type savename : str directory to which to save plots vmax_ind : float vmax for plot of individual hits set to vmax_ind * mean(image) vmax_powder : float vmax for plot of powder hits set to vmax_powder * mean(image) </p>
 
@@ -204,7 +204,7 @@ Parameters</h2>
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;=  PeakFinder(exp=params.exp, run=params.run, det_type=params.det_type, outdir=params.outdir,</div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;                    event_receiver=<span class="keywordtype">None</span>, event_code=<span class="keywordtype">None</span>, event_logic=<span class="keyword">True</span>, tag=params.tag,</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;                    event_receiver=<span class="keywordtype">None</span>, event_code=<span class="keywordtype">None</span>, event_logic=<span class="keyword">True</span>, tag=params.tag, pv_camera_length=params.pv_camera_length,</div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;                    mask=params.mask, psana_mask=params.psana_mask, min_peaks=params.min_peaks, max_peaks=params.max_peaks,</div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;                    npix_min=params.npix_min, npix_max=params.npix_max, amax_thr=params.amax_thr, atot_thr=params.atot_thr, </div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;                    son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm,</div>
@@ -215,7 +215,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Feb 5 2023 02:33:38 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Feb 8 2023 00:02:34 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
