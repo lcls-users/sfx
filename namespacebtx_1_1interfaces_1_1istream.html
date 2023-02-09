@@ -166,10 +166,10 @@ Variables</h2></td></tr>
 
 <p>Apply DBScan clustering to unit cell parameters and write the most prevalent unit cell parameters to a CrystFEL cell file. </p>
 <p>Unit cell parameters from all valid clusters are written to a separate file.</p>
-<h2><a class="anchor" id="autotoc_md82"></a>
+<h2><a class="anchor" id="autotoc_md84"></a>
 Parameters</h2>
 <p>cell : numpy.ndarray, shape (n_crystals, 6) [a,b,c,alpha,beta,gamma] in Angstrom and degrees out_clusters : str file to write clustering results to out_cell : str output CrystFEL unit cell file in_cell : str input CrystFEL unit cell file to copy lattice type from, optional eps : float max distance for points to be considered neighbors min_samples : int minimum number of samples for a cluster to be valid</p>
-<h2><a class="anchor" id="autotoc_md83"></a>
+<h2><a class="anchor" id="autotoc_md85"></a>
 Returns</h2>
 <p>labels : numpy.ndarray, shape (n_crystals,) cluster labels for input cell array </p>
 
@@ -250,7 +250,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Launch stream analysis task using iScheduler. </p>
-<h2><a class="anchor" id="autotoc_md84"></a>
+<h2><a class="anchor" id="autotoc_md86"></a>
 Parameters</h2>
 <p>in_stream : str glob-compatible path to input stream file(s) out_stream : str name of output concatenated stream file fig_dir : str directory to write peakogram and cell distribution plot to tmp_exe : str name of temporary executable file queue : str queue to submit job to ncores : int minimum of number of cores and number of stream files cell_only : bool if True, do not plot peakogram cell_out : str output CrystFEL-style cell file cell_ref : str CrystFEL cell file to copy symmetry from addl_command : str additional command to add to end of job to launch </p>
 
@@ -293,10 +293,10 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Extract cell parameters from a CrystFEL cell file. </p>
-<h2><a class="anchor" id="autotoc_md79"></a>
+<h2><a class="anchor" id="autotoc_md81"></a>
 Parameters</h2>
 <p>cell_file : str CrystFEL cell file</p>
-<h2><a class="anchor" id="autotoc_md80"></a>
+<h2><a class="anchor" id="autotoc_md82"></a>
 Returns</h2>
 <p>array of cell parameters: [a,b,c,alpha,beta,gamma] in Angstrom/degrees </p>
 
@@ -335,7 +335,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Write a new CrystFEL-style cell file with the same lattice type as the input file (or primitive triclinic if none given) and the cell parameters changed to input cell. </p>
-<h2><a class="anchor" id="autotoc_md81"></a>
+<h2><a class="anchor" id="autotoc_md83"></a>
 Parameters</h2>
 <p>cell : np.array, 1d unit cell parameters [a,b,c,alpha,beta,gamma], in Å/degrees output_file : str output CrystFEL unit cell file input_file : str input CrystFEL unit cell file, optional </p>
 
@@ -429,7 +429,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 8 2023 00:02:34 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Thu Feb 9 2023 17:03:08 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

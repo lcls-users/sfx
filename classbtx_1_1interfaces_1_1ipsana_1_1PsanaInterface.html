@@ -95,6 +95,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af85fe97ca5b6dd7c81f991446e57ea47"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#af85fe97ca5b6dd7c81f991446e57ea47">get_wavelength_evt</a> (self, evt)</td></tr>
 <tr class="memdesc:af85fe97ca5b6dd7c81f991446e57ea47"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the detector's wavelength for a specfic event.  <a href="classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#af85fe97ca5b6dd7c81f991446e57ea47">More...</a><br /></td></tr>
 <tr class="separator:af85fe97ca5b6dd7c81f991446e57ea47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6315dff072b35dfd19e18b732ca6361c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a6315dff072b35dfd19e18b732ca6361c">get_fee_gas_detector_energy_mJ_evt</a> (self, evt, mode=None)</td></tr>
+<tr class="memdesc:a6315dff072b35dfd19e18b732ca6361c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve pulse energy measured by Front End Enclosure Gas Detectors.  <a href="classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a6315dff072b35dfd19e18b732ca6361c">More...</a><br /></td></tr>
+<tr class="separator:a6315dff072b35dfd19e18b732ca6361c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59ed8a5f7da3dd07bbf70f896a0b6ecf"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a59ed8a5f7da3dd07bbf70f896a0b6ecf">estimate_distance</a> (self)</td></tr>
 <tr class="memdesc:a59ed8a5f7da3dd07bbf70f896a0b6ecf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve an estimate of the detector distance in mm.  <a href="classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a59ed8a5f7da3dd07bbf70f896a0b6ecf">More...</a><br /></td></tr>
 <tr class="separator:a59ed8a5f7da3dd07bbf70f896a0b6ecf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -301,7 +304,7 @@ Private Member Functions</h2></td></tr>
 
 <p>For parallel processing. </p>
 <p>Update self.counter and self.max_events such that events will be distributed evenly across total_ranks, and each rank will only process its assigned events. Hack to avoid explicitly using MPI here.</p>
-<h2><a class="anchor" id="autotoc_md76"></a>
+<h2><a class="anchor" id="autotoc_md78"></a>
 Parameters</h2>
 <p>rank : int current rank total_ranks : int total number of ranks max_events : int, optional total number of images desired, option to override self.max_events </p>
 
@@ -324,7 +327,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Retrieve an estimate of the detector distance in mm. </p>
-<h2><a class="anchor" id="autotoc_md70"></a>
+<h2><a class="anchor" id="autotoc_md72"></a>
 Returns</h2>
 <p>distance : float estimated detector distance </p>
 
@@ -357,12 +360,60 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Retrieve the camera length (clen) in mm. </p>
-<h2><a class="anchor" id="autotoc_md71"></a>
+<h2><a class="anchor" id="autotoc_md73"></a>
 Parameters</h2>
 <p>pv_camera_length : str PV associated with camera length</p>
-<h2><a class="anchor" id="autotoc_md72"></a>
+<h2><a class="anchor" id="autotoc_md74"></a>
 Returns</h2>
 <p>clen : float clen, where clen = distance - coffset in mm </p>
+
+</div>
+</div>
+<a id="a6315dff072b35dfd19e18b732ca6361c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6315dff072b35dfd19e18b732ca6361c">&#9670;&nbsp;</a></span>get_fee_gas_detector_energy_mJ_evt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.interfaces.ipsana.PsanaInterface.get_fee_gas_detector_energy_mJ_evt </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>evt</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mode</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Retrieve pulse energy measured by Front End Enclosure Gas Detectors. </p>
+<p>For more information:</p><ul>
+<li><a href="https://pswww.slac.stanford.edu/swdoc/releases/ana-current/psana-ref/html/psana/#class-psana-bld-blddatafeegasdetenergyv1">https://pswww.slac.stanford.edu/swdoc/releases/ana-current/psana-ref/html/psana/#class-psana-bld-blddatafeegasdetenergyv1</a></li>
+<li><a href="https://confluence.slac.stanford.edu/display/PSDM/New+XTCAV+Documentation">https://confluence.slac.stanford.edu/display/PSDM/New+XTCAV+Documentation</a></li>
+<li><a href="https://www-ssrl.slac.stanford.edu/lcls/technotes/LCLS-TN-09-5.pdf">https://www-ssrl.slac.stanford.edu/lcls/technotes/LCLS-TN-09-5.pdf</a></li>
+</ul>
+<p>Note: the pulse energy is equal to the photon energy times the number of photons in the pulse.</p>
+<h2><a class="anchor" id="autotoc_md70"></a>
+Parameters</h2>
+<p>evt : psana.Event object individual psana event mode : str, optional whether to only return the energy 'before' or 'after' gas attenuation, or if 'None' the average of the two.</p>
+<h2><a class="anchor" id="autotoc_md71"></a>
+Returns</h2>
+<p>gas_detector_energy: float Beam energy in mJ </p>
 
 </div>
 </div>
@@ -400,10 +451,10 @@ Returns</h2>
 
 <p>Retrieve a fixed number of images from the run. </p>
 <p>If the pedestal or gain information is unavailable and unassembled images are requested, return uncalibrated images.</p>
-<h2><a class="anchor" id="autotoc_md77"></a>
+<h2><a class="anchor" id="autotoc_md79"></a>
 Parameters</h2>
 <p>num_images : int number of images to retrieve (per rank) assemble : bool, default=True whether to assemble panels into image</p>
-<h2><a class="anchor" id="autotoc_md78"></a>
+<h2><a class="anchor" id="autotoc_md80"></a>
 Returns</h2>
 <p>images : numpy.ndarray, shape ((num_images,) + det_shape) images retrieved sequentially from run, optionally assembled </p>
 
@@ -460,7 +511,7 @@ Returns</h2>
 
 <p>Retrieve the timestamp (seconds, nanoseconds, fiducials) associated with the input event and store in self variables. </p>
 <p>For further details, see the example here: <a href="https://confluence.slac.stanford.edu/display/PSDM/Jump+Quickly+to+Events+Using+Timestamps">https://confluence.slac.stanford.edu/display/PSDM/Jump+Quickly+to+Events+Using+Timestamps</a></p>
-<h2><a class="anchor" id="autotoc_md73"></a>
+<h2><a class="anchor" id="autotoc_md75"></a>
 Parameters</h2>
 <p>evtId : psana.EventId the event ID associated with a particular image </p>
 
@@ -601,10 +652,10 @@ Parameters</h2>
 <li>it has a specific event_code and our event_logic is False</li>
 <li>it does not have that event_code and our event_logic is True.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md74"></a>
+<h2><a class="anchor" id="autotoc_md76"></a>
 Parameters</h2>
 <p>evt : psana.Event object individual psana event</p>
-<h2><a class="anchor" id="autotoc_md75"></a>
+<h2><a class="anchor" id="autotoc_md77"></a>
 Returns</h2>
 <p>skip_status : Boolean if True, skip event </p>
 
@@ -861,7 +912,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 8 2023 00:02:34 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Thu Feb 9 2023 17:03:08 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
