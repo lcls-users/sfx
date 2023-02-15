@@ -67,7 +67,11 @@ def fetch_latest(fnames, run):
     avail = np.array([int(a) for a in avail])
     sort_idx = np.argsort(avail)
     idx = np.searchsorted(avail[sort_idx], run, side='right') - 1
-    return fnames[sort_idx[idx]]
+    try:
+        return fnames[sort_idx[idx]]
+    except IndexError:
+        print('File not found.')
+        return ''
 
 def check_file_existence(fname, timeout, frequency=15):
     """! Pause until a given file exists, exiting if the waiting
