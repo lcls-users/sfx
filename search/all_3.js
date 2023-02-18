@@ -27,7 +27,7 @@ var searchData=
   ['compute_5fpowders_75',['compute_powders',['../classpeak__finder_1_1PeakFinder.html#a3cf1a61610b9d83ad0746f70750786fa',1,'peak_finder::PeakFinder']]],
   ['compute_5fresolution_76',['compute_resolution',['../classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a04bd389a632c4dd1cde5735dc67d5d9a',1,'btx.interfaces.istream.StreamInterface.compute_resolution()'],['../namespacebtx_1_1misc_1_1xtal.html#abe843c0f452f0286f9fe066f2aa97d76',1,'btx.misc.xtal.compute_resolution()']]],
   ['compute_5frun_5fstats_77',['compute_run_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae7d505d4cc3dc298e572f6d92a10f592',1,'btx::diagnostics::run::RunDiagnostics']]],
-  ['compute_5fstats_78',['compute_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#acd330e0791c3b5fcc7f349e4a17da776',1,'btx::diagnostics::run::RunDiagnostics']]],
+  ['compute_5fstats_78',['compute_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a499495fa9602a5e41b10d0f914f60861',1,'btx::diagnostics::run::RunDiagnostics']]],
   ['concentriccircles_79',['ConcentricCircles',['../classbtx_1_1misc_1_1radial_1_1ConcentricCircles.html',1,'btx::misc::radial']]],
   ['config_80',['config',['../namespacebtx_1_1diagnostics_1_1geoptimizer.html#a1b3dfcc48be228583984da1c3696b34b',1,'btx::diagnostics::geoptimizer']]],
   ['copy_5ffrom_5fstream_81',['copy_from_stream',['../classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#afbf8b1d20cc4f8adcb2622b054181f7f',1,'btx::interfaces::istream::StreamInterface']]],

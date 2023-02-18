@@ -75,7 +75,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Class for computing powders and a trajectory of statistics from a given run.  
+<p>Class to compute powders and trajectories of various image statistics and event characteristics for a given run.  
  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -91,9 +91,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a26ea5816cedd48c6d15184c46ffb6fc0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a26ea5816cedd48c6d15184c46ffb6fc0">save_powders</a> (self, outdir, raw_img=False)</td></tr>
 <tr class="memdesc:a26ea5816cedd48c6d15184c46ffb6fc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save powders to output directory.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a26ea5816cedd48c6d15184c46ffb6fc0">More...</a><br /></td></tr>
 <tr class="separator:a26ea5816cedd48c6d15184c46ffb6fc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd330e0791c3b5fcc7f349e4a17da776"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#acd330e0791c3b5fcc7f349e4a17da776">compute_stats</a> (self, img)</td></tr>
-<tr class="memdesc:acd330e0791c3b5fcc7f349e4a17da776"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the following stats: mean, std deviation, max, min.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#acd330e0791c3b5fcc7f349e4a17da776">More...</a><br /></td></tr>
-<tr class="separator:acd330e0791c3b5fcc7f349e4a17da776"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c4805b7783bbb3b613c2ff774ae386b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a9c4805b7783bbb3b613c2ff774ae386b">save_traces</a> (self, outdir, raw_img=False)</td></tr>
+<tr class="memdesc:a9c4805b7783bbb3b613c2ff774ae386b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save trajectories of statistics to output directory.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a9c4805b7783bbb3b613c2ff774ae386b">More...</a><br /></td></tr>
+<tr class="separator:a9c4805b7783bbb3b613c2ff774ae386b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a499495fa9602a5e41b10d0f914f60861"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a499495fa9602a5e41b10d0f914f60861">compute_stats</a> (self, evt, img)</td></tr>
+<tr class="memdesc:a499495fa9602a5e41b10d0f914f60861"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the following image stats: mean, std deviation, max, min.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a499495fa9602a5e41b10d0f914f60861">More...</a><br /></td></tr>
+<tr class="separator:a499495fa9602a5e41b10d0f914f60861"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75dfb8c3c3f4dbacaa6c37065b4dfa18"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a75dfb8c3c3f4dbacaa6c37065b4dfa18">finalize_stats</a> (self, n_empty=0, n_empty_raw=0)</td></tr>
 <tr class="memdesc:a75dfb8c3c3f4dbacaa6c37065b4dfa18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather stats from various ranks into single arrays in self.stats_final.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a75dfb8c3c3f4dbacaa6c37065b4dfa18">More...</a><br /></td></tr>
 <tr class="separator:a75dfb8c3c3f4dbacaa6c37065b4dfa18"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -112,6 +115,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4925f139d0d235827a11c77c56073749"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a4925f139d0d235827a11c77c56073749">visualize_gain_frequency</a> (self, output=None)</td></tr>
 <tr class="memdesc:a4925f139d0d235827a11c77c56073749"><td class="mdescLeft">&#160;</td><td class="mdescRight">Plot the distribution of the frequency with which each pixel appears in a particular gain mode.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a4925f139d0d235827a11c77c56073749">More...</a><br /></td></tr>
 <tr class="separator:a4925f139d0d235827a11c77c56073749"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d6a724c5f4e6b01b7805fe939a68b98"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a1d6a724c5f4e6b01b7805fe939a68b98">visualize_energy_stats</a> (self, output=None, outlier_threshold=-np.inf)</td></tr>
+<tr class="memdesc:a1d6a724c5f4e6b01b7805fe939a68b98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Plot the number of incoming photons per event, the number of incoming photons versus the mean image intensity, and the beam energy versus photon energy.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a1d6a724c5f4e6b01b7805fe939a68b98">More...</a><br /></td></tr>
+<tr class="separator:a1d6a724c5f4e6b01b7805fe939a68b98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac027b752c66784836c798f977f955f0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#aac027b752c66784836c798f977f955f0">check_first_evt</a> (self, mask=None, scale_factor=5, n_images=5)</td></tr>
 <tr class="memdesc:aac027b752c66784836c798f977f955f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether the first event of the run should be excluded; it's considered an outlier if mean_0 &gt; &lt; mean_n + scale_factor * std_n &gt; where n ranges from [1,n_images).  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#aac027b752c66784836c798f977f955f0">More...</a><br /></td></tr>
 <tr class="separator:aac027b752c66784836c798f977f955f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -148,7 +154,7 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a90083bf2599854b654c3c7a25ba38a8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Class for computing powders and a trajectory of statistics from a given run. </p>
+<div class="textblock"><p>Class to compute powders and trajectories of various image statistics and event characteristics for a given run. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a5edd57ebff76e6dabf009f8555f6cb7a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5edd57ebff76e6dabf009f8555f6cb7a">&#9670;&nbsp;</a></span>__init__()</h2>
@@ -231,10 +237,10 @@ Public Attributes</h2></td></tr>
 
 <p>Check whether the first event of the run should be excluded; it's considered an outlier if mean_0 &gt; &lt; mean_n + scale_factor * std_n &gt; where n ranges from [1,n_images). </p>
 <p>If any of the first few events are None, exclude the first image to simplify matters.</p>
-<h2><a class="anchor" id="autotoc_md29"></a>
+<h2><a class="anchor" id="autotoc_md31"></a>
 Parameters</h2>
 <p>mask : np.ndarray, shape (n_panels, n_x, n_y) binary mask file or array in unassembled psana shape, optional scale_factor : float parameter that tunes how conservative outlier rejection is n_images : int number of total images to compare, including first</p>
-<h2><a class="anchor" id="autotoc_md30"></a>
+<h2><a class="anchor" id="autotoc_md32"></a>
 Returns:</h2>
 <p>exclude : bool if True, first event was detected as an outlier </p>
 
@@ -331,14 +337,14 @@ Parameters</h2>
 
 <p>Compute powders and per-image statistics. </p>
 <p>If a mask is provided, it is only applied to the stats trajectories, not in computing the powder.</p>
-<h2><a class="anchor" id="autotoc_md26"></a>
+<h2><a class="anchor" id="autotoc_md27"></a>
 Parameters</h2>
 <p>max_events : int number of images to process; if -1, process entire run mask : str or np.ndarray, shape (n_panels, n_x, n_y) binary mask file or array in unassembled psana shape, optional powder_only : bool if True, only compute the powder pattern threshold : float if supplied, exclude events whose mean is above this value gain_mode : str gain mode to retrieve statistics for, e.g. 'AML-L' raw_img : bool if True, analyze raw rather than calibrated images </p>
 
 </div>
 </div>
-<a id="acd330e0791c3b5fcc7f349e4a17da776"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acd330e0791c3b5fcc7f349e4a17da776">&#9670;&nbsp;</a></span>compute_stats()</h2>
+<a id="a499495fa9602a5e41b10d0f914f60861"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a499495fa9602a5e41b10d0f914f60861">&#9670;&nbsp;</a></span>compute_stats()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -348,6 +354,12 @@ Parameters</h2>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>evt</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -363,10 +375,11 @@ Parameters</h2>
       </table>
 </div><div class="memdoc">
 
-<p>Compute the following stats: mean, std deviation, max, min. </p>
-<h2><a class="anchor" id="autotoc_md23"></a>
+<p>Compute the following image stats: mean, std deviation, max, min. </p>
+<h2><a class="anchor" id="autotoc_md24"></a>
 Parameters</h2>
-<p>img : numpy.ndarray, 3d unassembled, calibrated images of shape (n_panels, n_x, n_y) </p>
+<p>evt : psana.Event object individual psana event <br  />
+ img : numpy.ndarray, 3d unassembled, calibrated images of shape (n_panels, n_x, n_y) </p>
 
 </div>
 </div>
@@ -423,7 +436,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Gather stats from various ranks into single arrays in self.stats_final. </p>
-<h2><a class="anchor" id="autotoc_md24"></a>
+<h2><a class="anchor" id="autotoc_md25"></a>
 Parameters</h2>
 <p>n_empty : int number of empty images in this rank n_empty_raw : int number of empty raw events in this rank </p>
 
@@ -462,7 +475,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Retrieve statistics for a particular gain mode, specifically a map of the number of times a pixel has been in a certain gain mode and the number of pixels in that gain mode per event. </p>
-<h2><a class="anchor" id="autotoc_md25"></a>
+<h2><a class="anchor" id="autotoc_md26"></a>
 Parameters</h2>
 <p>raw : ndarray, shape (det_shape) uncalibrated image gain_mode : str gain mode to retrieve statistics for, e.g. 'AML-L' </p>
 
@@ -507,6 +520,85 @@ Parameters</h2>
 
 </div>
 </div>
+<a id="a9c4805b7783bbb3b613c2ff774ae386b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c4805b7783bbb3b613c2ff774ae386b">&#9670;&nbsp;</a></span>save_traces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.diagnostics.run.RunDiagnostics.save_traces </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>outdir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>raw_img</em> = <code>False</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Save trajectories of statistics to output directory. </p>
+<h2><a class="anchor" id="autotoc_md23"></a>
+Parameters</h2>
+<p>output : str path to directory in which to save traces, optional raw_img : bool if True, save powder files with _raw nomenclature </p>
+
+</div>
+</div>
+<a id="a1d6a724c5f4e6b01b7805fe939a68b98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d6a724c5f4e6b01b7805fe939a68b98">&#9670;&nbsp;</a></span>visualize_energy_stats()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.diagnostics.run.RunDiagnostics.visualize_energy_stats </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>output</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>outlier_threshold</em> = <code>-np.inf</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Plot the number of incoming photons per event, the number of incoming photons versus the mean image intensity, and the beam energy versus photon energy. </p>
+<p>Energies are in eV.</p>
+<h2><a class="anchor" id="autotoc_md30"></a>
+Parameters</h2>
+<p>output : str path for optionally saving plot to disk outlier_threshold : float mean intensity threshold for considering images outliers </p>
+
+</div>
+</div>
 <a id="a4925f139d0d235827a11c77c56073749"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4925f139d0d235827a11c77c56073749">&#9670;&nbsp;</a></span>visualize_gain_frequency()</h2>
 
@@ -534,7 +626,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Plot the distribution of the frequency with which each pixel appears in a particular gain mode. </p>
-<h2><a class="anchor" id="autotoc_md28"></a>
+<h2><a class="anchor" id="autotoc_md29"></a>
 Parameters</h2>
 <p>output : str path for optionally saving plot to disk </p>
 
@@ -627,7 +719,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Plot trajectories of run statistics. </p>
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md28"></a>
 Parameters</h2>
 <p>output : str path for optionally saving plot to disk </p>
 
@@ -836,7 +928,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 15 2023 19:46:33 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Sat Feb 18 2023 02:42:20 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

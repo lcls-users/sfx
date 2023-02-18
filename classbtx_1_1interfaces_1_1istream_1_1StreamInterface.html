@@ -269,7 +269,7 @@ Public Attributes</h2></td></tr>
 
 <p>Add the indicated crystals from the input to the output stream. </p>
 <p>There may be multiple crystals per chunk with multi-lattice indexing.</p>
-<h2><a class="anchor" id="autotoc_md101"></a>
+<h2><a class="anchor" id="autotoc_md103"></a>
 Parameters</h2>
 <p>stream_file : str input stream file chunk_indices : list indices of the chunks from stream file to transfer crystal_indices : list indices of the crystals from stream file to transfer output : string path to output .stream file <br  />
  </p>
@@ -303,10 +303,10 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Evenly distribute stream files among available ranks. </p>
-<h2><a class="anchor" id="autotoc_md93"></a>
+<h2><a class="anchor" id="autotoc_md95"></a>
 Parameters</h2>
 <p>input_files : list of str list of input stream files to read</p>
-<h2><a class="anchor" id="autotoc_md94"></a>
+<h2><a class="anchor" id="autotoc_md96"></a>
 Returns</h2>
 <p>input_sel : list of str select list of input stream files for this rank </p>
 
@@ -359,7 +359,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Plot histograms of the unit cell parameters, indicating the median cell axis and angle values. </p>
-<h2><a class="anchor" id="autotoc_md97"></a>
+<h2><a class="anchor" id="autotoc_md99"></a>
 Parameters</h2>
 <p>output : string, default=None if supplied, path for saving png of unit cell parameters </p>
 
@@ -392,7 +392,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Plot the distribution of unindexed, single hit, and multi-lattice events. </p>
-<h2><a class="anchor" id="autotoc_md99"></a>
+<h2><a class="anchor" id="autotoc_md101"></a>
 Parameters</h2>
 <p>output : string, default=None <br  />
  if supplied, path for saving png file </p>
@@ -426,7 +426,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Generate a peakogram of the stream data. </p>
-<h2><a class="anchor" id="autotoc_md98"></a>
+<h2><a class="anchor" id="autotoc_md100"></a>
 Parameters</h2>
 <p>output : string, default=None if supplied, path for saving png of peakogram </p>
 
@@ -459,10 +459,10 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Read stream file(s), distributing files across ranks if available. </p>
-<h2><a class="anchor" id="autotoc_md91"></a>
+<h2><a class="anchor" id="autotoc_md93"></a>
 Parameters</h2>
 <p>input_files : list of str stream file(s) to parse</p>
-<h2><a class="anchor" id="autotoc_md92"></a>
+<h2><a class="anchor" id="autotoc_md94"></a>
 Returns</h2>
 <p>stream_data : dict cell parameters and (if not self.cell_only) reflection information file_limits : numpy.ndarray, shape (n_files) indices of stream_data's first dimension that indicate start/end of each file </p>
 
@@ -496,10 +496,10 @@ Returns</h2>
 
 <p>Read a single stream file. </p>
 <p>Function possibly adapted from CrystFEL.</p>
-<h2><a class="anchor" id="autotoc_md95"></a>
+<h2><a class="anchor" id="autotoc_md97"></a>
 Parameters</h2>
 <p>input_file : str stream file to parse</p>
-<h2><a class="anchor" id="autotoc_md96"></a>
+<h2><a class="anchor" id="autotoc_md98"></a>
 Returns</h2>
 <p>single_stream_data : dict cell parameters and (if not self.cell_only) reflection information </p>
 
@@ -532,7 +532,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Summarize the cell parameters and optionally report to the elog. </p>
-<h2><a class="anchor" id="autotoc_md100"></a>
+<h2><a class="anchor" id="autotoc_md102"></a>
 Parameters</h2>
 <p>tag : str suffix for naming summary file </p>
 
@@ -591,7 +591,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Write a new stream file from a selection of crystals from the input stream file(s). </p>
-<h2><a class="anchor" id="autotoc_md102"></a>
+<h2><a class="anchor" id="autotoc_md104"></a>
 Parameters</h2>
 <p>selection : numpy.ndarray, 1d indices of the crystals in self.stream_data to retain output : string path to output .stream file </p>
 
@@ -772,7 +772,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 15 2023 19:46:33 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Sat Feb 18 2023 02:42:21 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
