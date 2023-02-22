@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['visualizesample_475',['VisualizeSample',['../classbtx_1_1misc_1_1visuals_1_1VisualizeSample.html',1,'btx::misc::visuals']]]
+  ['tasktimer_515',['TaskTimer',['../classbtx_1_1misc_1_1shortcuts_1_1TaskTimer.html',1,'btx::misc::shortcuts']]]
 ];

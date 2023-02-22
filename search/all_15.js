@@ -1,14 +1,20 @@
 var searchData=
 [
-  ['visualize_434',['visualize',['../classbtx_1_1diagnostics_1_1run_1_1PixelTracker.html#a596cd6c1f2e0d3fdbe4fd3a4ecb60f03',1,'btx::diagnostics::run::PixelTracker']]],
-  ['visualize_5fenergy_5fstats_435',['visualize_energy_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a1d6a724c5f4e6b01b7805fe939a68b98',1,'btx::diagnostics::run::RunDiagnostics']]],
-  ['visualize_5fgain_5ffrequency_436',['visualize_gain_frequency',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a4925f139d0d235827a11c77c56073749',1,'btx::diagnostics::run::RunDiagnostics']]],
-  ['visualize_5fhits_437',['visualize_hits',['../namespacepeak__finder.html#abea6a103bdc28ac65fe84b36ee6850d6',1,'peak_finder']]],
-  ['visualize_5fmask_438',['visualize_mask',['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html#ac2537454186aca2a15a9df471c5fd245',1,'btx::interfaces::imask::MaskInterface']]],
-  ['visualize_5fpowder_439',['visualize_powder',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a41827ab91c1b0bd5a4adeebda2dbddca',1,'btx::diagnostics::run::RunDiagnostics']]],
-  ['visualize_5fresults_440',['visualize_results',['../classbtx_1_1diagnostics_1_1ag__behenate_1_1AgBehenate.html#a2c76d5a054ca61520a4ac9bece4a25da',1,'btx::diagnostics::ag_behenate::AgBehenate']]],
-  ['visualize_5fsample_441',['visualize_sample',['../namespacetest2.html#a6502ebe81e224d8e333ed9ef493c5ee4',1,'test2.visualize_sample()'],['../namespacescripts_1_1tasks.html#a9eeb4c6a2c51e7c98f25bc9c16c54287',1,'scripts.tasks.visualize_sample()']]],
-  ['visualize_5fstats_442',['visualize_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ac7d8f979356630e066fa93686e6acacc',1,'btx::diagnostics::run::RunDiagnostics']]],
-  ['visualizesample_443',['VisualizeSample',['../classbtx_1_1misc_1_1visuals_1_1VisualizeSample.html',1,'btx::misc::visuals']]],
-  ['visuals_2epy_444',['visuals.py',['../visuals_8py.html',1,'']]]
+  ['u_456',['U',['../classpipca_1_1PiPCA.html#a43c3a4a120723c3d6d6d23f3fc028450',1,'pipca::PiPCA']]],
+  ['ui_5fcolor_457',['ui_color',['../classplugins_1_1jid_1_1JIDSlurmOperator.html#ac9222880857e0d4522f91a37afdefdf8',1,'plugins::jid::JIDSlurmOperator']]],
+  ['unpack_5fparams_458',['unpack_params',['../classbtx_1_1misc_1_1radial_1_1OptimizeConcentricCircles.html#ab5cfc4e43f7abd190882af68f1584414',1,'btx::misc::radial::OptimizeConcentricCircles']]],
+  ['unstack_5fasics_459',['unstack_asics',['../namespacebtx_1_1interfaces_1_1imask.html#a4e99866845fe057f64dcfa7b7d924815',1,'btx::interfaces::imask']]],
+  ['update_5fhtml_460',['update_html',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#aa0f9d68d26daac1c7aaff842452feb93',1,'btx::interfaces::ielog::eLogInterface']]],
+  ['update_5fmask_461',['update_mask',['../namespaceupdate__mask.html',1,'']]],
+  ['update_5fmask_2epy_462',['update_mask.py',['../update__mask_8py.html',1,'']]],
+  ['update_5fmodel_463',['update_model',['../classpipca_1_1PiPCA.html#aca1a9d8eceba35f207a76aeafb138080',1,'pipca::PiPCA']]],
+  ['update_5fpng_464',['update_png',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#ac36694657a822e077d4809658799e221',1,'btx::interfaces::ielog::eLogInterface']]],
+  ['update_5frun_465',['update_run',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#a1f52ef123abd2c2d1aed4a428263c94c',1,'btx::interfaces::ielog::eLogInterface']]],
+  ['update_5fsample_466',['update_sample',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#a31f991fb4a55d224f5ce31110279b08a',1,'btx::interfaces::ielog::eLogInterface']]],
+  ['update_5fsample_5fmean_467',['update_sample_mean',['../classpipca_1_1PiPCA.html#a8fc6ce30515bddf12aa8aa3429caf992',1,'pipca::PiPCA']]],
+  ['update_5fsample_5fvariance_468',['update_sample_variance',['../classpipca_1_1PiPCA.html#a499c681ee5ba4d736b3b93ad8956b5c5',1,'pipca::PiPCA']]],
+  ['update_5fsummary_469',['update_summary',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#a46b60d83e900951062184586669bb804',1,'btx::interfaces::ielog::eLogInterface']]],
+  ['update_5fuglymol_470',['update_uglymol',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#a100913a50f18e9b4e5ed418f97050b21',1,'btx::interfaces::ielog::eLogInterface']]],
+  ['update_5furl_471',['update_url',['../namespacemerge.html#a18c6296485496b9271012a29b2bc2a15',1,'merge.update_url()'],['../namespacescripts_1_1tasks.html#a547672661ede1e0881b4ad3178a0eb72',1,'scripts.tasks.update_url()']]],
+  ['user_472',['user',['../classplugins_1_1jid_1_1JIDSlurmOperator.html#ac4efbe53d01dc538f759d5321dd94e27',1,'plugins::jid::JIDSlurmOperator']]]
 ];

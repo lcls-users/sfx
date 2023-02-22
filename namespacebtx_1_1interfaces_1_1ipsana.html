@@ -90,6 +90,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a6fb6d1c08d6c4442cd850c0bf7c25e1b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1ipsana.html#a6fb6d1c08d6c4442cd850c0bf7c25e1b">disassemble_image_stack_batch</a> (images, pixel_index_map)</td></tr>
 <tr class="memdesc:a6fb6d1c08d6c4442cd850c0bf7c25e1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Diassemble a series of 2D diffraction patterns into their consituent panels.  <a href="namespacebtx_1_1interfaces_1_1ipsana.html#a6fb6d1c08d6c4442cd850c0bf7c25e1b">More...</a><br /></td></tr>
 <tr class="separator:a6fb6d1c08d6c4442cd850c0bf7c25e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30c4e4d55a160924893294c20b57c257"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1ipsana.html#a30c4e4d55a160924893294c20b57c257">bin_data</a> (arr, bin_factor, det_shape=None)</td></tr>
+<tr class="memdesc:a30c4e4d55a160924893294c20b57c257"><td class="mdescLeft">&#160;</td><td class="mdescRight">binning methods ####  <a href="namespacebtx_1_1interfaces_1_1ipsana.html#a30c4e4d55a160924893294c20b57c257">More...</a><br /></td></tr>
+<tr class="separator:a30c4e4d55a160924893294c20b57c257"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bed0871dc13c863ce5da2114602df45"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1ipsana.html#a1bed0871dc13c863ce5da2114602df45">bin_pixel_index_map</a> (arr, bin_factor)</td></tr>
+<tr class="memdesc:a1bed0871dc13c863ce5da2114602df45"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bin pixel_index_map by bin factor.  <a href="namespacebtx_1_1interfaces_1_1ipsana.html#a1bed0871dc13c863ce5da2114602df45">More...</a><br /></td></tr>
+<tr class="separator:a1bed0871dc13c863ce5da2114602df45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a1e991ecff6ee6d375907e070e15a4bfc"></a>
@@ -129,6 +135,76 @@ Returns</h2>
 
 </div>
 </div>
+<a id="a30c4e4d55a160924893294c20b57c257"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a30c4e4d55a160924893294c20b57c257">&#9670;&nbsp;</a></span>bin_data()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.interfaces.ipsana.bin_data </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>arr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bin_factor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>det_shape</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>binning methods #### </p>
+<p>Bin detector data by bin_factor through averaging. Retrieved from <a href="https://github.com/apeck12/cmtip/blob/main/cmtip/prep_data.py">https://github.com/apeck12/cmtip/blob/main/cmtip/prep_data.py</a></p>
+<p>:param arr: array shape (n_images, n_panels, panel_shape_x, panel_shape_y) or if det_shape is given of shape (n_images, 1, n_pixels_per_image) :param bin_factor: how may fold to bin arr by :param det_shape: tuple of detector shape, optional :return arr_binned: binned data of same dimensions as arr </p>
+
+</div>
+</div>
+<a id="a1bed0871dc13c863ce5da2114602df45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bed0871dc13c863ce5da2114602df45">&#9670;&nbsp;</a></span>bin_pixel_index_map()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.interfaces.ipsana.bin_pixel_index_map </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>arr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bin_factor</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Bin pixel_index_map by bin factor. </p>
+<p>Retrieved from <a href="https://github.com/apeck12/cmtip/blob/main/cmtip/prep_data.py">https://github.com/apeck12/cmtip/blob/main/cmtip/prep_data.py</a></p>
+<p>:param arr: pixel_index_map of shape (n_panels, panel_shape_x, panel_shape_y, 2) :param bin_factor: how may fold to bin arr by :return binned_arr: binned pixel_index_map of same dimensions as arr </p>
+
+</div>
+</div>
 <a id="a6fb6d1c08d6c4442cd850c0bf7c25e1b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6fb6d1c08d6c4442cd850c0bf7c25e1b">&#9670;&nbsp;</a></span>disassemble_image_stack_batch()</h2>
 
@@ -162,8 +238,9 @@ Parameters</h2>
 <p>images : numpy.ndarray, 3d stack of assembled images, shape (n_images, fs_panel_shape, ss_panel_shape) of shape (fs_panel_shape, ss_panel_shape) if ony one image provided pixel_index_map : numpy.ndarray, 4d pixel coordinates, shape (n_panels, fs_panel_shape, ss_panel_shape, 2)</p>
 <h2><a class="anchor" id="autotoc_md66"></a>
 Returns</h2>
-<p>image_stack_batch : numpy.ndarray, 3d or 4d stack of images, shape (n_images, n_panels, fs_panel_shape, ss_panel_shape) or (n_panels, fs_panel_shape, ss_panel_shape) </p>
-
+<p>image_stack_batch : numpy.ndarray, 3d or 4d </p><pre class="fragment">stack of images, shape (n_images, n_panels, fs_panel_shape, ss_panel_shape)
+or (n_panels, fs_panel_shape, ss_panel_shape)
+</pre> 
 </div>
 </div>
 <a id="a1aee10f469f1813c0dc29a77c64572a6"></a>
@@ -195,7 +272,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Feb 18 2023 02:42:20 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Feb 22 2023 06:56:26 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
