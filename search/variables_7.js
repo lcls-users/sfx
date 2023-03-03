@@ -1,7 +1,8 @@
 var searchData=
 [
-  ['help_880',['help',['../namespacescripts_1_1elog__trigger.html#a799b4b7967aa5d068777fc3077ecd0ca',1,'scripts::elog_trigger']]],
-  ['highres_881',['highres',['../namespacemerge.html#a24bbf6e98f14e047748d176253565bd0',1,'merge']]],
-  ['hkl_5fdir_882',['hkl_dir',['../classmerge_1_1StreamtoMtz.html#af6092e09cfe5828b42597bed25479908',1,'merge::StreamtoMtz']]],
-  ['hutch_883',['hutch',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a9bba9255c957414206468a5dae32483a',1,'btx::interfaces::ipsana::PsanaInterface']]]
+  ['gain_5fmap_932',['gain_map',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a94525f6b19b23f66639baf6edc5b4a21',1,'btx::diagnostics::run::RunDiagnostics']]],
+  ['gain_5fmode_933',['gain_mode',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae42e8c224e09f154d705887dbac0a2ec',1,'btx::diagnostics::run::RunDiagnostics']]],
+  ['gain_5ftraj_934',['gain_traj',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a072a4b0c92893e0b7fc1eea72f15b62c',1,'btx::diagnostics::run::RunDiagnostics']]],
+  ['geom_935',['geom',['../classindexer_1_1Indexer.html#a041875b2d19beca31c2e4d7c8e228e4d',1,'indexer::Indexer']]],
+  ['geopt_936',['geopt',['../namespacebtx_1_1diagnostics_1_1geoptimizer.html#a098882bc6238ab07266647050c46a18c',1,'btx::diagnostics::geoptimizer']]]
 ];

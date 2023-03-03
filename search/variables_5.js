@@ -1,13 +1,16 @@
 var searchData=
 [
-  ['fetch_5fgeom_865',['fetch_geom',['../namespacesetup__metrology.html#a3ef34e40dc410a26119227dc1977274e',1,'setup_metrology']]],
-  ['fetch_5fmask_866',['fetch_mask',['../namespacesetup__metrology.html#a47ae47fb97c6d67ea905fe12ab06cf9a',1,'setup_metrology']]],
-  ['fiducials_867',['fiducials',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#ad7b6323859c5fc91225d7852857684b7',1,'btx::interfaces::ipsana::PsanaInterface']]],
-  ['fig_5fdir_868',['fig_dir',['../classmerge_1_1StreamtoMtz.html#ad848a8fa30d846863b7fe81c649f87b4',1,'merge::StreamtoMtz']]],
-  ['file_869',['file',['../namespacescripts_1_1main.html#a11e731d1bcd7e1e89aafe33d7f112826',1,'scripts::main']]],
-  ['file_5flimits_5frefn_870',['file_limits_refn',['../classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a1d9bfec0b2e19e520d977dc1b2325904',1,'btx::interfaces::istream::StreamInterface']]],
-  ['find_5fpeaks_871',['find_peaks',['../namespaceindex__run.html#a16c83b2999284233f7233982eb441bad',1,'index_run.find_peaks()'],['../namespaceprocess__sfx.html#ac5bedb76d0bfcef973efe83637f8035a',1,'process_sfx.find_peaks()']]],
-  ['fname_872',['fname',['../classpeak__finder_1_1PeakFinder.html#a60ee780f242c1dba503045d3a07a1ee8',1,'peak_finder::PeakFinder']]],
-  ['foms_873',['foms',['../namespacemerge.html#a8b1c2fd57a042454b2abaeee944c7d87',1,'merge']]],
-  ['frequency_874',['frequency',['../classbtx_1_1diagnostics_1_1geoptimizer_1_1Geoptimizer.html#a2093fb5579700201874aae8a9c90d91e',1,'btx::diagnostics::geoptimizer::Geoptimizer']]]
+  ['edge_5fresolution_909',['edge_resolution',['../classbtx_1_1diagnostics_1_1geom__opt_1_1GeomOpt.html#a3a328bb8396327c98e30098bc2caf215',1,'btx::diagnostics::geom_opt::GeomOpt']]],
+  ['edges_910',['edges',['../classrawimagetimetool_1_1RawImageTimeTool.html#a726835140ff569a7d92ea38524625575',1,'rawimagetimetool::RawImageTimeTool']]],
+  ['edges_5ffit_911',['edges_fit',['../classrawimagetimetool_1_1RawImageTimeTool.html#a77753c8dade71d27f3a888c958aa4879',1,'rawimagetimetool::RawImageTimeTool']]],
+  ['elog_5fdisplay_912',['elog_display',['../namespacewrapup__sample.html#a03d2fb74e17e06d2944571b3f09a03c4',1,'wrapup_sample.elog_display()'],['../namespacerun__stats.html#a6d4486bd6ae2fd79f18c2140860a0b47',1,'run_stats.elog_display()'],['../namespaceprocess__sfx.html#aa3f8aa6a9d1635f972cc318f7fd1c5e1',1,'process_sfx.elog_display()'],['../namespacemerge.html#a4b549ba2403b5a1e0dd3bae0c995dcc8',1,'merge.elog_display()'],['../namespaceoptimize__geometry.html#a801de82fdbf02f6e29acf2f4bc1e8f24',1,'optimize_geometry.elog_display()']]],
+  ['endpoints_913',['endpoints',['../classplugins_1_1jid_1_1JIDSlurmOperator.html#ae8116d91aa00c71797fa8bb78a062e1c',1,'plugins::jid::JIDSlurmOperator']]],
+  ['event_5fcode_914',['event_code',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#ae739d9c1b5b65f181d5edb703d789da2',1,'btx::interfaces::ipsana::PsanaInterface']]],
+  ['event_5flogic_915',['event_logic',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a84e8ebdc0403359f74e167c852b9be10',1,'btx::interfaces::ipsana::PsanaInterface']]],
+  ['event_5freceiver_916',['event_receiver',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#afb4d5292cbeeb99458da6a4b5212bc6e',1,'btx::interfaces::ipsana::PsanaInterface']]],
+  ['evr_5fdet_917',['evr_det',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a968db86d102a46584513f308a8089bbb',1,'btx::interfaces::ipsana::PsanaInterface']]],
+  ['exist_5fok_918',['exist_ok',['../namespacebtx_1_1diagnostics_1_1geoptimizer.html#a4360852562c5f821e619c85841fe68eb',1,'btx::diagnostics::geoptimizer']]],
+  ['exp_919',['exp',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#aa694974162bebad96cb57bf4bfa0355f',1,'btx.interfaces.ipsana.PsanaInterface.exp()'],['../classindexer_1_1Indexer.html#a783ab574d2e17605c74a5f7dbc01dcb4',1,'indexer.Indexer.exp()'],['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html#a3484eb5da4db0cfcee89f2c86d81000b',1,'btx.interfaces.imask.MaskInterface.exp()'],['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#a5b06026b1196de561ba819e0587c0068',1,'btx.interfaces.ielog.eLogInterface.exp()']]],
+  ['experiment_5fname_920',['experiment_name',['../namespacescripts_1_1elog__trigger.html#a07ee30d61d5929300108371109ab7ce9',1,'scripts::elog_trigger']]],
+  ['expmt_921',['expmt',['../classrawimagetimetool_1_1RawImageTimeTool.html#a49603b6ebcdc44e4539f0b9dbb0a997a',1,'rawimagetimetool::RawImageTimeTool']]]
 ];

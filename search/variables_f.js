@@ -1,24 +1,9 @@
 var searchData=
 [
-  ['panel_5fmask_943',['panel_mask',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a6137d3e727f62d3cde7b5a950b61fe88',1,'btx::diagnostics::run::RunDiagnostics']]],
-  ['params_944',['params',['../classbtx_1_1misc_1_1radial_1_1OptimizeConcentricCircles.html#a44f577a4c5d3635992e2c0ce92f26d39',1,'btx.misc.radial.OptimizeConcentricCircles.params()'],['../namespacemerge.html#a8c56926ccc79ecd89561a327a256ff03',1,'merge.params()'],['../namespaceindexer.html#af6f2853f616fecd6dbe6f2dc4729bbd4',1,'indexer.params()'],['../namespacebtx_1_1misc_1_1metrology.html#ae7c6d5e82d8a08525412dd6c2c15eb03',1,'btx.misc.metrology.params()'],['../namespacebtx_1_1interfaces_1_1istream.html#a37d9c84ed59c3d3cf2d59e820edc8072',1,'btx.interfaces.istream.params()'],['../namespacebtx_1_1interfaces_1_1imtz.html#a96ad7c92b5503185d06fd3a964def4b2',1,'btx.interfaces.imtz.params()'],['../namespacebtx_1_1diagnostics_1_1geoptimizer.html#a960d4a3c3c3e03ebb5039dc43fe3ef40',1,'btx.diagnostics.geoptimizer.params()'],['../namespacepeak__finder.html#a83741b74ce792e1fd0cc9efe0f1c2e99',1,'peak_finder.params()'],['../namespacepipca.html#ab990dc3f8f50e986cbe7006e8fe8c825',1,'pipca.params()']]],
-  ['parser_945',['parser',['../namespacescripts_1_1elog__trigger.html#a3af8ec08685c7bf95c3fd7f67dd98109',1,'scripts::elog_trigger']]],
-  ['pc_5fdata_946',['pc_data',['../classpipca_1_1PiPCA.html#a1e9b5c7b5f2baf23d14fd411f0ce14d9',1,'pipca::PiPCA']]],
-  ['peak_5frank_947',['peak_rank',['../classpeak__finder_1_1PeakFinder.html#a308ea3782d48ac964589cd68eea7a105',1,'peak_finder::PeakFinder']]],
-  ['peakfinding_5fsummary_948',['peakfinding_summary',['../classindexer_1_1Indexer.html#a0a58bef2bfc717d2307894130efcbb13',1,'indexer::Indexer']]],
-  ['pf_949',['pf',['../namespacepeak__finder.html#acecdba09aa4441240cf63c638064b09e',1,'peak_finder']]],
-  ['pipca_950',['pipca',['../namespacepipca.html#aef58b8f239199dcd4ac69d8c9907f59a',1,'pipca']]],
-  ['pixel_5findex_5fmap_951',['pixel_index_map',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a96242fa41d479371d59b3a4b8d1fcff9',1,'btx.diagnostics.run.RunDiagnostics.pixel_index_map()'],['../classbtx_1_1diagnostics_1_1run_1_1PixelTracker.html#a72e996c52f45e372e5a66db4dbaa033f',1,'btx.diagnostics.run.PixelTracker.pixel_index_map()'],['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html#ac0126cadde94aac7621c4fe447db601f',1,'btx.interfaces.imask.MaskInterface.pixel_index_map()']]],
-  ['pixel_5fsize_952',['pixel_size',['../classbtx_1_1diagnostics_1_1ag__behenate_1_1AgBehenate.html#ab3f713ba2a7fe91a260628a34ee60b7c',1,'btx::diagnostics::ag_behenate::AgBehenate']]],
-  ['poke_5finterval_953',['poke_interval',['../classplugins_1_1jid_1_1JIDSlurmOperator.html#a5f4a52ab73cd9f39b725dbd6692424f5',1,'plugins::jid::JIDSlurmOperator']]],
-  ['powder_954',['powder',['../classbtx_1_1diagnostics_1_1ag__behenate_1_1AgBehenate.html#ae94deae7497150c0ccfd0ea3f143fb59',1,'btx::diagnostics::ag_behenate::AgBehenate']]],
-  ['powder_5fhits_955',['powder_hits',['../classpeak__finder_1_1PeakFinder.html#a55c4481909b31f2e359d74c96b624095',1,'peak_finder::PeakFinder']]],
-  ['powder_5fmisses_956',['powder_misses',['../classpeak__finder_1_1PeakFinder.html#a70e7c18bca592d85c30e7d561e6304a0',1,'peak_finder::PeakFinder']]],
-  ['powders_957',['powders',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae31b33353c43d17cccd89809bab70a0c',1,'btx::diagnostics::run::RunDiagnostics']]],
-  ['powders_5ffinal_958',['powders_final',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a63baedc79418959be6fcd6bb593298d8',1,'btx::diagnostics::run::RunDiagnostics']]],
-  ['prefix_959',['prefix',['../classmerge_1_1StreamtoMtz.html#a27b6c76f74d6b6c4745fcc5f3709f5a3',1,'merge::StreamtoMtz']]],
-  ['priming_960',['priming',['../classpipca_1_1PiPCA.html#a0b4580c5a09d27ea580f498dcf8756af',1,'pipca::PiPCA']]],
-  ['profile_961',['profile',['../classindexer_1_1Indexer.html#a6a7ad84928b4b8890d1e28c303911226',1,'indexer::Indexer']]],
-  ['psi_962',['psi',['../classpipca_1_1PiPCA.html#a48524b66bdb75dbd1a256d3791d16bee',1,'pipca.PiPCA.psi()'],['../classpeak__finder_1_1PeakFinder.html#ae3b10c04204f63f5e53996009d1fedfe',1,'peak_finder.PeakFinder.psi()'],['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html#a9a2a3b03118924f34b45ce74380872ac',1,'btx.interfaces.imask.MaskInterface.psi()'],['../classbtx_1_1diagnostics_1_1run_1_1PixelTracker.html#ae332dfbf687119ef588defbd08ebaf1d',1,'btx.diagnostics.run.PixelTracker.psi()'],['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#af6e8999e5fcf360f9c5989122742f95c',1,'btx.diagnostics.run.RunDiagnostics.psi()']]],
-  ['push_5fres_963',['push_res',['../namespacemerge.html#a77643c8628e7682461101fa373ff20d8',1,'merge']]]
+  ['opt_5fgeom_994',['opt_geom',['../namespaceoptimize__geometry.html#aa3e83843f96a5bce6db8212bb51ad8df',1,'optimize_geometry']]],
+  ['outdir_995',['outdir',['../classpeak__finder_1_1PeakFinder.html#ac8e72985c6de2e49085de5d4bfb413cd',1,'peak_finder::PeakFinder']]],
+  ['outhkl_996',['outhkl',['../classmerge_1_1StreamtoMtz.html#a01df5d98e34d4c7408a8d73d9db1efca',1,'merge::StreamtoMtz']]],
+  ['outliers_997',['outliers',['../classpipca_1_1PiPCA.html#a1095ee115bc097e5511aa49ee2ac633f',1,'pipca::PiPCA']]],
+  ['output_998',['output',['../namespacebtx_1_1interfaces_1_1istream.html#a3f37f557269e7005f023b112767804dc',1,'btx::interfaces::istream']]],
+  ['output_5fdir_999',['output_dir',['../classpipca_1_1PiPCA.html#a88ec3c500f3e1b1a688cf40dd8244cc5',1,'pipca::PiPCA']]]
 ];
