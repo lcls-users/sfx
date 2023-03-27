@@ -312,7 +312,7 @@ Private Member Functions</h2></td></tr>
 
 <p>For parallel processing. </p>
 <p>Update self.counter and self.max_events such that events will be distributed evenly across total_ranks, and each rank will only process its assigned events. Hack to avoid explicitly using MPI here.</p>
-<h2><a class="anchor" id="autotoc_md84"></a>
+<h2><a class="anchor" id="autotoc_md91"></a>
 Parameters</h2>
 <p>rank : int current rank total_ranks : int total number of ranks max_events : int, optional total number of images desired, option to override self.max_events </p>
 
@@ -335,7 +335,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Retrieve an estimate of the detector distance in mm. </p>
-<h2><a class="anchor" id="autotoc_md76"></a>
+<h2><a class="anchor" id="autotoc_md83"></a>
 Returns</h2>
 <p>distance : float estimated detector distance </p>
 
@@ -369,10 +369,10 @@ Returns</h2>
 
 <p>Fraction of beam transmitted to the sample. </p>
 <p>The attenuation is set by beamline scientists before the beam reaches the sample.</p>
-<h2><a class="anchor" id="autotoc_md79"></a>
+<h2><a class="anchor" id="autotoc_md86"></a>
 Parameters</h2>
 <p>pv_beam_transmission : str PV associated with beam attenuation</p>
-<h2><a class="anchor" id="autotoc_md80"></a>
+<h2><a class="anchor" id="autotoc_md87"></a>
 Returns</h2>
 <p>beam_transmission : float 0.0 is no beam, 1.0 is full beam. </p>
 
@@ -405,10 +405,10 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Retrieve the camera length (clen) in mm. </p>
-<h2><a class="anchor" id="autotoc_md77"></a>
+<h2><a class="anchor" id="autotoc_md84"></a>
 Parameters</h2>
 <p>pv_camera_length : str PV associated with camera length</p>
-<h2><a class="anchor" id="autotoc_md78"></a>
+<h2><a class="anchor" id="autotoc_md85"></a>
 Returns</h2>
 <p>clen : float clen, where clen = distance - coffset in mm </p>
 
@@ -453,10 +453,10 @@ Returns</h2>
 <li><a href="https://www-ssrl.slac.stanford.edu/lcls/technotes/LCLS-TN-09-5.pdf">https://www-ssrl.slac.stanford.edu/lcls/technotes/LCLS-TN-09-5.pdf</a></li>
 </ul>
 <p>Note: the pulse energy is equal to the photon energy times the number of photons in the pulse.</p>
-<h2><a class="anchor" id="autotoc_md74"></a>
+<h2><a class="anchor" id="autotoc_md81"></a>
 Parameters</h2>
 <p>evt : psana.Event object individual psana event mode : str, optional whether to only return the energy 'before' or 'after' gas attenuation, or if 'None' the average of the two.</p>
-<h2><a class="anchor" id="autotoc_md75"></a>
+<h2><a class="anchor" id="autotoc_md82"></a>
 Returns</h2>
 <p>gas_detector_energy: float Beam energy in mJ </p>
 
@@ -496,10 +496,10 @@ Returns</h2>
 
 <p>Retrieve a fixed number of images from the run. </p>
 <p>If the pedestal or gain information is unavailable and unassembled images are requested, return uncalibrated images.</p>
-<h2><a class="anchor" id="autotoc_md85"></a>
+<h2><a class="anchor" id="autotoc_md92"></a>
 Parameters</h2>
 <p>num_images : int number of images to retrieve (per rank) assemble : bool, default=True whether to assemble panels into image</p>
-<h2><a class="anchor" id="autotoc_md86"></a>
+<h2><a class="anchor" id="autotoc_md93"></a>
 Returns</h2>
 <p>images : numpy.ndarray, shape ((num_images,) + det_shape) images retrieved sequentially from run, optionally assembled </p>
 
@@ -532,10 +532,10 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Retrieve the photon energy in eV for a specific event. </p>
-<h2><a class="anchor" id="autotoc_md72"></a>
+<h2><a class="anchor" id="autotoc_md79"></a>
 Parameters</h2>
 <p>evt : psana.Event object individual psana event</p>
-<h2><a class="anchor" id="autotoc_md73"></a>
+<h2><a class="anchor" id="autotoc_md80"></a>
 Returns</h2>
 <p>photon_energy : float photon energy in eV </p>
 
@@ -558,7 +558,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Retrieve the detector's pixel size in millimeters. </p>
-<h2><a class="anchor" id="autotoc_md68"></a>
+<h2><a class="anchor" id="autotoc_md75"></a>
 Returns</h2>
 <p>pixel_size : float detector pixel size in mm </p>
 
@@ -592,7 +592,7 @@ Returns</h2>
 
 <p>Retrieve the timestamp (seconds, nanoseconds, fiducials) associated with the input event and store in self variables. </p>
 <p>For further details, see the example here: <a href="https://confluence.slac.stanford.edu/display/PSDM/Jump+Quickly+to+Events+Using+Timestamps">https://confluence.slac.stanford.edu/display/PSDM/Jump+Quickly+to+Events+Using+Timestamps</a></p>
-<h2><a class="anchor" id="autotoc_md81"></a>
+<h2><a class="anchor" id="autotoc_md88"></a>
 Parameters</h2>
 <p>evtId : psana.EventId the event ID associated with a particular image </p>
 
@@ -615,7 +615,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Retrieve the detector's wavelength in Angstrom. </p>
-<h2><a class="anchor" id="autotoc_md69"></a>
+<h2><a class="anchor" id="autotoc_md76"></a>
 Returns</h2>
 <p>wavelength : float wavelength in Angstrom </p>
 
@@ -648,10 +648,10 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Retrieve the detector's wavelength for a specific event. </p>
-<h2><a class="anchor" id="autotoc_md70"></a>
+<h2><a class="anchor" id="autotoc_md77"></a>
 Parameters</h2>
 <p>evt : psana.Event object individual psana event</p>
-<h2><a class="anchor" id="autotoc_md71"></a>
+<h2><a class="anchor" id="autotoc_md78"></a>
 Returns</h2>
 <p>wavelength : float wavelength in Angstrom </p>
 
@@ -696,7 +696,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Instantiate DataSource and Detector objects; use the run functionality to retrieve all psana.EventTimes. </p>
-<h2><a class="anchor" id="autotoc_md67"></a>
+<h2><a class="anchor" id="autotoc_md74"></a>
 Parameters</h2>
 <p>det_type : str detector type, e.g. epix10k2M or jungfrau4M ffb_mode : bool if True, set up in an FFB-compatible style calibdir: str directory to alternative calibration files </p>
 
@@ -733,10 +733,10 @@ Parameters</h2>
 <li>it has a specific event_code and our event_logic is False</li>
 <li>it does not have that event_code and our event_logic is True.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md82"></a>
+<h2><a class="anchor" id="autotoc_md89"></a>
 Parameters</h2>
 <p>evt : psana.Event object individual psana event</p>
-<h2><a class="anchor" id="autotoc_md83"></a>
+<h2><a class="anchor" id="autotoc_md90"></a>
 Returns</h2>
 <p>skip_status : Boolean if True, skip event </p>
 
@@ -1007,7 +1007,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 3 2023 17:49:29 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Mon Mar 27 2023 22:43:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

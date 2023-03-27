@@ -237,10 +237,10 @@ Public Attributes</h2></td></tr>
 
 <p>Check whether the first event of the run should be excluded; it's considered an outlier if mean_0 &gt; &lt; mean_n + scale_factor * std_n &gt; where n ranges from [1,n_images). </p>
 <p>If any of the first few events are None, exclude the first image to simplify matters.</p>
-<h2><a class="anchor" id="autotoc_md31"></a>
+<h2><a class="anchor" id="autotoc_md38"></a>
 Parameters</h2>
 <p>mask : np.ndarray, shape (n_panels, n_x, n_y) binary mask file or array in unassembled psana shape, optional scale_factor : float parameter that tunes how conservative outlier rejection is n_images : int number of total images to compare, including first</p>
-<h2><a class="anchor" id="autotoc_md32"></a>
+<h2><a class="anchor" id="autotoc_md39"></a>
 Returns:</h2>
 <p>exclude : bool if True, first event was detected as an outlier </p>
 
@@ -273,7 +273,7 @@ Returns:</h2>
 </div><div class="memdoc">
 
 <p>Compute the base powders: max, sum, sum of squares. </p>
-<h2><a class="anchor" id="autotoc_md21"></a>
+<h2><a class="anchor" id="autotoc_md28"></a>
 Parameters</h2>
 <p>img : numpy.ndarray, 3d unassembled, calibrated images of shape (n_panels, n_x, n_y) </p>
 
@@ -337,7 +337,7 @@ Parameters</h2>
 
 <p>Compute powders and per-image statistics. </p>
 <p>If a mask is provided, it is only applied to the stats trajectories, not in computing the powder.</p>
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md34"></a>
 Parameters</h2>
 <p>max_events : int number of images to process; if -1, process entire run mask : str or np.ndarray, shape (n_panels, n_x, n_y) binary mask file or array in unassembled psana shape, optional powder_only : bool if True, only compute the powder pattern threshold : float if supplied, exclude events whose mean is above this value gain_mode : str gain mode to retrieve statistics for, e.g. 'AML-L' raw_img : bool if True, analyze raw rather than calibrated images </p>
 
@@ -376,7 +376,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Compute the following image stats: mean, std deviation, max, min. </p>
-<h2><a class="anchor" id="autotoc_md24"></a>
+<h2><a class="anchor" id="autotoc_md31"></a>
 Parameters</h2>
 <p>evt : psana.Event object individual psana event <br  />
  img : numpy.ndarray, 3d unassembled, calibrated images of shape (n_panels, n_x, n_y) </p>
@@ -436,7 +436,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Gather stats from various ranks into single arrays in self.stats_final. </p>
-<h2><a class="anchor" id="autotoc_md25"></a>
+<h2><a class="anchor" id="autotoc_md32"></a>
 Parameters</h2>
 <p>n_empty : int number of empty images in this rank n_empty_raw : int number of empty raw events in this rank </p>
 
@@ -475,7 +475,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Retrieve statistics for a particular gain mode, specifically a map of the number of times a pixel has been in a certain gain mode and the number of pixels in that gain mode per event. </p>
-<h2><a class="anchor" id="autotoc_md26"></a>
+<h2><a class="anchor" id="autotoc_md33"></a>
 Parameters</h2>
 <p>raw : ndarray, shape (det_shape) uncalibrated image gain_mode : str gain mode to retrieve statistics for, e.g. 'AML-L' </p>
 
@@ -514,7 +514,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Save powders to output directory. </p>
-<h2><a class="anchor" id="autotoc_md22"></a>
+<h2><a class="anchor" id="autotoc_md29"></a>
 Parameters</h2>
 <p>output : str path to directory in which to save powders, optional raw_img : bool if True, save powder files with _raw nomenclature </p>
 
@@ -553,7 +553,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Save trajectories of statistics to output directory. </p>
-<h2><a class="anchor" id="autotoc_md23"></a>
+<h2><a class="anchor" id="autotoc_md30"></a>
 Parameters</h2>
 <p>output : str path to directory in which to save traces, optional raw_img : bool if True, save powder files with _raw nomenclature </p>
 
@@ -593,7 +593,7 @@ Parameters</h2>
 
 <p>Plot the number of incoming photons per event, the number of incoming photons versus the mean image intensity, and the beam energy versus photon energy. </p>
 <p>Energies are in eV.</p>
-<h2><a class="anchor" id="autotoc_md30"></a>
+<h2><a class="anchor" id="autotoc_md37"></a>
 Parameters</h2>
 <p>output : str path for optionally saving plot to disk outlier_threshold : float mean intensity threshold for considering images outliers </p>
 
@@ -626,7 +626,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Plot the distribution of the frequency with which each pixel appears in a particular gain mode. </p>
-<h2><a class="anchor" id="autotoc_md29"></a>
+<h2><a class="anchor" id="autotoc_md36"></a>
 Parameters</h2>
 <p>output : str path for optionally saving plot to disk </p>
 
@@ -719,7 +719,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Plot trajectories of run statistics. </p>
-<h2><a class="anchor" id="autotoc_md28"></a>
+<h2><a class="anchor" id="autotoc_md35"></a>
 Parameters</h2>
 <p>output : str path for optionally saving plot to disk </p>
 
@@ -928,7 +928,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 3 2023 17:49:29 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Mon Mar 27 2023 22:43:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

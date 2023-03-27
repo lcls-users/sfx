@@ -112,10 +112,10 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Load a CCTBX mask, converting from a list of flex.bools to a numpy array. </p>
-<h2><a class="anchor" id="autotoc_md43"></a>
+<h2><a class="anchor" id="autotoc_md50"></a>
 Parameters</h2>
 <p>input_file : str path to CCTBX mask in pickle format</p>
-<h2><a class="anchor" id="autotoc_md44"></a>
+<h2><a class="anchor" id="autotoc_md51"></a>
 Returns</h2>
 <p>mask : numpy.ndarray, CCTBX-compatible shape binary mask </p>
 
@@ -155,10 +155,10 @@ Returns</h2>
 
 <p>Load a CrystFEL compatible mask from the input h5 file and optionally reshape to the unassembled detector shape. </p>
 <p>Currently only Jungfrau4M and epix10k2M detectors are supported for reshape=True.</p>
-<h2><a class="anchor" id="autotoc_md45"></a>
+<h2><a class="anchor" id="autotoc_md52"></a>
 Parameters</h2>
 <p>input_file : str path to h5 file containing mask dataset : str internal path to dataset, default is psocake compatible reshape : bool if True, reshape to unassembled psana detector shape</p>
-<h2><a class="anchor" id="autotoc_md46"></a>
+<h2><a class="anchor" id="autotoc_md53"></a>
 Returns</h2>
 <p>mask : numpy.ndarray, shape depends on reshape flag binary mask. if not reshape, shape is (n_panels * n_pixels_fs, n_pixels_ss) if reshape, shape is (n_panels, n_pixels_fs, n_pixels_ss) </p>
 
@@ -192,10 +192,10 @@ Returns</h2>
 
 <p>Stack the asics to reshape from CCTBX to psana (unassembled) conventions. </p>
 <p>For the epix10k2M, for example, the shape is updated from (64,176,192) -&gt; (16,352,384). This reverses the code here: <a href="https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57">https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57</a>.</p>
-<h2><a class="anchor" id="autotoc_md41"></a>
+<h2><a class="anchor" id="autotoc_md48"></a>
 Parameters</h2>
 <p>image : numpy.ndarray, shape (n_asics, n_asics_pixels_fs, n_asics_pixels_ss) image in unstacked asics format det_type : str epix10k2M or jungfrau4M</p>
-<h2><a class="anchor" id="autotoc_md42"></a>
+<h2><a class="anchor" id="autotoc_md49"></a>
 Returns</h2>
 <p>reshaped_image : numpy.ndarray, shape (n_panels, n_pixels_fs, n_pixels_ss) image in unassembled psana format </p>
 
@@ -235,10 +235,10 @@ Returns</h2>
 
 <p>Unstack the asics and convert to CCTBX data type - specifically, a list of flex.double or flex.bool objects. </p>
 <p>For the epix10k2M, for example, the shape is updated from (16,352,384) -&gt; (64,176,192). This mimics the code here: <a href="https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57">https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57</a>.</p>
-<h2><a class="anchor" id="autotoc_md39"></a>
+<h2><a class="anchor" id="autotoc_md46"></a>
 Parameters</h2>
 <p>image : numpy.ndarray, shape (n_panels, n_pixels_fs, n_pixels_ss) image in unassembled psana format det_type : str epix10k2M or jungfrau4M dtype : str return data type, double or (for masks) bool</p>
-<h2><a class="anchor" id="autotoc_md40"></a>
+<h2><a class="anchor" id="autotoc_md47"></a>
 Returns</h2>
 <p>reshaped_image : list of flex.bool or flex.double arrays list of unstacked asics data </p>
 
@@ -247,7 +247,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 3 2023 17:49:29 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Mon Mar 27 2023 22:43:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

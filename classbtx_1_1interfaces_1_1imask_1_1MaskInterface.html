@@ -191,7 +191,7 @@ Private Member Functions</h2></td></tr>
 
 <p>Remake mask in CCTBX format, by reshaping and converting to flex.bool. </p>
 <p>Currently only the Jungfrau and Epix10k detectors are supported.</p>
-<h2><a class="anchor" id="autotoc_md52"></a>
+<h2><a class="anchor" id="autotoc_md59"></a>
 Returns</h2>
 <p>mask : list of flex bool objects binary mask in CCTBX format </p>
 
@@ -239,7 +239,7 @@ Returns</h2>
 
 <p>Save input mask to hdf5 format, reshaped for CrystFEL compatibility. </p>
 <p>Reshaping is based on the looping performed here: <a href="https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57">https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57</a>.</p>
-<h2><a class="anchor" id="autotoc_md51"></a>
+<h2><a class="anchor" id="autotoc_md58"></a>
 Parameters</h2>
 <p>output : str path to output mask file mask : numpy.ndarray, shape (n_panels * n_pixels_fs, n_pixels_ss) binary mask </p>
 
@@ -285,7 +285,7 @@ Parameters</h2>
 
 <p>Generate a mask by extracting n_images random images from the indicated run, thresholding each, and then merging them. </p>
 <p>A value of 0 indicates a bad pixel. If n_edge is supplied, the border pixels of each panel will be masked as well.</p>
-<h2><a class="anchor" id="autotoc_md48"></a>
+<h2><a class="anchor" id="autotoc_md55"></a>
 Parameters</h2>
 <p>thresholds : tuple, 2d (lower, upper) thresholds for pixel value n_images : int number of images to threshold n_edge : int depth of border in pixels to mask for each panel </p>
 
@@ -331,7 +331,7 @@ Parameters</h2>
 
 <p>Load input mask and reshape from given format to psana unassembled. </p>
 <p>If self.masks is None, store to class variable. Otherwise create a combined mask by multipying this and current self.mask.</p>
-<h2><a class="anchor" id="autotoc_md50"></a>
+<h2><a class="anchor" id="autotoc_md57"></a>
 Parameters</h2>
 <p>input_file : str path to input mask mask_format : str, default='crystfel' input style - psana, psana_assembled, crystfel, or cctbx dataset : str internal path to dataset, only relevant for mask_format='crystfel' </p>
 
@@ -364,7 +364,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Mask the edge of each panel with a border n_edge pixels deep. </p>
-<h2><a class="anchor" id="autotoc_md47"></a>
+<h2><a class="anchor" id="autotoc_md54"></a>
 Parameters</h2>
 <p>n_edge : int number of pixels along each panel edge to mask </p>
 
@@ -403,7 +403,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Retrieve the latest mask from mrxv. </p>
-<h2><a class="anchor" id="autotoc_md49"></a>
+<h2><a class="anchor" id="autotoc_md56"></a>
 Parameters</h2>
 <p>dataset : str internal path to dataset, only relevant for mask_format='crystfel' </p>
 
@@ -442,7 +442,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Save mask to one of four formats: psana (.npy), psana_assembled (.npy), crystfel (.h5), or cctbx (.pickle). </p>
-<h2><a class="anchor" id="autotoc_md53"></a>
+<h2><a class="anchor" id="autotoc_md60"></a>
 Parameters</h2>
 <p>output : str path to output mask file mask_format : str output style - psana, psana_assembled, crystfel, or cctbx </p>
 
@@ -475,7 +475,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Visualize self.mask after assembling into 2d detector format. </p>
-<h2><a class="anchor" id="autotoc_md54"></a>
+<h2><a class="anchor" id="autotoc_md61"></a>
 Parameters</h2>
 <p>output : str, default: None if provided, save mask to this path </p>
 
@@ -572,7 +572,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 3 2023 17:49:29 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Mon Mar 27 2023 22:43:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

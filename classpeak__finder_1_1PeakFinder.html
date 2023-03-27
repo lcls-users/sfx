@@ -394,10 +394,10 @@ Private Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Compute radii of peaks based on their constituent pixels. </p>
-<h2><a class="anchor" id="autotoc_md156"></a>
+<h2><a class="anchor" id="autotoc_md163"></a>
 Parameters</h2>
 <p>peaks : numpy.ndarray, shape (n_peaks, 17) results of peak finding algorithm for a single event</p>
-<h2><a class="anchor" id="autotoc_md157"></a>
+<h2><a class="anchor" id="autotoc_md164"></a>
 Returns</h2>
 <p>radius : numpy.ndarray, shape (n_peaks) radii of peaks in pixels </p>
 
@@ -444,7 +444,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Generate mask, optionally a combination of the psana-generated mask and a user-supplied mask. </p>
-<h2><a class="anchor" id="autotoc_md153"></a>
+<h2><a class="anchor" id="autotoc_md160"></a>
 Parameters</h2>
 <p>mask_file : str path to mask in shape of unassembled detector, optional psana_mask : bool if True, retrieve mask from psana Detector object </p>
 
@@ -507,7 +507,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Add a virtual dataset to the hdf5 file. </p>
-<h2><a class="anchor" id="autotoc_md162"></a>
+<h2><a class="anchor" id="autotoc_md169"></a>
 Parameters</h2>
 <p>vfname : str filename for virtual CXI file fnames : list of str list of individual CXI file names dname : str dataset path within hdf5 file shape : tuple shape of virtual dataset dtype : type dataset type, e.g. int or float mode : str 'w' if first dataset, 'a' otherwise </p>
 
@@ -541,7 +541,7 @@ Parameters</h2>
 
 <p>Compute the powder hits and misses by iterating through valid files. </p>
 <p>We use this rather than comm.gather to avoid memory errors.</p>
-<h2><a class="anchor" id="autotoc_md161"></a>
+<h2><a class="anchor" id="autotoc_md168"></a>
 Parameters</h2>
 <p>fnames : list of str list of individual CXI file names </p>
 
@@ -614,10 +614,10 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Find peaks on a single image. </p>
-<h2><a class="anchor" id="autotoc_md158"></a>
+<h2><a class="anchor" id="autotoc_md165"></a>
 Parameters</h2>
 <p>img : numpy.ndarray, shape (n_panels, n_panels_fs, n_panels_ss) calibrated detector data in shape of unassembled detector</p>
-<h2><a class="anchor" id="autotoc_md159"></a>
+<h2><a class="anchor" id="autotoc_md166"></a>
 Returns</h2>
 <p>peaks : numpy.ndarray, shape (n_peaks, 17) results of peak finding algorithm for this image </p>
 
@@ -650,7 +650,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Generate a virtual dataset to map all individual files for this run. </p>
-<h2><a class="anchor" id="autotoc_md163"></a>
+<h2><a class="anchor" id="autotoc_md170"></a>
 Parameters</h2>
 <p>vfname : str filename for virtual CXI file <br  />
  </p>
@@ -684,7 +684,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Post summary to elog. </p>
-<h2><a class="anchor" id="autotoc_md160"></a>
+<h2><a class="anchor" id="autotoc_md167"></a>
 Parameters</h2>
 <p>update_url : str elog URL for posting progress update </p>
 
@@ -754,7 +754,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Set up the CXI files to which peak finding results will be saved. </p>
-<h2><a class="anchor" id="autotoc_md154"></a>
+<h2><a class="anchor" id="autotoc_md161"></a>
 Parameters</h2>
 <p>tag : str file nomenclature suffix, optional </p>
 
@@ -823,7 +823,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Set up PsanaInterface object and distribute events between ranks. </p>
-<h2><a class="anchor" id="autotoc_md152"></a>
+<h2><a class="anchor" id="autotoc_md159"></a>
 Parameters</h2>
 <p>exp : str experiment name run : int run number det_type : str detector name, e.g. jungfrau4M or epix10k2M calibdir : str directory to alternative calibration files </p>
 
@@ -874,7 +874,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Store event's peaks in CXI file, converting to Cheetah conventions. </p>
-<h2><a class="anchor" id="autotoc_md155"></a>
+<h2><a class="anchor" id="autotoc_md162"></a>
 Parameters</h2>
 <p>outh5 : h5py._hl.files.File open h5 file for storing output for this rank img : numpy.ndarray, shape (n_panels, n_panels_fs, n_panels_ss) calibrated detector data in shape of unassembled detector peaks : numpy.ndarray, shape (n_peaks, 17) results of peak finding algorithm for a single event phot_energy : float photon energy in eV </p>
 
@@ -1341,7 +1341,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 3 2023 17:49:29 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Mon Mar 27 2023 22:43:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

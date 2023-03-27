@@ -191,7 +191,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Write new geometry files (.geom and .data for CrystFEL and psana respectively) with the optimized center and distance. </p>
-<h2><a class="anchor" id="autotoc_md11"></a>
+<h2><a class="anchor" id="autotoc_md18"></a>
 Parameters</h2>
 <p>outdir : str path to output directory pv_camera_length : str PV associated with camera length </p>
 
@@ -224,7 +224,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Distribute the scan across all ranks. </p>
-<h2><a class="anchor" id="autotoc_md9"></a>
+<h2><a class="anchor" id="autotoc_md16"></a>
 Parameters</h2>
 <p>scan : list of tuples parameters (n_peak, center, distance) for initial estimates </p>
 
@@ -333,7 +333,7 @@ Parameters</h2>
 
 <p>Estimate the sample-detector distance based on the properties of the powder diffraction image. </p>
 <p>Currently only implemented for silver behenate.</p>
-<h2><a class="anchor" id="autotoc_md10"></a>
+<h2><a class="anchor" id="autotoc_md17"></a>
 Parameters</h2>
 <p>powder : str or int if str, path to the powder diffraction in .npy format if int, number of images from which to compute powder mask : str npy file of mask in psana unassembled detector shape center : tuple list of detector center(s) (xc,yc) in pixels as starting guess if None, assume assembled image center. distance : float list of the intial estimate(s) of the sample-detector distance in mm. If None, pull from calib file. n_iterations : int number of refinement steps n_peaks : int list of the number of observed peaks to use for center fitting threshold : float pixels above this intensity in powder get set to 0; None for no thresholding. deltas: bool whether centers are in absolute positions or delta pixels from detector center plot : str or None output path for figure; if '', plot but don't save; if None, don't plot plot_final_only: bool if True, only generate plot for the best distance / center </p>
 
@@ -366,7 +366,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Post summary to elog. </p>
-<h2><a class="anchor" id="autotoc_md12"></a>
+<h2><a class="anchor" id="autotoc_md19"></a>
 Parameters</h2>
 <p>update_url : str elog URL for posting progress update </p>
 
@@ -505,7 +505,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 3 2023 17:49:29 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Mon Mar 27 2023 22:43:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
