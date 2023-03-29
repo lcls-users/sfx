@@ -402,3 +402,36 @@ def timetool_correct(config):
             logger.info('No model found! Will return the nominal delay uncorrected!')
 
     tt.timetool_correct(run, nominal, model, figs)
+
+def scan_geom_index(config):
+    setup = config.setup
+    task = config.scan_geom_index
+    task_index = config.index
+    """ Reindex with a different cell file per geom """
+    from btx.processing.indexer import Indexer
+    taskdir = os.path.join(setup.root_dir, 'index')
+    os.makedirs(task.scan_dir, exist_ok=True)
+    task.runs = tuple([int(elem) for elem in task.runs.split()])
+    if len(task.runs) == 2:
+        task.runs = (*task.runs, 1)
+    run_range = range(task.runs[0], task.runs[1]+1, task.runs[2])
+    n_geoms = len(glob.glob(os.path.join(task.scan_dir, "geom/*geom")))
+    for num in range(n_geoms):
+        geom_file = os.path.join(task.scan_dir, "geom", f"shift{num}.geom")
+        cell_file = os.path.join(task.scan_dir, "cell", f"g{num}.cell")
+        for run in run_range:
+            os.makedirs(os.path.join(task.scan_dir, f"r{run:04}"), exist_ok=True)
+            jobname = f"r{run}_g{num}"
+            jobfile = os.path.join(task.scan_dir, f"idx_{jobname}.sh")
+            stream = os.path.join(task.scan_dir, f'r{run:04}/r{run:04}_g{num}.stream')
+            indexer_obj = Indexer(exp=config.setup.exp, run=run, det_type=config.setup.det_type, 
+                                  tag=task_index.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir,
+                                  geom=geom_file, cell=cell_file, int_rad=task_index.int_radius, methods=task_index.methods, 
+                                  tolerance=task_index.tolerance, no_revalidate=task_index.no_revalidate,
+                                  multi=task_index.multi, profile=task_index.profile, queue=setup.get('queue'), 
+                                  ncores=task_index.get('ncores') if task_index.get('ncores') is not None else 64,
+                                  time=task_index.get('time') if task_index.get('time') is not None else '1:00:00')
+            indexer_obj.tmp_exe = jobfile
+            indexer_obj.stream = stream
+            indexer_obj.launch(addl_command=" ", dont_report=True)
+    logger.debug('Done!')
