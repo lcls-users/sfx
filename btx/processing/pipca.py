@@ -649,20 +649,21 @@ class PiPCA:
 
         counter = self.psi.counter
         self.psi.counter = idx
-        img = self.get_formatted_images(1, 0, d)
+        img = self.psi.get_images(1, True)
+        # img = self.get_formatted_images(1, 0, d)
         self.psi.counter = counter
 
-        img = img - mu
-        img = np.reshape(img, (a, b, c))
+        # img = img - mu
+        # img = np.reshape(img, (a, b, c))
 
-        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
-        binned_pim = bin_pixel_index_map(pixel_index_map, bin_factor)
+        # pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+        # binned_pim = bin_pixel_index_map(pixel_index_map, bin_factor)
 
-        img = assemble_image_stack_batch(img, binned_pim)
+        # img = assemble_image_stack_batch(img, binned_pim)
 
         vmax = np.max(img.flatten())
         ax.imshow(
-            img,
+            img.squeeze(),
             norm=colors.SymLogNorm(linthresh=1.0, linscale=1.0, vmin=0, vmax=vmax),
             interpolation=None
         )
