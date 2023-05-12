@@ -50,7 +50,7 @@ class StreamtoMtz:
         # make path to executable
         if tmp_exe is None:
             tmp_exe = os.path.join(self.taskdir ,f'merge.sh')
-        self.js = JobScheduler(tmp_exe, ncores=self.ncores, jobname=f'merge', queue=self.queue)
+        self.js = JobScheduler(tmp_exe, ncores=self.ncores, jobname=f'merge', queue=self.queue, time='3:00:00')
         self.js.write_header()
 
         # retrieve paths

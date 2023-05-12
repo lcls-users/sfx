@@ -155,7 +155,7 @@ def find_peaks(config):
     os.makedirs(taskdir, exist_ok=True)
     mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
     pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, outdir=os.path.join(taskdir ,f"r{setup.run:04}"),
-                    event_receiver=setup.get('event_receiver'), event_code=setup.get('event_code'), event_logic=setup.get('event_logic'),
+                    event_receiver=setup.get('event_receiver'), event_code=setup.get('event_code'), event_logic=setup.get('event_logic'), which_light=setup.get('which_light'),
                     tag=task.tag, mask=mask_file, psana_mask=task.psana_mask, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr,
                     son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm,
@@ -434,4 +434,42 @@ def scan_geom_index(config):
             indexer_obj.tmp_exe = jobfile
             indexer_obj.stream = stream
             indexer_obj.launch(addl_command=" ", dont_report=True)
+    logger.debug('Done!')
+
+def scan_geom_merge(config):
+    setup = config.setup
+    task = config.scan_geom_merge
+    task_merge = config.merge
+    """ Concatenate streams per geom and merge """
+    from btx.processing.merge import StreamtoMtz
+    merge_dir = os.path.join(task.scan_dir, "merge")
+    os.makedirs(merge_dir, exist_ok=True)
+    n_geoms = len(glob.glob(os.path.join(task.scan_dir, "geom/*geom")))
+    for num in range(n_geoms):
+        # concatenate streams
+        allstream = os.path.join(task.scan_dir, f"r*/r*_g{num}.stream")
+        catstream = os.path.join(task.scan_dir, f'g{num}.stream')
+        os.system(f"cat {allstream} > {catstream}\n")
+        # merge
+        jobfile = os.path.join(task.scan_dir, f"merge_g{num}.sh")
+        cell_file = os.path.join(task.scan_dir, "cell", f"g{num}.cell")
+        stream_to_mtz = StreamtoMtz(catstream, 
+                                    task_merge.symmetry, 
+                                    merge_dir, 
+                                    cell_file, 
+                                    queue=setup.get('queue'),  
+                                    tmp_exe=jobfile,
+                                    ncores=task_merge.get('ncores') if task_merge.get('ncores') is not None else 16)
+        stream_to_mtz.cmd_partialator(iterations=task_merge.iterations,
+                                      model=task_merge.model, 
+                                      min_res=task_merge.get('min_res'), 
+                                      push_res=task_merge.get('push_res'))
+        for ns in [1,10]:
+            stream_to_mtz.cmd_compare_hkl(foms=['CCstar','Rsplit'], 
+                                          nshells=ns, 
+                                          highres=task_merge.get('highres'))
+        stream_to_mtz.cmd_hkl_to_mtz(space_group=task_merge.get('space_group') if task_merge.get('space_group') is not None else 1,
+                                     highres=task_merge.get('highres'), 
+                                     xds_style=False)
+        stream_to_mtz.launch()
     logger.debug('Done!')

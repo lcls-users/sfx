@@ -17,7 +17,7 @@ class PeakFinder:
     """
     
     def __init__(self, exp, run, det_type, outdir, event_receiver=None, event_code=None, event_logic=True,
-                 tag='', mask=None, psana_mask=True, pv_camera_length=None,
+                 which_light=None, tag='', mask=None, psana_mask=True, pv_camera_length=None,
                  min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., atot_thr=120., 
                  son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0, calibdir=None):
         
@@ -44,12 +44,12 @@ class PeakFinder:
 
         # set up class
         self.set_up_psana_interface(exp, run, det_type,
-                                    event_receiver, event_code, event_logic, calibdir=calibdir)
+                                    event_receiver, event_code, event_logic, calibdir=calibdir, which_light=which_light)
         self.set_up_cxi(tag)
         self.set_up_algorithm(mask_file=mask, psana_mask=psana_mask)
         
     def set_up_psana_interface(self, exp, run, det_type,
-                               event_receiver=None, event_code=None, event_logic=True, calibdir=None):
+                               event_receiver=None, event_code=None, event_logic=True, calibdir=None, which_light=None):
         """
         Set up PsanaInterface object and distribute events between ranks.
         
@@ -63,10 +63,12 @@ class PeakFinder:
             detector name, e.g. jungfrau4M or epix10k2M
         calibdir : str
             directory to alternative calibration files
+        which_light : int
+            1 or 2 for the first and second light, respectively; None for neither (or both)
         """
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
                                   event_receiver=event_receiver, event_code=event_code, event_logic=event_logic,
-                                  calibdir=calibdir)
+                                  calibdir=calibdir, which_light=which_light)
         self.psi.distribute_events(self.rank, self.size)
         self.n_events = self.psi.max_events
 
@@ -312,7 +314,8 @@ class PeakFinder:
 
             # retrieve event and find out if we skip it
             evt = self.psi.runner.event(self.psi.times[idx])
-            if not self.psi.skip_event(evt):
+            if not self.psi.skip_event(evt, idx):
+                print(f"Image {idx}, selecting event")
 
                 # retrieve calibrated image
                 self.psi.get_timestamp(evt.get(EventId))
@@ -343,7 +346,9 @@ class PeakFinder:
                         self.powder_misses = img
                     else:
                         self.powder_misses = np.maximum(self.powder_misses, img)
-            
+            #else:
+            #    print(f"Image {idx}, skipping event")
+
             self.psi.counter+=1
             if self.psi.counter == self.psi.max_events:
                 break
