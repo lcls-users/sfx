@@ -177,7 +177,7 @@ def find_peaks_by_peaknet(config):
     from btx.processing.peaknet import PeakFinder
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
-    task = config.find_peaks
+    task = config.find_peaks_by_peaknet
     """ Perform adaptive peak finding on run. """
     taskdir = os.path.join(setup.root_dir, 'index')
     os.makedirs(taskdir, exist_ok=True)

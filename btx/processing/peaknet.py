@@ -33,6 +33,7 @@ class PeakFinder:
         # init peaknet
         self.peaknet = app.PeakFinder(path_chkpt = None, path_cheetah_geom = None)
         self.device  = self.peaknet.device
+        print(f"Device: {self.device}")
         
         # peak-finding algorithm parameters
         self.npix_min = npix_min # int, min number of pixels in peak
@@ -303,11 +304,14 @@ class PeakFinder:
             results of peak finding algorithm for this image
         """
         # Use peaknet peak finding...
-        peaks = self.peaknet.find_peak_w_softmax(img, min_num_peaks = min_peaks, uses_geom = False, returns_prediction_map = False)
+        print(f"img.shape={img.shape}")
+        ## img = torch.tensor(img).type(dtype=torch.float)[:,None,].to(self.device)
+        img = torch.tensor(img).type(dtype=torch.float)[None,None,].to(self.device)
+        peaks = self.peaknet.find_peak_w_softmax(img, min_num_peaks = self.min_peaks, uses_geom = False, returns_prediction_map = False)
 
         # Adapt the peak array to the psocake convention...
-        peaks = [ (seg, y, x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) for seg, y, x in self.peaks ]
-        peaks = np.round(self.peaks).astype(np.int64)
+        peaks = [ (seg, y, x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) for seg, y, x in peaks ]
+        peaks = np.round(peaks).astype(np.int64)
 
         return peaks
     
