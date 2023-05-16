@@ -82,18 +82,28 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1io_1_1ih5_1_1TimeoutError.html">TimeoutError</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Error raised if timeout is reached.  <a href="classbtx_1_1io_1_1ih5_1_1TimeoutError.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1io_1_1ih5_1_1SmallDataReader.html">SmallDataReader</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class interface for reading SmallData hdf5 files.  <a href="classbtx_1_1io_1_1ih5_1_1SmallDataReader.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:af2e3806cff4354e83334772aa69daf3b"><td class="memItemLeft" align="right" valign="top">callable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1io_1_1ih5.html#af2e3806cff4354e83334772aa69daf3b">lock_file</a> (str path, int timeout=5, float wait=0.5)</td></tr>
-<tr class="memdesc:af2e3806cff4354e83334772aa69daf3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decorator mainly for write functions.  <a href="namespacebtx_1_1io_1_1ih5.html#af2e3806cff4354e83334772aa69daf3b">More...</a><br /></td></tr>
-<tr class="separator:af2e3806cff4354e83334772aa69daf3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1f034b6f0a851b4fdb01c6735eea7d1"><td class="memItemLeft" align="right" valign="top">Callable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1io_1_1ih5.html#ae1f034b6f0a851b4fdb01c6735eea7d1">lock_file</a> (str path, int timeout=5, float wait=0.5)</td></tr>
+<tr class="memdesc:ae1f034b6f0a851b4fdb01c6735eea7d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decorator mainly for write functions.  <a href="namespacebtx_1_1io_1_1ih5.html#ae1f034b6f0a851b4fdb01c6735eea7d1">More...</a><br /></td></tr>
+<tr class="separator:ae1f034b6f0a851b4fdb01c6735eea7d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad56fd43b250d2311adc81b488a4999a8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1io_1_1ih5.html#ad56fd43b250d2311adc81b488a4999a8">_timeout_handler</a> (signum, frame)</td></tr>
 <tr class="separator:ad56fd43b250d2311adc81b488a4999a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5953738cb088018b07329a777167ec58"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1io_1_1ih5.html#a5953738cb088018b07329a777167ec58">figure_to_array</a> (self, plt.Figure figure)</td></tr>
+<tr class="memdesc:a5953738cb088018b07329a777167ec58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert a matplotlib Figure object to an array.  <a href="namespacebtx_1_1io_1_1ih5.html#a5953738cb088018b07329a777167ec58">More...</a><br /></td></tr>
+<tr class="separator:a5953738cb088018b07329a777167ec58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a45c572dfc20caefd32401e05dae4df"><td class="memItemLeft" align="right" valign="top">plt.Figure&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1io_1_1ih5.html#a2a45c572dfc20caefd32401e05dae4df">array_to_figure</a> (self, np.ndarray figArr)</td></tr>
+<tr class="memdesc:a2a45c572dfc20caefd32401e05dae4df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert a Numpy array into a matplotlib Figure.  <a href="namespacebtx_1_1io_1_1ih5.html#a2a45c572dfc20caefd32401e05dae4df">More...</a><br /></td></tr>
+<tr class="separator:a2a45c572dfc20caefd32401e05dae4df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Utilities for working with HDF5 files and managing concurrent write operations. </p>
-<p>Functions: lock_file(path, timeout) : Decorator to prevent concurrent write operations. </p>
+<p>Classes: <a class="el" href="classbtx_1_1io_1_1ih5_1_1SmallDataReader.html" title="Class interface for reading SmallData hdf5 files.">SmallDataReader</a> : Interface to HDF5 files written by Small Data.</p>
+<p>Functions: lock_file(path, timeout) : Decorator to prevent concurrent write operations. figure_to_array(figure) : Convert a plt.Figure to np.ndarray for storage in h5. array_to_figure(figure) : Convert a np.ndarray back into a plt.Figure. </p>
 </div><h2 class="groupheader">Function Documentation</h2>
 <a id="ad56fd43b250d2311adc81b488a4999a8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad56fd43b250d2311adc81b488a4999a8">&#9670;&nbsp;</a></span>_timeout_handler()</h2>
@@ -131,14 +141,90 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="af2e3806cff4354e83334772aa69daf3b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2e3806cff4354e83334772aa69daf3b">&#9670;&nbsp;</a></span>lock_file()</h2>
+<a id="a2a45c572dfc20caefd32401e05dae4df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a45c572dfc20caefd32401e05dae4df">&#9670;&nbsp;</a></span>array_to_figure()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> callable btx.io.ih5.lock_file </td>
+          <td class="memname"> plt.Figure btx.io.ih5.array_to_figure </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>figArr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convert a Numpy array into a matplotlib Figure. </p>
+<p>Converts a previously converted matplotlib Figure from an array back into a Figure either to facilitate display for to allow the figure to be stored in another format.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">figArr</td><td>(np.ndarray) : Figure in array form to convert. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>figure (plt.Figure) : Figure in plt.Figure form. </dd></dl>
+
+</div>
+</div>
+<a id="a5953738cb088018b07329a777167ec58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5953738cb088018b07329a777167ec58">&#9670;&nbsp;</a></span>figure_to_array()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> np.ndarray btx.io.ih5.figure_to_array </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">plt.Figure&#160;</td>
+          <td class="paramname"><em>figure</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convert a matplotlib Figure object to an array. </p>
+<p>Converting a figure to an array allows for simpler storage of the data in an hdf5 file. A sister method <code>array_to_figure</code> performs the reverse operation.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">figure</td><td>(plt.Figure) : Figure in plt.Figure form to convert. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>figArr (np.ndarray) : Figre in np.ndarray form. </dd></dl>
+
+</div>
+</div>
+<a id="ae1f034b6f0a851b4fdb01c6735eea7d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1f034b6f0a851b4fdb01c6735eea7d1">&#9670;&nbsp;</a></span>lock_file()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> Callable btx.io.ih5.lock_file </td>
           <td>(</td>
           <td class="paramtype">str&#160;</td>
           <td class="paramname"><em>path</em>, </td>
@@ -169,7 +255,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">path</td><td>(str) Path including filename of the file to be locked. </td></tr>
-    <tr><td class="paramname">timeout</td><td>(int) The timeout time in seconds to abandon execution attempt. </td></tr>
+    <tr><td class="paramname">timeout</td><td>(int) Timeout time in seconds to abandon execution attempt. </td></tr>
     <tr><td class="paramname">wait</td><td>(float) Time in seconds to wait between write attempts. </td></tr>
   </table>
   </dd>
@@ -180,7 +266,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri May 12 2023 21:31:05 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Tue May 16 2023 01:20:15 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

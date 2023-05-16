@@ -1,12 +1,12 @@
 var searchData=
 [
-  ['wrangle_5fshells_5fdat_895',['wrangle_shells_dat',['../namespacemerge.html#a3251e154fa0a44c3dcb5f8d67588f7ea',1,'merge']]],
-  ['write_5fanomalous_5ff2mtz_896',['write_anomalous_f2mtz',['../namespacebtx_1_1interfaces_1_1imtz.html#add69351a9e9b527d51eb6a061a85e02d',1,'btx::interfaces::imtz']]],
-  ['write_5fcell_5ffile_897',['write_cell_file',['../namespacebtx_1_1interfaces_1_1istream.html#af77500f374d8395356e6b98f95500164',1,'btx::interfaces::istream']]],
-  ['write_5fcreate_5fxscale_898',['write_create_xscale',['../namespacebtx_1_1interfaces_1_1imtz.html#a3a4aae8c1166e81ad3dede115862d0b7',1,'btx::interfaces::imtz']]],
-  ['write_5ffile_899',['write_file',['../classrawimagetimetool_1_1RawImageTimeTool.html#a40ac2684a44ffa5a87a20b0512f7896a',1,'rawimagetimetool::RawImageTimeTool']]],
-  ['write_5fheader_900',['write_header',['../classbtx_1_1interfaces_1_1ischeduler_1_1JobScheduler.html#adc8250d367a46bdde4f79884ec22508f',1,'btx::interfaces::ischeduler::JobScheduler']]],
-  ['write_5fmain_901',['write_main',['../classbtx_1_1interfaces_1_1ischeduler_1_1JobScheduler.html#a5292e581a9bf1d5c25e332b760f92fb5',1,'btx::interfaces::ischeduler::JobScheduler']]],
-  ['write_5fstream_902',['write_stream',['../classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a59642b81d082276c367e9aa60308484e',1,'btx::interfaces::istream::StreamInterface']]],
-  ['write_5fxds_5finp_903',['write_xds_inp',['../namespacebtx_1_1interfaces_1_1imtz.html#ab371d0472979c318f398912e874649de',1,'btx::interfaces::imtz']]]
+  ['visualize_979',['visualize',['../classbtx_1_1diagnostics_1_1run_1_1PixelTracker.html#a596cd6c1f2e0d3fdbe4fd3a4ecb60f03',1,'btx::diagnostics::run::PixelTracker']]],
+  ['visualize_5fenergy_5fstats_980',['visualize_energy_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a1d6a724c5f4e6b01b7805fe939a68b98',1,'btx::diagnostics::run::RunDiagnostics']]],
+  ['visualize_5fgain_5ffrequency_981',['visualize_gain_frequency',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a4925f139d0d235827a11c77c56073749',1,'btx::diagnostics::run::RunDiagnostics']]],
+  ['visualize_5fhits_982',['visualize_hits',['../namespacepeak__finder.html#abea6a103bdc28ac65fe84b36ee6850d6',1,'peak_finder']]],
+  ['visualize_5fmask_983',['visualize_mask',['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html#ac2537454186aca2a15a9df471c5fd245',1,'btx::interfaces::imask::MaskInterface']]],
+  ['visualize_5fpowder_984',['visualize_powder',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a41827ab91c1b0bd5a4adeebda2dbddca',1,'btx::diagnostics::run::RunDiagnostics']]],
+  ['visualize_5fresults_985',['visualize_results',['../classbtx_1_1diagnostics_1_1ag__behenate_1_1AgBehenate.html#a2c76d5a054ca61520a4ac9bece4a25da',1,'btx::diagnostics::ag_behenate::AgBehenate']]],
+  ['visualize_5fsample_986',['visualize_sample',['../namespacescripts_1_1tasks.html#a9eeb4c6a2c51e7c98f25bc9c16c54287',1,'scripts::tasks']]],
+  ['visualize_5fstats_987',['visualize_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ac7d8f979356630e066fa93686e6acacc',1,'btx::diagnostics::run::RunDiagnostics']]]
 ];

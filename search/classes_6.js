@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['maskinterface_571',['MaskInterface',['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html',1,'btx::interfaces::imask']]]
+  ['jidplugins_628',['JIDPlugins',['../classplugins_1_1jid_1_1JIDPlugins.html',1,'plugins::jid']]],
+  ['jidslurmoperator_629',['JIDSlurmOperator',['../classplugins_1_1jid_1_1JIDSlurmOperator.html',1,'plugins::jid']]],
+  ['jobscheduler_630',['JobScheduler',['../classbtx_1_1interfaces_1_1ischeduler_1_1JobScheduler.html',1,'btx::interfaces::ischeduler']]]
 ];
