@@ -87,9 +87,9 @@ Variables</h2></td></tr>
 <tr class="separator:ad755a39fd8d1f1d784a1d0bcce9c9300"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7fc7c852cb7c1dccea4be2505c774d4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacescripts_1_1elog__trigger.html#ad7fc7c852cb7c1dccea4be2505c774d4">level</a></td></tr>
 <tr class="separator:ad7fc7c852cb7c1dccea4be2505c774d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac11a653a9788f9bf0394e8f4afc91b0"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacescripts_1_1elog__trigger.html#aac11a653a9788f9bf0394e8f4afc91b0">airflow_url</a> = &quot;http://172.21.32.139:8080/airflow-dev/&quot;</td></tr>
-<tr class="separator:aac11a653a9788f9bf0394e8f4afc91b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac23492a62e4b81b54495e5181729f0a0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacescripts_1_1elog__trigger.html#ac23492a62e4b81b54495e5181729f0a0">resp</a> = requests.get(<a class="el" href="namespacescripts_1_1elog__trigger.html#aac11a653a9788f9bf0394e8f4afc91b0">airflow_url</a> + &quot;api/v1/health&quot;, auth=HTTPBasicAuth('btx', 'btx'))</td></tr>
+<tr class="memitem:a412513d3ff4780d4ef11e53f937cca72"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacescripts_1_1elog__trigger.html#a412513d3ff4780d4ef11e53f937cca72">airflow_s3df</a> = &quot;http://172.24.5.247:8080/&quot;</td></tr>
+<tr class="separator:a412513d3ff4780d4ef11e53f937cca72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac23492a62e4b81b54495e5181729f0a0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacescripts_1_1elog__trigger.html#ac23492a62e4b81b54495e5181729f0a0">resp</a> = requests.get(<a class="el" href="namespacescripts_1_1elog__trigger.html#a412513d3ff4780d4ef11e53f937cca72">airflow_s3df</a> + &quot;api/v1/health&quot;, auth=HTTPBasicAuth('btx', 'btx'))</td></tr>
 <tr class="separator:ac23492a62e4b81b54495e5181729f0a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07ee30d61d5929300108371109ab7ce9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacescripts_1_1elog__trigger.html#a07ee30d61d5929300108371109ab7ce9">experiment_name</a> = os.environ[&quot;EXPERIMENT&quot;]</td></tr>
 <tr class="separator:a07ee30d61d5929300108371109ab7ce9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -115,14 +115,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="aac11a653a9788f9bf0394e8f4afc91b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac11a653a9788f9bf0394e8f4afc91b0">&#9670;&nbsp;</a></span>airflow_url</h2>
+<a id="a412513d3ff4780d4ef11e53f937cca72"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a412513d3ff4780d4ef11e53f937cca72">&#9670;&nbsp;</a></span>airflow_s3df</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">string scripts.elog_trigger.airflow_url = &quot;http://172.21.32.139:8080/airflow-dev/&quot;</td>
+          <td class="memname">string scripts.elog_trigger.airflow_s3df = &quot;http://172.24.5.247:8080/&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -175,7 +175,7 @@ Variables</h2></td></tr>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;            <span class="stringliteral">&quot;run_id&quot;</span>: str(run_num) + datetime.datetime.utcnow().isoformat(),</div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;            <span class="stringliteral">&quot;JID_UPDATE_COUNTERS&quot;</span>: os.environ[<span class="stringliteral">&quot;JID_UPDATE_COUNTERS&quot;</span>],</div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;            <span class="stringliteral">&quot;ARP_ROOT_JOB_ID&quot;</span>: os.environ[<span class="stringliteral">&quot;ARP_JOB_ID&quot;</span>],</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;            <span class="stringliteral">&quot;ARP_LOCATION&quot;</span>: <span class="stringliteral">&#39;SRCF_FFB&#39;</span>, <span class="comment">#os.environ[&quot;ARP_LOCATION&quot;],</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;            <span class="stringliteral">&quot;ARP_LOCATION&quot;</span>: <span class="stringliteral">&#39;S3DF&#39;</span>, <span class="comment">#os.environ[&quot;ARP_LOCATION&quot;],</span></div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;            <span class="stringliteral">&quot;Authorization&quot;</span>: auth_header,</div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;            <span class="stringliteral">&quot;user&quot;</span>: getpass.getuser(),</div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;            <span class="stringliteral">&quot;parameters&quot;</span>: {</div>
@@ -268,7 +268,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">scripts.elog_trigger.resp = requests.get(<a class="el" href="namespacescripts_1_1elog__trigger.html#aac11a653a9788f9bf0394e8f4afc91b0">airflow_url</a> + &quot;api/v1/health&quot;, auth=HTTPBasicAuth('btx', 'btx'))</td>
+          <td class="memname">scripts.elog_trigger.resp = requests.get(<a class="el" href="namespacescripts_1_1elog__trigger.html#a412513d3ff4780d4ef11e53f937cca72">airflow_s3df</a> + &quot;api/v1/health&quot;, auth=HTTPBasicAuth('btx', 'btx'))</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -292,7 +292,7 @@ Variables</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue May 16 2023 01:20:15 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Tue May 16 2023 16:14:27 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

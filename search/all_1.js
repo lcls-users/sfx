@@ -7,7 +7,7 @@ var searchData=
   ['adu_5fto_5fkev_40',['adu_to_keV',['../classbtx_1_1diagnostics_1_1detector_1_1epix10k2M__calibration.html#aae932fee0797ec01018640663f5c987c',1,'btx::diagnostics::detector::epix10k2M_calibration']]],
   ['ag_5fbehenate_2epy_41',['ag_behenate.py',['../ag__behenate_8py.html',1,'']]],
   ['agbehenate_42',['AgBehenate',['../classbtx_1_1diagnostics_1_1ag__behenate_1_1AgBehenate.html',1,'btx::diagnostics::ag_behenate']]],
-  ['airflow_5furl_43',['airflow_url',['../namespacescripts_1_1elog__trigger.html#aac11a653a9788f9bf0394e8f4afc91b0',1,'scripts::elog_trigger']]],
+  ['airflow_5fs3df_43',['airflow_s3df',['../namespacescripts_1_1elog__trigger.html#a412513d3ff4780d4ef11e53f937cca72',1,'scripts::elog_trigger']]],
   ['alg_44',['alg',['../classpeak__finder_1_1PeakFinder.html#a562340317b68f85502bf3f4334e37d77',1,'peak_finder::PeakFinder']]],
   ['amax_5fthr_45',['amax_thr',['../classpeak__finder_1_1PeakFinder.html#a770a8007f885419c62410fdc9ddb1355',1,'peak_finder::PeakFinder']]],
   ['ana_5fconda_5fbin_46',['ana_conda_bin',['../classbtx_1_1interfaces_1_1ischeduler_1_1JobScheduler.html#a91c2c9dfa04814af9f6aa9f384d38253',1,'btx::interfaces::ischeduler::JobScheduler']]],
