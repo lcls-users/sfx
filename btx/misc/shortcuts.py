@@ -72,7 +72,7 @@ def fetch_latest(fnames, run):
         return fnames[sort_idx[idx]]
     except IndexError:
         print('File not found.')
-        return ''
+        return None
 
 def check_file_existence(fname, timeout, frequency=15):
     """! Pause until a given file exists, exiting if the waiting
