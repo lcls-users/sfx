@@ -55,8 +55,9 @@ def build_mask(config):
                        det_type=setup.det_type)
     if task.combine:
         mask_file = fetch_latest(fnames=os.path.join(taskdir, 'r*.npy'), run=setup.run)
-        mi.load_mask(mask_file, mask_format='psana')
-        logger.debug(f'New mask will be combined with {mask_file}')
+        if mask_file:
+            mi.load_mask(mask_file, mask_format='psana')
+            logger.debug(f'New mask will be combined with {mask_file}')
     task.thresholds = tuple([float(elem) for elem in task.thresholds.split()])
     mi.generate_from_psana_run(thresholds=task.thresholds, n_images=task.n_images, n_edge=task.n_edge)
     logger.info(f'Saving newly generated mask to {taskdir}')
