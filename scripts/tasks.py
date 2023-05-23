@@ -177,11 +177,14 @@ def find_peaks(config):
 def index(config):
     from btx.processing.indexer import Indexer
     from btx.misc.shortcuts import fetch_latest
+    from btx.misc.metrology import MissingGeomFileError
     setup = config.setup
     task = config.index
     """ Index run using indexamajig. """
     taskdir = os.path.join(setup.root_dir, 'index')
     geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
+    if not geom_file:
+        raise MissingGeomFileError("Geometry file not found.")
     indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir,
                           geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate,
                           multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64,

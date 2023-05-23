@@ -187,7 +187,10 @@ def generate_geom_file(exp, run, det_type, input_file, output_file, det_dist=Non
     coffset = (det_dist - psi.get_camera_length(pv_camera_length)) / 1000.
     
     geom.to_crystfel_file(output_file, coffset=coffset)
-    
+
+class MissingGeomFileError(Exception):
+    """ Custom error for when a .geom file is not found. """
+    pass    
     
 #### For command line use ####
             
