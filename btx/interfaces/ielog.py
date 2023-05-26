@@ -68,6 +68,9 @@ class eLogInterface:
             source_subdir = f'merge/{item}/figs/'
             target_subdir = f'samples/stats_{item}/'
             source_filename = f'{item}_{image}.png'
+        elif task == 'saxs':
+            source_subdir = f'SAXS/{item}/figs/'
+            target_subdir = f'samples/stats_{item}/'
         source_path = f'{self.source_dir(subdir=f"{source_subdir}")}{source_filename}'
         target_path = f'{self.target_dir(subdir=f"{target_subdir}")}{image}.png'
         if os.path.isfile(source_path):
