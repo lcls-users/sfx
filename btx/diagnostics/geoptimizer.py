@@ -262,7 +262,7 @@ class Geoptimizer:
         for opt,new in zip([geom_opt,cell_opt,mtz_opt],[geom_new,cell_new,mtz_new]):
             if os.path.exists(new):
                 shutil.move(new, f"{new}.old")
-            shutil.copy2(opt, new)
+            shutil.copyfile(opt, new)
 
     def save_results(self, root_dir, tag, savepath=None, metric='Rsplit'):
         """

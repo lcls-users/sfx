@@ -129,8 +129,12 @@ class RunDiagnostics:
         beam_energy_mJ   = self.psi.get_fee_gas_detector_energy_mJ_evt(evt)
         photon_energy_eV = self.psi.get_photon_energy_eV_evt(evt)                
         if beam_energy_mJ is not None and photon_energy_eV is not None:
-            beam_energy_eV = beam_energy_mJ / 1.602e-16 * self.psi.get_beam_transmission()
-            self.stats['beam_energy_eV'][self.n_proc] = beam_energy_eV
+            try:
+                beam_energy_eV = beam_energy_mJ / 1.602e-16 * self.psi.get_beam_transmission()
+                self.stats['beam_energy_eV'][self.n_proc] = beam_energy_eV
+            except NotImplementedError as e:
+                print(f"Beam energy not known for current hutch.\n",
+                      "Speak with a beamline scientist to find the proper PV")
             self.stats['photon_energy_eV'][self.n_proc] = photon_energy_eV
 
             self.stats['mean'][self.n_proc] = np.mean(img)
@@ -322,6 +326,15 @@ class RunDiagnostics:
             labels = ['mean(I)', 'max(I)', 'min(I)', 'std dev(I)', 
                       'Beam\nenergy (eV)', 'Photon\nenergy (eV)',
                       f'No. pixels in\n{self.gain_mode} mode']
+
+            # Remove keys which are unavailable
+            for key in keys:
+                if key in self.stats_final.keys():
+                    continue
+                else:
+                    idx = keys.index(key)
+                    keys.pop(idx)
+                    labels.pop(idx)
             
             f, axs = plt.subplots(n_plots, figsize=(n_plots*2.4,12), sharex=True)
             for n in range(n_plots):
@@ -619,8 +632,11 @@ def main():
         suffix = "_raw"
     rd.visualize_powder(output=os.path.join(params.outdir, f"figs/powder_r{params.run:04}{suffix}.png"))
     rd.visualize_stats(output=os.path.join(params.outdir, f"figs/stats_r{params.run:04}{suffix}.png"))
-    rd.visualize_energy_stats(output=os.path.join(params.outdir, f"figs/stats_energy_r{params.run:04}{suffix}.png"),
-                              outlier_threshold=params.outlier_threshold)
+    try:
+        rd.visualize_energy_stats(output=os.path.join(params.outdir, f"figs/stats_energy_r{params.run:04}{suffix}.png"),
+                                  outlier_threshold=params.outlier_threshold)
+    except KeyError as e:
+        print(f'PV : {e} unavailable. Energy stats not output')
     if params.gain_mode is not None:
         rd.visualize_gain_frequency(output=os.path.join(params.outdir, f"figs/gain_freq_r{params.run:04}{suffix}.png"))
 

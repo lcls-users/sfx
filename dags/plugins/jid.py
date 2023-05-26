@@ -21,13 +21,15 @@ class JIDSlurmOperator( BaseOperator ):
   locations = {
     'SLAC': "http://psdm02:8446/jid_slac/jid/ws/",
     'SRCF_FFB': "http://drp-srcf-mds001:8446/jid_srcf_ffb/jid/ws/",
-    'NERSC': "http://psdm02:8446/jid_nersc/jid/ws/"
+    'NERSC': "http://psdm02:8446/jid_nersc/jid/ws/",
+    'S3DF' : "https://psdm.slac.stanford.edu/arps3dfjid/jid/ws/"
   }
 
   btx_locations = {
     'SLAC': "/cds/sw/package/autosfx/btx/",
     'SRCF_FFB': "/cds/sw/package/autosfx/btx/",
-    'NERSC': "/global/cfs/cdirs/lcls/btx/"
+    'NERSC': "/global/cfs/cdirs/lcls/btx/",
+    'S3DF' : "/sdf/group/lcls/ds/tools/btx/"
   }
   # "/sdf/group/lcls/ds/sw/autosfx/btx/",
 

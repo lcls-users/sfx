@@ -21,12 +21,16 @@ def fetch_mask(config):
     setup = config.setup
     task = config.fetch_mask
     """ Fetch most recent mask for this detector from mrxv. """
+    if 'sdf' in setup.root_dir:
+        mrxv_path = '/sdf/group/lcls/ds/tools/mrxv/masks/'
+    elif 'cds' in setup.root_dir:
+        mrxv_path = '/cds/sw/package/autosfx/mrxv/masks/'
     taskdir = os.path.join(setup.root_dir, 'mask')
     os.makedirs(taskdir, exist_ok=True)
     mi = MaskInterface(exp=setup.exp,
                        run=setup.run,
                        det_type=setup.det_type)
-    mi.retrieve_from_mrxv(dataset=task.dataset)
+    mi.retrieve_from_mrxv(mrxv_path=mrxv_path, dataset=task.dataset)
     logger.info(f'Saving mrxv mask to {taskdir}')
     mi.save_mask(os.path.join(taskdir, f'r0000.npy'))
     logger.debug('Done!')
@@ -37,9 +41,14 @@ def fetch_geom(config):
     task = config.fetch_geom
     """ Fetch latest geometry for this detector from mrxv. """
     taskdir = os.path.join(setup.root_dir, 'geom')
+    if 'sdf' in setup.root_dir:
+        mrxv_path = '/sdf/group/lcls/ds/tools/mrxv/geometries/'
+    elif 'cds' in setup.root_dir:
+        mrxv_path = '/cds/sw/package/autosfx/mrxv/geometries/'
     os.makedirs(taskdir, exist_ok=True)
     logger.info(f'Saving mrxv geom to {taskdir}')
-    retrieve_from_mrxv(det_type=setup.det_type, out_geom=os.path.join(taskdir, f'r0000.geom'))
+    retrieve_from_mrxv(det_type=setup.det_type, out_geom=os.path.join(taskdir, f'r0000.geom'),
+                       mrxv_path=mrxv_path)
     logger.debug('Done!')
 
 def build_mask(config):

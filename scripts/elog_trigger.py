@@ -1,4 +1,4 @@
-#!/reg/g/psdm/sw/dm/conda/envs/psdm_ws_0_0_9/bin/python3
+#!/sdf/group/lcls/ds/ana/sw/conda1/inst/envs/ana-4.0.47-py3/bin/python
 
 import os
 import logging
@@ -25,10 +25,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
-    airflow_url = "http://172.21.32.139:8080/airflow-dev/"
+    # airflow_url = "http://172.21.32.139:8080/airflow-dev/"
+    airflow_s3df = "http://172.24.5.247:8080/"
 
     # test to make sure the Airflow API is alive and well
-    resp = requests.get(airflow_url + "api/v1/health", auth=HTTPBasicAuth('btx', 'btx'))
+    resp = requests.get(airflow_s3df + "api/v1/health", auth=HTTPBasicAuth('btx', 'btx'))
     resp.raise_for_status()
 
     experiment_name = os.environ["EXPERIMENT"]
@@ -42,7 +43,7 @@ if __name__ == '__main__':
             "run_id": str(run_num) + datetime.datetime.utcnow().isoformat(),
             "JID_UPDATE_COUNTERS": os.environ["JID_UPDATE_COUNTERS"],
             "ARP_ROOT_JOB_ID": os.environ["ARP_JOB_ID"],
-            "ARP_LOCATION": 'SRCF_FFB', #os.environ["ARP_LOCATION"],
+            "ARP_LOCATION": 'S3DF', #os.environ["ARP_LOCATION"],
             "Authorization": auth_header,
             "user": getpass.getuser(),
             "parameters": {
@@ -56,7 +57,7 @@ if __name__ == '__main__':
         }
     }
 
-    resp = requests.post(airflow_url + f"api/v1/dags/{args.dag}/dagRuns", json=dag_run_data, auth=HTTPBasicAuth('btx', 'btx'))
+    resp = requests.post(airflow_s3df + f"api/v1/dags/{args.dag}/dagRuns", json=dag_run_data, auth=HTTPBasicAuth('btx', 'btx'))
     resp.raise_for_status()
     print(resp.text)
 

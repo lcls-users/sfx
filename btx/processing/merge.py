@@ -207,8 +207,8 @@ class StreamtoMtz:
 
         # transfer mtz to new folder
         if self.mtz_dir is not None:
-            shutil.copy2(os.path.join(self.taskdir, f"{self.prefix}.mtz"), 
-                         os.path.join(self.mtz_dir, f"{self.prefix}.mtz"))
+            shutil.copyfile(os.path.join(self.taskdir, f"{self.prefix}.mtz"), 
+                            os.path.join(self.mtz_dir, f"{self.prefix}.mtz"))
 
 def wrangle_shells_dat(shells_file, outfile=None):
     """
