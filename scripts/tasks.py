@@ -362,7 +362,7 @@ def clean_up(config):
 
 def plot_saxs(config):
     """! Plot the SAXS profile and associated diagnostic figures."""
-    from btx.processing.saxs import SAXSProfiler
+    from btx.processing.saxs import SAXSProfiler, PowderNotFoundException
     setup = config.setup
     task = config.plot_saxs
 
@@ -372,8 +372,11 @@ def plot_saxs(config):
     rootdir = setup.root_dir
     method = task.method
 
-    saxs = SAXSProfiler(expmt, run, detector_type, rootdir, method)
-    saxs.plot_all()
+    try:
+        saxs = SAXSProfiler(expmt, run, detector_type, rootdir, method)
+        saxs.plot_all()
+    except PowderNotFoundException as e:
+        print(f'Unable to perform SAXS analysis:\n{e}')
 
 def timetool_diagnostics(config):
     """! Plot timetool diagnostic figures from data in smalldata hdf5 file."""

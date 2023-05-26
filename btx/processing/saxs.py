@@ -21,6 +21,10 @@ class GuinierResult:
     I0: float
     Rg: float
 
+class PowderNotFoundException(Exception):
+    """! Exception raised when a powder pattern cannot be found or created."""
+    pass
+
 class SAXSProfiler:
     """! Class to perform radial integration and SAXS analysis."""
 
@@ -103,7 +107,7 @@ class SAXSProfiler:
                                                 self.diagnostics.pixel_index_map)
             return powder
         except Exception as e:
-            print(f'Unanticipated error: {e}')
+            raise PowderNotFoundException(f'Unanticipated error: {e}')
 
     def get_center(self):
         """! Determine the beam center based on the current geometry."""
