@@ -94,12 +94,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9c4805b7783bbb3b613c2ff774ae386b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a9c4805b7783bbb3b613c2ff774ae386b">save_traces</a> (self, outdir, raw_img=False)</td></tr>
 <tr class="memdesc:a9c4805b7783bbb3b613c2ff774ae386b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save trajectories of statistics to output directory.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a9c4805b7783bbb3b613c2ff774ae386b">More...</a><br /></td></tr>
 <tr class="separator:a9c4805b7783bbb3b613c2ff774ae386b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39dedc132a9e356aebf62aec7062f20f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a39dedc132a9e356aebf62aec7062f20f">load_traces</a> (self, outdir, raw_img=False)</td></tr>
+<tr class="memdesc:a39dedc132a9e356aebf62aec7062f20f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load previously saved trajectories of statistics.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a39dedc132a9e356aebf62aec7062f20f">More...</a><br /></td></tr>
+<tr class="separator:a39dedc132a9e356aebf62aec7062f20f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a499495fa9602a5e41b10d0f914f60861"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a499495fa9602a5e41b10d0f914f60861">compute_stats</a> (self, evt, img)</td></tr>
 <tr class="memdesc:a499495fa9602a5e41b10d0f914f60861"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the following image stats: mean, std deviation, max, min.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a499495fa9602a5e41b10d0f914f60861">More...</a><br /></td></tr>
 <tr class="separator:a499495fa9602a5e41b10d0f914f60861"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a75dfb8c3c3f4dbacaa6c37065b4dfa18"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a75dfb8c3c3f4dbacaa6c37065b4dfa18">finalize_stats</a> (self, n_empty=0, n_empty_raw=0)</td></tr>
-<tr class="memdesc:a75dfb8c3c3f4dbacaa6c37065b4dfa18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather stats from various ranks into single arrays in self.stats_final.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a75dfb8c3c3f4dbacaa6c37065b4dfa18">More...</a><br /></td></tr>
-<tr class="separator:a75dfb8c3c3f4dbacaa6c37065b4dfa18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2695e26798c96182acf1747b4c84f24b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a2695e26798c96182acf1747b4c84f24b">finalize_stats</a> (self)</td></tr>
+<tr class="memdesc:a2695e26798c96182acf1747b4c84f24b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather stats from various ranks into single arrays in self.stats_final.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a2695e26798c96182acf1747b4c84f24b">More...</a><br /></td></tr>
+<tr class="separator:a2695e26798c96182acf1747b4c84f24b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bb9d60330835c147995b36b7552458c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a6bb9d60330835c147995b36b7552458c">get_gain_statistics</a> (self, raw, <a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae42e8c224e09f154d705887dbac0a2ec">gain_mode</a>='AML-L')</td></tr>
 <tr class="memdesc:a6bb9d60330835c147995b36b7552458c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve statistics for a particular gain mode, specifically a map of the number of times a pixel has been in a certain gain mode and the number of pixels in that gain mode per event.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a6bb9d60330835c147995b36b7552458c">More...</a><br /></td></tr>
 <tr class="separator:a6bb9d60330835c147995b36b7552458c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -118,6 +121,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1d6a724c5f4e6b01b7805fe939a68b98"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a1d6a724c5f4e6b01b7805fe939a68b98">visualize_energy_stats</a> (self, output=None, outlier_threshold=-np.inf)</td></tr>
 <tr class="memdesc:a1d6a724c5f4e6b01b7805fe939a68b98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Plot the number of incoming photons per event, the number of incoming photons versus the mean image intensity, and the beam energy versus photon energy.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a1d6a724c5f4e6b01b7805fe939a68b98">More...</a><br /></td></tr>
 <tr class="separator:a1d6a724c5f4e6b01b7805fe939a68b98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f0afa7cbdf912838cfef3d8d99f3a4b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a3f0afa7cbdf912838cfef3d8d99f3a4b">visualize_stats_interactive</a> (self, y_key='mean', color_by='beam_energy_eV')</td></tr>
+<tr class="memdesc:a3f0afa7cbdf912838cfef3d8d99f3a4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Plot trajectories of run statistics, interactively.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a3f0afa7cbdf912838cfef3d8d99f3a4b">More...</a><br /></td></tr>
+<tr class="separator:a3f0afa7cbdf912838cfef3d8d99f3a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6370b3865e24bce1da27fc487674e7f0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a6370b3865e24bce1da27fc487674e7f0">display_img_evt</a> (self, event_id, vmin=1, vmax=1e3, figsize=8, dpi=360, title=None, log=True, mask_negatives=True, method='pyplot')</td></tr>
+<tr class="memdesc:a6370b3865e24bce1da27fc487674e7f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Display the detector image corresponding to a given event ID.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a6370b3865e24bce1da27fc487674e7f0">More...</a><br /></td></tr>
+<tr class="separator:a6370b3865e24bce1da27fc487674e7f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac027b752c66784836c798f977f955f0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#aac027b752c66784836c798f977f955f0">check_first_evt</a> (self, mask=None, scale_factor=5, n_images=5)</td></tr>
 <tr class="memdesc:aac027b752c66784836c798f977f955f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether the first event of the run should be excluded; it's considered an outlier if mean_0 &gt; &lt; mean_n + scale_factor * std_n &gt; where n ranges from [1,n_images).  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#aac027b752c66784836c798f977f955f0">More...</a><br /></td></tr>
 <tr class="separator:aac027b752c66784836c798f977f955f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -136,6 +145,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a072a4b0c92893e0b7fc1eea72f15b62c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94525f6b19b23f66639baf6edc5b4a21"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a94525f6b19b23f66639baf6edc5b4a21">gain_map</a></td></tr>
 <tr class="separator:a94525f6b19b23f66639baf6edc5b4a21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae42e8c224e09f154d705887dbac0a2ec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae42e8c224e09f154d705887dbac0a2ec">gain_mode</a></td></tr>
+<tr class="separator:ae42e8c224e09f154d705887dbac0a2ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c2cf255df6ba2472ba55105b21bda62"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a8c2cf255df6ba2472ba55105b21bda62">comm</a></td></tr>
 <tr class="separator:a8c2cf255df6ba2472ba55105b21bda62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd02b3c966b3fafa613c54ea6fa084a7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#acd02b3c966b3fafa613c54ea6fa084a7">rank</a></td></tr>
@@ -148,8 +159,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a6137d3e727f62d3cde7b5a950b61fe88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a13fdea5f2d1651327bfe3e5d4a116c5f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a13fdea5f2d1651327bfe3e5d4a116c5f">stats_final</a></td></tr>
 <tr class="separator:a13fdea5f2d1651327bfe3e5d4a116c5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae42e8c224e09f154d705887dbac0a2ec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae42e8c224e09f154d705887dbac0a2ec">gain_mode</a></td></tr>
-<tr class="separator:ae42e8c224e09f154d705887dbac0a2ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90083bf2599854b654c3c7a25ba38a8d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a90083bf2599854b654c3c7a25ba38a8d">modes</a></td></tr>
 <tr class="separator:a90083bf2599854b654c3c7a25ba38a8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -237,10 +246,10 @@ Public Attributes</h2></td></tr>
 
 <p>Check whether the first event of the run should be excluded; it's considered an outlier if mean_0 &gt; &lt; mean_n + scale_factor * std_n &gt; where n ranges from [1,n_images). </p>
 <p>If any of the first few events are None, exclude the first image to simplify matters.</p>
-<h2><a class="anchor" id="autotoc_md38"></a>
+<h2><a class="anchor" id="autotoc_md40"></a>
 Parameters</h2>
 <p>mask : np.ndarray, shape (n_panels, n_x, n_y) binary mask file or array in unassembled psana shape, optional scale_factor : float parameter that tunes how conservative outlier rejection is n_images : int number of total images to compare, including first</p>
-<h2><a class="anchor" id="autotoc_md39"></a>
+<h2><a class="anchor" id="autotoc_md41"></a>
 Returns:</h2>
 <p>exclude : bool if True, first event was detected as an outlier </p>
 
@@ -376,10 +385,91 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Compute the following image stats: mean, std deviation, max, min. </p>
-<h2><a class="anchor" id="autotoc_md31"></a>
+<h2><a class="anchor" id="autotoc_md32"></a>
 Parameters</h2>
 <p>evt : psana.Event object individual psana event <br  />
  img : numpy.ndarray, 3d unassembled, calibrated images of shape (n_panels, n_x, n_y) </p>
+
+</div>
+</div>
+<a id="a6370b3865e24bce1da27fc487674e7f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6370b3865e24bce1da27fc487674e7f0">&#9670;&nbsp;</a></span>display_img_evt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.diagnostics.run.RunDiagnostics.display_img_evt </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>event_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>vmin</em> = <code>1</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>vmax</em> = <code>1e3</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>figsize</em> = <code>8</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>dpi</em> = <code>360</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>title</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>log</em> = <code>True</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mask_negatives</em> = <code>True</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>method</em> = <code>'pyplot'</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Display the detector image corresponding to a given event ID. </p>
+<h2><a class="anchor" id="autotoc_md39"></a>
+Parameters</h2>
+<p>event_id : int Index of the desired event vmin : float Lowest pixel value figsize : int Figure size dpi : int Figure dots per inch title : str or None Figure title log : bool Whether the detector image is displayed on linear or log scale. mask_negatives: bool Whether negative intensity pixels should be masked. method: str options: 'pyplot' (default) or 'holoviews' </p>
 
 </div>
 </div>
@@ -403,8 +493,8 @@ Parameters</h2>
 
 </div>
 </div>
-<a id="a75dfb8c3c3f4dbacaa6c37065b4dfa18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75dfb8c3c3f4dbacaa6c37065b4dfa18">&#9670;&nbsp;</a></span>finalize_stats()</h2>
+<a id="a2695e26798c96182acf1747b4c84f24b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2695e26798c96182acf1747b4c84f24b">&#9670;&nbsp;</a></span>finalize_stats()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -413,32 +503,13 @@ Parameters</h2>
           <td class="memname">def btx.diagnostics.run.RunDiagnostics.finalize_stats </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"><em>self</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>n_empty</em> = <code>0</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>n_empty_raw</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Gather stats from various ranks into single arrays in self.stats_final. </p>
-<h2><a class="anchor" id="autotoc_md32"></a>
-Parameters</h2>
-<p>n_empty : int number of empty images in this rank n_empty_raw : int number of empty raw events in this rank </p>
 
 </div>
 </div>
@@ -478,6 +549,45 @@ Parameters</h2>
 <h2><a class="anchor" id="autotoc_md33"></a>
 Parameters</h2>
 <p>raw : ndarray, shape (det_shape) uncalibrated image gain_mode : str gain mode to retrieve statistics for, e.g. 'AML-L' </p>
+
+</div>
+</div>
+<a id="a39dedc132a9e356aebf62aec7062f20f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39dedc132a9e356aebf62aec7062f20f">&#9670;&nbsp;</a></span>load_traces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.diagnostics.run.RunDiagnostics.load_traces </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>outdir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>raw_img</em> = <code>False</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Load previously saved trajectories of statistics. </p>
+<h2><a class="anchor" id="autotoc_md31"></a>
+Parameters</h2>
+<p>outdir: str path to directory where traces have been saved raw_img : bool if True, load trace files with _raw nomenclature </p>
 
 </div>
 </div>
@@ -725,6 +835,45 @@ Parameters</h2>
 
 </div>
 </div>
+<a id="a3f0afa7cbdf912838cfef3d8d99f3a4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f0afa7cbdf912838cfef3d8d99f3a4b">&#9670;&nbsp;</a></span>visualize_stats_interactive()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.diagnostics.run.RunDiagnostics.visualize_stats_interactive </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>y_key</em> = <code>'mean'</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>color_by</em> = <code>'beam_energy_eV'</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Plot trajectories of run statistics, interactively. </p>
+<h2><a class="anchor" id="autotoc_md38"></a>
+Parameters</h2>
+<p>y_key : str self.stats_final key to plot color_by : str self.stats_final key used to color </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a8c2cf255df6ba2472ba55105b21bda62"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8c2cf255df6ba2472ba55105b21bda62">&#9670;&nbsp;</a></span>comm</h2>
@@ -928,7 +1077,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu May 25 2023 22:53:57 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed May 31 2023 18:38:31 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

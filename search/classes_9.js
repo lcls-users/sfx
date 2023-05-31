@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['optimizeconcentriccircles_667',['OptimizeConcentricCircles',['../classbtx_1_1misc_1_1radial_1_1OptimizeConcentricCircles.html',1,'btx::misc::radial']]]
+  ['optimizeconcentriccircles_670',['OptimizeConcentricCircles',['../classbtx_1_1misc_1_1radial_1_1OptimizeConcentricCircles.html',1,'btx::misc::radial']]]
 ];
