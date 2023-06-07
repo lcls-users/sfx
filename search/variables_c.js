@@ -5,6 +5,6 @@ var searchData=
   ['locations_1185',['locations',['../classplugins_1_1jid_1_1JIDSlurmOperator.html#a3d0fb44e2b531b1b924fe101c9e06818',1,'plugins::jid::JIDSlurmOperator']]],
   ['log_1186',['LOG',['../namespaceplugins_1_1jid.html#ab86a80c63a1e7532c68f5ffc4d9967ac',1,'plugins::jid']]],
   ['logdir_1187',['logdir',['../classbtx_1_1interfaces_1_1ischeduler_1_1JobScheduler.html#af9dba53c5d4a53a6d52348302fbc5908',1,'btx::interfaces::ischeduler::JobScheduler']]],
-  ['logger_1188',['logger',['../namespacescripts_1_1tasks.html#a320d12dc5aeda78b58ee516514eeb537',1,'scripts::tasks']]],
+  ['logger_1188',['logger',['../namespacebtx_1_1interfaces_1_1ipsana.html#aa39486928900c07bfd4da6f89d83b226',1,'btx.interfaces.ipsana.logger()'],['../namespacepeak__finder.html#a079e506cb52a0a37533511f17d17e84b',1,'peak_finder.logger()'],['../namespacescripts_1_1tasks.html#a320d12dc5aeda78b58ee516514eeb537',1,'scripts.tasks.logger()']]],
   ['lst_1189',['lst',['../classindexer_1_1Indexer.html#a1beada76a8d2cdeeae533ecfe4dc702e',1,'indexer::Indexer']]]
 ];
