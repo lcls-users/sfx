@@ -115,6 +115,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac7d8f979356630e066fa93686e6acacc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ac7d8f979356630e066fa93686e6acacc">visualize_stats</a> (self, output=None)</td></tr>
 <tr class="memdesc:ac7d8f979356630e066fa93686e6acacc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Plot trajectories of run statistics.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ac7d8f979356630e066fa93686e6acacc">More...</a><br /></td></tr>
 <tr class="separator:ac7d8f979356630e066fa93686e6acacc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14b6cbeb1c12cc1aee91eda03e60e4b0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a14b6cbeb1c12cc1aee91eda03e60e4b0">visualize_stats_hv_html</a> (self, str output, list keys, str color_by)</td></tr>
+<tr class="memdesc:a14b6cbeb1c12cc1aee91eda03e60e4b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an "interactive" Holoviews plot embedded in HTML.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a14b6cbeb1c12cc1aee91eda03e60e4b0">More...</a><br /></td></tr>
+<tr class="separator:a14b6cbeb1c12cc1aee91eda03e60e4b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4925f139d0d235827a11c77c56073749"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a4925f139d0d235827a11c77c56073749">visualize_gain_frequency</a> (self, output=None)</td></tr>
 <tr class="memdesc:a4925f139d0d235827a11c77c56073749"><td class="mdescLeft">&#160;</td><td class="mdescRight">Plot the distribution of the frequency with which each pixel appears in a particular gain mode.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a4925f139d0d235827a11c77c56073749">More...</a><br /></td></tr>
 <tr class="separator:a4925f139d0d235827a11c77c56073749"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -835,6 +838,53 @@ Parameters</h2>
 
 </div>
 </div>
+<a id="a14b6cbeb1c12cc1aee91eda03e60e4b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14b6cbeb1c12cc1aee91eda03e60e4b0">&#9670;&nbsp;</a></span>visualize_stats_hv_html()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.diagnostics.run.RunDiagnostics.visualize_stats_hv_html </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>output</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list&#160;</td>
+          <td class="paramname"><em>keys</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>color_by</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create an "interactive" Holoviews plot embedded in HTML. </p>
+<pre class="fragment">   Allows for selection of which statistics to display.
+
+   @param output (str) Path to save the output HTML.
+   @param keys (list) List of keys in `stats_final` to plot.
+   @param color_by (str) Key to data to color the scatter plot points by.
+</pre> 
+</div>
+</div>
 <a id="a3f0afa7cbdf912838cfef3d8d99f3a4b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3f0afa7cbdf912838cfef3d8d99f3a4b">&#9670;&nbsp;</a></span>visualize_stats_interactive()</h2>
 
@@ -1077,7 +1127,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jun 15 2023 19:09:47 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Fri Jun 23 2023 19:00:14 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
