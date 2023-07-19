@@ -193,7 +193,7 @@ if [ ${RUN_NUM} != 'None' ]; then
 fi
 
 echo "$MAIN_PY -c ${THIS_CONFIGFILE} -t $TASK"
-$MAIN_PY -c ${THIS_CONFIGFILE} -t $TASK
+$MAIN_PY -c ${THIS_CONFIGFILE} -t $TASK -n $CORES
 if [ ${RUN_NUM} != 'None' ]; then
   rm -f ${THIS_CONFIGFILE}
 fi

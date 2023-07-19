@@ -176,10 +176,6 @@ def find_peaks(config):
     pf.find_peaks()
     pf.curate_cxi()
     pf.summarize()
-    try:
-        pf.report(update_url)
-    except:
-        logger.debug("Could not communicate with the elog update url")
     logger.info(f'Saving CXI files and summary to {taskdir}/r{setup.run:04}')
     logger.debug('Done!')
 
@@ -198,7 +194,7 @@ def index(config):
     indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir,
                           geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate,
                           multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64,
-                          time=task.get('time') if task.get('time') is not None else '1:00:00')
+                          time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.launch()
     logger.info(f'Indexing launched!')
