@@ -85,10 +85,14 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
+<tr class="memitem:acf8e247b58ffc67a827c4ad8891e134b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceindexer.html#acf8e247b58ffc67a827c4ad8891e134b">logger</a> = logging.getLogger(__name__)</td></tr>
+<tr class="separator:acf8e247b58ffc67a827c4ad8891e134b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6f2853f616fecd6dbe6f2dc4729bbd4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceindexer.html#af6f2853f616fecd6dbe6f2dc4729bbd4">params</a> = <a class="el" href="namespaceindexer.html#affb9379a32feae49e65a8e253dde147e">parse_input</a>()</td></tr>
 <tr class="separator:af6f2853f616fecd6dbe6f2dc4729bbd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27a1e740edb82da317e478964c98598a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceindexer.html#a27a1e740edb82da317e478964c98598a">indexer_obj</a></td></tr>
 <tr class="separator:a27a1e740edb82da317e478964c98598a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfbf57b0bc99ebe9e5e5939c757682a3"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceindexer.html#adfbf57b0bc99ebe9e5e5939c757682a3">summary_file</a> = f'{params.taskdir[:-6]}/summary_r{params.run:04}.json'</td></tr>
+<tr class="separator:adfbf57b0bc99ebe9e5e5939c757682a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="affb9379a32feae49e65a8e253dde147e"></a>
@@ -125,8 +129,22 @@ Variables</h2></td></tr>
 <b>Initial value:</b><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;=  Indexer(exp=params.exp, run=params.run, det_type=params.det_type, tag=params.tag, taskdir=params.taskdir, geom=params.geom, </div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;                          cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, tag_cxi=params.tag_cxi,</div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;                          no_revalidate=params.no_revalidate, multi=params.multi, profile=params.profile, ncores=params.ncores, queue=params.queue,</div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;                          time=params.time)</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;                          time=params.time, mpi_init=<span class="keyword">True</span>)</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="acf8e247b58ffc67a827c4ad8891e134b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf8e247b58ffc67a827c4ad8891e134b">&#9670;&nbsp;</a></span>logger</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">indexer.logger = logging.getLogger(__name__)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
 </div>
 </div>
 <a id="af6f2853f616fecd6dbe6f2dc4729bbd4"></a>
@@ -143,10 +161,24 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="adfbf57b0bc99ebe9e5e5939c757682a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfbf57b0bc99ebe9e5e5939c757682a3">&#9670;&nbsp;</a></span>summary_file</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">string indexer.summary_file = f'{params.taskdir[:-6]}/summary_r{params.run:04}.json'</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jun 23 2023 19:00:15 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Jul 19 2023 00:09:47 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
