@@ -28,13 +28,11 @@ import time
 from datetime import datetime
 currRun = datetime.now().strftime("%y%m%d%H%M%S")
 
-import cProfile, sys
-
 #############################################
 
 class FreqDir:
 
-    """Frequent Directions."""
+    """Parallel Frequent Directions."""
 
     def __init__(
         self,
@@ -45,7 +43,6 @@ class FreqDir:
         exp,
         run,
         det_type,
-        batch_size=10,
         downsample=False,
         bin_factor=2,
         output_dir="",
@@ -65,14 +62,12 @@ class FreqDir:
         (
             self.num_images,
             _,
-            self.batch_size,
             self.num_features,
-        ) = self.set_params(tot_imgs, ell, batch_size, bin_factor)
+        ) = self.set_params(tot_imgs, ell, bin_factor)
 
         self.task_durations = dict({})
 
         self.num_incorporated_images = 0
-        self.outliers, self.pc_data = [], []
 
         self.d = self.num_features
         self.ell = ell
@@ -81,41 +76,11 @@ class FreqDir:
         self.nextZeroRow = 0
         self.alpha = alpha
 
-        self.dataseen = []
-        
         self.noImgsToProcess = tot_imgs//self.size
 
-        print("MY RANK IS: {}".format(self.rank))
-
-        if self.rank==0:
-            self.totPSI = PsanaInterface(exp=exp, run=run, det_type=det_type)
-            self.totPSI.counter = john_start
-
-    def get_params(self):
+    def set_params(self, num_images, num_components, bin_factor):
         """
-        Method to retrieve iPCA params.
-
-        Returns
-        -------
-        num_incorporated_images : int
-            number of images used to build model
-        num_components : int
-            number of components maintained in model
-        batch_size : int
-            batch size used in model updates
-        num_features : int
-            dimensionality of incorporated images
-        """
-        return (
-            self.num_incorporated_images,
-            self.ell,
-            self.batch_size,
-            self.num_features,
-        )
-
-    def set_params(self, num_images, num_components, batch_size, bin_factor):
-        """
-        Method to initialize iPCA parameters.
+        Method to initialize FreqDir parameters.
 
         Parameters
         ----------
@@ -123,8 +88,6 @@ class FreqDir:
             Desired number of images to incorporate into model.
         num_components : int
             Desired number of components for model to maintain.
-        batch_size : int
-            Desired size of image block to be incorporated into model at each update.
         bin_factor : int
             Factor to bin data by.
 
@@ -134,17 +97,15 @@ class FreqDir:
             Number of images to incorporate into model.
         num_components : int
             Number of components for model to maintain.
-        batch_size : int
-            Size of image block to be incorporated into model at each update.
         num_features : int
             Number of features (dimension) in each image.
         """
+
         max_events = self.psi.max_events
         downsample = self.downsample
 
         num_images = min(num_images, max_events) if num_images != -1 else max_events
         num_components = min(num_components, num_images)
-        batch_size = min(batch_size, num_images)
 
         # set d
         det_shape = self.psi.det.shape()
@@ -157,17 +118,16 @@ class FreqDir:
             else:
                 num_features = int(num_features / bin_factor**2)
 
-        return num_images, num_components, batch_size, num_features
+        return num_images, num_components, num_features
 
     def run(self):
         """
-        Perform iPCA on run subject to initialization parameters.
+        Perform frequent directions matrix sketching
+        on run subject to initialization parameters.
         """
-        # update model with remaining batches
-        
+
         for batch in range(0,self.noImgsToProcess,self.batch_size):
             self.fetch_and_update_model(self.batch_size)
-
 
     def get_formatted_images(self, n):
         """
@@ -226,10 +186,12 @@ class FreqDir:
     def john_update_model(self, X):
         """
         Update matrix sketch with new batch of observations
+        
+        Parameters
+        ----------
+        X: ndarray
+            data to update matrix sketch with
         """
-
-#        pr = cProfile.Profile()
-#        pr.enable()
 
         _, numIncorp = X.shape
         n = self.num_incorporated_images
@@ -249,41 +211,44 @@ class FreqDir:
                 self.sketch[self.nextZeroRow,:] = row 
                 self.nextZeroRow += 1
                 self.num_incorporated_images += 1
-                if self.rank==0:
-                    self.dataseen.append(row)
             
 #            if self.rank==0:
 #                print(f'{self.lowMemoryReconstructionErrorUnscaled():.6f}')
-
-#        pr.disable()
-#        # Dump results:
-#        # - for binary dump
-#        pr.dump_stats('logging/{0}_rank_{1}.prof'.format(currRun, self.rank))
-#        # - for text dump
-#        with open( 'logging/{0}_rank_{1}.txt'.format(currRun, self.rank), 'w') as output_file:
-#            sys.stdout = output_file
-#            pr.print_stats( sort='time' )
-#            sys.stdout = sys.__stdout__
-
     
     def john_rotate(self):
-        try:
-            [_,s,Vt] = svd(self.sketch , full_matrices=False)
-        except LinAlgError as err:
-            [_,s,Vt] = scipy_svd(self.sketch, full_matrices = False)
+       """ 
+       Apply Frequent Directions Algorithm to 
+       current matrix sketch and adjoined buffer
+
+        Notes
+        -----
+        Based on [1] and [2]. 
+
+        [1] Frequent Directions: Simple and Deterministic Matrix 
+        Sketching Mina Ghashami, Edo Liberty, Jeff M. Phillips, and 
+        David P. Woodruff SIAM Journal on Computing 2016 45:5, 1762-1792
+
+        [2] Ghashami, M., Desai, A., Phillips, J.M. (2014). Improved 
+        Practical Matrix Sketching with Guarantees. In: Schulz, A.S., 
+        Wagner, D. (eds) Algorithms - ESA 2014. ESA 2014. Lecture Notes 
+        in Computer Science, vol 8737. Springer, Berlin, Heidelberg. 
+        https://doi.org/10.1007/978-3-662-44777-2_39
+       """
+
+        [_,s,Vt] = scipy_svd(self.sketch, full_matrices = False)
 
         if len(s) >= self.ell:
             sCopy = s.copy()
             
-            sShrunk = s[:self.ell]**2 - s[self.ell-1]**2
+            toShrink = s[:self.ell]**2 - s[self.ell-1]**2
             #John: Explicitly set this value to be 0, since sometimes it is negative
             # or even turns to NaN due to roundoff error
-            sShrunk[-1] = 0
-            sShrunk = sqrt(sShrunk)
+            toShrink[-1] = 0
+            toShrink = sqrt(toShrink)
             
-            sShrunk[:int(self.ell*(1-self.alpha))] = sCopy[:int(self.ell*(1-self.alpha))]
+            toShrink[:int(self.ell*(1-self.alpha))] = sCopy[:int(self.ell*(1-self.alpha))]
 
-            self.sketch[:self.ell:,:] = dot(diag(sShrunk), Vt[:self.ell,:])
+            self.sketch[:self.ell:,:] = dot(diag(toShrink), Vt[:self.ell,:])
             self.sketch[self.ell:,:] = 0
             self.nextZeroRow = self.ell
         else:
@@ -291,8 +256,17 @@ class FreqDir:
             self.sketch[len(s):,:] = 0
             self.nextZeroRow = len(s)
 
-    def john_reconstructionError(self):
-        matrixCentered = np.array(self.dataseen)
+    def john_reconstructionError(self, matrixCentered):
+        """ 
+        Compute the reconstruction error of the matrix sketch
+        against given data
+
+        Parameters
+        ----------
+        matrixCentered: ndarray
+           Data to compare matrix sketch to 
+       """
+
         matSketch = self.sketch
         k = 10
         matrixCenteredT = matrixCentered.T
@@ -308,8 +282,18 @@ class FreqDir:
         	matrixCenteredT - G @ G.T @ matrixCenteredT, 'fro')**2)/(
                 (np.linalg.norm(matrixCenteredT - Ak, 'fro'))**2) 
 
-    def lowMemoryReconstructionErrorUnscaled(self):
-        matrixCentered = np.array(self.dataseen)
+    def lowMemoryReconstructionErrorUnscaled(self, matrixCentered):
+        """ 
+        Compute the low memory reconstruction error of the matrix sketch
+        against given data. This si the same as john_reconstructionError,
+        but estimates the norm computation and does not scale by the matrix. 
+
+        Parameters
+        ----------
+        matrixCentered: ndarray
+           Data to compare matrix sketch to 
+       """
+
         matSketch = self.sketch
         k = 10
         matrixCenteredT = matrixCentered.T
@@ -318,7 +302,39 @@ class FreqDir:
         G = U[:,:k]
         return estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 100)
 
-    def estimFrobNormSquared(addMe, arrs, its):
+    def estimFrobNormSquared(self, addMe, arrs, its):
+        """ 
+        Estimate the Frobenius Norm of product of arrs matrices 
+        plus addME matrix using its iterations. 
+
+        Parameters
+        ----------
+        arrs: list of ndarray
+           Matrices to multiply together
+
+        addMe: ndarray
+            Matrix to add to others
+
+        its: int
+            Number of iterations to average over
+
+        Returns
+        -------
+        sumMe/its*no_rows : float
+            Estimate of frobenius norm of produce 
+            of arrs matrices plus addMe matrix
+
+        Notes
+        -----
+        Frobenius estimation is the expected value of matrix
+        multiplied by random vector from multivariate normal distribution
+        based on [1]. 
+
+        [1] Norm and Trace Estimation with Random Rank-one Vectors 
+        Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
+        Analysis and Applications 2021 42:1, 202-223
+       """
+
         no_rows = arrs[-1].shape[1]
         v = np.random.normal(size=no_rows)
         v_hat = v / np.linalg.norm(v)
@@ -334,6 +350,12 @@ class FreqDir:
 
 
     def gatherFreqDirs(self):
+        """
+        Gather local matrix sketches to root node and
+        merge local sketches together. 
+        """
+
+        self.comm.Barrier()
         sendbuf = self.sketch[:self.ell,:]
         recvbuf = None
         if self.rank == 0:
@@ -351,7 +373,6 @@ class FreqDir:
                         self.nextZeroRow += 1
             toReturn = self.sketch.copy()
             self.sketch = origMatSketch
-            print(toReturn)
             return toReturn
         else:
             return
@@ -430,5 +451,3 @@ if __name__ == "__main__":
 
     pipca = PiPCA(**kwargs)
     pipca.run()
-    pipca.get_outliers()
-
