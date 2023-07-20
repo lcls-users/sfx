@@ -359,83 +359,34 @@ class FreqDir:
         Gather local matrix sketches to root node and
         merge local sketches together. 
         """
-#        self.sketch = np.random.rand(self.sketch.shape[0], self.sketch.shape[1])
-        sendbuf = self.ell
-        buffSizes = np.array(self.comm.gather(sendbuf, root=0))
-        if self.rank == 0:
-            print("BUFF SIZES: ", buffSizes)
-#        data = [np.array((), dtype=np.double) for _ in range(self.size)]
-#        data[self.rank] = self.sketch[:self.ell, :].copy()
-#        if self.rank == 0:
-#            sizes_memory = (self.d)*buffSizes
-#            offsets = np.zeros(self.size)
-#            offsets[1:] = np.cumsum(sizes_memory)[:-1]
-#
-#        data_out = None
-#        recvbuf = None
-#        if self.rank == 0:
-#            # data_out = np.empty((np.sum(buffSizes), fd.d), dtype=np.float32)
-#            data_out = np.empty((np.sum(buffSizes), self.d))
-#            recvbuf=[data_out, sizes_memory.tolist(), offsets.tolist(), MPI.DOUBLE]	
-#
-#        self.comm.Barrier()
-#        self.comm.Gatherv(data[self.rank],recvbuf = recvbuf, root=0)
-#        self.comm.Barrier()
-#        print("{} FINISHED GATHERV".format(self.rank))
 
+        self.comm.Barrier()
+        sendbuf = self.sketch[:self.ell,:]
+        recvbuf = None
+        if self.rank == 0:
+            recvbuf = np.empty(
+                    [self.size, self.ell, self.d], dtype=np.float32)
+        self.comm.Gather(sendbuf, recvbuf, root=0)
+        print("{} FINISHED GATHER".format(self.rank))
         if self.rank==0:
             origMatSketch = self.sketch.copy()
             origNextZeroRow = self.nextZeroRow
             self.nextZeroRow = self.ell
-            counter = 0
-            for proc in range(1, self.size):
-                bufferMe = np.empty(self.ell*self.d, dtype=np.double)
-                self.comm.Recv(bufferMe, source=proc, tag=13)
-                bufferMe = np.reshape(bufferMe, (self.ell, self.d))
-                for row in bufferMe:
+            print("BUFFER SHAPE: ", recvbuf.shape)
+            for j in range(1, self.size):
+                print("CURRENT BUFFER: ", j)
+                print(recvbuf[j])
+                for row in recvbuf[j]:
                     if(np.any(row)):
                         if self.nextZeroRow >= self.m:
                             self.john_rotate()
-                    self.sketch[self.nextZeroRow,:] = row 
-                    self.nextZeroRow += 1
-                    counter += 1
-                    print("DATA PROCESSED: {}".format(counter))
+                        self.sketch[self.nextZeroRow,:] = row 
+                        self.nextZeroRow += 1
             toReturn = self.sketch.copy()
-            print("COMPLETED MERGE PROCESS: ", toReturn)
             self.sketch = origMatSketch
             return toReturn
         else:
-            bufferMe = self.sketch[:self.ell, :].copy().flatten()
-            self.comm.Send(bufferMe, dest=0, tag=13)
-            return        
-
-#        self.comm.Barrier()
-#        sendbuf = self.sketch[:self.ell,:]
-#        recvbuf = None
-#        if self.rank == 0:
-#            recvbuf = np.empty(
-#                    [self.size, self.ell, self.d], dtype=np.float32)
-#        self.comm.Gather(sendbuf, recvbuf, root=0)
-#        print("{} FINISHED GATHER".format(self.rank))
-#        if self.rank==0:
-#            origMatSketch = self.sketch.copy()
-#            origNextZeroRow = self.nextZeroRow
-#            self.nextZeroRow = self.ell
-#            print("BUFFER SHAPE: ", recvbuf.shape)
-#            for j in range(1, self.size):
-#                print("CURRENT BUFFER: ", j)
-#                print(recvbuf[j])
-#                for row in recvbuf[j]:
-#                    if(np.any(row)):
-#                        if self.nextZeroRow >= self.m:
-#                            self.john_rotate()
-#                        self.sketch[self.nextZeroRow,:] = row 
-#                        self.nextZeroRow += 1
-#            toReturn = self.sketch.copy()
-#            self.sketch = origMatSketch
-#            return toReturn
-#        else:
-#            return
+            return
 
 def parse_input():
     """
