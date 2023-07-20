@@ -1,8 +1,12 @@
 import argparse
+import logging
 import os
 import requests
 import subprocess
 from btx.interfaces.ischeduler import *
+from btx.interfaces.ielog import update_summary, elog_report_post
+
+logger = logging.getLogger(__name__)
 
 class Indexer:
     
@@ -13,8 +17,16 @@ class Indexer:
 
     def __init__(self, exp, run, det_type, tag, taskdir, geom, cell=None, int_rad='4,5,6', methods='mosflm',
                  tolerance='5,5,5,1.5', tag_cxi=None, no_revalidate=True, multi=True, profile=True,
-                 ncores=64, queue='milano', time='1:00:00'):
+                 ncores=64, queue='milano', time='1:00:00', *, mpi_init = False):
 
+        if mpi_init:
+            from mpi4py import MPI
+            self.comm = MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+        else:
+            self.comm = None
+            self.rank = 0
+        
         # experiment parameters
         self.exp = exp
         self.run = run
@@ -90,7 +102,32 @@ class Indexer:
         js.write_main(command, dependencies=['crystfel'] + self.methods.split(','))
         js.clean_up()
         js.submit()
-        print(f"Indexing executable written to {self.tmp_exe}")
+        logger.info(f"Indexing executable submitted: {self.tmp_exe}")
+
+    @property
+    def idx_summary(self) -> dict:
+        """! Return a dictionary of key/values to post to the eLog.
+        @return (dict) summary_dict Key/values parsed by eLog posting function.
+        """
+        # retrieve number of indexed patterns
+        command = ["grep", "Cell parameters", f"{self.stream}"]
+        output,error  = subprocess.Popen(
+            command, universal_newlines=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        n_indexed = len(output.split('\n')[:-1])
+
+        # retrieve number of total patterns
+        command = ["grep", "Number of hits found", f"{self.peakfinding_summary}"]
+        output,error  = subprocess.Popen(
+            command, universal_newlines=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        n_total = int(output.split(":")[1].split("\n")[0])
+
+        key_strings: list = ['Number of lattices found',
+                             'Fractional indexing rate (including multiple lattices)']
+        summary_dict:dict = { key_strings[0] : f'{n_indexed}',
+                              key_strings[1] : f'{(n_indexed/n_total):.2f}' }
+        return summary_dict
 
     def report(self, update_url=None):
         """
@@ -162,6 +199,7 @@ def parse_input():
     parser.add_argument('--ncores', help='Number of cores for parallelizing indexing', required=False, type=int, default=64)
     parser.add_argument('--queue', help='Submission queue', required=False, type=str, default='ffbh3q')
     parser.add_argument('--time', help='Time limit', required=False, type=str, default='1:00:00')
+    parser.add_argument('--mpi_init', help='Run with MPI', action='store_true')
 
     return parser.parse_args()
 
@@ -172,9 +210,13 @@ if __name__ == '__main__':
     indexer_obj = Indexer(exp=params.exp, run=params.run, det_type=params.det_type, tag=params.tag, taskdir=params.taskdir, geom=params.geom, 
                           cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, tag_cxi=params.tag_cxi,
                           no_revalidate=params.no_revalidate, multi=params.multi, profile=params.profile, ncores=params.ncores, queue=params.queue,
-                          time=params.time)
+                          time=params.time, mpi_init=True)
     if not params.report:
+        logger.info("Launching indexing...")
         indexer_obj.launch()
     else:
-        pass
-        #indexer_obj.report(params.update_url)
+        logger.info("Indexing report on the way...")
+        if indexer_obj.rank == 0:
+            summary_file = f'{params.taskdir[:-6]}/summary_r{params.run:04}.json'
+            update_summary(summary_file, indexer_obj.idx_summary)
+            elog_report_post(summary_file)

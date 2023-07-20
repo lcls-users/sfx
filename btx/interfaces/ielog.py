@@ -15,19 +15,21 @@ def elog_report_post(summary_file: str, update_url: Optional[str] = None):
     @param summary_file (str) Path to the summary file to post.
     @param update_url (str | None) URL to post to. Attempts to retrieve if None.
     """
-    with open(summary_file, 'r') as f:
-        data: dict = json.load(f) # load for files instead of loads
-        post_list: list = [ { 'key': f'{key}', 'value': f'{data[key]}' }
-                            for key in data ]
-        if not update_url:
-            url = os.environ.get('JID_UPDATE_COUNTERS')
-            if url:
-                requests.post(url, json = post_list)
+    try:
+        with open(summary_file, 'r') as f:
+            data: dict = json.load(f) # load for files instead of loads
+            post_list: list = [ { 'key': f'{key}', 'value': f'{data[key]}' }
+                                for key in data ]
+            if not update_url:
+                url = os.environ.get('JID_UPDATE_COUNTERS')
+                if url:
+                    requests.post(url, json = post_list)
+                else:
+                    logger.warning('WARNING: JID_UPDATE_COUNTERS url not found.')
             else:
-                logger.warning('WARNING: JID_UPDATE_COUNTERS url not found.')
-        else:
-            requests.post(update_url, json = post_list)
-
+                requests.post(update_url, json = post_list)
+    except FileNotFoundError as err:
+        logger.warning('WARNING: No task summary file found!')
 
 def update_summary(summary_file: str, data: dict):
     """! Append summary data to a JSON file.
@@ -35,10 +37,14 @@ def update_summary(summary_file: str, data: dict):
     @param summary_file (str) Path to the summary file to update.
     @param data (dict) Key/value pairs to be stored in the JSON summary.
     """
-    with open(summary_file, 'r+') as f:
-        try:
-            summary_data: dict = json.load(f)
-        except json.decoder.JSONDecodeError:
+    if os.path.isfile(summary_file):
+        with open(summary_file, 'r+') as f:
+            try:
+                summary_data: dict = json.load(f)
+            except json.decoder.JSONDecodeError:
+                summary_data: dict = {}
+    else:
+        with open(summary_file, 'w') as f:
             summary_data: dict = {}
 
     summary_data.update(data)

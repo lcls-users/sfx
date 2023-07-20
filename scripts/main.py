@@ -6,7 +6,6 @@ import sys
 import traceback
 import yaml
 import os
-from mpi4py import MPI
 
 from btx.misc.shortcuts import AttrDict
 from scripts.tasks import *
@@ -15,14 +14,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required=True, help='Path to config file.')
     parser.add_argument('-t', '--task', type=str, help='Task to run.')
+    parser.add_argument('-n', '--ncores', type=int, help='Number of cores.')
     config_filepath = parser.parse_args().config
     task = parser.parse_args().task
+    cores = parser.parse_args().ncores
     with open(config_filepath, "r") as config_file:
         config = AttrDict(yaml.safe_load(config_file))
         #TODO: check required arguments in config dictionary here.
 
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    if int(cores) > 1:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+    else:
+        comm = None
+        rank = 0
+        
     if rank == 0:
         # Create output directory.
         try:
@@ -38,7 +45,8 @@ def main():
         # Copy config file to output directory.
         shutil.copy2(config_filepath, config.setup.root_dir)
         # Call 'task' function if it exists.
-    comm.Barrier()
+    if comm:
+        comm.Barrier()
 
     try:
         globals()[task]
