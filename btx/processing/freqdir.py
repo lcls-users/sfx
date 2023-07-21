@@ -354,7 +354,7 @@ class FreqDir:
 
 
     def gatherFreqDirs(self):
-        print("STARTING GATHER")
+#        print("STARTING GATHER")
         """
         Gather local matrix sketches to root node and
         merge local sketches together. 
@@ -362,8 +362,8 @@ class FreqDir:
 #        self.sketch = np.random.rand(self.sketch.shape[0], self.sketch.shape[1])
         sendbuf = self.ell
         buffSizes = np.array(self.comm.gather(sendbuf, root=0))
-        if self.rank == 0:
-            print("BUFF SIZES: ", buffSizes)
+#        if self.rank == 0:
+#            print("BUFF SIZES: ", buffSizes)
 #        data = [np.array((), dtype=np.double) for _ in range(self.size)]
 #        data[self.rank] = self.sketch[:self.ell, :].copy()
 #        if self.rank == 0:
@@ -399,7 +399,7 @@ class FreqDir:
                     self.sketch[self.nextZeroRow,:] = row 
                     self.nextZeroRow += 1
                     counter += 1
-                    print("DATA PROCESSED: {}".format(counter))
+#                    print("DATA PROCESSED: {}".format(counter))
             toReturn = self.sketch.copy()
             print("COMPLETED MERGE PROCESS: ", toReturn)
             self.sketch = origMatSketch
