@@ -56,6 +56,7 @@ class FreqDir:
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
+        self.merger = merger
 
         if not merger:
             self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
@@ -75,7 +76,7 @@ class FreqDir:
 
             self.num_incorporated_images = 0
         else:
-            #JOHN: NEED TO IMPROVE. CURRENTLY, NEED TO MANUALLY SET d, WHICH IS UNACCEPTABLE. 
+            #JOHN: NEED TO IMPROVE. THIS IS WACK. 
             self.num_features = mergerFeatures
             self.task_durations = dict({})
             self.num_incorporated_images = 0
@@ -140,10 +141,9 @@ class FreqDir:
         on run subject to initialization parameters.
         """
 
-        for batch in range(0,self.noImgsToProcess,self.ell):
-            self.fetch_and_update_model(self.ell)
-
-        self.comm.Barrier()
+        for batch in range(0,self.noImgsToProcess,self.ell*10):
+#            print("aodijwaoij      1")
+            self.fetch_and_update_model(self.ell*10)
 
     def get_formatted_images(self, n):
         """
@@ -193,9 +193,11 @@ class FreqDir:
             number of images to incorporate
         """
 
+#        print("aodijwaoij      2")
         img_batch = self.get_formatted_images(n)
 
 
+#        print("aodijwaoij      3")
         self.john_update_model(img_batch)
 
 
@@ -209,39 +211,51 @@ class FreqDir:
             data to update matrix sketch with
         """
 
+#        print("aodijwaoij      4")
         _, numIncorp = X.shape
-#        n = self.num_incorporated_images
-#        q = self.ell
-#
-        with TaskTimer(self.task_durations, "total update"):
+        origNumIncorp = numIncorp
+        n = self.num_incorporated_images
+        q = self.ell
 
-#            if self.rank == 0:
-#                print(
-#                    "Factoring {m} sample{s} into {n} sample, {q} component model...".format(
-#                        m=numIncorp, s="s" if numIncorp > 1 else "", n=n, q=q
-#                    )
-#                )
+        with TaskTimer(self.task_durations, "total update"):
+#            print("aodijwaoij      5")
+
+            if self.rank==0 and not self.merger:
+                print(
+                    "Factoring {m} sample{s} into {n} sample, {q} component model...".format(
+                        m=numIncorp, s="s" if numIncorp > 1 else "", n=n, q=q
+                    )
+                )
+#            print("aodijwaoij      5")
             for row in X.T:
+#                print(self.rank, "   aodijwaoij      6")
                 canRankAdapt = numIncorp > (self.ell + 15)
+#                print(self.rank,"CAN RANK ADAPT", canRankAdapt, numIncorp, self.ell+15)
                 if self.nextZeroRow >= self.m:
+#                    print(self.rank, "   aodijwaoij      7")
                     if self.increaseEll and canRankAdapt and self.rankAdapt:
+#                        print(self.rank, "   aodijwaoij      8")
                         self.ell = self.ell + 10
                         self.m = 2*self.ell
                         self.sketch = np.vstack((*self.sketch, np.zeros((20, self.d))))
                         self.increaseEll = False
+                        print("INCREASING RANK OF PROCESS {} TO {}".format(self.rank, self.ell))
                     else:
+#                        print(self.rank, "   aodijwaoij      9")
                         copyBatch = self.sketch[self.ell:,:].copy()
                         self.john_rotate()
+#                        print(self.rank, "   aodijwaoij      9.25")
                         if canRankAdapt and self.rankAdapt:
-                            reconError = self.lowMemoryReconstructionErrorUnscaled(copyBatch)
-                            if (np.sqrt(reconError) > 0.08):
+#                            print(self.rank, "   aodijwaoij      9.5")
+                            reconError = np.sqrt(self.lowMemoryReconstructionErrorUnscaled(copyBatch))
+#                            print("ITERATION {} - RECON ERROR OF RANK {}: {}".format(origNumIncorp - numIncorp, self.rank, reconError))
+                            if (reconError > 0.08):
                                 self.increaseEll = True
+#                print(self.rank, "   aodijwaoij      10")
                 self.sketch[self.nextZeroRow,:] = row 
                 self.nextZeroRow += 1
                 self.num_incorporated_images += 1
                 numIncorp -= 1
-#            if self.rank==0:
-#                print(f'{self.lowMemoryReconstructionErrorUnscaled():.6f}')
     
     def john_rotate(self):
         """ 
@@ -270,7 +284,8 @@ class FreqDir:
 
         if len(s) >= self.ell:
             sCopy = s.copy()
-            
+           
+           #JOHN: I think actually this should be ell+1 and ell. We lose a component otherwise.
             toShrink = s[:self.ell]**2 - s[self.ell-1]**2
             #John: Explicitly set this value to be 0, since sometimes it is negative
             # or even turns to NaN due to roundoff error
@@ -325,13 +340,16 @@ class FreqDir:
            Data to compare matrix sketch to 
        """
 
+#        print("{} COMPUTING ERROR".format(self.rank))
         matSketch = self.sketch
         k = 10
         matrixCenteredT = matrixCentered.T
         matSketchT = matSketch.T
-        U, S, Vt = np.linalg.svd(matSketchT)
+        U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
         G = U[:,:k]
-        return estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 100)
+#        print("{} FINISHED COMPUTING ERROR".format(self.rank))
+        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 10)/
+                np.linalg.norm(matrixCenteredT, 'fro')**2)
 
     def estimFrobNormSquared(self, addMe, arrs, its):
         """ 
@@ -417,6 +435,11 @@ class FreqDir:
     def get(self):
         return self.sketch[:self.ell, :]
 
+    def write(self):
+        with h5py.File('h5writes/{}_{}.h5'.format(currRun, self.rank), 'w') as hf:
+            hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
+
+
 class MergeTree:
 
     """Frequent Directions Merging Object."""
@@ -431,18 +454,14 @@ class MergeTree:
         with h5py.File(readFile, 'r') as hf:
             self.data = hf[dataSetName][:]
 
-        print("AOIDJWOIJA", self.rank, self.data.shape)
-
         self.fd = FreqDir(0, 0, rankAdapt=False, exp='0', run='0', det_type='0', ell=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1]) 
-
-        self.fd.d = self.data.shape[1]
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
         print(self.buffSizes)
 
         #JOHN: MUST CHECK THAT THIS ACTION ONLY FILLS UP THE SKETCH WITH THE CURRENT SKETCH FROM THE DATA
-        self.fd.john_update_model(self.data)
+        self.fd.john_update_model(self.data.T)
 
 
     def merge(self):
@@ -459,7 +478,7 @@ class MergeTree:
         powerNum = 1
         while(powerNum < self.size):
             powerNum = powerNum * self.divBy
-        if powerNum != size:
+        if powerNum != self.size:
             raise ValueError('NUMBER OF CORES WOULD LEAD TO INBALANCED MERGE TREE. ENDING PROGRAM.')
             return
 
@@ -469,17 +488,15 @@ class MergeTree:
             if(self.rank%jump ==0):
                 root = self.rank - (self.rank%(jump*self.divBy))
                 grouping = [j for j in range(root, root + jump*self.divBy, jump)]
-                print(grouping)
-#                if self.rank==root:
-#                    for proc in grouping[1:]:
-#                        bufferMe = np.empty(self.data.shape[0] * self.data.shape[1], dtype=np.double)
-#                        comm.Recv(bufferMe, source=proc, tag=17)
-#                        bufferMe = np.reshape(bufferMe, (self.data.shape[0], self.data.shape[1]))
-#                        self.fd.john_update_model(bufferMe.T)
-#                        print(level, data)
-#                else:
-#                    bufferMe = self.fd.get().copy().flatten()
-#                    comm.Send(bufferMe, dest=root, tag=17)
+                if self.rank==root:
+                    for proc in grouping[1:]:
+                        bufferMe = np.empty(self.buffSizes[proc] * self.data.shape[1], dtype=np.double)
+                        self.comm.Recv(bufferMe, source=proc, tag=17)
+                        bufferMe = np.reshape(bufferMe, (self.buffSizes[proc], self.data.shape[1]))
+                        self.fd.john_update_model(bufferMe.T)
+                else:
+                    bufferMe = self.fd.get().copy().flatten()
+                    self.comm.Send(bufferMe, dest=root, tag=17)
             level += 1
         if self.rank==0:
             finalSketch = self.fd.get()
