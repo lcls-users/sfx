@@ -141,9 +141,9 @@ class FreqDir:
         on run subject to initialization parameters.
         """
 
-        for batch in range(0,self.noImgsToProcess,self.ell*10):
+        for batch in range(0,self.noImgsToProcess,self.ell*6):
 #            print("aodijwaoij      1")
-            self.fetch_and_update_model(self.ell*10)
+            self.fetch_and_update_model(self.ell*6)
 
     def get_formatted_images(self, n):
         """
@@ -458,7 +458,8 @@ class MergeTree:
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
-        print(self.buffSizes)
+        if self.rank==0):
+            print(self.buffSizes)
 
         #JOHN: MUST CHECK THAT THIS ACTION ONLY FILLS UP THE SKETCH WITH THE CURRENT SKETCH FROM THE DATA
         self.fd.john_update_model(self.data.T)
@@ -503,6 +504,9 @@ class MergeTree:
             return finalSketch
         else:
             return
+
+    def write(self):
+        self.fd.write()
 
 
 def parse_input():
