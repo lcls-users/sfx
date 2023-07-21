@@ -328,7 +328,10 @@ class PeakFinder:
                 peaks = self.find_peaks_event(img)
                 if (peaks.shape[0] >= self.min_peaks) and (peaks.shape[0] <= self.max_peaks):
                     try:
-                        phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength_evt(evt) / 10 / 1.0e9)
+                        if self.psi.exp[:3] == 'xpp':
+                            phot_energy = 1000 * self.psi.ds.env().epicsStore().value('XPP:MON:LOM:E')
+                        else:
+                            phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength_evt(evt) / 10 / 1.0e9)
                     except AttributeError:
                         print(f"AttributeError, evt type: {type(evt)} for event {evt}")
                         phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength() / 10 / 1.0e9)
