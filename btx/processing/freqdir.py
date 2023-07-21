@@ -28,6 +28,7 @@ import time
 from datetime import datetime
 currRun = datetime.now().strftime("%y%m%d%H%M%S")
 
+import h5py
 #############################################
 
 class FreqDir:
@@ -43,31 +44,41 @@ class FreqDir:
         exp,
         run,
         det_type,
+        rankAdapt,
+        merger=False,
+        mergerFeatures=0,
         downsample=False,
         bin_factor=2,
         output_dir="",
     ):
 
+
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
 
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-        self.psi.counter = john_start + tot_imgs*self.rank//self.size
+        if not merger:
+            self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+            self.psi.counter = john_start + tot_imgs*self.rank//self.size
 
-        self.downsample = downsample
-        self.bin_factor = bin_factor
-        self.output_dir = output_dir
+            self.downsample = downsample
+            self.bin_factor = bin_factor
+            self.output_dir = output_dir
 
-        (
-            self.num_images,
-            _,
-            self.num_features,
-        ) = self.set_params(tot_imgs, ell, bin_factor)
+            (
+                self.num_images,
+                _,
+                self.num_features,
+            ) = self.set_params(tot_imgs, ell, bin_factor)
 
-        self.task_durations = dict({})
+            self.task_durations = dict({})
 
-        self.num_incorporated_images = 0
+            self.num_incorporated_images = 0
+        else:
+            #JOHN: NEED TO IMPROVE. CURRENTLY, NEED TO MANUALLY SET d, WHICH IS UNACCEPTABLE. 
+            self.num_features = mergerFeatures
+            self.task_durations = dict({})
+            self.num_incorporated_images = 0
 
         self.d = self.num_features
         self.ell = ell
@@ -77,6 +88,9 @@ class FreqDir:
         self.alpha = alpha
 
         self.noImgsToProcess = tot_imgs//self.size
+
+        self.rankAdapt = rankAdapt
+        self.increaseEll = False
 
     def set_params(self, num_images, num_components, bin_factor):
         """
@@ -196,23 +210,36 @@ class FreqDir:
         """
 
         _, numIncorp = X.shape
-        n = self.num_incorporated_images
-        q = self.ell
-
+#        n = self.num_incorporated_images
+#        q = self.ell
+#
         with TaskTimer(self.task_durations, "total update"):
 
-            if self.rank == 0:
-                print(
-                    "Factoring {m} sample{s} into {n} sample, {q} component model...".format(
-                        m=numIncorp, s="s" if numIncorp > 1 else "", n=n, q=q
-                    )
-                )
+#            if self.rank == 0:
+#                print(
+#                    "Factoring {m} sample{s} into {n} sample, {q} component model...".format(
+#                        m=numIncorp, s="s" if numIncorp > 1 else "", n=n, q=q
+#                    )
+#                )
             for row in X.T:
+                canRankAdapt = numIncorp > (self.ell + 15)
                 if self.nextZeroRow >= self.m:
-                    self.john_rotate()
+                    if self.increaseEll and canRankAdapt and self.rankAdapt:
+                        self.ell = self.ell + 10
+                        self.m = 2*self.ell
+                        self.sketch = np.vstack((*self.sketch, np.zeros((20, self.d))))
+                        self.increaseEll = False
+                    else:
+                        copyBatch = self.sketch[self.ell:,:].copy()
+                        self.john_rotate()
+                        if canRankAdapt and self.rankAdapt:
+                            reconError = self.lowMemoryReconstructionErrorUnscaled(copyBatch)
+                            if (np.sqrt(reconError) > 0.08):
+                                self.increaseEll = True
                 self.sketch[self.nextZeroRow,:] = row 
                 self.nextZeroRow += 1
                 self.num_incorporated_images += 1
+                numIncorp -= 1
 #            if self.rank==0:
 #                print(f'{self.lowMemoryReconstructionErrorUnscaled():.6f}')
     
@@ -354,34 +381,12 @@ class FreqDir:
 
 
     def gatherFreqDirs(self):
-#        print("STARTING GATHER")
         """
         Gather local matrix sketches to root node and
         merge local sketches together. 
         """
-#        self.sketch = np.random.rand(self.sketch.shape[0], self.sketch.shape[1])
         sendbuf = self.ell
-        buffSizes = np.array(self.comm.gather(sendbuf, root=0))
-#        if self.rank == 0:
-#            print("BUFF SIZES: ", buffSizes)
-#        data = [np.array((), dtype=np.double) for _ in range(self.size)]
-#        data[self.rank] = self.sketch[:self.ell, :].copy()
-#        if self.rank == 0:
-#            sizes_memory = (self.d)*buffSizes
-#            offsets = np.zeros(self.size)
-#            offsets[1:] = np.cumsum(sizes_memory)[:-1]
-#
-#        data_out = None
-#        recvbuf = None
-#        if self.rank == 0:
-#            # data_out = np.empty((np.sum(buffSizes), fd.d), dtype=np.float32)
-#            data_out = np.empty((np.sum(buffSizes), self.d))
-#            recvbuf=[data_out, sizes_memory.tolist(), offsets.tolist(), MPI.DOUBLE]	
-#
-#        self.comm.Barrier()
-#        self.comm.Gatherv(data[self.rank],recvbuf = recvbuf, root=0)
-#        self.comm.Barrier()
-#        print("{} FINISHED GATHERV".format(self.rank))
+        buffSizes = np.array(self.comm.allgather(sendbuf))
 
         if self.rank==0:
             origMatSketch = self.sketch.copy()
@@ -389,9 +394,9 @@ class FreqDir:
             self.nextZeroRow = self.ell
             counter = 0
             for proc in range(1, self.size):
-                bufferMe = np.empty(self.ell*self.d, dtype=np.double)
+                bufferMe = np.empty(buffSizes[self.rank]*self.d, dtype=np.double)
                 self.comm.Recv(bufferMe, source=proc, tag=13)
-                bufferMe = np.reshape(bufferMe, (self.ell, self.d))
+                bufferMe = np.reshape(bufferMe, (buffSizes[self.rank], self.d))
                 for row in bufferMe:
                     if(np.any(row)):
                         if self.nextZeroRow >= self.m:
@@ -407,35 +412,81 @@ class FreqDir:
         else:
             bufferMe = self.sketch[:self.ell, :].copy().flatten()
             self.comm.Send(bufferMe, dest=0, tag=13)
-            return        
+            return 
 
-#        self.comm.Barrier()
-#        sendbuf = self.sketch[:self.ell,:]
-#        recvbuf = None
-#        if self.rank == 0:
-#            recvbuf = np.empty(
-#                    [self.size, self.ell, self.d], dtype=np.float32)
-#        self.comm.Gather(sendbuf, recvbuf, root=0)
-#        print("{} FINISHED GATHER".format(self.rank))
-#        if self.rank==0:
-#            origMatSketch = self.sketch.copy()
-#            origNextZeroRow = self.nextZeroRow
-#            self.nextZeroRow = self.ell
-#            print("BUFFER SHAPE: ", recvbuf.shape)
-#            for j in range(1, self.size):
-#                print("CURRENT BUFFER: ", j)
-#                print(recvbuf[j])
-#                for row in recvbuf[j]:
-#                    if(np.any(row)):
-#                        if self.nextZeroRow >= self.m:
-#                            self.john_rotate()
-#                        self.sketch[self.nextZeroRow,:] = row 
-#                        self.nextZeroRow += 1
-#            toReturn = self.sketch.copy()
-#            self.sketch = origMatSketch
-#            return toReturn
-#        else:
-#            return
+    def get(self):
+        return self.sketch[:self.ell, :]
+
+class MergeTree:
+
+    """Frequent Directions Merging Object."""
+
+    def __init__(self, divBy, readFile, dataSetName):
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
+        
+        self.divBy = divBy
+        
+        with h5py.File(readFile, 'r') as hf:
+            self.data = hf[dataSetName][:]
+
+        print("AOIDJWOIJA", self.rank, self.data.shape)
+
+        self.fd = FreqDir(0, 0, rankAdapt=False, exp='0', run='0', det_type='0', ell=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1]) 
+
+        self.fd.d = self.data.shape[1]
+
+        sendbuf = self.data.shape[0]
+        self.buffSizes = np.array(self.comm.allgather(sendbuf))
+        print(self.buffSizes)
+
+        #JOHN: MUST CHECK THAT THIS ACTION ONLY FILLS UP THE SKETCH WITH THE CURRENT SKETCH FROM THE DATA
+        self.fd.john_update_model(self.data)
+
+
+    def merge(self):
+
+        """
+        Merge Frequent Direction Components in a tree-like fashion. 
+        Returns
+        -------
+        finalSketch : ndarray
+            Merged matrix sketch of cumulative data
+
+
+        """
+        powerNum = 1
+        while(powerNum < self.size):
+            powerNum = powerNum * self.divBy
+        if powerNum != size:
+            raise ValueError('NUMBER OF CORES WOULD LEAD TO INBALANCED MERGE TREE. ENDING PROGRAM.')
+            return
+
+        level = 0
+        while((self.divBy ** level) < self.size):
+            jump = self.divBy ** level
+            if(self.rank%jump ==0):
+                root = self.rank - (self.rank%(jump*self.divBy))
+                grouping = [j for j in range(root, root + jump*self.divBy, jump)]
+                print(grouping)
+#                if self.rank==root:
+#                    for proc in grouping[1:]:
+#                        bufferMe = np.empty(self.data.shape[0] * self.data.shape[1], dtype=np.double)
+#                        comm.Recv(bufferMe, source=proc, tag=17)
+#                        bufferMe = np.reshape(bufferMe, (self.data.shape[0], self.data.shape[1]))
+#                        self.fd.john_update_model(bufferMe.T)
+#                        print(level, data)
+#                else:
+#                    bufferMe = self.fd.get().copy().flatten()
+#                    comm.Send(bufferMe, dest=root, tag=17)
+            level += 1
+        if self.rank==0:
+            finalSketch = self.fd.get()
+            return finalSketch
+        else:
+            return
+
 
 def parse_input():
     """
