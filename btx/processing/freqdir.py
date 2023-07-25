@@ -29,6 +29,11 @@ from datetime import datetime
 currRun = datetime.now().strftime("%y%m%d%H%M%S")
 
 import h5py
+
+from PIL import Image
+
+#writeDirec = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/"
+writeDirec = "h5writes/"
 #############################################
 
 class FreqDir:
@@ -192,11 +197,8 @@ class FreqDir:
         n : int
             number of images to incorporate
         """
-
 #        print("aodijwaoij      2")
         img_batch = self.get_formatted_images(n)
-
-
 #        print("aodijwaoij      3")
         self.john_update_model(img_batch)
 
@@ -436,8 +438,11 @@ class FreqDir:
         return self.sketch[:self.ell, :]
 
     def write(self):
-        with h5py.File('h5writes/{}_{}.h5'.format(currRun, self.rank), 'w') as hf:
+        filename = writeDirec + '{}_sketch_{}.h5'.format(currRun, self.rank)
+        with h5py.File(filename, 'w') as hf:
             hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
+        self.comm.Barrier()
+        return filename 
 
 
 class MergeTree:
@@ -458,7 +463,7 @@ class MergeTree:
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
-        if self.rank==0):
+        if self.rank==0:
             print(self.buffSizes)
 
         #JOHN: MUST CHECK THAT THIS ACTION ONLY FILLS UP THE SKETCH WITH THE CURRENT SKETCH FROM THE DATA
@@ -506,8 +511,276 @@ class MergeTree:
             return
 
     def write(self):
-        self.fd.write()
+        filename = writeDirec + '{}_merge.h5'.format(currRun)
+        if self.rank==0:
+            with h5py.File(filename, 'w') as hf:
+                hf.create_dataset("sketch",  data=self.fd.sketch[:self.fd.ell, :])
+        self.comm.Barrier()
+        return filename
 
+class ApplyCompression:
+    """Compute principal components of matrix sketch and apply to sketched data"""
+
+    def __init__(
+        self,
+        john_start,
+        tot_imgs,
+        ell, 
+        alpha,
+        exp,
+        run,
+        det_type,
+        rankAdapt,
+        readFile, dataSetName,
+        merger=False,
+        mergerFeatures=0,
+        downsample=False,
+        bin_factor=2,
+        output_dir=""
+    ):
+
+
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
+        self.merger = merger
+
+        if not merger:
+            self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+            self.psi.counter = john_start + tot_imgs*self.rank//self.size
+
+            self.downsample = downsample
+            self.bin_factor = bin_factor
+            self.output_dir = output_dir
+
+            (
+                self.num_images,
+                _,
+                self.num_features,
+            ) = self.set_params(tot_imgs, ell, bin_factor)
+
+            self.task_durations = dict({})
+
+            self.num_incorporated_images = 0
+        else:
+            #JOHN: NEED TO IMPROVE. THIS IS WACK. 
+            self.num_features = mergerFeatures
+            self.task_durations = dict({})
+            self.num_incorporated_images = 0
+
+        self.d = self.num_features
+        self.ell = ell
+        self.m = 2*self.ell
+        self.sketch = zeros( (self.m, self.d) ) 
+        self.nextZeroRow = 0
+        self.alpha = alpha
+
+        self.noImgsToProcess = tot_imgs//self.size
+
+        self.rankAdapt = rankAdapt
+        self.increaseEll = False
+
+
+        with h5py.File(readFile, 'r') as hf:
+            self.data = hf[dataSetName][:]
+
+        U, S, Vt = np.linalg.svd(self.data, full_matrices=False)
+        self.components = Vt
+        
+        self.processedData = None
+        self.smallImgs = None
+
+        self.imageIndicesProcessed = []
+
+
+    def set_params(self, num_images, num_components, bin_factor):
+        """
+        Method to initialize FreqDir parameters.
+
+        Parameters
+        ----------
+        num_images : int
+            Desired number of images to incorporate into model.
+        num_components : int
+            Desired number of components for model to maintain.
+        bin_factor : int
+            Factor to bin data by.
+
+        Returns
+        -------
+        num_images : int
+            Number of images to incorporate into model.
+        num_components : int
+            Number of components for model to maintain.
+        num_features : int
+            Number of features (dimension) in each image.
+        """
+
+        max_events = self.psi.max_events
+        downsample = self.downsample
+
+        num_images = min(num_images, max_events) if num_images != -1 else max_events
+        num_components = min(num_components, num_images)
+
+        # set d
+        det_shape = self.psi.det.shape()
+        num_features = np.prod(det_shape).astype(int)
+
+        if downsample:
+            if det_shape[-1] % bin_factor or det_shape[-2] % bin_factor:
+                print("Invalid bin factor, toggled off downsampling.")
+                self.downsample = False
+            else:
+                num_features = int(num_features / bin_factor**2)
+
+        return num_images, num_components, num_features
+
+    def run(self):
+        """
+        Retrieve sketch, project images onto new coordinates. Save new coordinates to h5 file. 
+        """
+        for batch in range(0,self.noImgsToProcess,self.ell*6):
+            startCounter = self.psi.counter
+            self.fetch_and_update_model(self.ell*6)
+            self.imageIndicesProcessed.append((startCounter, self.psi.counter))
+
+
+#    def get_formatted_images(self, n):
+#        """
+#        Fetch n - x image segments from run, where x is the number of 'dead' images.
+#
+#        Parameters
+#        ----------
+#        n : int
+#            number of images to retrieve
+#        start_index : int
+#            start index of subsection of data to retrieve
+#        end_index : int
+#            end index of subsection of data to retrieve
+#
+#        Returns
+#        -------
+#        ndarray, shape (end_index-start_index, n-x)
+#            n-x retrieved image segments of dimension end_index-start_index
+#        """
+#
+#        bin_factor = self.bin_factor
+#        downsample = self.downsample
+#
+#        # may have to rewrite eventually when number of images becomes large,
+#        # i.e. streamed setting, either that or downsample aggressively
+#        imgs = self.psi.get_images(n, assemble=False)
+#        print(imgs.shape)
+#
+#        toSaveImgs = bin_data(imgs, bin_factor)
+#        if downsample:
+#            imgs = bin_data(imgs, bin_factor)
+#
+#        toSaveImgs = toSaveImgs[
+#            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+#        ]
+#        imgs = imgs[
+#            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+#        ]
+#
+#        num_valid_imgs, p, x, y = imgs.shape
+#        toSave_num_valid_imgs, toSave_p, toSave_x, toSave_y = toSaveImgs.shape
+#
+#        formatted_imgs = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+#        toSave_formatted_imgs = np.reshape(toSaveImgs, (toSave_num_valid_imgs, toSave_p * toSave_x * toSave_y)).T
+#        print(toSave_formatted_imgs.shape)
+#
+#        return (formatted_imgs,toSave_formatted_imgs)
+
+    def get_formatted_images(self, n):
+        """
+        Fetch n - x image segments from run, where x is the number of 'dead' images.
+
+        Parameters
+        ----------
+        n : int
+            number of images to retrieve
+        start_index : int
+            start index of subsection of data to retrieve
+        end_index : int
+            end index of subsection of data to retrieve
+
+        Returns
+        -------
+        ndarray, shape (end_index-start_index, n-x)
+            n-x retrieved image segments of dimension end_index-start_index
+        """
+
+        bin_factor = self.bin_factor
+        downsample = self.downsample
+
+        # may have to rewrite eventually when number of images becomes large,
+        # i.e. streamed setting, either that or downsample aggressively
+        imgs = self.psi.get_images(n, assemble=False)
+
+        if downsample:
+            imgs = bin_data(imgs, bin_factor)
+
+        imgs = imgs[
+            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+        ]
+
+        num_valid_imgs, p, x, y = imgs.shape
+        formatted_imgs = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+
+        return formatted_imgs
+
+    def assembleImgsToSave(self, imgs):
+        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+
+        saveMe = []
+        for img in imgs.T:
+            imgRe = np.reshape(img, self.psi.det.shape())
+            imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
+            #saveMe.append(np.array(Image.fromarray(imgRe, mode='L').resize((150, 150), Image.Resampling.BICUBIC)))
+            saveMe.append(np.array(Image.fromarray(imgRe).resize((150, 150))))
+        saveMe = np.array(saveMe)
+        return saveMe
+
+#        print("IMGS TO SAVE SHAPE: ", imgs.shape)
+#        saveMe = []
+#        for img in imgs:
+#                saveMe.append(np.array(Image.fromarray(img, mode='L').resize((150, 150), Image.Resampling.BICUBIC)))
+#        saveMe = np.array(saveMe)
+#        print("RESIZED IMGS TO SAVE SHAPE: ", saveMe.shape)
+#        return saveMe
+        
+
+    def fetch_and_update_model(self, n):
+        """
+        Fetch images and update model.
+
+        Parameters
+        ----------
+        n : int
+            number of images to incorporate
+        """
+        img_batch = self.get_formatted_images(n)
+        toSave_img_batch = self.assembleImgsToSave(img_batch)
+        if self.smallImgs is None:
+            self.smallImgs = toSave_img_batch
+        else:
+            self.smallImgs = np.concatenate((self.smallImgs, toSave_img_batch), axis=0)
+        self.john_apply_compression(img_batch)
+
+    def john_apply_compression(self, X):
+        if self.processedData is None:
+            self.processedData = np.dot(X.T, self.components.T)
+        else:
+            self.processedData = np.vstack((self.processedData, np.dot(X.T, self.components.T)))
+
+    def write(self):
+        filename = writeDirec + '{}_ProjectedData_{}.h5'.format(currRun, self.rank)
+        with h5py.File(filename, 'w') as hf:
+            hf.create_dataset("ProjectedData",  data=self.processedData)
+            hf.create_dataset("SmallImages", data=self.smallImgs)
+        self.comm.Barrier()
+        return filename
 
 def parse_input():
     """
