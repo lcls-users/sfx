@@ -77,8 +77,8 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aee8db3fb10688c41535dbe1c2fc2b890"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#aee8db3fb10688c41535dbe1c2fc2b890">__init__</a> (self, <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a7c3c3aac765c101598e249566faaef48">input_files</a>, <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a5fa63ebc25a67c531559386497496eb0">cell_only</a>=False)</td></tr>
-<tr class="separator:aee8db3fb10688c41535dbe1c2fc2b890"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea47133d83e1a4c13d35f34f24ac5401"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#aea47133d83e1a4c13d35f34f24ac5401">__init__</a> (self, <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a7c3c3aac765c101598e249566faaef48">input_files</a>, <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a5fa63ebc25a67c531559386497496eb0">cell_only</a>=False, mpi_init=True)</td></tr>
+<tr class="separator:aea47133d83e1a4c13d35f34f24ac5401"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d05166c06fec55c260ff075252c3096"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a1d05166c06fec55c260ff075252c3096">read_all_streams</a> (self, <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a7c3c3aac765c101598e249566faaef48">input_files</a>)</td></tr>
 <tr class="memdesc:a1d05166c06fec55c260ff075252c3096"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read stream file(s), distributing files across ranks if available.  <a href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a1d05166c06fec55c260ff075252c3096">More...</a><br /></td></tr>
 <tr class="separator:a1d05166c06fec55c260ff075252c3096"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -109,9 +109,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af9befe4cd36d2b1552543f99f7663107"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#af9befe4cd36d2b1552543f99f7663107">plot_hits_distribution</a> (self, <a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a3f37f557269e7005f023b112767804dc">output</a>=None)</td></tr>
 <tr class="memdesc:af9befe4cd36d2b1552543f99f7663107"><td class="mdescLeft">&#160;</td><td class="mdescRight">Plot the distribution of unindexed, single hit, and multi-lattice events.  <a href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#af9befe4cd36d2b1552543f99f7663107">More...</a><br /></td></tr>
 <tr class="separator:af9befe4cd36d2b1552543f99f7663107"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe125d1a6a5b5a42fe7f874f75fa73d6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#afe125d1a6a5b5a42fe7f874f75fa73d6">report</a> (self, <a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a0b9d9d1fecb8d9022572317cf3aa2853">tag</a>=None)</td></tr>
+<tr class="memitem:afe125d1a6a5b5a42fe7f874f75fa73d6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#afe125d1a6a5b5a42fe7f874f75fa73d6">report</a> (self, tag=None)</td></tr>
 <tr class="memdesc:afe125d1a6a5b5a42fe7f874f75fa73d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Summarize the cell parameters and optionally report to the elog.  <a href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#afe125d1a6a5b5a42fe7f874f75fa73d6">More...</a><br /></td></tr>
 <tr class="separator:afe125d1a6a5b5a42fe7f874f75fa73d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f69c3cbe2ded68d5386b3d36db6f021"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a5f69c3cbe2ded68d5386b3d36db6f021">stream_summary</a> (self)</td></tr>
+<tr class="memdesc:a5f69c3cbe2ded68d5386b3d36db6f021"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a dictionary of key/values to post to the eLog.  <a href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a5f69c3cbe2ded68d5386b3d36db6f021">More...</a><br /></td></tr>
+<tr class="separator:a5f69c3cbe2ded68d5386b3d36db6f021"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbf8b1d20cc4f8adcb2622b054181f7f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#afbf8b1d20cc4f8adcb2622b054181f7f">copy_from_stream</a> (self, stream_file, chunk_indices, crystal_indices, <a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a3f37f557269e7005f023b112767804dc">output</a>)</td></tr>
 <tr class="memdesc:afbf8b1d20cc4f8adcb2622b054181f7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add the indicated crystals from the input to the output stream.  <a href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#afbf8b1d20cc4f8adcb2622b054181f7f">More...</a><br /></td></tr>
 <tr class="separator:afbf8b1d20cc4f8adcb2622b054181f7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -121,18 +124,18 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
+<tr class="memitem:a44294433e28431cf6259211e9cea9bd3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a44294433e28431cf6259211e9cea9bd3">comm</a></td></tr>
+<tr class="separator:a44294433e28431cf6259211e9cea9bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37d89707b065dac0c9a3bd13b95e3e9e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a37d89707b065dac0c9a3bd13b95e3e9e">rank</a></td></tr>
+<tr class="separator:a37d89707b065dac0c9a3bd13b95e3e9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15da024649c239128f47ab61b764cb8d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a15da024649c239128f47ab61b764cb8d">size</a></td></tr>
+<tr class="separator:a15da024649c239128f47ab61b764cb8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fa63ebc25a67c531559386497496eb0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a5fa63ebc25a67c531559386497496eb0">cell_only</a></td></tr>
 <tr class="separator:a5fa63ebc25a67c531559386497496eb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c3c3aac765c101598e249566faaef48"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a7c3c3aac765c101598e249566faaef48">input_files</a></td></tr>
 <tr class="separator:a7c3c3aac765c101598e249566faaef48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d9bfec0b2e19e520d977dc1b2325904"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a1d9bfec0b2e19e520d977dc1b2325904">file_limits_refn</a></td></tr>
 <tr class="separator:a1d9bfec0b2e19e520d977dc1b2325904"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37d89707b065dac0c9a3bd13b95e3e9e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a37d89707b065dac0c9a3bd13b95e3e9e">rank</a></td></tr>
-<tr class="separator:a37d89707b065dac0c9a3bd13b95e3e9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44294433e28431cf6259211e9cea9bd3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a44294433e28431cf6259211e9cea9bd3">comm</a></td></tr>
-<tr class="separator:a44294433e28431cf6259211e9cea9bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15da024649c239128f47ab61b764cb8d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a15da024649c239128f47ab61b764cb8d">size</a></td></tr>
-<tr class="separator:a15da024649c239128f47ab61b764cb8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a1d5b45d50718757a771c4edbd26d28"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a8a1d5b45d50718757a771c4edbd26d28">n_crystal</a></td></tr>
 <tr class="separator:a8a1d5b45d50718757a771c4edbd26d28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ecf0222e9b4031498110be0902d268e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a1ecf0222e9b4031498110be0902d268e">cell_params</a></td></tr>
@@ -147,8 +150,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a6dfa5193d3f1d59ddd46e2034419f21b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="aee8db3fb10688c41535dbe1c2fc2b890"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee8db3fb10688c41535dbe1c2fc2b890">&#9670;&nbsp;</a></span>__init__()</h2>
+<a id="aea47133d83e1a4c13d35f34f24ac5401"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea47133d83e1a4c13d35f34f24ac5401">&#9670;&nbsp;</a></span>__init__()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -169,7 +172,13 @@ Public Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>cell_only</em> = <code>False</code>&#160;</td>
+          <td class="paramname"><em>cell_only</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mpi_init</em> = <code>True</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -558,6 +567,27 @@ Parameters</h2>
 
 </div>
 </div>
+<a id="a5f69c3cbe2ded68d5386b3d36db6f021"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f69c3cbe2ded68d5386b3d36db6f021">&#9670;&nbsp;</a></span>stream_summary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> dict btx.interfaces.istream.StreamInterface.stream_summary </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return a dictionary of key/values to post to the eLog. </p>
+<pre class="fragment">   @return (dict) summary_dit Key/values parsed by eLog posting function.
+</pre> 
+</div>
+</div>
 <a id="a59642b81d082276c367e9aa60308484e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a59642b81d082276c367e9aa60308484e">&#9670;&nbsp;</a></span>write_stream()</h2>
 
@@ -772,7 +802,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2023 00:09:47 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Thu Jul 27 2023 01:06:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

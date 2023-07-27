@@ -169,10 +169,10 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;=  {</div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;        <span class="stringliteral">&quot;dag_run_id&quot;</span>: str(uuid.uuid4()),</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;        <span class="stringliteral">&quot;dag_run_id&quot;</span>: <a class="code" href="namespacebtx_1_1interfaces_1_1istream.html#a0ca866c2fbd1db1711e140c8fcffc177">str</a>(uuid.uuid4()),</div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;        <span class="stringliteral">&quot;conf&quot;</span>: {</div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;            <span class="stringliteral">&quot;experiment&quot;</span>: experiment_name,</div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;            <span class="stringliteral">&quot;run_id&quot;</span>: str(run_num) + datetime.datetime.utcnow().isoformat(),</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;            <span class="stringliteral">&quot;run_id&quot;</span>: <a class="code" href="namespacebtx_1_1interfaces_1_1istream.html#a0ca866c2fbd1db1711e140c8fcffc177">str</a>(run_num) + datetime.datetime.utcnow().isoformat(),</div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;            <span class="stringliteral">&quot;JID_UPDATE_COUNTERS&quot;</span>: os.environ[<span class="stringliteral">&quot;JID_UPDATE_COUNTERS&quot;</span>],</div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;            <span class="stringliteral">&quot;ARP_ROOT_JOB_ID&quot;</span>: os.environ[<span class="stringliteral">&quot;ARP_JOB_ID&quot;</span>],</div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;            <span class="stringliteral">&quot;ARP_LOCATION&quot;</span>: <span class="stringliteral">&#39;S3DF&#39;</span>, <span class="comment">#os.environ[&quot;ARP_LOCATION&quot;],</span></div>
@@ -188,6 +188,7 @@ Variables</h2></td></tr>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;            }</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        }</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    }</div>
+<div class="ttc" id="anamespacebtx_1_1interfaces_1_1istream_html_a0ca866c2fbd1db1711e140c8fcffc177"><div class="ttname"><a href="namespacebtx_1_1interfaces_1_1istream.html#a0ca866c2fbd1db1711e140c8fcffc177">btx.interfaces.istream.str</a></div><div class="ttdeci">str</div><div class="ttdef"><b>Definition:</b> istream.py:676</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -292,7 +293,7 @@ Variables</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2023 00:09:47 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Thu Jul 27 2023 01:06:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

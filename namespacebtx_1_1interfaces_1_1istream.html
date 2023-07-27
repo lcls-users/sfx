@@ -94,6 +94,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ac18ae253c750862dbd17162181c4de9e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#ac18ae253c750862dbd17162181c4de9e">launch_stream_analysis</a> (in_stream, out_stream, fig_dir, tmp_exe, queue, ncores, cell_only=False, <a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a547dd9d2c0e2ba1f2926378defe59ea7">cell_out</a>=None, cell_ref=None, addl_command=None)</td></tr>
 <tr class="memdesc:ac18ae253c750862dbd17162181c4de9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Launch stream analysis task using iScheduler.  <a href="namespacebtx_1_1interfaces_1_1istream.html#ac18ae253c750862dbd17162181c4de9e">More...</a><br /></td></tr>
 <tr class="separator:ac18ae253c750862dbd17162181c4de9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a210275a608433d30b1dc642f59909502"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a7a2eefb056409958768f26984093ff67">int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a210275a608433d30b1dc642f59909502">get_most_recent_run</a> (<a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a2ddfb67797cb20159f095646ea63df46">list</a> streams)</td></tr>
+<tr class="memdesc:a210275a608433d30b1dc642f59909502"><td class="mdescLeft">&#160;</td><td class="mdescRight">From a list of stream files, get the most recent run.  <a href="namespacebtx_1_1interfaces_1_1istream.html#a210275a608433d30b1dc642f59909502">More...</a><br /></td></tr>
+<tr class="separator:a210275a608433d30b1dc642f59909502"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a204d7792d26952df70859d0c6d759d8f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a204d7792d26952df70859d0c6d759d8f">parse_input</a> ()</td></tr>
 <tr class="memdesc:a204d7792d26952df70859d0c6d759d8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">For command line use ####.  <a href="namespacebtx_1_1interfaces_1_1istream.html#a204d7792d26952df70859d0c6d759d8f">More...</a><br /></td></tr>
 <tr class="separator:a204d7792d26952df70859d0c6d759d8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -102,12 +105,16 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:a37d9c84ed59c3d3cf2d59e820edc8072"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a37d9c84ed59c3d3cf2d59e820edc8072">params</a> = <a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a204d7792d26952df70859d0c6d759d8f">parse_input</a>()</td></tr>
 <tr class="separator:a37d9c84ed59c3d3cf2d59e820edc8072"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83d8014c2cbfaa35d92895c952b7588f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a83d8014c2cbfaa35d92895c952b7588f">st</a> = <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html">StreamInterface</a>(input_files=glob.glob(params.inputs), cell_only=params.cell_only)</td></tr>
+<tr class="memitem:a0ca866c2fbd1db1711e140c8fcffc177"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a0ca866c2fbd1db1711e140c8fcffc177">str</a></td></tr>
+<tr class="separator:a0ca866c2fbd1db1711e140c8fcffc177"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ddfb67797cb20159f095646ea63df46"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a2ddfb67797cb20159f095646ea63df46">list</a></td></tr>
+<tr class="separator:a2ddfb67797cb20159f095646ea63df46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83d8014c2cbfaa35d92895c952b7588f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a83d8014c2cbfaa35d92895c952b7588f">st</a> = <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html">StreamInterface</a>(input_files=streams, cell_only=params.cell_only)</td></tr>
 <tr class="separator:a83d8014c2cbfaa35d92895c952b7588f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f37f557269e7005f023b112767804dc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a3f37f557269e7005f023b112767804dc">output</a></td></tr>
 <tr class="separator:a3f37f557269e7005f023b112767804dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b9d9d1fecb8d9022572317cf3aa2853"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a0b9d9d1fecb8d9022572317cf3aa2853">tag</a></td></tr>
-<tr class="separator:a0b9d9d1fecb8d9022572317cf3aa2853"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a2eefb056409958768f26984093ff67"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a7a2eefb056409958768f26984093ff67">int</a></td></tr>
+<tr class="separator:a7a2eefb056409958768f26984093ff67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a547dd9d2c0e2ba1f2926378defe59ea7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a547dd9d2c0e2ba1f2926378defe59ea7">cell_out</a></td></tr>
 <tr class="separator:a547dd9d2c0e2ba1f2926378defe59ea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cf43fa37190cf28f0ac03cda28e9fe9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a5cf43fa37190cf28f0ac03cda28e9fe9">input_file</a></td></tr>
@@ -172,6 +179,33 @@ Parameters</h2>
 <h2><a class="anchor" id="autotoc_md100"></a>
 Returns</h2>
 <p>labels : numpy.ndarray, shape (n_crystals,) cluster labels for input cell array </p>
+
+</div>
+</div>
+<a id="a210275a608433d30b1dc642f59909502"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a210275a608433d30b1dc642f59909502">&#9670;&nbsp;</a></span>get_most_recent_run()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> <a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a7a2eefb056409958768f26984093ff67">int</a> btx.interfaces.istream.get_most_recent_run </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a2ddfb67797cb20159f095646ea63df46">list</a>&#160;</td>
+          <td class="paramname"><em>streams</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>From a list of stream files, get the most recent run. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">streams</td><td>(list[str]) List of full paths to stream files. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>run (int) Most recent run in the list of streams. </dd></dl>
 
 </div>
 </div>
@@ -370,6 +404,34 @@ Parameters</h2>
 
 </div>
 </div>
+<a id="a7a2eefb056409958768f26984093ff67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a2eefb056409958768f26984093ff67">&#9670;&nbsp;</a></span>int</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">btx.interfaces.istream.int</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2ddfb67797cb20159f095646ea63df46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ddfb67797cb20159f095646ea63df46">&#9670;&nbsp;</a></span>list</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">btx.interfaces.istream.list</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a3f37f557269e7005f023b112767804dc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3f37f557269e7005f023b112767804dc">&#9670;&nbsp;</a></span>output</h2>
 
@@ -405,21 +467,21 @@ Parameters</h2>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">btx.interfaces.istream.st = <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html">StreamInterface</a>(input_files=glob.glob(params.inputs), cell_only=params.cell_only)</td>
+          <td class="memname">btx.interfaces.istream.st = <a class="el" href="classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html">StreamInterface</a>(input_files=streams, cell_only=params.cell_only)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a0b9d9d1fecb8d9022572317cf3aa2853"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b9d9d1fecb8d9022572317cf3aa2853">&#9670;&nbsp;</a></span>tag</h2>
+<a id="a0ca866c2fbd1db1711e140c8fcffc177"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ca866c2fbd1db1711e140c8fcffc177">&#9670;&nbsp;</a></span>str</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">btx.interfaces.istream.tag</td>
+          <td class="memname">btx.interfaces.istream.str</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -429,7 +491,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2023 00:09:47 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Thu Jul 27 2023 01:06:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

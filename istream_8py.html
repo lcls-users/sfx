@@ -100,6 +100,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ac18ae253c750862dbd17162181c4de9e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#ac18ae253c750862dbd17162181c4de9e">btx.interfaces.istream.launch_stream_analysis</a> (in_stream, out_stream, fig_dir, tmp_exe, queue, ncores, cell_only=False, cell_out=None, cell_ref=None, addl_command=None)</td></tr>
 <tr class="memdesc:ac18ae253c750862dbd17162181c4de9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Launch stream analysis task using iScheduler.  <a href="namespacebtx_1_1interfaces_1_1istream.html#ac18ae253c750862dbd17162181c4de9e">More...</a><br /></td></tr>
 <tr class="separator:ac18ae253c750862dbd17162181c4de9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a210275a608433d30b1dc642f59909502"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a210275a608433d30b1dc642f59909502">btx.interfaces.istream.get_most_recent_run</a> (list streams)</td></tr>
+<tr class="memdesc:a210275a608433d30b1dc642f59909502"><td class="mdescLeft">&#160;</td><td class="mdescRight">From a list of stream files, get the most recent run.  <a href="namespacebtx_1_1interfaces_1_1istream.html#a210275a608433d30b1dc642f59909502">More...</a><br /></td></tr>
+<tr class="separator:a210275a608433d30b1dc642f59909502"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a204d7792d26952df70859d0c6d759d8f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a204d7792d26952df70859d0c6d759d8f">btx.interfaces.istream.parse_input</a> ()</td></tr>
 <tr class="memdesc:a204d7792d26952df70859d0c6d759d8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">For command line use ####.  <a href="namespacebtx_1_1interfaces_1_1istream.html#a204d7792d26952df70859d0c6d759d8f">More...</a><br /></td></tr>
 <tr class="separator:a204d7792d26952df70859d0c6d759d8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -108,12 +111,16 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:a37d9c84ed59c3d3cf2d59e820edc8072"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a37d9c84ed59c3d3cf2d59e820edc8072">btx.interfaces.istream.params</a> = parse_input()</td></tr>
 <tr class="separator:a37d9c84ed59c3d3cf2d59e820edc8072"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83d8014c2cbfaa35d92895c952b7588f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a83d8014c2cbfaa35d92895c952b7588f">btx.interfaces.istream.st</a> = StreamInterface(input_files=glob.glob(params.inputs), cell_only=params.cell_only)</td></tr>
+<tr class="memitem:a0ca866c2fbd1db1711e140c8fcffc177"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a0ca866c2fbd1db1711e140c8fcffc177">btx.interfaces.istream.str</a></td></tr>
+<tr class="separator:a0ca866c2fbd1db1711e140c8fcffc177"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ddfb67797cb20159f095646ea63df46"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a2ddfb67797cb20159f095646ea63df46">btx.interfaces.istream.list</a></td></tr>
+<tr class="separator:a2ddfb67797cb20159f095646ea63df46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83d8014c2cbfaa35d92895c952b7588f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a83d8014c2cbfaa35d92895c952b7588f">btx.interfaces.istream.st</a> = StreamInterface(input_files=streams, cell_only=params.cell_only)</td></tr>
 <tr class="separator:a83d8014c2cbfaa35d92895c952b7588f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f37f557269e7005f023b112767804dc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a3f37f557269e7005f023b112767804dc">btx.interfaces.istream.output</a></td></tr>
 <tr class="separator:a3f37f557269e7005f023b112767804dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b9d9d1fecb8d9022572317cf3aa2853"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a0b9d9d1fecb8d9022572317cf3aa2853">btx.interfaces.istream.tag</a></td></tr>
-<tr class="separator:a0b9d9d1fecb8d9022572317cf3aa2853"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a2eefb056409958768f26984093ff67"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a7a2eefb056409958768f26984093ff67">btx.interfaces.istream.int</a></td></tr>
+<tr class="separator:a7a2eefb056409958768f26984093ff67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a547dd9d2c0e2ba1f2926378defe59ea7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a547dd9d2c0e2ba1f2926378defe59ea7">btx.interfaces.istream.cell_out</a></td></tr>
 <tr class="separator:a547dd9d2c0e2ba1f2926378defe59ea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cf43fa37190cf28f0ac03cda28e9fe9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a5cf43fa37190cf28f0ac03cda28e9fe9">btx.interfaces.istream.input_file</a></td></tr>
@@ -122,7 +129,7 @@ Variables</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2023 00:09:46 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Thu Jul 27 2023 01:06:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
