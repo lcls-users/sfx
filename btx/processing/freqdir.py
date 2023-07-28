@@ -98,6 +98,8 @@ class FreqDir:
         self.rankAdapt = rankAdapt
         self.increaseEll = False
 
+        self.imgsTracked = []
+
     def set_params(self, num_images, num_components, bin_factor):
         """
         Method to initialize FreqDir parameters.
@@ -147,7 +149,6 @@ class FreqDir:
         """
 
         for batch in range(0,self.noImgsToProcess,self.ell*6):
-#            print("aodijwaoij      1")
             self.fetch_and_update_model(self.ell*6)
 
     def get_formatted_images(self, n):
@@ -168,6 +169,7 @@ class FreqDir:
         ndarray, shape (end_index-start_index, n-x)
             n-x retrieved image segments of dimension end_index-start_index
         """
+        self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
 
         bin_factor = self.bin_factor
         downsample = self.downsample
@@ -197,9 +199,7 @@ class FreqDir:
         n : int
             number of images to incorporate
         """
-#        print("aodijwaoij      2")
         img_batch = self.get_formatted_images(n)
-#        print("aodijwaoij      3")
         self.john_update_model(img_batch)
 
 
@@ -212,48 +212,33 @@ class FreqDir:
         X: ndarray
             data to update matrix sketch with
         """
-
-#        print("aodijwaoij      4")
         _, numIncorp = X.shape
         origNumIncorp = numIncorp
         n = self.num_incorporated_images
         q = self.ell
-
         with TaskTimer(self.task_durations, "total update"):
-#            print("aodijwaoij      5")
-
             if self.rank==0 and not self.merger:
                 print(
                     "Factoring {m} sample{s} into {n} sample, {q} component model...".format(
                         m=numIncorp, s="s" if numIncorp > 1 else "", n=n, q=q
                     )
                 )
-#            print("aodijwaoij      5")
             for row in X.T:
-#                print(self.rank, "   aodijwaoij      6")
                 canRankAdapt = numIncorp > (self.ell + 15)
-#                print(self.rank,"CAN RANK ADAPT", canRankAdapt, numIncorp, self.ell+15)
                 if self.nextZeroRow >= self.m:
-#                    print(self.rank, "   aodijwaoij      7")
                     if self.increaseEll and canRankAdapt and self.rankAdapt:
-#                        print(self.rank, "   aodijwaoij      8")
                         self.ell = self.ell + 10
                         self.m = 2*self.ell
                         self.sketch = np.vstack((*self.sketch, np.zeros((20, self.d))))
                         self.increaseEll = False
                         print("INCREASING RANK OF PROCESS {} TO {}".format(self.rank, self.ell))
                     else:
-#                        print(self.rank, "   aodijwaoij      9")
                         copyBatch = self.sketch[self.ell:,:].copy()
                         self.john_rotate()
-#                        print(self.rank, "   aodijwaoij      9.25")
                         if canRankAdapt and self.rankAdapt:
-#                            print(self.rank, "   aodijwaoij      9.5")
                             reconError = np.sqrt(self.lowMemoryReconstructionErrorUnscaled(copyBatch))
-#                            print("ITERATION {} - RECON ERROR OF RANK {}: {}".format(origNumIncorp - numIncorp, self.rank, reconError))
                             if (reconError > 0.08):
                                 self.increaseEll = True
-#                print(self.rank, "   aodijwaoij      10")
                 self.sketch[self.nextZeroRow,:] = row 
                 self.nextZeroRow += 1
                 self.num_incorporated_images += 1
@@ -278,15 +263,12 @@ class FreqDir:
         in Computer Science, vol 8737. Springer, Berlin, Heidelberg. 
         https://doi.org/10.1007/978-3-662-44777-2_39
         """
-
         try:
             [_,s,Vt] = svd(self.sketch , full_matrices=False)
         except LinAlgError as err:
             [_,s,Vt] = scipy_svd(self.sketch, full_matrices = False)
-
         if len(s) >= self.ell:
             sCopy = s.copy()
-           
            #JOHN: I think actually this should be ell+1 and ell. We lose a component otherwise.
             toShrink = s[:self.ell]**2 - s[self.ell-1]**2
             #John: Explicitly set this value to be 0, since sometimes it is negative
@@ -314,7 +296,6 @@ class FreqDir:
         matrixCentered: ndarray
            Data to compare matrix sketch to 
        """
-
         matSketch = self.sketch
         k = 10
         matrixCenteredT = matrixCentered.T
@@ -330,7 +311,7 @@ class FreqDir:
         	matrixCenteredT - G @ G.T @ matrixCenteredT, 'fro')**2)/(
                 (np.linalg.norm(matrixCenteredT - Ak, 'fro'))**2) 
 
-    def lowMemoryReconstructionErrorUnscaled(self, matrixCentered):
+    def lowMemoryReconstructionError(self, matrixCentered):
         """ 
         Compute the low memory reconstruction error of the matrix sketch
         against given data. This si the same as john_reconstructionError,
@@ -341,15 +322,12 @@ class FreqDir:
         matrixCentered: ndarray
            Data to compare matrix sketch to 
        """
-
-#        print("{} COMPUTING ERROR".format(self.rank))
         matSketch = self.sketch
         k = 10
         matrixCenteredT = matrixCentered.T
         matSketchT = matSketch.T
         U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
         G = U[:,:k]
-#        print("{} FINISHED COMPUTING ERROR".format(self.rank))
         return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 10)/
                 np.linalg.norm(matrixCenteredT, 'fro')**2)
 
@@ -385,7 +363,6 @@ class FreqDir:
         Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
         Analysis and Applications 2021 42:1, 202-223
        """
-
         no_rows = arrs[-1].shape[1]
         v = np.random.normal(size=no_rows)
         v_hat = v / np.linalg.norm(v)
@@ -400,14 +377,13 @@ class FreqDir:
         return sumMe/its*no_rows
 
 
-    def gatherFreqDirs(self):
+    def gatherFreqDirsSerial(self):
         """
         Gather local matrix sketches to root node and
         merge local sketches together. 
         """
         sendbuf = self.ell
         buffSizes = np.array(self.comm.allgather(sendbuf))
-
         if self.rank==0:
             origMatSketch = self.sketch.copy()
             origNextZeroRow = self.nextZeroRow
@@ -424,7 +400,6 @@ class FreqDir:
                     self.sketch[self.nextZeroRow,:] = row 
                     self.nextZeroRow += 1
                     counter += 1
-#                    print("DATA PROCESSED: {}".format(counter))
             toReturn = self.sketch.copy()
             print("COMPLETED MERGE PROCESS: ", toReturn)
             self.sketch = origMatSketch
@@ -435,12 +410,19 @@ class FreqDir:
             return 
 
     def get(self):
+        """
+        Fetch matrix sketch
+        """
         return self.sketch[:self.ell, :]
 
     def write(self):
+        """
+        Write matrix sketch to h5 file. 
+        """
         filename = writeDirec + '{}_sketch_{}.h5'.format(currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
+            hf.create_dataset("imgsTracked", data=self.imgsTracked)
         self.comm.Barrier()
         return filename 
 
@@ -511,6 +493,9 @@ class MergeTree:
             return
 
     def write(self):
+        """
+        Write merged matrix sketch to h5 file
+        """
         filename = writeDirec + '{}_merge.h5'.format(currRun)
         if self.rank==0:
             with h5py.File(filename, 'w') as hf:
@@ -519,7 +504,7 @@ class MergeTree:
         return filename
 
 class ApplyCompression:
-    """Compute principal components of matrix sketch and apply to sketched data"""
+    """Compute principal components of matrix sketch and apply to data"""
 
     def __init__(
         self,
@@ -644,54 +629,6 @@ class ApplyCompression:
             self.fetch_and_update_model(self.ell*6)
             self.imageIndicesProcessed.append((startCounter, self.psi.counter))
 
-
-#    def get_formatted_images(self, n):
-#        """
-#        Fetch n - x image segments from run, where x is the number of 'dead' images.
-#
-#        Parameters
-#        ----------
-#        n : int
-#            number of images to retrieve
-#        start_index : int
-#            start index of subsection of data to retrieve
-#        end_index : int
-#            end index of subsection of data to retrieve
-#
-#        Returns
-#        -------
-#        ndarray, shape (end_index-start_index, n-x)
-#            n-x retrieved image segments of dimension end_index-start_index
-#        """
-#
-#        bin_factor = self.bin_factor
-#        downsample = self.downsample
-#
-#        # may have to rewrite eventually when number of images becomes large,
-#        # i.e. streamed setting, either that or downsample aggressively
-#        imgs = self.psi.get_images(n, assemble=False)
-#        print(imgs.shape)
-#
-#        toSaveImgs = bin_data(imgs, bin_factor)
-#        if downsample:
-#            imgs = bin_data(imgs, bin_factor)
-#
-#        toSaveImgs = toSaveImgs[
-#            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
-#        ]
-#        imgs = imgs[
-#            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
-#        ]
-#
-#        num_valid_imgs, p, x, y = imgs.shape
-#        toSave_num_valid_imgs, toSave_p, toSave_x, toSave_y = toSaveImgs.shape
-#
-#        formatted_imgs = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
-#        toSave_formatted_imgs = np.reshape(toSaveImgs, (toSave_num_valid_imgs, toSave_p * toSave_x * toSave_y)).T
-#        print(toSave_formatted_imgs.shape)
-#
-#        return (formatted_imgs,toSave_formatted_imgs)
-
     def get_formatted_images(self, n):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
@@ -731,6 +668,19 @@ class ApplyCompression:
         return formatted_imgs
 
     def assembleImgsToSave(self, imgs):
+        """
+        Form the images from psana pixel index map and downsample images. 
+
+        Parameters
+        ----------
+        imgs: ndarray
+            images to downsample
+
+        Notes
+        -----
+        There is no need to use a for loop here, since assemble_image_stack_batch 
+        works on batches of images, and reshape can as well.
+        """
         pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
 
         saveMe = []
@@ -742,23 +692,14 @@ class ApplyCompression:
         saveMe = np.array(saveMe)
         return saveMe
 
-#        print("IMGS TO SAVE SHAPE: ", imgs.shape)
-#        saveMe = []
-#        for img in imgs:
-#                saveMe.append(np.array(Image.fromarray(img, mode='L').resize((150, 150), Image.Resampling.BICUBIC)))
-#        saveMe = np.array(saveMe)
-#        print("RESIZED IMGS TO SAVE SHAPE: ", saveMe.shape)
-#        return saveMe
-        
-
     def fetch_and_update_model(self, n):
         """
-        Fetch images and update model.
+        Fetch and downsample data, apply projection algorithm
 
         Parameters
         ----------
         n : int
-            number of images to incorporate
+            number of images to process
         """
         img_batch = self.get_formatted_images(n)
         toSave_img_batch = self.assembleImgsToSave(img_batch)
@@ -769,90 +710,26 @@ class ApplyCompression:
         self.john_apply_compression(img_batch)
 
     def john_apply_compression(self, X):
+        """
+        Project data X onto matrix sketch space. 
+
+        Parameters
+        ----------
+        X: ndarray
+            data to project
+        """
         if self.processedData is None:
             self.processedData = np.dot(X.T, self.components.T)
         else:
             self.processedData = np.vstack((self.processedData, np.dot(X.T, self.components.T)))
 
     def write(self):
+        """
+        Write projected data and downsampled data to h5 file
+        """
         filename = writeDirec + '{}_ProjectedData_{}.h5'.format(currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("ProjectedData",  data=self.processedData)
             hf.create_dataset("SmallImages", data=self.smallImgs)
         self.comm.Barrier()
         return filename
-
-def parse_input():
-    """
-    Parse command line input.
-    """
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--exp", help="Experiment name.", required=True, type=str)
-    parser.add_argument("-r", "--run", help="Run number.", required=True, type=int)
-    parser.add_argument(
-        "-d",
-        "--det_type",
-        help="Detector name, e.g epix10k2M or jungfrau4M.",
-        required=True,
-        type=str,
-    )
-    parser.add_argument(
-        "--start_offset",
-        help="Run index of first image to be incorporated into iPCA model.",
-        required=False,
-        type=int,
-    )
-    parser.add_argument(
-        "--num_components",
-        help="Number of principal components to compute and maintain.",
-        required=False,
-        type=int,
-    )
-    parser.add_argument(
-        "--batch_size",
-        help="Size of image batch incorporated in each model update.",
-        required=False,
-        type=int,
-    )
-    parser.add_argument(
-        "--num_images",
-        help="Total number of images to be incorporated into model.",
-        required=False,
-        type=int,
-    )
-    parser.add_argument(
-        "--output_dir",
-        help="Path to output directory for recording task duration data.",
-        required=False,
-        type=str,
-    )
-    parser.add_argument(
-        "--priming",
-        help="Initialize model with PCA.",
-        required=False,
-        action="store_true",
-    )
-    parser.add_argument(
-        "--downsample",
-        help="Enable downsampling of images.",
-        required=False,
-        action="store_true",
-    )
-    parser.add_argument(
-        "--bin_factor",
-        help="Bin factor if using downsizing.",
-        required=False,
-        type=int,
-    )
-
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-
-    params = parse_input()
-    kwargs = {k: v for k, v in vars(params).items() if v is not None}
-
-    pipca = PiPCA(**kwargs)
-    pipca.run()
