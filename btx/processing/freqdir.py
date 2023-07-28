@@ -32,8 +32,8 @@ import h5py
 
 from PIL import Image
 
-#writeDirec = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/"
-writeDirec = "h5writes/"
+writeDirec = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/"
+#writeDirec = "h5writes/"
 #############################################
 
 class FreqDir:
