@@ -32,7 +32,6 @@ import h5py
 
 from PIL import Image
 
-writeDirec = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/"
 #writeDirec = "h5writes/"
 #############################################
 
@@ -50,13 +49,15 @@ class FreqDir:
         run,
         det_type,
         rankAdapt,
+        writeDirec,
         merger=False,
         mergerFeatures=0,
         downsample=False,
         bin_factor=2,
-        output_dir="",
+        output_dir=""
     ):
 
+        self.writeDirec = writeDirec
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -419,7 +420,7 @@ class FreqDir:
         """
         Write matrix sketch to h5 file. 
         """
-        filename = writeDirec + '{}_sketch_{}.h5'.format(currRun, self.rank)
+        filename = self.writeDirec + '{}_sketch_{}.h5'.format(currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
             hf.create_dataset("imgsTracked", data=self.imgsTracked)
@@ -431,7 +432,7 @@ class MergeTree:
 
     """Frequent Directions Merging Object."""
 
-    def __init__(self, divBy, readFile, dataSetName):
+    def __init__(self, divBy, readFile, dataSetName, writeDirec):
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
@@ -441,7 +442,7 @@ class MergeTree:
         with h5py.File(readFile, 'r') as hf:
             self.data = hf[dataSetName][:]
 
-        self.fd = FreqDir(0, 0, rankAdapt=False, exp='0', run='0', det_type='0', ell=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1]) 
+        self.fd = FreqDir(0, 0, rankAdapt=False, exp='0', run='0', det_type='0', ell=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], writeDirec=writeDirec) 
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
@@ -450,6 +451,8 @@ class MergeTree:
 
         #JOHN: MUST CHECK THAT THIS ACTION ONLY FILLS UP THE SKETCH WITH THE CURRENT SKETCH FROM THE DATA
         self.fd.john_update_model(self.data.T)
+
+        self.writeDirec = writeDirec
 
 
     def merge(self):
@@ -496,7 +499,7 @@ class MergeTree:
         """
         Write merged matrix sketch to h5 file
         """
-        filename = writeDirec + '{}_merge.h5'.format(currRun)
+        filename = self.writeDirec + '{}_merge.h5'.format(currRun)
         if self.rank==0:
             with h5py.File(filename, 'w') as hf:
                 hf.create_dataset("sketch",  data=self.fd.sketch[:self.fd.ell, :])
@@ -517,6 +520,7 @@ class ApplyCompression:
         det_type,
         rankAdapt,
         readFile, dataSetName,
+        writeDirec,
         merger=False,
         mergerFeatures=0,
         downsample=False,
@@ -524,6 +528,7 @@ class ApplyCompression:
         output_dir=""
     ):
 
+        self.writeDirec = writeDirec
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -727,7 +732,7 @@ class ApplyCompression:
         """
         Write projected data and downsampled data to h5 file
         """
-        filename = writeDirec + '{}_ProjectedData_{}.h5'.format(currRun, self.rank)
+        filename = self.writeDirec + '{}_ProjectedData_{}.h5'.format(currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("ProjectedData",  data=self.processedData)
             hf.create_dataset("SmallImages", data=self.smallImgs)
