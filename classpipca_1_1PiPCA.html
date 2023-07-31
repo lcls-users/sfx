@@ -80,7 +80,7 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:adbbe5ec70f6fd24df336b7fd64828e12"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#adbbe5ec70f6fd24df336b7fd64828e12">__init__</a> (self, exp, <a class="el" href="classpipca_1_1PiPCA.html#a5607f3c9f4a6e48c6cc33b2721e17391">run</a>, det_type, start_offset=0, num_images=10, num_components=10, batch_size=10, <a class="el" href="classpipca_1_1PiPCA.html#a0b4580c5a09d27ea580f498dcf8756af">priming</a>=False, <a class="el" href="classpipca_1_1PiPCA.html#a931b7f9339f6aadd328fa55028f1ed81">downsample</a>=False, <a class="el" href="classpipca_1_1PiPCA.html#a64686906a97d9c286ba23fe06687c464">bin_factor</a>=2, <a class="el" href="classpipca_1_1PiPCA.html#a88ec3c500f3e1b1a688cf40dd8244cc5">output_dir</a>=&quot;&quot;)</td></tr>
+<tr class="memitem:adbbe5ec70f6fd24df336b7fd64828e12"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#adbbe5ec70f6fd24df336b7fd64828e12">__init__</a> (self, exp, <a class="el" href="classpipca_1_1PiPCA.html#a5607f3c9f4a6e48c6cc33b2721e17391">run</a>, det_type, <a class="el" href="classpipca_1_1PiPCA.html#abca4baaf9fe5eb798d05d0c6fe87e487">start_offset</a>=0, num_images=10, num_components=10, batch_size=10, <a class="el" href="classpipca_1_1PiPCA.html#a0b4580c5a09d27ea580f498dcf8756af">priming</a>=False, <a class="el" href="classpipca_1_1PiPCA.html#a931b7f9339f6aadd328fa55028f1ed81">downsample</a>=False, <a class="el" href="classpipca_1_1PiPCA.html#a64686906a97d9c286ba23fe06687c464">bin_factor</a>=2, <a class="el" href="classpipca_1_1PiPCA.html#a88ec3c500f3e1b1a688cf40dd8244cc5">output_dir</a>=&quot;&quot;)</td></tr>
 <tr class="separator:adbbe5ec70f6fd24df336b7fd64828e12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad78ea1e5f45a1cbbf99b0e21a2129cec"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#ad78ea1e5f45a1cbbf99b0e21a2129cec">get_params</a> (self)</td></tr>
 <tr class="memdesc:ad78ea1e5f45a1cbbf99b0e21a2129cec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method to retrieve iPCA params.  <a href="classpipca_1_1PiPCA.html#ad78ea1e5f45a1cbbf99b0e21a2129cec">More...</a><br /></td></tr>
@@ -127,6 +127,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3b53b2b2ef0d685e92bfb610a5e6bfd4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a3b53b2b2ef0d685e92bfb610a5e6bfd4">display_image</a> (self, idx, <a class="el" href="classpipca_1_1PiPCA.html#a88ec3c500f3e1b1a688cf40dd8244cc5">output_dir</a>=&quot;&quot;, save_image=False)</td></tr>
 <tr class="memdesc:a3b53b2b2ef0d685e92bfb610a5e6bfd4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method to retrieve single image from run subject to model binning constraints.  <a href="classpipca_1_1PiPCA.html#a3b53b2b2ef0d685e92bfb610a5e6bfd4">More...</a><br /></td></tr>
 <tr class="separator:a3b53b2b2ef0d685e92bfb610a5e6bfd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad109d507a29090887cee65cd63a0d77d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#ad109d507a29090887cee65cd63a0d77d">display_dashboard</a> (self)</td></tr>
+<tr class="memdesc:ad109d507a29090887cee65cd63a0d77d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Displays a pipca dashboard with a PC plot and intensity heatmap.  <a href="classpipca_1_1PiPCA.html#ad109d507a29090887cee65cd63a0d77d">More...</a><br /></td></tr>
+<tr class="separator:ad109d507a29090887cee65cd63a0d77d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -138,6 +141,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a4773964000c4982a4e343588e0f99b14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48524b66bdb75dbd1a256d3791d16bee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a48524b66bdb75dbd1a256d3791d16bee">psi</a></td></tr>
 <tr class="separator:a48524b66bdb75dbd1a256d3791d16bee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abca4baaf9fe5eb798d05d0c6fe87e487"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#abca4baaf9fe5eb798d05d0c6fe87e487">start_offset</a></td></tr>
+<tr class="separator:abca4baaf9fe5eb798d05d0c6fe87e487"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b4580c5a09d27ea580f498dcf8756af"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a0b4580c5a09d27ea580f498dcf8756af">priming</a></td></tr>
 <tr class="separator:a0b4580c5a09d27ea580f498dcf8756af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a931b7f9339f6aadd328fa55028f1ed81"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a931b7f9339f6aadd328fa55028f1ed81">downsample</a></td></tr>
@@ -290,6 +295,26 @@ Parameters</h2>
 <h2><a class="anchor" id="autotoc_md184"></a>
 Returns</h2>
 <p>mu_m : ndarray, shape (d x 1) mean of imgs su_m : ndarray, shape (d x 1) sample variance of imgs (1 dof) </p>
+
+</div>
+</div>
+<a id="ad109d507a29090887cee65cd63a0d77d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad109d507a29090887cee65cd63a0d77d">&#9670;&nbsp;</a></span>display_dashboard()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pipca.PiPCA.display_dashboard </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Displays a pipca dashboard with a PC plot and intensity heatmap. </p>
 
 </div>
 </div>
@@ -1032,6 +1057,20 @@ Returns</h2>
 
 </div>
 </div>
+<a id="abca4baaf9fe5eb798d05d0c6fe87e487"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abca4baaf9fe5eb798d05d0c6fe87e487">&#9670;&nbsp;</a></span>start_offset</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">pipca.PiPCA.start_offset</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a192a03c09d3d9159b7e173dfa583dc3a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a192a03c09d3d9159b7e173dfa583dc3a">&#9670;&nbsp;</a></span>task_durations</h2>
 
@@ -1080,7 +1119,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jul 27 2023 01:06:28 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Mon Jul 31 2023 22:28:59 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
