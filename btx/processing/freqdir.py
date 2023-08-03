@@ -255,16 +255,36 @@ class FreqDir:
         """
         img_batch = self.get_formatted_images(n)
         if self.mean is None:
-            self.mean = np.sum(img_batch, axis=0)/(img_batch.shape[0])
+            self.mean = np.sum(img_batch.T, axis=0)/(img_batch.shape[1])
         else:
-            self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch, axis=0))/(
-                    self.num_incorporated_images + (img_batch.shape[0]))
-        self.update_model(img_batch - self.mean)
+            self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch.T, axis=0))/(
+                    self.num_incorporated_images + (img_batch.shape[1]))
+        print("DATA IS NOW SHAPE: ", img_batch.shape)
+        print("SKETCH IS SHAPE: ", self.sketch.shape)
+        print("MEAN IS SHAPE: ", self.mean.shape)
+        self.update_model((img_batch.T - self.mean).T)
 
 
     def update_model(self, X):
         """
-        Update matrix sketch with new batch of observations
+        Update matrix sketch with new batch of observations. 
+
+        The matrix sketch array is of size 2*ell. The first ell rows maintained
+        represent the current matrix sketch. The next ell rows form a buffer.
+        Each row of the data is added to the buffer until ell rows have been
+        accumulated. Then, we apply the rotate function to the buffer, which
+        incorporates the buffer data into the matrix sketch. 
+        
+        Following the rotation step, it is checked if rank adaption is enabled. Then,
+        is checked if there is enough data to perform one full rotation/shrinkage
+        step. Without this check, one runs the risk of having zero rows in the
+        sketch, which is innaccurate in representing the data one has seen.
+        If one can increase the rank, the increaseEll flag is raised, and once sufficient
+        data has been accumulated in the buffer, the sketch and buffer size is increased.
+        This happens when we check if increaseEll, canRankAdapt, and rankAdapt are all true,
+        whereby we check if we should be increasing the rank due to high error, we
+        have sufficient incoming data to do so (to avoid zero rows in the matrix sketch), 
+        and the user would like for the rank to be adaptive, respectively. 
         
         Parameters
         ----------
@@ -304,8 +324,14 @@ class FreqDir:
     
     def rotate(self):
         """ 
-        Apply Frequent Directions Algorithm to 
-        current matrix sketch and adjoined buffer
+        Apply Frequent Directions rotation/shrinkage step to current matrix sketch and adjoined buffer. 
+
+        The Frequent Directions algorithm is inspired by the well known Misra Gries Frequent Items
+        algorithm. The Frequent Items problem is informally as follows: given a sequence of items, find the items which occur most frequently. The Misra Gries Frequent Items algorithm maintains a dictionary of <= k items and counts. For each item in a sequence, if the item is in the dictionary, increase its count. if the item is not in the dictionary and the size of the dictionary is <= k, then add the item with a count of 1 to the dictionary. Otherwise, decrease all counts in the dictionary by 1 and remove any items with 0 count. Every item which occurs more than n/k times is guaranteed to appear in the output array.
+
+        The Frequent Directions Algorithm works in an analogous way for vectors: in the same way that Frequent Items periodically deletes ell different elements, Frequent Directions periodically "shrinks? ell orthogonal vectors by roughly the same amount. To do so, at each step: 1) Data is appended to the matrix sketch (whereby the last ell rows form a buffer and are zeroed at the start of the algorithm and after each rotation). 2) Matrix Sketch is rotated from left via SVD so that its rows are orthogonal and in descending magnitude order. 3) Norm of sketch rows are shrunk so that the smallest direction is set to 0.
+
+        This function performs the rotation and shrinkage step by performing SVD and left multiplying by the unitary U matrix, followed by a subtraction. This particular implementation follows the alpha FD algorithm, which only performs the shrinkage step on the first alpha rows of the sketch, which has been shown to perform better than vanilla FD in [2]. 
 
         Notes
         -----
@@ -638,6 +664,9 @@ class ApplyCompression:
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
             self.mean = hf["mean"][:]
+        
+        print("NEW DATA IS SHAPE: ", self.data.shape)
+        print("NEW MEAN IS SHAPE: ", self.mean.shape)
 
         U, S, Vt = np.linalg.svd(self.data, full_matrices=False)
         self.components = Vt
@@ -671,7 +700,7 @@ class ApplyCompression:
             self.smallImgs = toSave_img_batch
         else:
             self.smallImgs = np.concatenate((self.smallImgs, toSave_img_batch), axis=0)
-        self.apply_compression(img_batch - self.mean)
+        self.apply_compression((img_batch.T - self.mean).T)
 
     def assembleImgsToSave(self, imgs):
         """
