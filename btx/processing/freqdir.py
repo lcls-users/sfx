@@ -61,7 +61,8 @@ class FreqDir:
     in Computer Science, vol 8737. Springer, Berlin, Heidelberg. 
     https://doi.org/10.1007/978-3-662-44777-2_39
 
-    Attributes:
+    Attributes
+    ----------
        start_offset: starting index of images to process
        total_imgs: total number of images to process
        ell: number of components of matrix sketch
@@ -72,7 +73,7 @@ class FreqDir:
        dir: directory to write output
        merger: indicates whether object will be used to merge other FD objects
        mergerFeatures: used if merger is true and indicates number of features of local matrix sketches
-       downsample, bin: whether data should be downsampled and by how much
+       downsample, bin_factor: whether data should be downsampled and by how much
        threshold: whether data should be thresholded (zero if less than threshold amount)
        normalizeIntensity: whether data should be normalized to have total intensity of one
        noZeroIntensity: whether data with low total intensity should be discarded
@@ -259,9 +260,6 @@ class FreqDir:
         else:
             self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch.T, axis=0))/(
                     self.num_incorporated_images + (img_batch.shape[1]))
-        print("DATA IS NOW SHAPE: ", img_batch.shape)
-        print("SKETCH IS SHAPE: ", self.sketch.shape)
-        print("MEAN IS SHAPE: ", self.mean.shape)
         self.update_model((img_batch.T - self.mean).T)
 
 
@@ -474,7 +472,12 @@ class FreqDir:
     def gatherFreqDirsSerial(self):
         """
         Gather local matrix sketches to root node and
-        merge local sketches together. 
+        merge local sketches together in a serial fashion. 
+
+        Returns
+        -------
+        toReturn : ndarray
+            Sketch of all data processed by all cores
         """
         sendbuf = self.ell
         buffSizes = np.array(self.comm.allgather(sendbuf))
@@ -505,12 +508,22 @@ class FreqDir:
     def get(self):
         """
         Fetch matrix sketch
+
+        Returns
+        -------
+        self.sketch[:self.ell,:] : ndarray
+            Sketch of data locally processed
         """
         return self.sketch[:self.ell, :]
 
     def write(self):
         """
         Write matrix sketch to h5 file. 
+
+        Returns
+        -------
+        filename : string
+            Name of h5 file where sketch, mean of data, and indices of data processed is written
         """
         filename = self.dir + '{}_sketch_{}.h5'.format(self.currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
@@ -524,7 +537,28 @@ class FreqDir:
 
 class MergeTree:
 
-    """Frequent Directions Merging Object."""
+    """
+    Class used to efficiently merge Frequent Directions Matrix Sketches
+
+    The Frequent Directions matrix sketch has the special property that it is a mergeable
+    summary. This means it can be merged easily and retain the same theoretical guarantees
+    by stacking two sketches ontop of one another and applying the algorithm again.
+
+    We can perform this merging process in a tree-like fashion in order to merge any 
+    number of sketches in log number of applications of the frequent directions algorithm. 
+
+    The class is designed to take in local sketches of data from h5 files produced by 
+    the FreqDir class (where local refers to the fact that a subset of the total number
+    of images has been processed by the algorithm in a single core and saved to its own h5 file).
+
+    Attributes
+    ----------
+    divBy: Factor to merge by at each step: number of sketches must be a power of divBy 
+    readFile: File name of local sketch for this particular core to process
+    dir: directory to write output
+    allWriteDirecs: all file names of local sketches
+    currRun: Current datetime used to identify run
+    """
 
     def __init__(self, divBy, readFile, dir, allWriteDirecs, currRun):
         self.comm = MPI.COMM_WORLD
@@ -620,7 +654,31 @@ class MergeTree:
         return filename
 
 class ApplyCompression:
-    """Compute principal components of matrix sketch and apply to data"""
+    """
+    Compute principal components of matrix sketch and apply to data
+
+    Attributes
+    ----------
+    start_offset: starting index of images to process
+    total_imgs: total number of images to process
+    exp, run, det_type: experiment properties
+    dir: directory to write output
+    downsample, bin_factor: whether data should be downsampled and by how much
+    threshold: whether data should be thresholded (zero if less than threshold amount)
+    normalizeIntensity: whether data should be normalized to have total intensity of one
+    noZeroIntensity: whether data with low total intensity should be discarded
+    readFile: H5 file with matrix sketch
+    batchSize: Number of images to process at each iteration
+    data: numpy array housing current matrix sketch
+    mean: geometric mean of data processed
+    num_incorporated_images: number of images processed so far
+    imgageIndicesProcessed: indices of images processed so far
+    currRun: Current datetime used to identify run
+    imgGrabber: FD object used solely to retrieve data from psana
+    components: Principal Components of matrix sketch
+    processedData: Data projected onto matrix sketch range
+    smallImages: Downsampled images for visualization purposes 
+    """
 
     def __init__(
         self,
@@ -665,9 +723,6 @@ class ApplyCompression:
             self.data = hf["sketch"][:]
             self.mean = hf["mean"][:]
         
-        print("NEW DATA IS SHAPE: ", self.data.shape)
-        print("NEW MEAN IS SHAPE: ", self.mean.shape)
-
         U, S, Vt = np.linalg.svd(self.data, full_matrices=False)
         self.components = Vt
         
