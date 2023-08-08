@@ -229,7 +229,7 @@ class FreqDir:
 
         img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
         nimg_batch = []
-        for img in img_batch:
+        for img in img_batch.T:
             if self.threshold:
                 secondQuartile = np.sort(img)[-1]//4
                 nimg = (img>secondQuartile)*img
@@ -243,7 +243,7 @@ class FreqDir:
                     nimg_batch.append(nimg/currIntensity)
                 else:
                     nimg_batch.append(nimg)
-        return np.array(nimg_batch)
+        return np.array(nimg_batch).T
 
     def fetch_and_update_model(self, n):
         """
@@ -575,7 +575,7 @@ class MergeTree:
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
         if self.rank==0:
-            print(self.buffSizes)
+            print("BUFFER SIZES: ", self.buffSizes)
 
         self.fd.update_model(self.data.T)
 
