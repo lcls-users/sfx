@@ -167,7 +167,7 @@ class PiPCA:
         )
 
         # define batch indices based on batch sizes
-        self.batch_indices = distribute_images_over_batches(batch_sizes)
+        self.batch_indices = self.distribute_images_over_batches(batch_sizes)
         self.batch_number = 0
 
         # update model with remaining batches
@@ -239,6 +239,7 @@ class PiPCA:
 
         U, self.S, _ = np.linalg.svd(centered_data, full_matrices=False)
         self.U = U[self.split_indices[self.rank]:self.split_indices[self.rank+1], :]
+        self.V = X.T @ self.U @ np.linalg.inv(np.diag(self.S))
 
         self.num_incorporated_images += n
 
@@ -325,8 +326,12 @@ class PiPCA:
                 self.S = S_tilde[:q]
                 
             with TaskTimer(self.task_durations, "update global V"):
-                if self.batch_number > 0:
-                    V_n = self.update_V(self.U, self.S, self.U_prev, self.S_prev, self.V)
+                if n > 0:
+                    if self.priming and self.batch_number == 0:
+                        V_n = self.V
+                    else:
+                        V_n = self.update_V(self.U, self.S, self.U_prev, self.S_prev, self.V)
+                    
                     V_m = X.T @ self.U @ np.linalg.inv(np.diag(self.S))
                     self.V = np.concatenate((V_n, V_m))
                 else:
@@ -819,6 +824,32 @@ class PiPCA:
         tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
         
         return pn.Row(widgets_scatter, create_scatter, tap_dmap).servable('Cross-selector')
+    
+    def distribute_images_over_batches(self, batch_sizes):
+        """
+        Returns 1D array of batch indices depending on batch sizes
+        and number of incorporated images.
+        
+        Parameters
+        ----------
+        batch_sizes : ndarray, shape (b,)
+            number of images in each batch,
+            where b is the number of batches
+        
+        Returns
+        -------
+        batch_indices : ndarray, shape (b+1,)
+            division indices between batches
+        """
+        
+        total_indices = self.num_incorporated_images
+        batch_indices = [self.num_incorporated_images]
+        
+        for size in batch_sizes:
+            total_indices += size
+            batch_indices.append(total_indices)
+        
+        return np.array(batch_indices)
 
 def distribute_indices_over_ranks(d, size):
     """
@@ -855,30 +886,6 @@ def distribute_indices_over_ranks(d, size):
     split_counts = np.array(split_counts)
 
     return split_indices, split_counts
-
-def distribute_images_over_batches(batch_sizes):
-    """
-
-    Parameters
-    ----------
-    batch_sizes : ndarray, shape(b x 1)
-        number of images in each batch,
-        where b is the number of batches
-
-    Returns
-    -------
-    batch_indices : ndarray, shape (b+1 x 1)
-        division indices between batches
-    """
-
-    total_indices = 0
-    batch_indices = [0]
-
-    for size in batch_sizes:
-        total_indices += size
-        batch_indices.append(total_indices)
-
-    return np.array(batch_indices)
 
 #### for command line use ###
 
