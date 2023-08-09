@@ -166,6 +166,10 @@ class PiPCA:
             + ([rem_imgs % m] if rem_imgs % m else [])
         )
 
+        # define batch indices based on batch sizes
+        self.batch_indices = distribute_images_over_batches(batch_sizes)
+        self.batch_number = 0
+
         # update model with remaining batches
         for batch_size in batch_sizes:
             self.fetch_and_update_model(batch_size)
@@ -319,8 +323,20 @@ class PiPCA:
             with TaskTimer(self.task_durations, "compute local U_prime"):
                 self.U = Q_r @ U_tilde[:, :q]
                 self.S = S_tilde[:q]
+                
+            with TaskTimer(self.task_durations, "update global V"):
+                if self.batch_number > 0:
+                    V_n = self.update_V(self.U, self.S, self.U_prev, self.S_prev, self.V)
+                    V_m = X.T @ self.U @ np.linalg.inv(np.diag(self.S))
+                    self.V = np.concatenate((V_n, V_m))
+                else:
+                    self.V = X.T @ self.U @ np.linalg.inv(np.diag(self.S))
+                    
+                self.U_prev = self.U
+                self.S_prev = self.S
 
             self.num_incorporated_images += m
+            self.batch_number += 1
 
 
     def calculate_sample_mean_and_variance(self, imgs):
@@ -494,6 +510,37 @@ class PiPCA:
                     + (n * m * (mu_n - mu_m) ** 2) / (n + m)) / (n + m - 1)
 
         return s_nm
+    
+    def update_V(self, U, S, U_prev, S_prev, V):
+        """
+        Updates V based on the previous and updated U and S
+        
+        Parameters
+        ----------
+        U : ndarray, shape (d x q)
+            principle components of the updated model
+        S : ndarray, shape (q,)
+            singular values of the updated model
+        U_prev : ndarray, shape (d x q)
+            principle components of the previous model
+        S_prev : ndarray, shape (q,)
+            singular values of the previous model
+        V : ndarray, shape (n x q)
+            eigenimages of the previous model
+        
+        Returns
+        -------
+        V : ndarray, shape (n x q)
+            updated eigenimages based on updated U and S
+        """
+        j = self.batch_number
+        B = np.diag(S_prev) @ U_prev.T @ U @ np.linalg.inv(np.diag(S))
+        
+        for i in range(j):
+            start, end = self.batch_indices[i], self.batch_indices[i+1]
+            V[start:end] = V[start:end] @ B
+            
+        return V
 
     def get_model(self):
         """
@@ -505,6 +552,8 @@ class PiPCA:
             iPCA principal axes from model.
         S_tot : ndarray, shape (1 x q)
             iPCA singular values from model.
+        V_tot : ndarray, shape (n x q)
+            iPCA eigenimages from model.
         mu_tot : ndarray, shape (1 x d)
             Data mean computed from all input images.
         var_tot : ndarray, shape (1 x d)
@@ -555,8 +604,9 @@ class PiPCA:
         )
 
         S_tot = self.S
+        V_tot = self.V
 
-        return U_tot, S_tot, mu_tot, var_tot
+        return U_tot, S_tot, V_tot, mu_tot, var_tot
 
     def get_outliers(self):
         """
@@ -584,7 +634,7 @@ class PiPCA:
 
         start_indices = self.split_indices[:-1]
 
-        U, _, mu, _ = self.get_model()
+        U, _, _, mu, _ = self.get_model()
 
         if self.rank == 0:
             X_tot = np.empty((d, m))
@@ -640,7 +690,7 @@ class PiPCA:
             Whether to save image to file, by default False
         """
 
-        U, S, mu, var = self.get_model()
+        U, S, _, mu, var = self.get_model()
 
         if self.rank != 0:
             return
@@ -806,6 +856,29 @@ def distribute_indices_over_ranks(d, size):
 
     return split_indices, split_counts
 
+def distribute_images_over_batches(batch_sizes):
+    """
+
+    Parameters
+    ----------
+    batch_sizes : ndarray, shape(b x 1)
+        number of images in each batch,
+        where b is the number of batches
+
+    Returns
+    -------
+    batch_indices : ndarray, shape (b+1 x 1)
+        division indices between batches
+    """
+
+    total_indices = 0
+    batch_indices = [0]
+
+    for size in batch_sizes:
+        total_indices += size
+        batch_indices.append(total_indices)
+
+    return np.array(batch_indices)
 
 #### for command line use ###
 
