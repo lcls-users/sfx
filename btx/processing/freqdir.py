@@ -24,7 +24,8 @@ import time
 
 import h5py
 from PIL import Image
-
+import random
+import heapq
 
 class FreqDir:
 
@@ -84,6 +85,7 @@ class FreqDir:
        num_incorporated_images: number of images processed so far
        imgsTracked: indices of images processed so far
        currRun: Current datetime used to identify run
+       samplingFactor: Proportion of batch data to process based on Priority Sampling Algorithm
     """
 
     def __init__(
@@ -105,6 +107,7 @@ class FreqDir:
         threshold=False,
         normalizeIntensity=False,
         noZeroIntensity=False, 
+        samplingFactor=1.0
     ):
 
         self.comm = MPI.COMM_WORLD
@@ -143,6 +146,8 @@ class FreqDir:
         self.threshold = threshold
         self.noZeroIntensity = noZeroIntensity
         self.normalizeIntensity=normalizeIntensity
+
+        self.samplingFactor = samplingFactor
 
     def set_params(self, num_images, bin_factor):
         """
@@ -188,8 +193,8 @@ class FreqDir:
         """
 
         noImgsToProcess = self.num_images//self.size
-        for batch in range(0,noImgsToProcess,self.ell*3):
-            self.fetch_and_update_model(self.ell*3)
+        for batch in range(0,noImgsToProcess,int(self.ell*3//self.samplingFactor)):
+            self.fetch_and_update_model(int(self.ell*3//self.samplingFactor))
 
     def get_formatted_images(self, n):
         """
@@ -255,6 +260,15 @@ class FreqDir:
             number of images to incorporate
         """
         img_batch = self.get_formatted_images(n)
+
+        if self.samplingFactor <1:
+            print("PRE PSAMP REDUCTION SHAPE: ", img_batch.shape)
+            psamp = PrioritySampling(int(n*self.samplingFactor), self.d)
+            for row in img_batch.T:
+                psamp.update(row)
+            img_batch = np.array(psamp.sketch.get()).T
+            print("PSAMP REDUCTION SHAPE: ", img_batch.shape)
+
         if self.mean is None:
             self.mean = np.sum(img_batch.T, axis=0)/(img_batch.shape[1])
         else:
@@ -800,3 +814,45 @@ class ApplyCompression:
             hf.create_dataset("SmallImages", data=self.smallImgs)
         self.comm.Barrier()
         return filename
+
+
+class CustomPriorityQueue:
+    def __init__(self, max_size):
+        self.queue = []
+        self.index = 0  # To handle items with the same priority
+        self.max_size = max_size
+
+    def push(self, item, priority, origWeight):
+        if len(self.queue) >= self.max_size:
+            self.pop()  # Remove the lowest-priority item if queue is full
+        heapq.heappush(self.queue, (priority, self.index, (item, priority, origWeight)))
+        self.index += 1
+
+    def pop(self):
+        return heapq.heappop(self.queue)[-1]
+
+    def is_empty(self):
+        return len(self.queue) == 0
+
+    def size(self):
+        return len(self.queue)
+
+    def get(self):
+        ret = []
+        while self.queue:
+            curr = heapq.heappop(self.queue)[-1]
+            #ret.append(curr[0]*max(curr[1], curr[2])/curr[2])
+            ret.append(curr[0])
+        return ret
+
+class PrioritySampling:
+    def __init__(self, ell, d):
+        self.ell = ell
+        self.d = d
+        self.sketch = CustomPriorityQueue(self.ell)
+
+    def update(self, vec):
+        ui = random.random()
+        wi = np.linalg.norm(vec)**2
+        pi = wi/ui
+        self.sketch.push(vec, pi, wi)
