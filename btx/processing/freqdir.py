@@ -116,8 +116,7 @@ class FreqDir:
 
         self.currRun = currRun
 
-        self.merger = merger
-        if not merger:
+        if not self.merger:
             self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
             self.psi.counter = start_offset + total_imgs*self.rank//self.size
             self.downsample = downsample
@@ -270,7 +269,7 @@ class FreqDir:
             print("PSAMP REDUCTION SHAPE: ", img_batch.shape)
 
         if self.mean is None:
-            self.mean = np.sum(img_batch.T, axis=0)/(img_batch.shape[1])
+            self.mean = np.mean(img_batch, axis=1)
         else:
             self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch.T, axis=0))/(
                     self.num_incorporated_images + (img_batch.shape[1]))
