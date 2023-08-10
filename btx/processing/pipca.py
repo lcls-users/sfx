@@ -887,6 +887,79 @@ def distribute_indices_over_ranks(d, size):
 
     return split_indices, split_counts
 
+def closest_img_index(x, y, PCx_vector, PCy_vector):
+    """
+    Finds the index of image closest to the tap location
+    
+    Parameters:
+    -----------
+    x : float
+        tap location on x-axis of tap source plot
+    y : float
+        tap location on y-axis of tap source plot
+    PCx_vector : ndarray, shape (d,)
+        principle component chosen for x-axis
+    PCx_vector : ndarray, shape (d,)
+        principle component chosen for y-axis
+        
+    Returns:
+    --------
+    img_source:
+        index of the image closest to tap location
+    """
+    img_source = None
+    min_diff = None
+    square_diff = None
+    
+    for i, (xv, yv) in enumerate(zip(PCx_vector, PCy_vector)):    
+        square_diff = (x - xv) ** 2 + (y - yv) ** 2
+        if (min_diff is None or square_diff < min_diff):
+            min_diff = square_diff
+            img_source = i
+    
+    return img_source
+
+def construct_heatmap_data(img, max_pixels):
+    """
+    Formats img to properly be displayed by hv.Heatmap()
+    
+    Parameters:
+    -----------
+    img : ndarray, shape (x_pixels x y_pixels)
+        single image we want to display on a heatmap
+    max_pixels: ing
+        max number of pixels on x and y axes of heatmap
+    
+    Returns:
+    --------
+    hm_data : ndarray, shape ((x_pixels*y__pixels) x 3)
+        coordinates to be displayed by hv.Heatmap (row, col, color)
+    """
+    x_pixels, y_pixels = img.shape
+    bin_factor_x = int(x_pixels / max_pixels)
+    bin_factor_y = int(y_pixels / max_pixels)
+    
+    while x_pixels % bin_factor_x != 0:
+        bin_factor_x += 1
+    while y_pixels % bin_factor_y != 0:
+        bin_factor_y += 1
+    
+    img = img.reshape((x_pixels, y_pixels))
+    binned_img = img.reshape(int(x_pixels / bin_factor_x),
+                                bin_factor_x,
+                                int(y_pixels / bin_factor_y),
+                                bin_factor_y).mean(-1).mean(1)
+    
+    # Creates hm_data array for heatmap
+    bin_x_pixels, bin_y_pixels = binned_img.shape
+    rows = np.tile(np.arange(bin_x_pixels).reshape((bin_x_pixels, 1)), bin_y_pixels).flatten()
+    cols = np.tile(np.arange(bin_y_pixels), bin_x_pixels)
+    
+    hm_data = np.stack((rows, cols, binned_img.flatten()))
+    hm_data = hm_data.T.reshape((bin_x_pixels * bin_y_pixels, 3))
+    
+    return hm_data
+
 #### for command line use ###
 
 
