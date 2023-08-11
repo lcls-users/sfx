@@ -777,7 +777,7 @@ class PiPCA:
         def create_scree(PC_scree):
             q = int(PC_scree[2:])
             components = np.arange(1, q + 1)
-            singular_values = pipca.S[:q]
+            singular_values = self.S[:q]
             bars_data = np.stack((components, singular_values)).T
             
             opts = dict(width=400, height=300, show_grid=True, show_legend=False,
@@ -790,12 +790,12 @@ class PiPCA:
         # Define function to compute heatmap based on tap location
         def tap_heatmap(x, y, pcx, pcy):
             # Finds the index of image closest to the tap location
-            img_source = closest_img_index(x, y, PCs[pcx], PCs[pcy])
+            img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
             
-            counter = pipca.psi.counter
-            pipca.psi.counter = start_img + img_source
-            img = pipca.psi.get_images(1)
-            pipca.psi.counter = counter
+            counter = self.psi.counter
+            self.psi.counter = start_img + img_source
+            img = self.psi.get_images(1)
+            self.psi.counter = counter
             img = img.squeeze()
             
             # Downsample so heatmap is at most 100 x 100
@@ -809,13 +809,13 @@ class PiPCA:
         # Define function to compute reconstructed heatmap based on tap location
         def tap_heatmap_reconstruct(x, y, pcx, pcy):
             # Finds the index of image closest to the tap location
-            img_source = closest_img_index(x, y, PCs[pcx], PCs[pcy])
+            img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
             
             # Calculate and format reconstructed image
-            p, x, y = pipca.psi.det.shape()
-            pixel_index_map = retrieve_pixel_index_map(pipca.psi.det.geometry(pipca.psi.run))
+            p, x, y = self.psi.det.shape()
+            pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
             
-            U, S, V, _, _ = pipca.get_model()
+            U, S, V, _, _ = self.get_model()
             img = U @ np.diag(S) @ np.array([V[img_source]]).T
             img = img.reshape((p, x, y))
             img = assemble_image_stack_batch(img, pixel_index_map)
@@ -831,8 +831,8 @@ class PiPCA:
         # Connect the Tap stream to the heatmap callbacks
         stream1 = [posxy]
         stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value})
-        tap_dmap = hv.DynamicMap(callback=tap_heatmap, streams=stream1+stream2)
-        tap_dmap_reconstruct = hv.DynamicMap(callback=tap_heatmap_reconstruct, streams=stream1+stream2)
+        tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
+        tap_dmap_reconstruct = hv.DynamicMap(tap_heatmap_reconstruct, streams=stream1+stream2)
         
         return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                          pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('Cross-selector')
