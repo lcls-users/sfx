@@ -174,7 +174,10 @@ class PiPCA:
         for batch_size in batch_sizes:
             self.fetch_and_update_model(batch_size)
             
-        print("Model complete")
+        self.comm.Barrier()
+        
+        if self.rank == 0:  
+            print("Model complete")
 
     def get_formatted_images(self, n, start_index, end_index):
         """
@@ -239,7 +242,7 @@ class PiPCA:
 
         U, self.S, _ = np.linalg.svd(centered_data, full_matrices=False)
         self.U = U[self.split_indices[self.rank]:self.split_indices[self.rank+1], :]
-        self.V = X.T @ self.U @ np.linalg.inv(np.diag(self.S))
+        self.V = X.T @ U @ np.linalg.inv(np.diag(self.S))
 
         self.num_incorporated_images += n
 
@@ -742,6 +745,9 @@ class PiPCA:
         """
         Displays a pipca dashboard with a PC plot and intensity heatmap.
         """
+        if self.rank != 0:
+            return
+        
         start_img = self.start_offset
         
         # Create PC dictionary and widgets
