@@ -107,7 +107,9 @@ class FreqDir:
         threshold=False,
         normalizeIntensity=False,
         noZeroIntensity=False, 
-        samplingFactor=1.0
+        samplingFactor=1.0, 
+        num_components=10, 
+        batch_size = 10
     ):
 
         self.comm = MPI.COMM_WORLD
@@ -116,15 +118,22 @@ class FreqDir:
 
         self.currRun = currRun
 
+        self.merger = merger
         if not self.merger:
             self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
             self.psi.counter = start_offset + total_imgs*self.rank//self.size
             self.downsample = downsample
             self.bin_factor = bin_factor
+#            (
+#                self.num_images,
+#                self.num_features,
+#            ) = self.set_params(total_imgs, bin_factor)
             (
-                self.num_images,
-                self.num_features,
-            ) = self.set_params(total_imgs, bin_factor)
+            self.num_images,
+            self.num_components,
+            self.batch_size,
+            self.num_features,
+            ) = self.set_params(total_imgs, num_components, batch_size, bin_factor)
         else:
             self.num_features = mergerFeatures
         self.task_durations = dict({})
@@ -148,7 +157,53 @@ class FreqDir:
 
         self.samplingFactor = samplingFactor
 
-    def set_params(self, num_images, bin_factor):
+    def set_params(self, num_images, num_components, batch_size, bin_factor):
+        """
+        Method to initialize iPCA parameters.
+
+        Parameters
+        ----------
+        num_images : int
+            Desired number of images to incorporate into model.
+        num_components : int
+            Desired number of components for model to maintain.
+        batch_size : int
+            Desired size of image block to be incorporated into model at each update.
+        bin_factor : int
+            Factor to bin data by.
+
+        Returns
+        -------
+        num_images : int
+            Number of images to incorporate into model.
+        num_components : int
+            Number of components for model to maintain.
+        batch_size : int
+            Size of image block to be incorporated into model at each update.
+        num_features : int
+            Number of features (dimension) in each image.
+        """
+        max_events = self.psi.max_events
+        downsample = self.downsample
+
+        num_images = min(num_images, max_events) if num_images != -1 else max_events
+        num_components = min(num_components, num_images)
+        batch_size = min(batch_size, num_images)
+
+        # set d
+        det_shape = self.psi.det.shape()
+        num_features = np.prod(det_shape).astype(int)
+
+        if downsample:
+            if det_shape[-1] % bin_factor or det_shape[-2] % bin_factor:
+                print("Invalid bin factor, toggled off downsampling.")
+                self.downsample = False
+            else:
+                num_features = int(num_features / bin_factor**2)
+
+        return num_images, num_components, batch_size, num_features
+
+    def OLD_set_params(self, num_images, bin_factor):
         """
         Method to initialize FreqDir parameters.
 
