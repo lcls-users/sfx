@@ -235,14 +235,15 @@ class PiPCA:
 
         mu_full, total_variance_full = self.calculate_sample_mean_and_variance(X)
 
-        self.mu = mu_full[self.split_indices[self.rank]:self.split_indices[self.rank+1]]
-        self.total_variance = total_variance_full[self.split_indices[self.rank]:self.split_indices[self.rank+1]]
+        start, end = self.split_indices[self.rank], self.split_indices[self.rank+1]
+        self.mu = mu_full[start:end]
+        self.total_variance = total_variance_full[start:end]
         
         centered_data = X - np.tile(mu_full, n)
 
-        U, self.S, _ = np.linalg.svd(centered_data, full_matrices=False)
-        self.U = U[self.split_indices[self.rank]:self.split_indices[self.rank+1], :]
-        self.V = X.T @ U @ np.linalg.inv(np.diag(self.S))
+        U, self.S, V_T = np.linalg.svd(centered_data, full_matrices=False)
+        self.U = U[start:end, :]
+        self.V = V_T.T
 
         self.num_incorporated_images += n
 
@@ -328,20 +329,8 @@ class PiPCA:
                 self.U = Q_r @ U_tilde[:, :q]
                 self.S = S_tilde[:q]
                 
-            with TaskTimer(self.task_durations, "update global V"):
-                if n > 0:
-                    if self.priming and self.batch_number == 0:
-                        V_n = self.V
-                    else:
-                        V_n = self.update_V(self.U, self.S, self.U_prev, self.S_prev, self.V)
-                    
-                    V_m = X.T @ self.U @ np.linalg.inv(np.diag(self.S))
-                    self.V = np.concatenate((V_n, V_m))
-                else:
-                    self.V = X.T @ self.U @ np.linalg.inv(np.diag(self.S))
-                    
-                self.U_prev = self.U
-                self.S_prev = self.S
+            with TaskTimer(self.task_durations, "update V"):
+                self.update_V(X, self.U, self.S)
 
             self.num_incorporated_images += m
             self.batch_number += 1
@@ -519,36 +508,92 @@ class PiPCA:
 
         return s_nm
     
-    def update_V(self, U, S, U_prev, S_prev, V):
+    def update_V(self, X, U, S):
         """
-        Updates V based on the previous and updated U and S
+        Updates current V with shape (n x q) to shape (n + m, q)
+        based on the previous and updated U and S.
         
         Parameters
         ----------
+        X : ndarray, shape (_ x m)
+            sliced image batch on self.rank
         U : ndarray, shape (d x q)
             principle components of the updated model
         S : ndarray, shape (q,)
             singular values of the updated model
-        U_prev : ndarray, shape (d x q)
-            principle components of the previous model
-        S_prev : ndarray, shape (q,)
-            singular values of the previous model
-        V : ndarray, shape (n x q)
-            eigenimages of the previous model
-        
-        Returns
-        -------
-        V : ndarray, shape (n x q)
-            updated eigenimages based on updated U and S
         """
+        _, m = X.shape
+        n = self.num_incorporated_images
         j = self.batch_number
-        B = np.diag(S_prev) @ U_prev.T @ U @ np.linalg.inv(np.diag(S))
+        q = self.num_components
+        start_indices = self.split_indices[:-1]
         
-        for i in range(j):
-            start, end = self.batch_indices[i], self.batch_indices[i+1]
-            V[start:end] = V[start:end] @ B
+        # Gather all X and U across all ranks
+        if self.rank == 0:
+            X_tot = np.empty((self.num_features, m))
+            U_tot = np.empty((self.num_features, q))
+        else:
+            X_tot, U_tot = None, None
+            V = np.empty((n + m, q))
+        
+        self.comm.Barrier()
+
+        with TaskTimer(self.task_durations, "V - gather X and U"):
+            self.comm.Gatherv(
+                X.flatten(),
+                [
+                    X_tot,
+                    self.split_counts * m,
+                    start_indices * m,
+                    MPI.DOUBLE,
+                ],
+                root=0,
+            )
+
+            self.comm.Gatherv(
+                U.flatten(),
+                [
+                    U_tot,
+                    self.split_counts * q,
+                    start_indices * q,
+                    MPI.DOUBLE,
+                ],
+                root=0,
+            )
+
+        if self.rank == 0:
+            X_tot = np.reshape(X_tot, (self.num_features, m))
+            U_tot = np.reshape(U_tot, (self.num_features, q))
+
+            with TaskTimer(self.task_durations, "V - compute updated V"):
+                if n > 0:
+                    # U_prev and S_prev aren't instantiated on first primed batch
+                    if self.priming and j == 0:
+                        self.U_prev = U_tot
+                        self.S_prev = S
+                    
+                    # Update each previous V_i from the previous batches
+                    V = self.V
+                    B = np.diag(self.S_prev) @ self.U_prev.T @ U_tot @ np.linalg.inv(np.diag(S))
+                    for i in range(j):
+                        start, end = self.batch_indices[i], self.batch_indices[i+1]
+                        V[start:end] = V[start:end] @ B
+
+                    # Compute new V_m from current batch with standard SVD
+                    V_m = X_tot.T @ U_tot @ np.linalg.inv(np.diag(S))
+                    V = np.concatenate((V, V_m))
+                else:
+                    # Instantiate self.V with standard SVD
+                    V = X_tot.T @ U_tot @ np.linalg.inv(np.diag(S))
             
-        return V
+        self.comm.Barrier()
+
+        with TaskTimer(self.task_durations, "V - bcast V"):
+            self.comm.Bcast(V, root=0)
+
+        self.V = V
+        self.U_prev = U_tot
+        self.S_prev = S
 
     def get_model(self):
         """
