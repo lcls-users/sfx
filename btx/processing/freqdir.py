@@ -1,3 +1,8 @@
+import sys
+sys.path.append("/sdf/home/w/winnicki/btx/")
+from btx.processing.dimRed import *
+  
+
 import os, csv, argparse
 
 import numpy as np
@@ -27,7 +32,7 @@ from PIL import Image
 import random
 import heapq
 
-class FreqDir:
+class FreqDir(DimRed):
 
     """
     Parallel Frequent Directions.
@@ -65,13 +70,13 @@ class FreqDir:
     Attributes
     ----------
        start_offset: starting index of images to process
-       total_imgs: total number of images to process
+       num_imgs: total number of images to process
        ell: number of components of matrix sketch
        alpha: proportion  of components to not rotate in frequent directions algorithm
        exp, run, det_type: experiment properties
        rankAdapt: indicates whether to perform rank adaptive FD
        increaseEll: internal variable indicating whether ell should be increased for rank adaption
-       dir: directory to write output
+       output_dir: directory to write output
        merger: indicates whether object will be used to merge other FD objects
        mergerFeatures: used if merger is true and indicates number of features of local matrix sketches
        downsample, bin_factor: whether data should be downsampled and by how much
@@ -91,13 +96,12 @@ class FreqDir:
     def __init__(
         self,
         start_offset,
-        total_imgs,
+        num_imgs,
         exp,
         run,
         det_type,
-        dir,
+        output_dir,
         currRun,
-        ell=0, 
         alpha=0,
         rankAdapt=False,
         merger=False,
@@ -109,39 +113,29 @@ class FreqDir:
         noZeroIntensity=False, 
         samplingFactor=1.0, 
         num_components=10, 
-        batch_size = 10
+        batch_size = 10,
+        priming=False
     ):
 
-        self.comm = MPI.COMM_WORLD
-        self.rank = self.comm.Get_rank()
-        self.size = self.comm.Get_size()
+        super().__init__(exp=exp, run=run, det_type=det_type, start_offset=start_offset,
+                num_images=num_imgs, num_components=num_components, batch_size=batch_size, priming=priming,
+                downsample=downsample, bin_factor=bin_factor, output_dir=output_dir)
+
+        self.psi.counter = start_offset + self.num_images*self.rank//self.size
 
         self.currRun = currRun
 
+        self.output_dir = output_dir
+
         self.merger = merger
-        if not self.merger:
-            self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-            self.psi.counter = start_offset + total_imgs*self.rank//self.size
-            self.downsample = downsample
-            self.bin_factor = bin_factor
-#            (
-#                self.num_images,
-#                self.num_features,
-#            ) = self.set_params(total_imgs, bin_factor)
-            (
-            self.num_images,
-            self.num_components,
-            self.batch_size,
-            self.num_features,
-            ) = self.set_params(total_imgs, num_components, batch_size, bin_factor)
-        else:
+
+        if self.merger:
             self.num_features = mergerFeatures
-        self.task_durations = dict({})
+
         self.num_incorporated_images = 0
 
-        self.dir = dir
         self.d = self.num_features
-        self.ell = ell
+        self.ell = num_components
         self.m = 2*self.ell
         self.sketch = zeros( (self.m, self.d) ) 
         self.nextZeroRow = 0
@@ -157,89 +151,6 @@ class FreqDir:
 
         self.samplingFactor = samplingFactor
 
-    def set_params(self, num_images, num_components, batch_size, bin_factor):
-        """
-        Method to initialize iPCA parameters.
-
-        Parameters
-        ----------
-        num_images : int
-            Desired number of images to incorporate into model.
-        num_components : int
-            Desired number of components for model to maintain.
-        batch_size : int
-            Desired size of image block to be incorporated into model at each update.
-        bin_factor : int
-            Factor to bin data by.
-
-        Returns
-        -------
-        num_images : int
-            Number of images to incorporate into model.
-        num_components : int
-            Number of components for model to maintain.
-        batch_size : int
-            Size of image block to be incorporated into model at each update.
-        num_features : int
-            Number of features (dimension) in each image.
-        """
-        max_events = self.psi.max_events
-        downsample = self.downsample
-
-        num_images = min(num_images, max_events) if num_images != -1 else max_events
-        num_components = min(num_components, num_images)
-        batch_size = min(batch_size, num_images)
-
-        # set d
-        det_shape = self.psi.det.shape()
-        num_features = np.prod(det_shape).astype(int)
-
-        if downsample:
-            if det_shape[-1] % bin_factor or det_shape[-2] % bin_factor:
-                print("Invalid bin factor, toggled off downsampling.")
-                self.downsample = False
-            else:
-                num_features = int(num_features / bin_factor**2)
-
-        return num_images, num_components, batch_size, num_features
-
-    def OLD_set_params(self, num_images, bin_factor):
-        """
-        Method to initialize FreqDir parameters.
-
-        Parameters
-        ----------
-        num_images : int
-            Desired number of images to incorporate into model.
-        bin_factor : int
-            Factor to bin data by.
-
-        Returns
-        -------
-        num_images : int
-            Number of images to incorporate into model.
-        num_features : int
-            Number of features (dimension) in each image.
-        """
-
-        max_events = self.psi.max_events
-        downsample = self.downsample
-
-        num_images = min(num_images, max_events) if num_images != -1 else max_events
-
-        # set d
-        det_shape = self.psi.det.shape()
-        num_features = np.prod(det_shape).astype(int)
-
-        if downsample:
-            if det_shape[-1] % bin_factor or det_shape[-2] % bin_factor:
-                print("Invalid bin factor, toggled off downsampling.")
-                self.downsample = False
-            else:
-                num_features = int(num_features / bin_factor**2)
-
-        return num_images, num_features
-
     def run(self):
         """
         Perform frequent directions matrix sketching
@@ -247,8 +158,8 @@ class FreqDir:
         """
 
         noImgsToProcess = self.num_images//self.size
-        for batch in range(0,noImgsToProcess,int(self.ell*3//self.samplingFactor)):
-            self.fetch_and_update_model(int(self.ell*3//self.samplingFactor))
+        for batch in range(0,noImgsToProcess,int(self.ell*2//self.samplingFactor)):
+            self.fetch_and_update_model(int(self.ell*2//self.samplingFactor))
 
     def get_formatted_images(self, n):
         """
@@ -287,6 +198,10 @@ class FreqDir:
         num_valid_imgs, p, x, y = imgs.shape
 
         img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+
+        #JOHN NEW ADDITION 08 20 2023 08 55
+        img_batch[img_batch<0] = 0
+
         nimg_batch = []
         for img in img_batch.T:
             if self.threshold:
@@ -294,15 +209,42 @@ class FreqDir:
                 nimg = (img>secondQuartile)*img
             else:
                 nimg = img
-            currIntensity = np.sum(nimg.flatten())
-            if self.noZeroIntensity and currIntensity<1000:
+
+            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
+            if self.noZeroIntensity and currIntensity<50000:
                 continue
             else:
-                if currIntensity>10000 and self.normalizeIntensity:
+                if currIntensity>=50000 and self.normalizeIntensity:
                     nimg_batch.append(nimg/currIntensity)
                 else:
                     nimg_batch.append(nimg)
         return np.array(nimg_batch).T
+
+    ###########################################################################
+
+    #How to use these functions: call each of them on the image. Append the result if it is not "None" to nimg_batch.
+    def intensityFunc_threshold(img):
+        if img is None:
+            return img
+        else:
+            secondQuartile = np.sort(img)[-1]//4
+            return (img>secondQuartile)*img
+
+    def intensityFunc_removeZeroIntensity(img, currIntensity):
+        if currIntensity<50000:
+            return None
+        else:
+            return img
+
+    def intensityFunc_normalizeIntensity(img, currIntensity):
+        if img is None:
+            return img
+
+        if currIntensity<50000:
+            return img
+        else:
+            return img/currIntensity
+    ###########################################################################
 
     def fetch_and_update_model(self, n):
         """
@@ -324,11 +266,15 @@ class FreqDir:
             print("PSAMP REDUCTION SHAPE: ", img_batch.shape)
 
         if self.mean is None:
-            self.mean = np.mean(img_batch, axis=1)
+#            self.mean = np.mean(img_batch, axis=1)
+             self.mean = np.sum(img_batch, axis=1, dtype=np.double)/(img_batch.shape[1])
         else:
-            self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch.T, axis=0))/(
+#            self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch.T, axis=0))/(
+#                    self.num_incorporated_images + (img_batch.shape[1]))
+             self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch, axis=1, dtype=np.double))/(
                     self.num_incorporated_images + (img_batch.shape[1]))
-        self.update_model((img_batch.T - self.mean).T)
+#        self.update_model((img_batch.T - self.mean).T)
+        self.update_model(img_batch)
 
 
     def update_model(self, X):
@@ -593,7 +539,7 @@ class FreqDir:
         filename : string
             Name of h5 file where sketch, mean of data, and indices of data processed is written
         """
-        filename = self.dir + '{}_sketch_{}.h5'.format(self.currRun, self.rank)
+        filename = self.output_dir + '{}_sketch_{}.h5'.format(self.currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
             hf.create_dataset("mean", data=self.mean)
@@ -628,7 +574,7 @@ class MergeTree:
     currRun: Current datetime used to identify run
     """
 
-    def __init__(self, divBy, readFile, dir, allWriteDirecs, currRun):
+    def __init__(self, exp, run, det_type, divBy, readFile, output_dir, allWriteDirecs, currRun):
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
@@ -638,16 +584,17 @@ class MergeTree:
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
-        self.fd = FreqDir(0, 0, currRun = currRun, rankAdapt=False, exp='0', run='0', det_type='0', ell=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], dir=dir) 
+        self.fd = FreqDir(0, 0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, priming=False) 
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
         if self.rank==0:
             print("BUFFER SIZES: ", self.buffSizes)
 
+        print(self.data.T.shape)
         self.fd.update_model(self.data.T)
 
-        self.dir = dir
+        self.output_dir = output_dir
 
         self.allWriteDirecs = allWriteDirecs
 
@@ -711,7 +658,7 @@ class MergeTree:
         """
         Write merged matrix sketch to h5 file
         """
-        filename = self.dir + '{}_merge.h5'.format(self.currRun)
+        filename = self.output_dir + '{}_merge.h5'.format(self.currRun)
         if self.rank==0:
             with h5py.File(filename, 'w') as hf:
                 hf.create_dataset("sketch",  data=self.fd.sketch[:self.fd.ell, :])
@@ -728,7 +675,7 @@ class ApplyCompression:
     Attributes
     ----------
     start_offset: starting index of images to process
-    total_imgs: total number of images to process
+    num_imgs: total number of images to process
     exp, run, det_type: experiment properties
     dir: directory to write output
     downsample, bin_factor: whether data should be downsampled and by how much
@@ -751,12 +698,12 @@ class ApplyCompression:
     def __init__(
         self,
         start_offset,
-        total_imgs,
+        num_imgs,
         exp,
         run,
         det_type,
         readFile,
-        dir,
+        output_dir,
         batchSize,
         threshold,
         noZeroIntensity,
@@ -766,25 +713,24 @@ class ApplyCompression:
         bin_factor=2
     ):
 
-        self.dir = dir
+        self.output_dir = output_dir
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
 
-        self.total_imgs = total_imgs
+        self.num_imgs = num_imgs
 
         self.currRun = currRun
 
-        self.imgGrabber = FreqDir(start_offset=start_offset,total_imgs=total_imgs, currRun = currRun,
-                exp=exp,run=run,det_type=det_type,dir="", downsample=downsample, bin_factor=bin_factor,
-                threshold=threshold, normalizeIntensity=normalizeIntensity, noZeroIntensity=noZeroIntensity)
+        self.imgGrabber = FreqDir(start_offset=start_offset,num_imgs=num_imgs, currRun = currRun,
+                exp=exp,run=run,det_type=det_type,output_dir="", downsample=downsample, bin_factor=bin_factor,
+                threshold=threshold, normalizeIntensity=normalizeIntensity, noZeroIntensity=noZeroIntensity, priming=False)
         self.batchSize = batchSize
 
-        (
-            self.num_images,
-            self.num_features
-        ) = self.imgGrabber.set_params(total_imgs, bin_factor)
+        self.num_images = self.imgGrabber.num_images
+        self.num_features = self.imgGrabber.num_features
+
         self.num_incorporated_images = 0
 
         with h5py.File(readFile, 'r') as hf:
@@ -823,7 +769,8 @@ class ApplyCompression:
             self.smallImgs = toSave_img_batch
         else:
             self.smallImgs = np.concatenate((self.smallImgs, toSave_img_batch), axis=0)
-        self.apply_compression((img_batch.T - self.mean).T)
+#        self.apply_compression((img_batch.T - self.mean).T)
+        self.apply_compression(img_batch)
 
     def assembleImgsToSave(self, imgs):
         """
@@ -862,7 +809,7 @@ class ApplyCompression:
         """
         Write projected data and downsampled data to h5 file
         """
-        filename = self.dir + '{}_ProjectedData_{}.h5'.format(self.currRun, self.rank)
+        filename = self.output_dir + '{}_ProjectedData_{}.h5'.format(self.currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("ProjectedData",  data=self.processedData)
             hf.create_dataset("SmallImages", data=self.smallImgs)
