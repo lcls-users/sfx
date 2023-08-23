@@ -35,7 +35,7 @@ import heapq
 class FreqDir(DimRed):
 
     """
-    Parallel Frequent Directions.
+    Parallel Rank Adaptive Frequent Directions.
     
     Based on [1] and [2]. Frequent Directions is a matrix sketching algorithm used to
     approximate large data sets. The basic goal of matrix sketching is to process an
@@ -199,13 +199,16 @@ class FreqDir(DimRed):
 
         img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
 
-        #JOHN NEW ADDITION 08 20 2023 08 55
         img_batch[img_batch<0] = 0
 
         nimg_batch = []
         for img in img_batch.T:
             if self.threshold:
-                secondQuartile = np.sort(img)[-1]//4
+#                secondQuartile = np.sort(img)[-1]//4
+#                secondQuartile = np.mean(img)
+#                secondQuartile = np.median(img)
+#                secondQuartile = np.partition(img, -len(img)//4)[-len(img)//4]
+                secondQuartile = np.quantile(img, 0.85)
                 nimg = (img>secondQuartile)*img
             else:
                 nimg = img
@@ -258,16 +261,13 @@ class FreqDir(DimRed):
         img_batch = self.get_formatted_images(n)
 
         if self.samplingFactor <1:
-            print("PRE PSAMP REDUCTION SHAPE: ", img_batch.shape)
             psamp = PrioritySampling(int(n*self.samplingFactor), self.d)
             for row in img_batch.T:
                 psamp.update(row)
             img_batch = np.array(psamp.sketch.get()).T
-            print("PSAMP REDUCTION SHAPE: ", img_batch.shape)
 
         if self.mean is None:
-#            self.mean = np.mean(img_batch, axis=1)
-             self.mean = np.sum(img_batch, axis=1, dtype=np.double)/(img_batch.shape[1])
+            self.mean = np.mean(img_batch, axis=1)
         else:
 #            self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch.T, axis=0))/(
 #                    self.num_incorporated_images + (img_batch.shape[1]))
@@ -321,7 +321,7 @@ class FreqDir(DimRed):
                         self.m = 2*self.ell
                         self.sketch = np.vstack((*self.sketch, np.zeros((20, self.d))))
                         self.increaseEll = False
-                        print("INCREASING RANK OF PROCESS {} TO {}".format(self.rank, self.ell))
+                        print("Increasing rank of process {} to {}".format(self.rank, self.ell))
                     else:
                         copyBatch = self.sketch[self.ell:,:].copy()
                         self.rotate()
@@ -539,13 +539,14 @@ class FreqDir(DimRed):
         filename : string
             Name of h5 file where sketch, mean of data, and indices of data processed is written
         """
+        self.comm.barrier()
         filename = self.output_dir + '{}_sketch_{}.h5'.format(self.currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
             hf.create_dataset("mean", data=self.mean)
             hf.create_dataset("imgsTracked", data=np.array(self.imgsTracked))
             hf["sketch"].attrs["numImgsIncorp"] = self.num_incorporated_images
-        self.comm.Barrier()
+        self.comm.barrier()
         return filename 
 
 
@@ -690,6 +691,8 @@ class ApplyCompression:
     imgageIndicesProcessed: indices of images processed so far
     currRun: Current datetime used to identify run
     imgGrabber: FD object used solely to retrieve data from psana
+    grabberToSaveImages: FD object used solely to retrieve 
+    non-downsampled data for thumbnail generation
     components: Principal Components of matrix sketch
     processedData: Data projected onto matrix sketch range
     smallImages: Downsampled images for visualization purposes 
@@ -725,6 +728,9 @@ class ApplyCompression:
 
         self.imgGrabber = FreqDir(start_offset=start_offset,num_imgs=num_imgs, currRun = currRun,
                 exp=exp,run=run,det_type=det_type,output_dir="", downsample=downsample, bin_factor=bin_factor,
+                threshold=threshold, normalizeIntensity=normalizeIntensity, noZeroIntensity=noZeroIntensity, priming=False)
+        self.grabberToSaveImages = FreqDir(start_offset=start_offset,num_imgs=num_imgs, currRun = currRun,
+                exp=exp,run=run,det_type=det_type,output_dir="", downsample=False, bin_factor=0,
                 threshold=threshold, normalizeIntensity=normalizeIntensity, noZeroIntensity=noZeroIntensity, priming=False)
         self.batchSize = batchSize
 
@@ -763,7 +769,7 @@ class ApplyCompression:
         img_batch = self.imgGrabber.get_formatted_images(self.batchSize)
         self.imageIndicesProcessed.append((startCounter, self.imgGrabber.psi.counter))
 
-        toSave_img_batch = self.assembleImgsToSave(img_batch)
+        toSave_img_batch = self.assembleImgsToSave(self.grabberToSaveImages.get_formatted_images(self.batchSize))
 
         if self.smallImgs is None:
             self.smallImgs = toSave_img_batch
@@ -818,6 +824,11 @@ class ApplyCompression:
 
 
 class CustomPriorityQueue:
+    """
+    Custom Priority Queue. 
+
+    Maintains a priority queue of items based on user-inputted priority for said items. 
+    """
     def __init__(self, max_size):
         self.queue = []
         self.index = 0  # To handle items with the same priority
@@ -847,6 +858,30 @@ class CustomPriorityQueue:
         return ret
 
 class PrioritySampling:
+    """
+    Priority Sampling. 
+
+    Based on [1] and [2]. Frequent Directions is a sampling algorithm that, 
+    given a high-volume stream of weighted items, creates a generic sample 
+    of a certain limited size that can later be used to estimate the total 
+    weight of arbitrary subsets. In our case, we use Priority Sampling to
+    generate a matrix sketch based, sampling rows of our data using the
+    2-norm as weights. Priority Sampling "first assigns each element i a random 
+    number u_i ∈ Unif(0, 1). This implies a priority p_i = w_i/u_i , based 
+    on its weight w_i (which for matrix rows w_i = ||a||_i^2). We then simply 
+    retain the l rows with largest priorities, using a priority queue of size l."
+
+    [1] Nick Duffield, Carsten Lund, and Mikkel Thorup. 2007. Priority sampling for 
+    estimation of arbitrary subset sums. J. ACM 54, 6 (December 2007), 32–es. 
+    https://doi.org/10.1145/1314690.1314696
+
+    Attributes
+    ----------
+    ell: Number of components to keep
+    d: Number of features of each datapoint
+    sketch: Matrix Sketch maintained by Priority Queue
+
+    """
     def __init__(self, ell, d):
         self.ell = ell
         self.d = d

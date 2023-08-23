@@ -25,7 +25,7 @@ from btx.interfaces.ipsana import (
 
 class DimRed:
 
-    """Parallelized Incremental Principal Component Analysis."""
+    """Dimension Reduction Parent Class."""
 
     def __init__(
         self,
@@ -73,7 +73,7 @@ class DimRed:
 
     def get_params(self):
         """
-        Method to retrieve iPCA params.
+        Method to retrieve dimension reduction parameters.
 
         Returns
         -------
@@ -95,7 +95,7 @@ class DimRed:
 
     def set_params(self, num_images, num_components, batch_size, bin_factor):
         """
-        Method to initialize iPCA parameters.
+        Method to initialize dimension reduction parameters.
 
         Parameters
         ----------
