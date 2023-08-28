@@ -176,8 +176,23 @@ class PiPCA:
             
         self.comm.Barrier()
         
+        U, S, V, _, _ = self.get_model()
+        
         if self.rank == 0:  
             print("Model complete")
+        
+            # save model to an hdf5 file
+            filename = 'pipca_model.h5'
+            with h5py.File(filename, 'w') as f:
+                f.create_dataset('exp', data=self.psi.exp)
+                f.create_dataset('run', data=self.psi.run)
+                f.create_dataset('det_type', data=self.psi.det_type)
+                f.create_dataset('start_offset', data=self.start_offset)
+                f.create_dataset('loadings', data=self.pc_data)
+                f.create_dataset('U', data=U)
+                f.create_dataset('S', data=S)
+                f.create_dataset('V', data=V)
+                print(f'Model saved to {filename}')
 
     def get_formatted_images(self, n, start_index, end_index):
         """
@@ -295,10 +310,6 @@ class PiPCA:
                     )
                 )
 
-            with TaskTimer(self.task_durations, "record pc data"):
-                if n > 0:
-                    self.record_loadings(X, q)
-
             with TaskTimer(self.task_durations, "update mean and variance"):
                 mu_n = self.mu
                 mu_m, s_m = self.calculate_sample_mean_and_variance(X)
@@ -331,6 +342,9 @@ class PiPCA:
                 
             with TaskTimer(self.task_durations, "update V"):
                 self.update_V(X, self.U, self.S)
+
+            with TaskTimer(self.task_durations, "record pc data"):
+                self.record_loadings()
 
             self.num_incorporated_images += m
             self.batch_number += 1
@@ -669,65 +683,31 @@ class PiPCA:
         if self.rank == 0:
             print(self.outliers)
 
-    def record_loadings(self, X, q_sig):
+    def record_loadings(self):
         """
-        Method to store all loadings, ΣV^T, from present batch using past
-        model iteration.
-
-        Parameters
-        ----------
-        X : ndarray, shape (_ x m)
-            Local subdivision of current image data batch.
-
-        q_sig : int
-            The q_sig components used in generating the loadings for 
+        Method to store current all loadings, ΣV^T,
+        up to the current batch.
         """
-        _, m = X.shape
-        n, d = self.num_incorporated_images, self.num_features
-
-        start_indices = self.split_indices[:-1]
-
-        U, _, _, mu, _ = self.get_model()
+        U, S, V, mu, _ = self.get_model()
 
         if self.rank == 0:
-            X_tot = np.empty((d, m))
-        else:
-            X_tot = None
+            j = self.batch_number
+            pcs = np.empty((self.num_components, self.batch_indices[j+1]))
+            
+            for i in range(j):
+                start, end = self.batch_indices[i], self.batch_indices[i+1]
+                batch_size = end - start
+                centered_model = U @ np.diag(S) @ V[start:end].T - np.tile(mu, (1, batch_size))
+                pcs[:, start:end] = U.T @ centered_model 
+            
+            self.pc_data = pcs
 
-        self.comm.Gatherv(
-            X.flatten(),
-            [
-                X_tot,
-                self.split_counts * m,
-                start_indices * m,
-                MPI.DOUBLE,
-            ],
-            root=0,
-        )
-
-        if self.rank == 0:
-
-            X_tot = np.reshape(X_tot, (d, m))
-            cb = X_tot - np.tile(mu, (1, m))
-
-            pcs = U.T @ cb
-            self.pc_data = (
-                np.concatenate((self.pc_data, pcs), axis=1)
-                if len(self.pc_data)
-                else pcs
-            )
-
-            pc_dist = np.linalg.norm(pcs[:q_sig], axis=0)
+            pc_dist = np.linalg.norm(pcs[:self.num_components], axis=0)
             std = np.std(pc_dist)
             mu = np.mean(pc_dist)
 
-            batch_outliers = np.where(np.abs(pc_dist - mu) > std)[0] + n - m
-
-            self.outliers = (
-                np.concatenate((self.outliers, batch_outliers), axis=0)
-                if len(self.outliers)
-                else batch_outliers
-            )
+            index_offset = self.start_offset + self.num_incorporated_images
+            self.outliers = np.where(np.abs(pc_dist - mu) > 2 * std)[0] + index_offset
 
     def display_image(self, idx, output_dir="", save_image=False):
         """
@@ -790,10 +770,11 @@ class PiPCA:
         """
         Displays a pipca dashboard with a PC plot and intensity heatmap.
         """
+        U, S, V, _, _ = self.get_model()
+        start_img = self.start_offset
+
         if self.rank != 0:
             return
-        
-        start_img = self.start_offset
         
         # Create PC dictionary and widgets
         PCs = {f'PC{i}' : v for i, v in enumerate(self.pc_data, start=1)}
@@ -828,7 +809,7 @@ class PiPCA:
         def create_scree(PC_scree):
             q = int(PC_scree[2:])
             components = np.arange(1, q + 1)
-            singular_values = self.S[:q]
+            singular_values = S[:q]
             bars_data = np.stack((components, singular_values)).T
             
             opts = dict(width=400, height=300, show_grid=True, show_legend=False,
@@ -839,7 +820,7 @@ class PiPCA:
             return scree
         
         # Define function to compute heatmap based on tap location
-        def tap_heatmap(x, y, pcx, pcy):
+        def tap_heatmap(x, y, pcx, pcy, pcscree):
             # Finds the index of image closest to the tap location
             img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
             
@@ -853,12 +834,12 @@ class PiPCA:
             hm_data = construct_heatmap_data(img, 100)
         
             opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
-            heatmap = hv.HeatMap(hm_data, label=" Source Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
+            heatmap = hv.HeatMap(hm_data, label="Source Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
             
             return heatmap
         
         # Define function to compute reconstructed heatmap based on tap location
-        def tap_heatmap_reconstruct(x, y, pcx, pcy):
+        def tap_heatmap_reconstruct(x, y, pcx, pcy, pcscree):
             # Finds the index of image closest to the tap location
             img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
             
@@ -866,8 +847,8 @@ class PiPCA:
             p, x, y = self.psi.det.shape()
             pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
             
-            U, S, V, _, _ = self.get_model()
-            img = U @ np.diag(S) @ np.array([V[img_source]]).T
+            q = int(pcscree[2:])
+            img = U[:, :q] @ np.diag(S[:q]) @ np.array([V[img_source][:q]]).T
             img = img.reshape((p, x, y))
             img = assemble_image_stack_batch(img, pixel_index_map)
             
@@ -881,12 +862,123 @@ class PiPCA:
             
         # Connect the Tap stream to the heatmap callbacks
         stream1 = [posxy]
-        stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value})
+        stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value, 'pcscree': PC_scree.param.value})
         tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
         tap_dmap_reconstruct = hv.DynamicMap(tap_heatmap_reconstruct, streams=stream1+stream2)
         
         return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
-                         pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('Cross-selector')
+                         pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
+    
+    def display_error_plots(self):
+        """
+        Displays error plots comparing the computed U, S, V versus the true U, S, V.
+        Expected to output a correlation of positive and negative 1 for U and V,
+        and strictly positive one for S.
+        """
+        U, _, _, _, _ = self.get_model()
+        
+        if self.rank != 0:
+            return
+        
+        # Find true V matrix
+        n = self.num_images
+        d = self.num_features
+        q = self.num_components
+        
+        assert n * d < 4e8, 'image and feature dimensions are too high to test errors'
+        assert n == q, 'number of images must equal the number of componets to commpare with np.linalg.svd() output'
+        
+        self.psi.counter = self.start_offset
+        X = self.get_formatted_images(n, 0, d)
+        
+        mu_full, _ = self.calculate_sample_mean_and_variance(X)
+        
+        centered_data = X - np.tile(mu_full, n)
+
+        U_true, S_true, V_true_T = np.linalg.svd(centered_data, full_matrices=False)
+        
+        # Create eigenimage dictionary and widgets
+        eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
+        PC_options = list(eigenimages)
+        
+        split_indices, _ = distribute_indices_over_ranks(d, d // 10000)
+        batch_options = list(range(1, len(split_indices)))
+        
+        component = pnw.Select(name='Components', value='PC1', options=PC_options)
+        batch_slider = pnw.DiscreteSlider(name='Batch Slider', value=1, options=batch_options)
+        widgets_scatter = pn.WidgetBox(component, batch_slider, width=400)
+        
+        # Create scatter plots
+        @pn.depends(component.param.value, batch_slider.param.value)
+        def create_U_scatter(component, batch_index):
+            component_index = int(component[2:]) - 1
+            start, end = split_indices[batch_index - 1], split_indices[batch_index]
+            scatter_data = dict(true=U_true.T[component_index][start:end], calc=eigenimages[component][start:end], index=np.arange(end-start))
+            
+            opts = dict(width=400, height=300, show_grid=True, toolbar='above',
+                        color='index', colorbar=True, tools=['hover'], shared_axes=False)
+            scatter = hv.Points(scatter_data, kdims=['true', 'calc'], vdims=['index'], label=f"True U vs Computed U").opts(**opts)
+            
+            return scatter
+        
+        def create_S_scatter():
+            scatter_data = dict(true=S_true, calc=self.S, index=np.arange(q))
+            
+            opts = dict(width=400, height=300, show_grid=True, toolbar='above',
+                        color='index', colorbar=True, tools=['hover'], shared_axes=False)
+            scatter = hv.Points(scatter_data, kdims=['true', 'calc'], vdims=['index'], label=f"True S vs Computed S").opts(**opts)
+            
+            return scatter
+        
+        def create_V_scatter():
+            scatter_data = dict(true=V_true_T.flatten(), calc=self.V.T.flatten(), index=np.arange(len(V_true_T.flatten())))
+            
+            opts = dict(width=400, height=300, show_grid=True, ylim=(-1,1), toolbar='above',
+                        color='index', colorbar=True, tools=['hover'], shared_axes=False)
+            scatter = hv.Points(scatter_data, kdims=['true', 'calc'], vdims=['index'], label=f"True V vs Computed V").opts(**opts)
+            
+            return scatter
+        
+        return pn.Column(widgets_scatter, pn.Row(create_U_scatter, create_S_scatter, create_V_scatter)).servable('PiPCA Model Error Plots')
+    
+    def display_eigenimages(self):
+        """
+        Displays a PC selector widget and a heatmap of the
+        eigenimage corresponding to the selected PC.
+        """
+        U, _, _, _, _ = self.get_model()
+
+        if self.rank != 0:
+            return
+        
+        # Create eigenimage dictionary and widget
+        eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
+        PC_options = list(eigenimages)
+        
+        component = pnw.Select(name='Components', value='PC1', options=PC_options)
+        widget_heatmap = pn.WidgetBox(component, width=150)
+        
+        # Define function to compute heatmap
+        @pn.depends(component.param.value)
+        def create_heatmap(component):
+            # Reshape selected eigenimage to work with construct_heatmap_data()
+            p, x, y = self.psi.det.shape()
+            pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+            
+            img = eigenimages[component]
+            img = img.reshape((p, x, y))
+            img = assemble_image_stack_batch(img, pixel_index_map)
+            
+            # Downsample so heatmap is at most 100 x 100
+            hm_data = construct_heatmap_data(img, 100)
+        
+            opts = dict(width=400, height=300, cmap='BrBG', colorbar=True,
+                        symmetric=True, shared_axes=False, toolbar='above')
+            heatmap = hv.HeatMap(hm_data, label="%s Eigenimage" % (component.title())).aggregate(function=np.mean).opts(**opts)
+            
+            return heatmap
+        
+        return pn.Row(widget_heatmap, create_heatmap).servable('PiPCA Eigenimages')
     
     def distribute_images_over_batches(self, batch_sizes):
         """
