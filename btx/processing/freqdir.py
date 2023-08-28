@@ -1,14 +1,21 @@
 import sys
 sys.path.append("/sdf/home/w/winnicki/btx/")
 from btx.processing.dimRed import *
-  
 
 import os, csv, argparse
+import math
+import time
+import random
+from collections import Counter
+import h5py
 
 import numpy as np
 from numpy import zeros, sqrt, dot, diag
 from numpy.linalg import svd, LinAlgError
 from scipy.linalg import svd as scipy_svd
+import pandas as pd
+from sklearn.neighbors import NearestNeighbors
+import heapq
 
 from mpi4py import MPI
 
@@ -25,12 +32,23 @@ from btx.interfaces.ipsana import (
     assemble_image_stack_batch,
 )
 
-import time
-
-import h5py
 from PIL import Image
-import random
-import heapq
+from io import BytesIO
+import base64
+
+from datetime import datetime
+
+import umap
+import hdbscan
+
+from matplotlib import colors
+import matplotlib as mpl
+from matplotlib import cm
+
+from bokeh.plotting import figure, show, output_file, save
+from bokeh.models import HoverTool, CategoricalColorMapper, LinearColorMapper, ColumnDataSource, CustomJS, Slider, RangeSlider, Toggle, RadioButtonGroup, Range1d, Label
+from bokeh.palettes import Viridis256, Cividis256, Turbo256, Category20, Plasma3
+from bokeh.layouts import column, row
 
 class FreqDir(DimRed):
 
@@ -208,7 +226,7 @@ class FreqDir(DimRed):
 #                secondQuartile = np.mean(img)
 #                secondQuartile = np.median(img)
 #                secondQuartile = np.partition(img, -len(img)//4)[-len(img)//4]
-                secondQuartile = np.quantile(img, 0.85)
+                secondQuartile = np.quantile(img, 0.93)
                 nimg = (img>secondQuartile)*img
             else:
                 nimg = img
@@ -793,7 +811,7 @@ class ApplyCompression:
         for img in imgs.T:
             imgRe = np.reshape(img, self.imgGrabber.psi.det.shape())
             imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
-            saveMe.append(np.array(Image.fromarray(imgRe).resize((150, 150))))
+            saveMe.append(np.array(Image.fromarray(imgRe).resize((64, 64))))
         saveMe = np.array(saveMe)
         return saveMe
 
@@ -892,3 +910,510 @@ class PrioritySampling:
         wi = np.linalg.norm(vec)**2
         pi = wi/ui
         self.sketch.push(vec, pi, wi)
+
+
+
+
+class visualizeFD:
+    """
+    Visualize FD Dimension Reduction using UMAP and DBSCAN
+    """
+    def __init__(self, inputFile, outputFile, numImgsToUse, nprocs, includeABOD, userGroupings):
+        self.inputFile = inputFile
+        self.outputFile = outputFile
+        output_file(filename=outputFile, title="Static HTML file")
+        self.viewResults = None
+        self.numImgsToUse = numImgsToUse
+        self.nprocs = nprocs
+        self.includeABOD = includeABOD
+        self.userGroupings = userGroupings
+
+    def embeddable_image(self, data):
+        img_data = np.uint8(cm.jet(data/max(data.flatten()))*255)
+#        image = Image.fromarray(img_data, mode='RGBA').resize((75, 75), Image.Resampling.BICUBIC)
+        image = Image.fromarray(img_data, mode='RGBA')
+        buffer = BytesIO()
+        image.save(buffer, format='png')
+        for_encoding = buffer.getvalue()
+        return 'data:image/png;base64,' + base64.b64encode(for_encoding).decode('utf-8')
+
+    def random_unique_numbers_from_range(self, start, end, count):
+        all_numbers = list(range(start, end + 1))
+        random.shuffle(all_numbers)
+        return all_numbers[:count]
+
+    def euclidean_distance(self, p1, p2):
+        return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+    def compute_medoid(self, points):
+        min_total_distance = float('inf')
+        medoid = None
+        for i, point in enumerate(points):
+            total_distance = 0
+            for other_point in points:
+                total_distance += self.euclidean_distance(point, other_point)
+            if total_distance < min_total_distance:
+                min_total_distance = total_distance
+                medoid = point
+        return medoid
+
+    def genMedoids(self, medoidLabels, clusterPoints):
+        dictMe = {}
+        for j in set(medoidLabels):
+            dictMe[j] = []
+        for index, class_name in enumerate(medoidLabels):
+            dictMe[class_name].append((index, clusterPoints[index, 0], clusterPoints[index, 1]))
+        medoid_lst = []
+        for k, v in dictMe.items():
+            lst = [(x[1], x[2]) for x in v]
+            medoid_point = self.compute_medoid(lst)
+            for test_index, test_point in enumerate(lst):
+                if math.isclose(test_point[0],medoid_point[0]) and math.isclose(test_point[1], medoid_point[1]):
+                    fin_ind = test_index
+            medoid_lst.append((k, v[fin_ind][0]))
+        return medoid_lst
+
+    def relabel_to_closest_zero(self, labels):
+        unique_labels = sorted(set(labels))
+        relabel_dict = {label: new_label for new_label, label in enumerate(unique_labels)}
+        relabeled = [relabel_dict[label] for label in labels]
+        return relabeled
+
+    def regABOD(self, pts):
+        abofs = []
+        for a in range(len(pts)):
+            test_list = [x for x in range(len(pts)) if x != a]
+            otherPts = [(d, e) for idx, d in enumerate(test_list) for e in test_list[idx + 1:]]
+            outlier_factors = []
+            for b, c in otherPts:
+                apt = pts[a]
+                bpt = pts[b]
+                cpt = pts[c]
+                ab = bpt - apt
+                ac = cpt - apt
+                outlier_factors.append(np.dot(ab, ac)/((np.linalg.norm(ab)**2) * (np.linalg.norm(ac))))
+            abofs.append(np.var(np.array(outlier_factors)))
+        return abofs
+
+    def fastABOD(self, pts, nsamples):
+        nbrs = NearestNeighbors(n_neighbors=nsamples, algorithm='ball_tree').fit(pts)
+        k_inds = nbrs.kneighbors(pts)[1]
+        abofs = []
+        count = 0
+        for a in range(len(pts)):
+            test_list = k_inds[a][1:]
+            otherPts = [(d, e) for idx, d in enumerate(test_list) for e in test_list[idx + 1:]]
+            outlier_factors = []
+            for (b, c) in otherPts:
+                apt = pts[a]
+                bpt = pts[b]
+                cpt = pts[c]
+                ab = bpt - apt
+                ac = cpt - apt
+                if math.isclose(np.linalg.norm(ab), 0.0) or math.isclose(np.linalg.norm(ac), 0.0):
+                    count += 1
+                    continue
+                outlier_factors.append(np.dot(ab, ac)/((np.linalg.norm(ab)**2) * (np.linalg.norm(ac))))
+            abofs.append(np.var(np.array(outlier_factors)))
+        return abofs
+
+    def getOutliers(self, lst, divBy):
+        lstCopy = lst.copy()
+        lstCopy.sort()
+        quart10 = lstCopy[len(lstCopy)//divBy]
+        outlierInds = []
+        notOutlierInds = []
+        for j in range(len(lst)):
+            if lst[j]<quart10:
+                outlierInds.append(j)
+            else:
+                notOutlierInds.append(j)
+        return np.array(outlierInds), np.array(notOutlierInds)
+
+    def genHist(self, vals, endClass):
+        totNum = endClass + 1
+        countVals = Counter(vals)
+        hist = [0]*(totNum)
+        for val in set(countVals):
+            hist[val] = countVals[val]
+        maxval = max(countVals.values())
+        return hist, maxval
+
+    def genLeftRight(self, endClass):
+        return [*range(endClass+1)], [*range(1, endClass+2)]
+
+    def genUMAP(self):
+        imgs = None
+        projections = None
+        for currRank in range(self.nprocs):
+            with h5py.File(self.inputFile+"_"+str(currRank)+".h5", 'r') as hf:
+                if imgs is None:
+                    imgs = hf["SmallImages"][:]
+                    projections = hf["ProjectedData"][:]
+                else:
+                    imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
+                    projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
+
+        intensities = []
+        for img in imgs:
+            intensities.append(np.sum(img.flatten()))
+        intensities = np.array(intensities)
+
+        self.imgs = imgs[:self.numImgsToUse]
+        self.projections = projections[:self.numImgsToUse]
+        self.intensities = intensities[:self.numImgsToUse]
+
+        if len(self.imgs)!= self.numImgsToUse:
+            raise TypeError("NUMBER OF IMAGES REQUESTED ({}) EXCEEDS NUMBER OF DATA POINTS PROVIDED ({})".format(len(self.imgs), self.numImgsToUse))
+
+        self.clusterable_embedding = umap.UMAP(
+            n_neighbors=self.numImgsToUse//40,
+            n_components=2,
+            random_state=42
+        ).fit_transform(self.projections)
+
+        self.labels = hdbscan.HDBSCAN(
+            min_samples=int(self.numImgsToUse*0.75//40),
+            min_cluster_size=int(self.numImgsToUse//40),
+        ).fit_predict(self.clusterable_embedding)
+
+        exclusionList = np.array([])
+        self.clustered = np.isin(self.labels, exclusionList, invert=True)
+
+        self.experData_df = pd.DataFrame({'x':self.clusterable_embedding[self.clustered, 0],'y':self.clusterable_embedding[self.clustered, 1]})
+        self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
+
+    def genABOD(self):
+        if self.includeABOD:
+            abod = self.fastABOD(self.projections, 10)
+            outliers, notOutliers = self.getOutliers(abod, 10)
+        else:
+            outliers = []
+            notOutliers = []
+        outlierLabels = []
+        for j in range(self.numImgsToUse):
+            if j in outliers:
+                outlierLabels.append(str(6))
+            else:
+                outlierLabels.append(str(0))
+        self.experData_df['anomDet'] = outlierLabels
+
+    def setUserGroupings(self, userGroupings):
+        """
+        Set User Grouping. An adjustment is made at the beginning of this function,
+        whereby 1 is added to each label. This is because internally, the clusters are stored
+        starting at -1 rather than 0.
+        """
+        self.userGroupings = [[x-1 for x in grouping] for grouping in userGroupings]
+
+    def genLabels(self):
+        newLabels = []
+        for j in self.labels[self.clustered]:
+            doneChecking = False
+            for grouping in self.userGroupings:
+                if j in grouping and not doneChecking:
+                    newLabels.append(min(grouping))
+                    doneChecking=True
+            if not doneChecking:
+                newLabels.append(j)
+        newLabels = list(np.array(newLabels) + 1)
+        self.newLabels = np.array(self.relabel_to_closest_zero(newLabels))
+        self.experData_df['cluster'] = [str(x) for x in self.newLabels[self.clustered]]
+        self.experData_df['ptColor'] = [x for x in self.experData_df['cluster']]
+        medoid_lst = self.genMedoids(self.newLabels, self.clusterable_embedding)
+        self.medoidInds = [x[1] for x in medoid_lst]
+        medoidBold = []
+        for ind in range(self.numImgsToUse):
+            if ind in self.medoidInds:
+                medoidBold.append(12)
+            else:
+                medoidBold.append(4)
+        self.experData_df['medoidBold'] = medoidBold
+
+    def genHTML(self):
+        datasource = ColumnDataSource(self.experData_df)
+        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Category20[20])
+        plot_figure = figure(
+            title='UMAP projection with DBSCAN clustering of the LCLS dataset',
+            tools=('pan, wheel_zoom, reset'),
+            width = 2000, height = 600
+        )
+        plot_figure.add_tools(HoverTool(tooltips="""
+        <div>
+            <div>
+                <img src='@image' style='float: left; margin: 5px 5px 5px 5px'/>
+            </div>
+            <div>
+                <span style='font-size: 16px; color: #224499'>Cluster #</span>
+                <span style='font-size: 18px'>@cluster</span>
+            </div>
+        </div>
+        """))
+        plot_figure.circle(
+            'x',
+            'y',
+            source=datasource,
+            color=dict(field='ptColor', transform=color_mapping),
+            line_alpha=0.6,
+            fill_alpha=0.6,
+            size='medoidBold',
+            legend_field='cluster'
+        )
+        plot_figure.sizing_mode = 'scale_both'
+        plot_figure.legend.location = "bottom_right"
+        plot_figure.legend.title = "Clusters"
+
+        vals = [x for x in self.newLabels]
+        trueSource = ColumnDataSource(data=dict(vals = vals))
+        hist, maxCount = self.genHist(vals, max(vals))
+        left, right = self.genLeftRight(max(vals))
+        histsource = ColumnDataSource(data=dict(hist=hist, left=left, right=right))
+        p = figure(width=2000, height=450, toolbar_location=None,
+                   title="Histogram Testing")
+        p.quad(source=histsource, top='hist', bottom=0, left='left', right='right',
+                 fill_color='skyblue', line_color="white")
+        p.y_range = Range1d(0, maxCount)
+        p.x_range = Range1d(0, max(vals)+1)
+        p.xaxis.axis_label = "Cluster Label"
+        p.yaxis.axis_label = "Count"
+
+        indexCDS = ColumnDataSource(dict(
+            index=[*range(0, self.numImgsToUse, 10)]
+            )
+        )
+        cols = RangeSlider(title="ET",
+                start=0,
+                end=self.numImgsToUse,
+                value=(0, self.numImgsToUse-1),
+                step=1, sizing_mode="stretch_width")
+        callback = CustomJS(args=dict(cols=cols, trueSource = trueSource,
+                                      histsource = histsource, datasource=datasource, indexCDS=indexCDS), code="""
+        function countNumbersAtIndices(numbers, startInd, endInd, smallestVal, largestVal) {
+            let counts = new Array(largestVal-smallestVal); for (let i=0; i<largestVal-smallestVal; ++i) counts[i] = 0;
+            for (let i = Math.round(startInd); i <= Math.round(endInd); i++) {
+                let numMe = numbers[i];
+                if (typeof counts[numMe] === 'undefined') {
+                  counts[numMe] = 1;
+                } else {
+                  counts[numMe]++;
+                }
+            }
+            return counts;
+            }
+        const vals = trueSource.data.vals
+        const leftVal = cols.value[0]
+        const rightVal = cols.value[1]
+        const oldhist = histsource.data.hist
+        const left = histsource.data.left
+        const right = histsource.data.right
+        const hist = countNumbersAtIndices(vals, leftVal, rightVal, left[0], right.slice(-1))
+        histsource.data = { hist, left, right }
+        let medoidBold = new Array(datasource.data.medoidBold.length); for (let i=0; i<datasource.data.medoidBold.length; ++i) medoidBold[i] = 0;
+                for (let i = Math.round(leftVal); i < Math.round(rightVal); i++) {
+            medoidBold[i] = 5
+        }
+        const x = datasource.data.x
+        const y = datasource.data.y
+        const image = datasource.data.image
+        const cluster = datasource.data.cluster
+        const ptColor = datasource.data.ptColor
+        const anomDet = datasource.data.anomDet
+        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet}
+        """)
+        cols.js_on_change('value', callback)
+
+
+        imgsPlot = figure(width=2000, height=150, toolbar_location=None)
+        imgsPlot.image(image=[self.imgs[imgind][::-1] for imgind in self.medoidInds],
+                x=[0.25+xind for xind in range(len(self.medoidInds))],
+                y=0,
+                dw=0.5, dh=1,
+                palette="Plasma256", level="image")
+        imgsPlot.axis.visible = False
+        imgsPlot.grid.visible = False
+        for xind in range(len(self.medoidInds)):
+            mytext = Label(x=0.375+xind, y=-0.25, text='Cluster {}'.format(xind))
+            imgsPlot.add_layout(mytext)
+        imgsPlot.y_range = Range1d(-0.3, 1.1)
+        imgsPlot.x_range = Range1d(0, max(vals)+1)
+
+        toggl = Toggle(label='► Play',active=False)
+        toggl_js = CustomJS(args=dict(slider=cols,indexCDS=indexCDS),code="""
+        // https://discourse.bokeh.org/t/possible-to-use-customjs-callback-from-a-button-to-animate-a-slider/3985/3
+            var check_and_iterate = function(index){
+                var slider_val0 = slider.value[0];
+                var slider_val1 = slider.value[1];
+                var toggle_val = cb_obj.active;
+                if(toggle_val == false) {
+                    cb_obj.label = '► Play';
+                    clearInterval(looop);
+                    }
+                else if(slider_val1 >= index[index.length - 1]) {
+                    cb_obj.label = '► Play';
+                    slider.value = [0, slider_val1-slider_val0];
+                    cb_obj.active = false;
+                    clearInterval(looop);
+                    }
+                else if(slider_val1 !== index[index.length - 1]){
+                    slider.value = [index.filter((item) => item > slider_val0)[0], index.filter((item) => item > slider_val1)[0]];
+                    }
+                else {
+                clearInterval(looop);
+                    }
+            }
+            if(cb_obj.active == false){
+                cb_obj.label = '► Play';
+                clearInterval(looop);
+            }
+            else {
+                cb_obj.label = '❚❚ Pause';
+                var looop = setInterval(check_and_iterate, 0.1, indexCDS.data['index']);
+            };
+        """)
+        toggl.js_on_change('active',toggl_js)
+
+        LABELS = ["DBSCAN Clustering", "Anomaly Detection"]
+        radio_button_group = RadioButtonGroup(labels=LABELS, active=0)
+        radioGroup_js = CustomJS(args=dict(datasource=datasource), code="""
+            console.log(datasource.data.ptColor)
+            const x = datasource.data.x
+            const y = datasource.data.y
+            const image = datasource.data.image
+            const medoidBold = datasource.data.medoidBold
+            const cluster = datasource.data.cluster
+            const anomDet = datasource.data.anomDet
+
+            let ptColor = null
+
+            if (cb_obj.active==0){
+                ptColor = cluster
+            }
+            else{
+                ptColor = anomDet
+            }
+            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet}
+        """)
+        radio_button_group.js_on_change("active", radioGroup_js)
+
+        self.viewResults = column(plot_figure, p, imgsPlot, row(cols, toggl, radio_button_group))
+
+    def fullVisualize(self):
+        self.genUMAP()
+        self.genABOD()
+        self.genLabels()
+        self.genHTML()
+
+    def updateLabels(self):
+        self.genLabels()
+        self.genHTML()
+
+    def userSave(self):
+        save(self.viewResults)
+
+    def userShow(self):
+        from IPython.display import display, HTML
+        display(HTML("<style>.container { width:100% !important; }</style>"))
+        display(HTML("<style>.output_result { max-width:100% !important; }</style>"))
+        display(HTML("<style>.container { height:100% !important; }</style>"))
+        display(HTML("<style>.output_result { max-height:100% !important; }</style>"))
+        from bokeh.io import output_notebook
+        output_notebook()
+        show(self.viewResults)
+
+
+class WrapperFullFD:
+    """
+    Frequent Directions Data Processing Wrapper Class.
+    """
+    def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, num_components, alpha, rankAdapt, downsample, bin_factor, threshold, normalizeIntensity, noZeroIntensity, samplingFactor, priming, divBy, batchSize):
+        self.currRun = datetime.now().strftime("%y%m%d%H%M")
+        self.start_offset = start_offset
+        self.num_imgs = num_imgs
+        self.exp = exp
+        self.run = run
+        self.det_type = det_type
+        self.writeToHere = writeToHere
+        self.num_components=num_components
+        self.alpha = alpha
+        self.rankAdapt = rankAdapt
+        self.downsample=downsample
+        self.bin_factor= bin_factor
+        self.threshold= threshold
+        self.normalizeIntensity=normalizeIntensity
+        self.noZeroIntensity=noZeroIntensity
+        self.samplingFactor=samplingFactor
+        self.priming=priming
+        self.divBy = divBy 
+        self.batchSize = batchSize
+
+    def runMe(self):
+        stfull = time.perf_counter()
+
+        #SKETCHING STEP
+        ##########################################################################################
+        freqDir = FreqDir(start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
+                det_type=self.det_type, output_dir=self.writeToHere, num_components=self.num_components, alpha=self.alpha, rankAdapt=self.rankAdapt,
+                merger=False, mergerFeatures=0, downsample=self.downsample, bin_factor=self.bin_factor,
+                threshold=self.threshold, normalizeIntensity=self.normalizeIntensity, noZeroIntensity=self.noZeroIntensity,
+                currRun = self.currRun, samplingFactor=self.samplingFactor, priming=self.priming)
+        print("STARTING SKETCHING")
+        st = time.perf_counter()
+        freqDir.run()
+        localSketchFilename = freqDir.write()
+        et = time.perf_counter()
+        print("Estimated time for frequent directions rank {0}/{1}: {2}".format(freqDir.rank, freqDir.size, et - st))
+
+        #MERGING STEP
+        ##########################################################################################
+        if freqDir.rank<10:
+            fullSketchFilename = localSketchFilename[:-4]
+        else:
+            fullSketchFilename = localSketchFilename[:-5]
+        allNames = []
+        for j in range(freqDir.size):
+            allNames.append(fullSketchFilename + str(j) + ".h5")
+        mergeTree = MergeTree(exp=self.exp, run=self.run, det_type=self.det_type, divBy=self.divBy, readFile = localSketchFilename,
+                output_dir=self.writeToHere, allWriteDirecs=allNames, currRun = self.currRun)
+        #mergeTree = MergeTree(divBy=2, readFile = localSketchFilename,
+        #        dir=writeToHere, allWriteDirecs=allNames, currRun = currRun)
+
+        st = time.perf_counter()
+        mergeTree.merge()
+        mergedSketchFilename = mergeTree.write()
+        et = time.perf_counter()
+        print("Estimated time merge tree for rank {0}/{1}: {2}".format(freqDir.rank, freqDir.size, et - st))
+
+
+
+        #PROJECTION STEP
+        ##########################################################################################
+        appComp = ApplyCompression(start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
+                det_type=self.det_type, readFile = mergedSketchFilename, output_dir = self.writeToHere,
+                batchSize=self.batchSize, threshold=self.threshold, normalizeIntensity=self.normalizeIntensity, noZeroIntensity=self.noZeroIntensity,
+                downsample=self.downsample, bin_factor=self.bin_factor, currRun = self.currRun)
+        st = time.perf_counter()
+        appComp.run()
+        appComp.write()
+        et = time.perf_counter()
+        print("Estimated time projection for rank {0}/{1}: {2}".format(appComp.rank, appComp.size, et - st))
+
+
+        etfull = time.perf_counter()
+        print("Estimated full processing time for rank {0}/{1}: {2}".format(appComp.rank, appComp.size, etfull - stfull))
+        ##########################################################################################
+
+        if freqDir.rank==0:
+            st = time.perf_counter()
+            visMe = visualizeFD(inputFile="/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData".format(self.currRun),
+                            outputFile="./UMAPVis_{}.html".format(self.currRun),
+                            numImgsToUse=self.num_imgs,
+                            nprocs=freqDir.size,
+                            userGroupings=[],
+                            includeABOD=True)
+            visMe.fullVisualize()
+            visMe.userSave()
+            et = time.perf_counter()
+            print("UMAP HTML Generation Processing time: {}".format(et - st))
+            print("TOTAL PROCESING TIME: {}".format(et - stfull))
+
+
