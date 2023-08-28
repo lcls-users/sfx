@@ -1,4 +1,4 @@
-import os, csv, argparse
+import os, csv, h5py, argparse
 
 import numpy as np
 from mpi4py import MPI
