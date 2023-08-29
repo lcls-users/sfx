@@ -17,112 +17,112 @@ pn.state.template.param.update()
 import panel.widgets as pnw
 
 def display_dashboard(filename):
-        """
-        Displays an interactive dashboard with a PC plot, scree plot, 
-        and intensity heatmaps of the selected source image as well as 
-        its reconstructed image using the model obtained by pipca.
-        """
-        (
-            exp, run, det_type,
-            start_img, loadings,
-            U, S, V
-        ) = unpack_pipca_model_file(filename)
+    """
+    Displays an interactive dashboard with a PC plot, scree plot, 
+    and intensity heatmaps of the selected source image as well as 
+    its reconstructed image using the model obtained by pipca.
+    """
+    (
+        exp, run, det_type,
+        start_img, loadings,
+        U, S, V
+    ) = unpack_pipca_model_file(filename)
 
-        psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-        psi.counter = start_img
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    psi.counter = start_img
 
-        # Create PC dictionary and widgets
-        PCs = {f'PC{i}' : v for i, v in enumerate(loadings, start=1)}
-        PC_options = list(PCs)
+    # Create PC dictionary and widgets
+    PCs = {f'PC{i}' : v for i, v in enumerate(loadings, start=1)}
+    PC_options = list(PCs)
 
-        PCx = pnw.Select(name='X-Axis', value='PC1', options=PC_options)
-        PCy = pnw.Select(name='Y-Axis', value='PC2', options=PC_options)
-        widgets_scatter = pn.WidgetBox(PCx, PCy, width=150)
+    PCx = pnw.Select(name='X-Axis', value='PC1', options=PC_options)
+    PCy = pnw.Select(name='Y-Axis', value='PC2', options=PC_options)
+    widgets_scatter = pn.WidgetBox(PCx, PCy, width=150)
 
-        PC_scree = pnw.Select(name='Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
-        widgets_scree = pn.WidgetBox(PC_scree, width=150)
+    PC_scree = pnw.Select(name='Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
+    widgets_scree = pn.WidgetBox(PC_scree, width=150)
 
-        tap_source = None
-        posxy = hv.streams.Tap(source=tap_source, x=0, y=0)
+    tap_source = None
+    posxy = hv.streams.Tap(source=tap_source, x=0, y=0)
 
-        # Create PC scatter plot
-        @pn.depends(PCx.param.value, PCy.param.value)
-        def create_scatter(PCx, PCy):
-            img_index_arr = np.arange(start_img, start_img + len(PCs[PCx]))
-            scatter_data = {**PCs, 'Image': img_index_arr}
+    # Create PC scatter plot
+    @pn.depends(PCx.param.value, PCy.param.value)
+    def create_scatter(PCx, PCy):
+        img_index_arr = np.arange(start_img, start_img + len(PCs[PCx]))
+        scatter_data = {**PCs, 'Image': img_index_arr}
 
-            opts = dict(width=400, height=300, color='Image', cmap='rainbow', colorbar=True,
-                        show_grid=True, shared_axes=False, toolbar='above', tools=['hover'])
-            scatter = hv.Points(scatter_data, kdims=[PCx, PCy], vdims=['Image'], 
-                                label="%s vs %s" % (PCx.title(), PCy.title())).opts(**opts)
+        opts = dict(width=400, height=300, color='Image', cmap='rainbow', colorbar=True,
+                    show_grid=True, shared_axes=False, toolbar='above', tools=['hover'])
+        scatter = hv.Points(scatter_data, kdims=[PCx, PCy], vdims=['Image'], 
+                            label="%s vs %s" % (PCx.title(), PCy.title())).opts(**opts)
+            
+        posxy.source = scatter
+        return scatter
+        
+    # Create scree plot
+    @pn.depends(PC_scree.param.value)
+    def create_scree(PC_scree):
+        q = int(PC_scree[2:])
+        components = np.arange(1, q + 1)
+        singular_values = S[:q]
+        bars_data = np.stack((components, singular_values)).T
 
-            posxy.source = scatter
-            return scatter
+        opts = dict(width=400, height=300, show_grid=True, show_legend=False,
+                    shared_axes=False, toolbar='above', default_tools=['hover','save','reset'],
+                    xlabel='Components', ylabel='Singular Values')
+        scree = hv.Bars(bars_data, label="Scree Plot").opts(**opts)
 
-        # Create scree plot
-        @pn.depends(PC_scree.param.value)
-        def create_scree(PC_scree):
-            q = int(PC_scree[2:])
-            components = np.arange(1, q + 1)
-            singular_values = S[:q]
-            bars_data = np.stack((components, singular_values)).T
+        return scree
+        
+    # Define function to compute heatmap based on tap location
+    def tap_heatmap(x, y, pcx, pcy, pcscree):
+        # Finds the index of image closest to the tap location
+        img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
 
-            opts = dict(width=400, height=300, show_grid=True, show_legend=False,
-                        shared_axes=False, toolbar='above', default_tools=['hover','save','reset'],
-                        xlabel='Components', ylabel='Singular Values')
-            scree = hv.Bars(bars_data, label="Scree Plot").opts(**opts)
+        counter = psi.counter
+        psi.counter = start_img + img_source
+        img = psi.get_images(1)
+        psi.counter = counter
+        img = img.squeeze()
 
-            return scree
+        # Downsample so heatmap is at most 100 x 100
+        hm_data = construct_heatmap_data(img, 100)
 
-        # Define function to compute heatmap based on tap location
-        def tap_heatmap(x, y, pcx, pcy, pcscree):
-            # Finds the index of image closest to the tap location
-            img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
+        opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
+        heatmap = hv.HeatMap(hm_data, label="Source Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
 
-            counter = psi.counter
-            psi.counter = start_img + img_source
-            img = psi.get_images(1)
-            psi.counter = counter
-            img = img.squeeze()
+        return heatmap
+        
+    # Define function to compute reconstructed heatmap based on tap location
+    def tap_heatmap_reconstruct(x, y, pcx, pcy, pcscree):
+        # Finds the index of image closest to the tap location
+        img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
 
-            # Downsample so heatmap is at most 100 x 100
-            hm_data = construct_heatmap_data(img, 100)
+        # Calculate and format reconstructed image
+        p, x, y = psi.det.shape()
+        pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
-            opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
-            heatmap = hv.HeatMap(hm_data, label=" Source Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
+        q = int(pcscree[2:])
+        img = U[:, :q] @ np.diag(S[:q]) @ np.array([V[img_source][:q]]).T
+        img = img.reshape((p, x, y))
+        img = assemble_image_stack_batch(img, pixel_index_map)
 
-            return heatmap
+        # Downsample so heatmap is at most 100 x 100
+        hm_data = construct_heatmap_data(img, 100)
 
-        # Define function to compute reconstructed heatmap based on tap location
-        def tap_heatmap_reconstruct(x, y, pcx, pcy, pcscree):
-            # Finds the index of image closest to the tap location
-            img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
+        opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
+        heatmap_reconstruct = hv.HeatMap(hm_data, label="PiPCA Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
 
-            # Calculate and format reconstructed image
-            p, x, y = psi.det.shape()
-            pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-
-            q = int(pcscree[2:])
-            img = U[:, :q] @ np.diag(S[:q]) @ np.array([V[img_source][:q]]).T
-            img = img.reshape((p, x, y))
-            img = assemble_image_stack_batch(img, pixel_index_map)
-
-            # Downsample so heatmap is at most 100 x 100
-            hm_data = construct_heatmap_data(img, 100)
-
-            opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
-            heatmap_reconstruct = hv.HeatMap(hm_data, label="PiPCA Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
-
-            return heatmap_reconstruct
-
-        # Connect the Tap stream to the heatmap callbacks
-        stream1 = [posxy]
-        stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value, 'pcscree': PC_scree.param.value})
-        tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
-        tap_dmap_reconstruct = hv.DynamicMap(tap_heatmap_reconstruct, streams=stream1+stream2)
-
-        return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
-                         pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
+        return heatmap_reconstruct
+        
+    # Connect the Tap stream to the heatmap callbacks
+    stream1 = [posxy]
+    stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value, 'pcscree': PC_scree.param.value})
+    tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
+    tap_dmap_reconstruct = hv.DynamicMap(tap_heatmap_reconstruct, streams=stream1+stream2)
+        
+    return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
+                     pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
 def display_eigenimages(filename):
     """
