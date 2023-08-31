@@ -15,6 +15,7 @@ from numpy.linalg import svd, LinAlgError
 from scipy.linalg import svd as scipy_svd
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics.pairwise import euclidean_distances
 import heapq
 
 from mpi4py import MPI
@@ -35,11 +36,13 @@ from btx.interfaces.ipsana import (
 from PIL import Image
 from io import BytesIO
 import base64
+import tables
 
 from datetime import datetime
 
 import umap
 import hdbscan
+from sklearn.cluster import OPTICS, cluster_optics_dbscan
 
 from matplotlib import colors
 import matplotlib as mpl
@@ -49,6 +52,9 @@ from bokeh.plotting import figure, show, output_file, save
 from bokeh.models import HoverTool, CategoricalColorMapper, LinearColorMapper, ColumnDataSource, CustomJS, Slider, RangeSlider, Toggle, RadioButtonGroup, Range1d, Label
 from bokeh.palettes import Viridis256, Cividis256, Turbo256, Category20, Plasma3
 from bokeh.layouts import column, row
+
+import cProfile
+import string
 
 class FreqDir(DimRed):
 
@@ -113,6 +119,9 @@ class FreqDir(DimRed):
 
     def __init__(
         self,
+        comm,
+        rank,
+        size,
         start_offset,
         num_imgs,
         exp,
@@ -120,6 +129,7 @@ class FreqDir(DimRed):
         det_type,
         output_dir,
         currRun,
+        imgData,
         alpha=0,
         rankAdapt=False,
         merger=False,
@@ -138,6 +148,10 @@ class FreqDir(DimRed):
         super().__init__(exp=exp, run=run, det_type=det_type, start_offset=start_offset,
                 num_images=num_imgs, num_components=num_components, batch_size=batch_size, priming=priming,
                 downsample=downsample, bin_factor=bin_factor, output_dir=output_dir)
+
+        self.comm = comm
+        self.rank= rank
+        self.size = size
 
         self.psi.counter = start_offset + self.num_images*self.rank//self.size
 
@@ -169,6 +183,8 @@ class FreqDir(DimRed):
 
         self.samplingFactor = samplingFactor
 
+        self.imgData = imgData
+
     def run(self):
         """
         Perform frequent directions matrix sketching
@@ -176,70 +192,102 @@ class FreqDir(DimRed):
         """
 
         noImgsToProcess = self.num_images//self.size
-        for batch in range(0,noImgsToProcess,int(self.ell*2//self.samplingFactor)):
-            self.fetch_and_update_model(int(self.ell*2//self.samplingFactor))
+        for currInd, batch in enumerate(range(0,noImgsToProcess,int(self.ell*2//self.samplingFactor))):
+            self.fetch_and_update_model(int(self.ell*2//self.samplingFactor), currInd)
 
-    def get_formatted_images(self, n):
-        """
-        Fetch n - x image segments from run, where x is the number of 'dead' images.
+    def elu(self,x):
+        if x > 0:
+            return x
+        else:
+            return 0.01*(math.exp(x)-1)
 
-        Parameters
-        ----------
-        n : int
-            number of images to retrieve
-        start_index : int
-            start index of subsection of data to retrieve
-        end_index : int
-            end index of subsection of data to retrieve
-
-        Returns
-        -------
-        ndarray, shape (end_index-start_index, n-x)
-            n-x retrieved image segments of dimension end_index-start_index
-        """
-        self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
-
-        bin_factor = self.bin_factor
-        downsample = self.downsample
-
-        # may have to rewrite eventually when number of images becomes large,
-        # i.e. streamed setting, either that or downsample aggressively
-        imgs = self.psi.get_images(n, assemble=False)
-
-        if downsample:
-            imgs = bin_data(imgs, bin_factor)
-
-        imgs = imgs[
-            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
-        ]
-
-        num_valid_imgs, p, x, y = imgs.shape
-
-        img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
-
-        img_batch[img_batch<0] = 0
-
-        nimg_batch = []
-        for img in img_batch.T:
-            if self.threshold:
-#                secondQuartile = np.sort(img)[-1]//4
-#                secondQuartile = np.mean(img)
-#                secondQuartile = np.median(img)
-#                secondQuartile = np.partition(img, -len(img)//4)[-len(img)//4]
-                secondQuartile = np.quantile(img, 0.93)
-                nimg = (img>secondQuartile)*img
-            else:
-                nimg = img
-
-            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
-            if self.noZeroIntensity and currIntensity<50000:
-                continue
-            else:
-                if currIntensity>=50000 and self.normalizeIntensity:
-                    nimg_batch.append(nimg/currIntensity)
-                else:
-                    nimg_batch.append(nimg)
-        return np.array(nimg_batch).T
+#    def get_formatted_images(self, n, includeUnformatted=False):
+#        """
+#        Fetch n - x image segments from run, where x is the number of 'dead' images.
+#
+#        Parameters
+#        ----------
+#        n : int
+#            number of images to retrieve
+#        start_index : int
+#            start index of subsection of data to retrieve
+#        end_index : int
+#            end index of subsection of data to retrieve
+#
+#        Returns
+#        -------
+#        ndarray, shape (end_index-start_index, n-x)
+#            n-x retrieved image segments of dimension end_index-start_index
+#        """
+#        self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
+#        # may have to rewrite eventually when number of images becomes large,
+#        # i.e. streamed setting, either that or downsample aggressively
+#        imgs = self.psi.get_images(n, assemble=False)
+#
+#        if includeUnformatted:
+#            imgsCopy = imgs.copy()
+#            imgsCopy = imgsCopy[
+#                [i for i in range(imgsCopy.shape[0]) if not np.isnan(imgsCopy[i : i + 1]).any()]
+#            ]
+#            num_valid_imgsCopy, p, x, y = imgsCopy.shape
+#            img_batchCopy = np.reshape(imgsCopy, (num_valid_imgsCopy, p * x * y)).T
+#            img_batchCopy[img_batchCopy<0] = 0
+#            nimg_batchCopy = []
+#            for img in img_batchCopy.T:
+#                if self.threshold:
+#    #                secondQuartile = np.sort(img)[-1]//4
+#    #                secondQuartile = np.mean(img)
+#    #                secondQuartile = np.median(img)
+#    #                secondQuartile = np.partition(img, -len(img)//4)[-len(img)//4]
+#                    secondQuartile = np.quantile(img, 0.93)
+#                    nimg = (img>secondQuartile)*img
+#    #                elu_v = np.vectorize(self.elu)
+#    #                nimg = elu_v(img-secondQuartile)+secondQuartile
+#                else:
+#                    nimg = img
+#                currIntensity = np.sum(nimg.flatten(), dtype=np.double)
+#                if self.noZeroIntensity and currIntensity<50000:
+#                    continue
+#                else:
+#                    if currIntensity>=50000 and self.normalizeIntensity:
+#                        nimg_batchCopy.append(nimg/currIntensity)
+#                    else:
+#                        nimg_batchCopy.append(nimg)
+#
+#        if self.downsample:
+#            imgs = bin_data(imgs, self.bin_factor)
+#        imgs = imgs[
+#            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+#        ]
+#        num_valid_imgs, p, x, y = imgs.shape
+#        img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+#        img_batch[img_batch<0] = 0
+#        nimg_batch = []
+#        for img in img_batch.T:
+#            if self.threshold:
+##                secondQuartile = np.sort(img)[-1]//4
+##                secondQuartile = np.mean(img)
+##                secondQuartile = np.median(img)
+##                secondQuartile = np.partition(img, -len(img)//4)[-len(img)//4]
+#                secondQuartile = np.quantile(img, 0.93)
+#                nimg = (img>secondQuartile)*img
+##                elu_v = np.vectorize(self.elu)
+##                nimg = elu_v(img-secondQuartile)+secondQuartile
+#            else:
+#                nimg = img
+#
+#            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
+#            if self.noZeroIntensity and currIntensity<50000:
+#                continue
+#            else:
+#                if currIntensity>=50000 and self.normalizeIntensity:
+#                    nimg_batch.append(nimg/currIntensity)
+#                else:
+#                    nimg_batch.append(nimg)
+#        if includeUnformatted:
+#            return (np.array(nimg_batch).T, np.array(nimg_batchCopy).T)
+#        else:
+#            return np.array(nimg_batch).T
 
     ###########################################################################
 
@@ -267,7 +315,7 @@ class FreqDir(DimRed):
             return img/currIntensity
     ###########################################################################
 
-    def fetch_and_update_model(self, n):
+    def fetch_and_update_model(self, n, currInd):
         """
         Fetch images and update model.
 
@@ -276,7 +324,9 @@ class FreqDir(DimRed):
         n : int
             number of images to incorporate
         """
-        img_batch = self.get_formatted_images(n)
+#        img_batch = self.get_formatted_images(n)
+        img_batch = self.imgData[currInd]
+#        print("1414oiioqdca", img_batch.shape)
 
         if self.samplingFactor <1:
             psamp = PrioritySampling(int(n*self.samplingFactor), self.d)
@@ -321,7 +371,7 @@ class FreqDir(DimRed):
         X: ndarray
             data to update matrix sketch with
         """
-        _, numIncorp = X.shape
+        _, numIncorp  = X.shape
         origNumIncorp = numIncorp
         with TaskTimer(self.task_durations, "total update"):
             if self.rank==0 and not self.merger:
@@ -331,7 +381,6 @@ class FreqDir(DimRed):
                     )
                 )
             for row in X.T:
-                
                 canRankAdapt = numIncorp > (self.ell + 15)
                 if self.nextZeroRow >= self.m:
                     if self.increaseEll and canRankAdapt and self.rankAdapt:
@@ -377,28 +426,24 @@ class FreqDir(DimRed):
         in Computer Science, vol 8737. Springer, Berlin, Heidelberg. 
         https://doi.org/10.1007/978-3-662-44777-2_39
         """
-        try:
-            [_,s,Vt] = svd(self.sketch , full_matrices=False)
-        except LinAlgError as err:
-            [_,s,Vt] = scipy_svd(self.sketch, full_matrices = False)
-        if len(s) >= self.ell:
-            sCopy = s.copy()
+        [_,S,Vt] = np.linalg.svd(self.sketch , full_matrices=False)
+        ssize = S.shape[0]
+        if ssize >= self.ell:
+            sCopy = S.copy()
            #JOHN: I think actually this should be ell+1 and ell. We lose a component otherwise.
-            toShrink = s[:self.ell]**2 - s[self.ell-1]**2
+            toShrink = S[:self.ell]**2 - S[self.ell-1]**2
             #John: Explicitly set this value to be 0, since sometimes it is negative
             # or even turns to NaN due to roundoff error
             toShrink[-1] = 0
             toShrink = sqrt(toShrink)
-            
             toShrink[:int(self.ell*(1-self.alpha))] = sCopy[:int(self.ell*(1-self.alpha))]
-
             self.sketch[:self.ell:,:] = dot(diag(toShrink), Vt[:self.ell,:])
             self.sketch[self.ell:,:] = 0
             self.nextZeroRow = self.ell
         else:
-            self.sketch[:len(s),:] = dot(diag(s), Vt[:len(s),:])
-            self.sketch[len(s):,:] = 0
-            self.nextZeroRow = len(s)
+            self.sketch[:ssize,:] = diag(s) @ Vt[:ssize,:]
+            self.sketch[ssize:,:] = 0
+            self.nextZeroRow = ssize
 
     def reconstructionError(self, matrixCentered):
         """ 
@@ -564,6 +609,8 @@ class FreqDir(DimRed):
             hf.create_dataset("mean", data=self.mean)
             hf.create_dataset("imgsTracked", data=np.array(self.imgsTracked))
             hf["sketch"].attrs["numImgsIncorp"] = self.num_incorporated_images
+        tables.file._open_files.close_all()
+        print("CREATED FILE: ", filename)
         self.comm.barrier()
         return filename 
 
@@ -593,24 +640,25 @@ class MergeTree:
     currRun: Current datetime used to identify run
     """
 
-    def __init__(self, exp, run, det_type, divBy, readFile, output_dir, allWriteDirecs, currRun):
-        self.comm = MPI.COMM_WORLD
-        self.rank = self.comm.Get_rank()
-        self.size = self.comm.Get_size()
+    def __init__(self, comm, rank, size, exp, run, det_type, divBy, readFile, output_dir, allWriteDirecs, currRun):
+        self.comm = comm
+        self.rank = rank
+        self.size = size
         
         self.divBy = divBy
         
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
+        tables.file._open_files.close_all()
 
-        self.fd = FreqDir(0, 0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, priming=False) 
+        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, priming=False, imgData = None) 
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
         if self.rank==0:
             print("BUFFER SIZES: ", self.buffSizes)
 
-        print(self.data.T.shape)
+#        print(self.data.shape)
         self.fd.update_model(self.data.T)
 
         self.output_dir = output_dir
@@ -651,6 +699,8 @@ class MergeTree:
                         bufferMe = np.empty(self.buffSizes[proc] * self.data.shape[1], dtype=np.double)
                         self.comm.Recv(bufferMe, source=proc, tag=17)
                         bufferMe = np.reshape(bufferMe, (self.buffSizes[proc], self.data.shape[1]))
+#                        print("BUFFERME SHAPE", bufferMe.shape)
+#                        self.fd.update_model(np.hstack((bufferMe.T, np.zeros((bufferMe.shape[1])))))
                         self.fd.update_model(bufferMe.T)
                 else:
                     bufferMe = self.fd.get().copy().flatten()
@@ -669,6 +719,7 @@ class MergeTree:
                                 + hf["sketch"].attrs["numImgsIncorp"])
                         self.fullNumIncorp += hf["sketch"].attrs["numImgsIncorp"]
                         self.fullImgsTracked = np.vstack((self.fullImgsTracked,  hf["imgsTracked"][:]))
+                tables.file._open_files.close_all()
             return self.fd.get()
         else:
             return
@@ -677,6 +728,7 @@ class MergeTree:
         """
         Write merged matrix sketch to h5 file
         """
+#        print("IMAGES TRACKED: ", self.fullNumIncorp, " ******* ", self.fullImgsTracked)
         filename = self.output_dir + '{}_merge.h5'.format(self.currRun)
         if self.rank==0:
             with h5py.File(filename, 'w') as hf:
@@ -684,7 +736,9 @@ class MergeTree:
                 hf.create_dataset("mean",  data=self.fullMean)
                 hf["sketch"].attrs["numImgsIncorp"] = self.fullNumIncorp
                 hf.create_dataset("imgsTracked",  data=self.fullImgsTracked)
-        self.comm.Barrier()
+            print("CREATED FILE: ", filename)
+            tables.file._open_files.close_all()
+        self.comm.barrier()
         return filename
 
 class ApplyCompression:
@@ -718,6 +772,9 @@ class ApplyCompression:
 
     def __init__(
         self,
+        comm,
+        rank,
+        size,
         start_offset,
         num_imgs,
         exp,
@@ -730,36 +787,39 @@ class ApplyCompression:
         noZeroIntensity,
         normalizeIntensity,
         currRun,
+        imgData, 
+        thumbnailData,
         downsample=False,
         bin_factor=2
     ):
 
-        self.output_dir = output_dir
+        self.comm = comm
+        self.rank = rank
+        self.size= size
 
-        self.comm = MPI.COMM_WORLD
-        self.rank = self.comm.Get_rank()
-        self.size = self.comm.Get_size()
+        self.output_dir = output_dir
 
         self.num_imgs = num_imgs
 
         self.currRun = currRun
 
-        self.imgGrabber = FreqDir(start_offset=start_offset,num_imgs=num_imgs, currRun = currRun,
-                exp=exp,run=run,det_type=det_type,output_dir="", downsample=downsample, bin_factor=bin_factor,
-                threshold=threshold, normalizeIntensity=normalizeIntensity, noZeroIntensity=noZeroIntensity, priming=False)
-        self.grabberToSaveImages = FreqDir(start_offset=start_offset,num_imgs=num_imgs, currRun = currRun,
-                exp=exp,run=run,det_type=det_type,output_dir="", downsample=False, bin_factor=0,
-                threshold=threshold, normalizeIntensity=normalizeIntensity, noZeroIntensity=noZeroIntensity, priming=False)
-        self.batchSize = batchSize
-
-        self.num_images = self.imgGrabber.num_images
-        self.num_features = self.imgGrabber.num_features
+#        self.imgGrabber = FreqDir(comm=comm, rank=rank, size=size, start_offset=start_offset,num_imgs=num_imgs, currRun = currRun,
+#                exp=exp,run=run,det_type=det_type,output_dir="", downsample=downsample, bin_factor=bin_factor,
+#                threshold=threshold, normalizeIntensity=normalizeIntensity, noZeroIntensity=noZeroIntensity, priming=False, imgData = None)
+#        self.grabberToSaveImages = FreqDir(comm=comm, rank=rank, size=size, start_offset=start_offset,num_imgs=num_imgs, currRun = currRun,
+#                exp=exp,run=run,det_type=det_type,output_dir="", downsample=False, bin_factor=0,
+#                threshold=threshold, normalizeIntensity=normalizeIntensity, noZeroIntensity=noZeroIntensity, priming=False, imgData = None)
+#        self.batchSize = batchSize
 
         self.num_incorporated_images = 0
 
+        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile, os.path.isfile(readFile)))
+        while(not os.path.isfile(readFile)):
+            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile, self.rank))
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
             self.mean = hf["mean"][:]
+        tables.file._open_files.close_all()
         
         U, S, Vt = np.linalg.svd(self.data, full_matrices=False)
         self.components = Vt
@@ -769,25 +829,45 @@ class ApplyCompression:
 
         self.imageIndicesProcessed = []
 
+        self.imgData = imgData
+        self.thumbnailData = thumbnailData
+
 
     def run(self):
         """
         Retrieve sketch, project images onto new coordinates. Save new coordinates to h5 file. 
         """
-        noImgsToProcess = self.num_images//self.size
-        for batch in range(0,noImgsToProcess,self.batchSize):
-            self.fetch_and_process_data()
+        noImgsToProcess = self.num_imgs//self.size
+#        for currInd, batch in enumerate(range(0,noImgsToProcess,self.batchSize)):
+        for currInd in range(len(self.imgData)):
+            self.fetch_and_process_data(currInd)
+#        print("RANK {} IS DONE".format(self.rank))
+#        self.fetch_and_process_data()
 
 
-    def fetch_and_process_data(self):
+    def fetch_and_process_data(self, currInd):
         """
         Fetch and downsample data, apply projection algorithm
         """
-        startCounter = self.imgGrabber.psi.counter
-        img_batch = self.imgGrabber.get_formatted_images(self.batchSize)
-        self.imageIndicesProcessed.append((startCounter, self.imgGrabber.psi.counter))
+#        startCounter = self.imgGrabber.psi.counter
 
-        toSave_img_batch = self.assembleImgsToSave(self.grabberToSaveImages.get_formatted_images(self.batchSize))
+#        stimggrab = time.perf_counter()
+#        img_batch,img_batchUnformatted = self.imgGrabber.get_formatted_images(self.batchSize,includeUnformatted=True)
+#        img_batch = self.imgGrabber.get_formatted_images(self.batchSize)
+#        self.imageIndicesProcessed.append((startCounter, self.imgGrabber.psi.counter))
+#        etimggrab = time.perf_counter()
+#        print("{} Image Grab TIME: ".format(self.rank), etimggrab - stimggrab)
+
+#        stassemble = time.perf_counter()
+#        toSave_img_batch = self.assembleImgsToSave(self.grabberToSaveImages.get_formatted_images(self.batchSize))
+#        toSave_img_batch = self.assembleImgsToSave(img_batchUnformatted)
+#        etassemble = time.perf_counter()
+#        print("{} Assemble TIME: ".format(self.rank), etassemble - stassemble)
+
+#        stassemble = time.perf_counter()
+
+        img_batch = self.imgData[currInd]
+        toSave_img_batch = self.thumbnailData[currInd]
 
         if self.smallImgs is None:
             self.smallImgs = toSave_img_batch
@@ -795,25 +875,52 @@ class ApplyCompression:
             self.smallImgs = np.concatenate((self.smallImgs, toSave_img_batch), axis=0)
 #        self.apply_compression((img_batch.T - self.mean).T)
         self.apply_compression(img_batch)
+#        etassemble = time.perf_counter()
+#        print("{} Apply Compression TIME: ".format(self.rank), etassemble - stassemble)
 
-    def assembleImgsToSave(self, imgs):
-        """
-        Form the images from psana pixel index map and downsample images. 
 
-        Parameters
-        ----------
-        imgs: ndarray
-            images to downsample
-        """
-        pixel_index_map = retrieve_pixel_index_map(self.imgGrabber.psi.det.geometry(self.imgGrabber.psi.run))
+#        noImgsToProcess = self.num_images//self.size
+#        startCounter = self.imgGrabber.psi.counter
+#        img_batch = self.imgGrabber.get_formatted_images(noImgsToProcess)
+#        self.imageIndicesProcessed.append((startCounter, self.imgGrabber.psi.counter))
+#        st_compress = time.perf_counter()
+#        self.apply_compression(img_batch)
+#        et_compress = time.perf_counter()
+#        print("COMPRESSION TIME: ", et_compress - st_compress#)
+#
+#        st_assemble = time.perf_counter()
+#        toSave_img_batch = self.assembleImgsToSave(self.grabberToSaveImages.get_formatted_images(noImgsToProcess))
+#        if self.smallImgs is None:
+#            self.smallImgs = toSave_img_batch
+#        else:
+#            self.smallImgs = np.concatenate((self.smallImgs, toSave_img_batch), axis=0)
+#        et_assemble = time.perf_counter()
+#        print("ASSEMBLE TIME: ", et_assemble-st_assemble)
 
-        saveMe = []
-        for img in imgs.T:
-            imgRe = np.reshape(img, self.imgGrabber.psi.det.shape())
-            imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
-            saveMe.append(np.array(Image.fromarray(imgRe).resize((64, 64))))
-        saveMe = np.array(saveMe)
-        return saveMe
+
+#    def assembleImgsToSave(self, imgs):
+#        """
+#        Form the images from psana pixel index map and downsample images. 
+#
+#        Parameters
+#        ----------
+#        imgs: ndarray
+#            images to downsample
+#        """
+#        pixel_index_map = retrieve_pixel_index_map(self.imgGrabber.psi.det.geometry(self.imgGrabber.psi.run))
+#
+#        saveMe = []
+#        for img in imgs.T:
+#            imgRe = np.reshape(img, self.imgGrabber.psi.det.shape())
+#            imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
+#            saveMe.append(np.array(Image.fromarray(imgRe).resize((64, 64))))
+#        return np.array(saveMe)
+##        imgsRe = np.reshape(imgs.T, (imgs.shape[1], 
+##            self.imgGrabber.psi.det.shape()[0], 
+##            self.imgGrabber.psi.det.shape()[1], 
+##            self.imgGrabber.psi.det.shape()[2]))
+##        return assemble_image_stack_batch(imgsRe, pixel_index_map)
+
 
     def apply_compression(self, X):
         """
@@ -837,7 +944,9 @@ class ApplyCompression:
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("ProjectedData",  data=self.processedData)
             hf.create_dataset("SmallImages", data=self.smallImgs)
-        self.comm.Barrier()
+        tables.file._open_files.close_all()
+        print("CREATED FILE: ", filename)
+        self.comm.barrier()
         return filename
 
 
@@ -942,20 +1051,23 @@ class visualizeFD:
         random.shuffle(all_numbers)
         return all_numbers[:count]
 
-    def euclidean_distance(self, p1, p2):
-        return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+#    def euclidean_distance(self, p1, p2):
+#        return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+#    def compute_medoid(self, points):
+#        min_total_distance = float('inf')
+#        medoid = None
+#        for i, point in enumerate(points):
+#            total_distance = 0
+#            for other_point in points:
+#                total_distance += self.euclidean_distance(point, other_point)
+#            if total_distance < min_total_distance:
+#                min_total_distance = total_distance
+#                medoid = point
+#        return medoid
 
     def compute_medoid(self, points):
-        min_total_distance = float('inf')
-        medoid = None
-        for i, point in enumerate(points):
-            total_distance = 0
-            for other_point in points:
-                total_distance += self.euclidean_distance(point, other_point)
-            if total_distance < min_total_distance:
-                min_total_distance = total_distance
-                medoid = point
-        return medoid
+        return points[np.argmin(euclidean_distances(points).sum(axis=0))]
 
     def genMedoids(self, medoidLabels, clusterPoints):
         dictMe = {}
@@ -1043,9 +1155,12 @@ class visualizeFD:
         return [*range(endClass+1)], [*range(1, endClass+2)]
 
     def genUMAP(self):
+        for dirval in os.listdir(self.inputFile[:-26]):
+            print("ITEM IN DIRECTORY:", dirval)
         imgs = None
         projections = None
         for currRank in range(self.nprocs):
+            print("GETTING CURRENT RANK: ", currRank)
             with h5py.File(self.inputFile+"_"+str(currRank)+".h5", 'r') as hf:
                 if imgs is None:
                     imgs = hf["SmallImages"][:]
@@ -1053,15 +1168,18 @@ class visualizeFD:
                 else:
                     imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
                     projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
+            tables.file._open_files.close_all()
 
         intensities = []
         for img in imgs:
             intensities.append(np.sum(img.flatten()))
         intensities = np.array(intensities)
 
-        self.imgs = imgs[:self.numImgsToUse]
-        self.projections = projections[:self.numImgsToUse]
-        self.intensities = intensities[:self.numImgsToUse]
+        skipMe = 4
+        self.imgs = imgs[:self.numImgsToUse:skipMe]
+        self.projections = projections[:self.numImgsToUse:skipMe]
+        self.intensities = intensities[:self.numImgsToUse:skipMe]
+        self.numImgsToUse = int(self.numImgsToUse/skipMe)
 
         if len(self.imgs)!= self.numImgsToUse:
             raise TypeError("NUMBER OF IMAGES REQUESTED ({}) EXCEEDS NUMBER OF DATA POINTS PROVIDED ({})".format(len(self.imgs), self.numImgsToUse))
@@ -1076,12 +1194,21 @@ class visualizeFD:
             min_samples=int(self.numImgsToUse*0.75//40),
             min_cluster_size=int(self.numImgsToUse//40),
         ).fit_predict(self.clusterable_embedding)
-
         exclusionList = np.array([])
         self.clustered = np.isin(self.labels, exclusionList, invert=True)
 
+        self.opticsClust = OPTICS(min_samples=150, xi=0.05, min_cluster_size=0.05)
+        self.opticsClust.fit(self.clusterable_embedding)
+        self.opticsLabels = cluster_optics_dbscan(
+            reachability=self.opticsClust.reachability_,
+            core_distances=self.opticsClust.core_distances_,
+            ordering=self.opticsClust.ordering_,
+            eps=2,
+        )
+
         self.experData_df = pd.DataFrame({'x':self.clusterable_embedding[self.clustered, 0],'y':self.clusterable_embedding[self.clustered, 1]})
         self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
+        self.experData_df['imgind'] = np.arange(self.numImgsToUse)
 
     def genABOD(self):
         if self.includeABOD:
@@ -1130,6 +1257,18 @@ class visualizeFD:
                 medoidBold.append(4)
         self.experData_df['medoidBold'] = medoidBold
 
+        opticsNewLabels = []
+        for j in self.opticsLabels[self.clustered]:
+            doneChecking = False
+            for grouping in self.userGroupings:
+                if j in grouping and not doneChecking:
+                    opticsNewLabels.append(min(grouping))
+                    doneChecking=True
+            if not doneChecking:
+                opticsNewLabels.append(j)
+        opticsNewLabels = list(np.array(opticsNewLabels) + 1)
+        self.opticsNewLabels = np.array(self.relabel_to_closest_zero(opticsNewLabels))
+
     def genHTML(self):
         datasource = ColumnDataSource(self.experData_df)
         color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Category20[20])
@@ -1146,6 +1285,7 @@ class visualizeFD:
             <div>
                 <span style='font-size: 16px; color: #224499'>Cluster #</span>
                 <span style='font-size: 18px'>@cluster</span>
+                <span style='font-size: 18px'>@imgind</span>
             </div>
         </div>
         """))
@@ -1178,7 +1318,7 @@ class visualizeFD:
         p.yaxis.axis_label = "Count"
 
         indexCDS = ColumnDataSource(dict(
-            index=[*range(0, self.numImgsToUse, 10)]
+            index=[*range(0, self.numImgsToUse, 2)]
             )
         )
         cols = RangeSlider(title="ET",
@@ -1218,7 +1358,8 @@ class visualizeFD:
         const cluster = datasource.data.cluster
         const ptColor = datasource.data.ptColor
         const anomDet = datasource.data.anomDet
-        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet}
+        const imgind = datasource.data.imgind
+        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind}
         """)
         cols.js_on_change('value', callback)
 
@@ -1272,9 +1413,37 @@ class visualizeFD:
         """)
         toggl.js_on_change('active',toggl_js)
 
-        LABELS = ["DBSCAN Clustering", "Anomaly Detection"]
+        reachabilityDiag = figure(
+            title='OPTICS Reachability Diag',
+            tools=('pan, wheel_zoom, reset'),
+            width = 2000, height = 400
+        )
+
+        space = np.arange(self.numImgsToUse)
+        reachability = self.opticsClust.reachability_[self.opticsClust.ordering_]
+
+        opticsData_df = pd.DataFrame({'x':space,'y':reachability})
+        opticsData_df['cluster'] = [str(x) for x in self.opticsNewLabels]
+        opticsData_df['ptColor'] = [x for x in opticsData_df['cluster']]
+        color_mapping2 = CategoricalColorMapper(factors=[str(x) for x in list(set(self.opticsNewLabels))],
+                                               palette=Category20[20])
+        opticssource = ColumnDataSource(opticsData_df)
+
+        reachabilityDiag.circle(
+            'x',
+            'y',
+            source=opticssource,
+            color=dict(field='ptColor', transform=color_mapping2),
+            line_alpha=0.6,
+            fill_alpha=0.6,
+            legend_field='cluster'
+        )
+        reachabilityDiag.line([0, len(opticsData_df['ptColor'])], [2, 2], line_width=2, color="black", line_dash="dashed")
+        reachabilityDiag.y_range = Range1d(-1, 10)
+
+        LABELS = ["DBSCAN Clustering", "OPTICS Clustering", "Anomaly Detection"]
         radio_button_group = RadioButtonGroup(labels=LABELS, active=0)
-        radioGroup_js = CustomJS(args=dict(datasource=datasource), code="""
+        radioGroup_js = CustomJS(args=dict(datasource=datasource, opticssource=opticssource), code="""
             console.log(datasource.data.ptColor)
             const x = datasource.data.x
             const y = datasource.data.y
@@ -1282,26 +1451,37 @@ class visualizeFD:
             const medoidBold = datasource.data.medoidBold
             const cluster = datasource.data.cluster
             const anomDet = datasource.data.anomDet
+            const imgind = datasource.data.imgind
+
+            const opticsClust = opticssource.data.cluster
 
             let ptColor = null
 
             if (cb_obj.active==0){
                 ptColor = cluster
             }
+            else if (cb_obj.active==1){
+                ptColor = opticsClust
+            }
             else{
                 ptColor = anomDet
             }
-            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet}
+            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind}
         """)
         radio_button_group.js_on_change("active", radioGroup_js)
 
-        self.viewResults = column(plot_figure, p, imgsPlot, row(cols, toggl, radio_button_group))
+        self.viewResults = column(plot_figure, p, imgsPlot, row(cols, toggl, radio_button_group), reachabilityDiag)
 
     def fullVisualize(self):
+        print("here 4")
         self.genUMAP()
+        print("here 5")
         self.genABOD()
+        print("here 6")
         self.genLabels()
+        print("here 7")
         self.genHTML()
+        print("here 8")
 
     def updateLabels(self):
         self.genLabels()
@@ -1320,13 +1500,32 @@ class visualizeFD:
         output_notebook()
         show(self.viewResults)
 
+def profile(filename=None, comm=MPI.COMM_WORLD):
+  def prof_decorator(f):
+    def wrap_f(*args, **kwargs):
+      pr = cProfile.Profile()
+      pr.enable()
+      result = f(*args, **kwargs)
+      pr.disable()
+
+      if filename is None:
+        pr.print_stats()
+      else:
+        filename_r = filename + ".{}".format(comm.rank)
+        pr.dump_stats(filename_r)
+
+      return result
+    return wrap_f
+  return prof_decorator
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
     """
     def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, num_components, alpha, rankAdapt, downsample, bin_factor, threshold, normalizeIntensity, noZeroIntensity, samplingFactor, priming, divBy, batchSize):
-        self.currRun = datetime.now().strftime("%y%m%d%H%M")
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1346,22 +1545,146 @@ class WrapperFullFD:
         self.divBy = divBy 
         self.batchSize = batchSize
 
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
+
+        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+        self.psi.counter = self.start_offset + self.num_imgs*self.rank//self.size
+        self.imgsTracked = []
+
+        if self.rank==0:
+            self.currRun = datetime.now().strftime("%y%m%d%H%M%S")
+        else:
+            self.currRun = None
+        self.currRun = self.comm.bcast(self.currRun, root=0)
+
+    def assembleImgsToSave(self, imgs):
+        """
+        Form the images from psana pixel index map and downsample images. 
+
+        Parameters
+        ----------
+        imgs: ndarray
+            images to downsample
+        """
+        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+
+        saveMe = []
+        for img in imgs:
+            imgRe = np.reshape(img, self.psi.det.shape())
+            imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
+            saveMe.append(np.array(Image.fromarray(imgRe).resize((64, 64))))
+        return np.array(saveMe)
+#        imgsRe = np.reshape(imgs.T, (imgs.shape[1], 
+#            self.imgGrabber.psi.det.shape()[0], 
+#            self.imgGrabber.psi.det.shape()[1], 
+#            self.imgGrabber.psi.det.shape()[2]))
+#        return assemble_image_stack_batch(imgsRe, pixel_index_map)
+
+    def get_formatted_images(self, startInd, n, includeThumbnails=False):
+        """
+        Fetch n - x image segments from run, where x is the number of 'dead' images.
+
+        Parameters
+        ----------
+        n : int
+            number of images to retrieve
+        start_index : int
+            start index of subsection of data to retrieve
+        end_index : int
+            end index of subsection of data to retrieve
+
+        Returns
+        -------
+        ndarray, shape (end_index-start_index, n-x)
+            n-x retrieved image segments of dimension end_index-start_index
+        """
+        self.psi.counter = startInd
+        self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
+
+        imgs = self.psi.get_images(n, assemble=False)
+
+        imgs = imgs[
+            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+        ]
+        num_valid_imgs, p, x, y = imgs.shape
+        img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+        img_batch[img_batch<0] = 0
+        nimg_batch = []
+        for img in img_batch.T:
+            if self.threshold:
+                secondQuartile = np.quantile(img, 0.93)
+                nimg = (img>secondQuartile)*img
+#                elu_v = np.vectorize(self.elu)
+#                nimg = elu_v(img-secondQuartile)+secondQuartile
+            else:
+                nimg = img
+
+            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
+#            print("RANK: {} ***** INTENSITY: {}".format(self.rank, currIntensity))
+            if self.noZeroIntensity and currIntensity< (self.bin_factor**2) * 50000:
+                continue
+            else:
+                if currIntensity>=(self.bin_factor**2) * 50000 and self.normalizeIntensity:
+#                if not self.normalizeIntensity:
+                    nimg_batch.append(nimg/currIntensity)
+                else:
+#                    nimg_batch.append(nimg)
+                    nimg_batch.append(np.zeros(nimg.shape))
+        nimg_batch = np.array(nimg_batch)
+        if self.downsample:
+            binned_imgs = bin_data(np.reshape(nimg_batch,(num_valid_imgs, p, x, y)), self.bin_factor)
+            binned_num_valid_imgs, binned_p, binned_x, binned_y = binned_imgs.shape
+            binned_imgs = np.reshape(binned_imgs, (binned_num_valid_imgs, binned_p * binned_x * binned_y)).T
+#            print(binned_imgs.shape)
+        else:
+            binned_imgs = nimg_batch.T
+        if includeThumbnails:
+            return (binned_imgs, self.assembleImgsToSave(np.reshape(nimg_batch, (num_valid_imgs, p, x, y))))
+        else:
+            return binned_imgs
+
+    @profile(filename="fullFD_profile")
     def runMe(self):
         stfull = time.perf_counter()
 
+        #DATA RETRIEVAL STEP
+        ##########################################################################################
+        self.fullImgData = []
+        self.fullThumbnailData = []
+        noImgsToProcess = self.num_imgs//self.size
+        startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
+        batchSize = int(self.num_components*2//self.samplingFactor)
+        for batch in range(0, noImgsToProcess, batchSize): 
+            startInd = startingPoint+batch
+            binned_imgs, thumbnails = self.get_formatted_images(startInd, batchSize, includeThumbnails=True)
+#            print("aodijwaodijaodij", binned_imgs.shape, thumbnails.shape)
+            self.fullImgData.append(binned_imgs)
+            self.fullThumbnailData.append(thumbnails)
+        print(self.imgsTracked)
+
+        filenameTest0 = random.randint(0, 10)
+        filenameTest0 = self.comm.allgather(filenameTest0) 
+        print("TEST 0: ", self.rank, filenameTest0)
+
         #SKETCHING STEP
         ##########################################################################################
-        freqDir = FreqDir(start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
+        freqDir = FreqDir(comm= self.comm, rank=self.rank, size = self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
                 det_type=self.det_type, output_dir=self.writeToHere, num_components=self.num_components, alpha=self.alpha, rankAdapt=self.rankAdapt,
                 merger=False, mergerFeatures=0, downsample=self.downsample, bin_factor=self.bin_factor,
                 threshold=self.threshold, normalizeIntensity=self.normalizeIntensity, noZeroIntensity=self.noZeroIntensity,
-                currRun = self.currRun, samplingFactor=self.samplingFactor, priming=self.priming)
-        print("STARTING SKETCHING")
+                currRun = self.currRun, samplingFactor=self.samplingFactor, priming=self.priming, imgData = self.fullImgData)
+        print("STARTING SKETCHING FOR {}".format(self.currRun))
         st = time.perf_counter()
         freqDir.run()
         localSketchFilename = freqDir.write()
         et = time.perf_counter()
-        print("Estimated time for frequent directions rank {0}/{1}: {2}".format(freqDir.rank, freqDir.size, et - st))
+        print("Estimated time for frequent directions rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
+
+        filenameTest1 = random.randint(0, 10)
+        filenameTest1 = self.comm.allgather(filenameTest1) 
+        print("TEST 1: ", self.rank, filenameTest1)
 
         #MERGING STEP
         ##########################################################################################
@@ -1372,37 +1695,44 @@ class WrapperFullFD:
         allNames = []
         for j in range(freqDir.size):
             allNames.append(fullSketchFilename + str(j) + ".h5")
-        mergeTree = MergeTree(exp=self.exp, run=self.run, det_type=self.det_type, divBy=self.divBy, readFile = localSketchFilename,
+        mergeTree = MergeTree(comm=self.comm, rank=self.rank, size=self.size, exp=self.exp, run=self.run, det_type=self.det_type, divBy=self.divBy, readFile = localSketchFilename,
                 output_dir=self.writeToHere, allWriteDirecs=allNames, currRun = self.currRun)
         #mergeTree = MergeTree(divBy=2, readFile = localSketchFilename,
         #        dir=writeToHere, allWriteDirecs=allNames, currRun = currRun)
-
         st = time.perf_counter()
         mergeTree.merge()
         mergedSketchFilename = mergeTree.write()
         et = time.perf_counter()
-        print("Estimated time merge tree for rank {0}/{1}: {2}".format(freqDir.rank, freqDir.size, et - st))
+        print("Estimated time merge tree for rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
 
-
+        filenameTest2 = random.randint(0, 10)
+        filenameTest2 = self.comm.allgather(filenameTest2) 
+        print("TEST 2: ", self.rank, filenameTest2)
 
         #PROJECTION STEP
         ##########################################################################################
-        appComp = ApplyCompression(start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
+        appComp = ApplyCompression(comm=self.comm, rank = self.rank, size=self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
                 det_type=self.det_type, readFile = mergedSketchFilename, output_dir = self.writeToHere,
                 batchSize=self.batchSize, threshold=self.threshold, normalizeIntensity=self.normalizeIntensity, noZeroIntensity=self.noZeroIntensity,
-                downsample=self.downsample, bin_factor=self.bin_factor, currRun = self.currRun)
+                downsample=self.downsample, bin_factor=self.bin_factor, currRun = self.currRun, imgData = self.fullImgData, thumbnailData = self.fullThumbnailData)
         st = time.perf_counter()
         appComp.run()
         appComp.write()
         et = time.perf_counter()
-        print("Estimated time projection for rank {0}/{1}: {2}".format(appComp.rank, appComp.size, et - st))
+        print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
+        print("Estimated full processing time for rank {0}/{1}: {2}".format(self.rank, self.size, et - stfull))
+        
+        self.comm.barrier()
+        self.comm.Barrier()
+        filenameTest3 = random.randint(0, 10)
+        filenameTest3 = self.comm.allgather(filenameTest3) 
+        print("TEST 3: ", self.rank, filenameTest3)
 
-
-        etfull = time.perf_counter()
-        print("Estimated full processing time for rank {0}/{1}: {2}".format(appComp.rank, appComp.size, etfull - stfull))
         ##########################################################################################
-
-        if freqDir.rank==0:
+        
+        
+        if self.rank==0:
+            print("here 1")
             st = time.perf_counter()
             visMe = visualizeFD(inputFile="/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData".format(self.currRun),
                             outputFile="./UMAPVis_{}.html".format(self.currRun),
@@ -1410,7 +1740,9 @@ class WrapperFullFD:
                             nprocs=freqDir.size,
                             userGroupings=[],
                             includeABOD=True)
+            print("here 2")
             visMe.fullVisualize()
+            print("here 3")
             visMe.userSave()
             et = time.perf_counter()
             print("UMAP HTML Generation Processing time: {}".format(et - st))
