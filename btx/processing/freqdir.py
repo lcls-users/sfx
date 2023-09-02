@@ -36,7 +36,6 @@ from btx.interfaces.ipsana import (
 from PIL import Image
 from io import BytesIO
 import base64
-import tables
 
 from datetime import datetime
 
@@ -172,7 +171,7 @@ class FreqDir(DimRed):
         self.sketch = zeros( (self.m, self.d) ) 
         self.nextZeroRow = 0
         self.alpha = alpha
-        self.mean = None
+#        self.mean = None
         self.imgsTracked = []
 
         self.rankAdapt = rankAdapt
@@ -325,8 +324,9 @@ class FreqDir(DimRed):
             number of images to incorporate
         """
 #        img_batch = self.get_formatted_images(n)
-        img_batch = self.imgData[currInd]
-#        print("1414oiioqdca", img_batch.shape)
+        print("a90wjufipoamfoawfa09opi", self.imgData.shape)
+        img_batch = self.imgData[:, currInd*n:currInd*(n+1)]
+        print("1414oiioqdca", img_batch.shape)
 
         if self.samplingFactor <1:
             psamp = PrioritySampling(int(n*self.samplingFactor), self.d)
@@ -334,13 +334,13 @@ class FreqDir(DimRed):
                 psamp.update(row)
             img_batch = np.array(psamp.sketch.get()).T
 
-        if self.mean is None:
-            self.mean = np.mean(img_batch, axis=1)
-        else:
-#            self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch.T, axis=0))/(
+#        if self.mean is None:
+#            self.mean = np.mean(img_batch, axis=1)
+#        else:
+##            self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch.T, axis=0))/(
+##                    self.num_incorporated_images + (img_batch.shape[1]))
+#             self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch, axis=1, dtype=np.double))/(
 #                    self.num_incorporated_images + (img_batch.shape[1]))
-             self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch, axis=1, dtype=np.double))/(
-                    self.num_incorporated_images + (img_batch.shape[1]))
 #        self.update_model((img_batch.T - self.mean).T)
         self.update_model(img_batch)
 
@@ -606,11 +606,10 @@ class FreqDir(DimRed):
         filename = self.output_dir + '{}_sketch_{}.h5'.format(self.currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
-            hf.create_dataset("mean", data=self.mean)
+#            hf.create_dataset("mean", data=self.mean)
             hf.create_dataset("imgsTracked", data=np.array(self.imgsTracked))
             hf["sketch"].attrs["numImgsIncorp"] = self.num_incorporated_images
-        tables.file._open_files.close_all()
-        print("CREATED FILE: ", filename)
+        print(self.rank, "CREATED FILE: ", filename)
         self.comm.barrier()
         return filename 
 
@@ -647,16 +646,16 @@ class MergeTree:
         
         self.divBy = divBy
         
+        time.sleep(5)
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
-        tables.file._open_files.close_all()
 
         self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, priming=False, imgData = None) 
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
-        if self.rank==0:
-            print("BUFFER SIZES: ", self.buffSizes)
+#        if self.rank==0:
+#            print("BUFFER SIZES: ", self.buffSizes)
 
 #        print(self.data.shape)
         self.fd.update_model(self.data.T)
@@ -711,15 +710,14 @@ class MergeTree:
             for readMe in self.allWriteDirecs:
                 with h5py.File(readMe, 'r') as hf:
                     if self.fullMean is None:
-                        self.fullMean = hf["mean"][:]
+#                        self.fullMean = hf["mean"][:]
                         self.fullNumIncorp = hf["sketch"].attrs["numImgsIncorp"]
                         self.fullImgsTracked = hf["imgsTracked"][:]
                     else:
-                        self.fullMean =  (self.fullMean*self.fullNumIncorp + hf["mean"][:])/(self.fullNumIncorp
-                                + hf["sketch"].attrs["numImgsIncorp"])
+#                        self.fullMean =  (self.fullMean*self.fullNumIncorp + hf["mean"][:])/(self.fullNumIncorp
+#                                + hf["sketch"].attrs["numImgsIncorp"])
                         self.fullNumIncorp += hf["sketch"].attrs["numImgsIncorp"]
                         self.fullImgsTracked = np.vstack((self.fullImgsTracked,  hf["imgsTracked"][:]))
-                tables.file._open_files.close_all()
             return self.fd.get()
         else:
             return
@@ -730,14 +728,19 @@ class MergeTree:
         """
 #        print("IMAGES TRACKED: ", self.fullNumIncorp, " ******* ", self.fullImgsTracked)
         filename = self.output_dir + '{}_merge.h5'.format(self.currRun)
+
         if self.rank==0:
-            with h5py.File(filename, 'w') as hf:
-                hf.create_dataset("sketch",  data=self.fd.sketch[:self.fd.ell, :])
-                hf.create_dataset("mean",  data=self.fullMean)
-                hf["sketch"].attrs["numImgsIncorp"] = self.fullNumIncorp
-                hf.create_dataset("imgsTracked",  data=self.fullImgsTracked)
-            print("CREATED FILE: ", filename)
-            tables.file._open_files.close_all()
+            for ind in range(self.size):
+                filename2 = filename[:-3] + "_"+str(ind)+".h5"
+                with h5py.File(filename2, 'w') as hf:
+                    hf.create_dataset("sketch",  data=self.fd.sketch[:self.fd.ell, :])
+#                    hf.create_dataset("mean",  data=self.fullMean)
+                    hf["sketch"].attrs["numImgsIncorp"] = self.fullNumIncorp
+                    hf.create_dataset("imgsTracked",  data=self.fullImgsTracked)
+#                print("CREATED FILE: ", filename2)
+                self.comm.send(filename2, dest=ind, tag=ind)
+        else:
+            print("RECEIVED FILE NAME: ", self.comm.recv(source=0, tag=self.rank))
         self.comm.barrier()
         return filename
 
@@ -813,13 +816,15 @@ class ApplyCompression:
 
         self.num_incorporated_images = 0
 
-        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile, os.path.isfile(readFile)))
-        while(not os.path.isfile(readFile)):
-            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile, self.rank))
-        with h5py.File(readFile, 'r') as hf:
+        readFile2 = readFile[:-3] + "_"+str(self.rank)+".h5"
+
+#        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile2, os.path.isfile(readFile2)))
+#        while(not os.path.isfile(readFile2)):
+#            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile2, self.rank))
+        time.sleep(5)
+        with h5py.File(readFile2, 'r') as hf:
             self.data = hf["sketch"][:]
-            self.mean = hf["mean"][:]
-        tables.file._open_files.close_all()
+#            self.mean = hf["mean"][:]
         
         U, S, Vt = np.linalg.svd(self.data, full_matrices=False)
         self.components = Vt
@@ -837,10 +842,10 @@ class ApplyCompression:
         """
         Retrieve sketch, project images onto new coordinates. Save new coordinates to h5 file. 
         """
-        noImgsToProcess = self.num_imgs//self.size
+#        noImgsToProcess = self.num_imgs//self.size
 #        for currInd, batch in enumerate(range(0,noImgsToProcess,self.batchSize)):
-        for currInd in range(len(self.imgData)):
-            self.fetch_and_process_data(currInd)
+#        for currInd in range(len(self.imgData)):
+        self.fetch_and_process_data(0)
 #        print("RANK {} IS DONE".format(self.rank))
 #        self.fetch_and_process_data()
 
@@ -866,8 +871,8 @@ class ApplyCompression:
 
 #        stassemble = time.perf_counter()
 
-        img_batch = self.imgData[currInd]
-        toSave_img_batch = self.thumbnailData[currInd]
+        img_batch = self.imgData
+        toSave_img_batch = self.thumbnailData
 
         if self.smallImgs is None:
             self.smallImgs = toSave_img_batch
@@ -944,8 +949,7 @@ class ApplyCompression:
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("ProjectedData",  data=self.processedData)
             hf.create_dataset("SmallImages", data=self.smallImgs)
-        tables.file._open_files.close_all()
-        print("CREATED FILE: ", filename)
+#        print("CREATED FILE: ", filename)
         self.comm.barrier()
         return filename
 
@@ -1155,12 +1159,12 @@ class visualizeFD:
         return [*range(endClass+1)], [*range(1, endClass+2)]
 
     def genUMAP(self):
-        for dirval in os.listdir(self.inputFile[:-26]):
-            print("ITEM IN DIRECTORY:", dirval)
+#        for dirval in os.listdir(self.inputFile[:-26]):
+#            print("ITEM IN DIRECTORY:", dirval)
         imgs = None
         projections = None
         for currRank in range(self.nprocs):
-            print("GETTING CURRENT RANK: ", currRank)
+#            print("GETTING CURRENT RANK: ", currRank)
             with h5py.File(self.inputFile+"_"+str(currRank)+".h5", 'r') as hf:
                 if imgs is None:
                     imgs = hf["SmallImages"][:]
@@ -1168,14 +1172,13 @@ class visualizeFD:
                 else:
                     imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
                     projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
-            tables.file._open_files.close_all()
 
         intensities = []
         for img in imgs:
             intensities.append(np.sum(img.flatten()))
         intensities = np.array(intensities)
 
-        skipMe = 4
+        skipMe = 8
         self.imgs = imgs[:self.numImgsToUse:skipMe]
         self.projections = projections[:self.numImgsToUse:skipMe]
         self.intensities = intensities[:self.numImgsToUse:skipMe]
@@ -1199,12 +1202,15 @@ class visualizeFD:
 
         self.opticsClust = OPTICS(min_samples=150, xi=0.05, min_cluster_size=0.05)
         self.opticsClust.fit(self.clusterable_embedding)
-        self.opticsLabels = cluster_optics_dbscan(
-            reachability=self.opticsClust.reachability_,
-            core_distances=self.opticsClust.core_distances_,
-            ordering=self.opticsClust.ordering_,
-            eps=2,
-        )
+#        self.opticsLabels = cluster_optics_dbscan(
+#            reachability=self.opticsClust.reachability_,
+#            core_distances=self.opticsClust.core_distances_,
+#            ordering=self.opticsClust.ordering_,
+#            eps=2,
+#        )
+
+#        self.opticsLabels = self.opticsClust.labels_[self.opticsClust.ordering_]
+        self.opticsLabels = self.opticsClust.labels_
 
         self.experData_df = pd.DataFrame({'x':self.clusterable_embedding[self.clustered, 0],'y':self.clusterable_embedding[self.clustered, 1]})
         self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
@@ -1419,8 +1425,10 @@ class visualizeFD:
             width = 2000, height = 400
         )
 
-        space = np.arange(self.numImgsToUse)
-        reachability = self.opticsClust.reachability_[self.opticsClust.ordering_]
+#        space = np.arange(self.numImgsToUse)
+        space = np.arange(self.numImgsToUse)[self.opticsClust.ordering_]
+#        reachability = self.opticsClust.reachability_[self.opticsClust.ordering_]
+        reachability = self.opticsClust.reachability_
 
         opticsData_df = pd.DataFrame({'x':space,'y':reachability})
         opticsData_df['cluster'] = [str(x) for x in self.opticsNewLabels]
@@ -1473,15 +1481,15 @@ class visualizeFD:
         self.viewResults = column(plot_figure, p, imgsPlot, row(cols, toggl, radio_button_group), reachabilityDiag)
 
     def fullVisualize(self):
-        print("here 4")
+#        print("here 4")
         self.genUMAP()
-        print("here 5")
+#        print("here 5")
         self.genABOD()
-        print("here 6")
+#        print("here 6")
         self.genLabels()
-        print("here 7")
+#        print("here 7")
         self.genHTML()
-        print("here 8")
+#        print("here 8")
 
     def updateLabels(self):
         self.genLabels()
@@ -1602,6 +1610,7 @@ class WrapperFullFD:
         """
         self.psi.counter = startInd
         self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
+        print(self.imgsTracked)
 
         imgs = self.psi.get_images(n, assemble=False)
 
@@ -1651,18 +1660,20 @@ class WrapperFullFD:
 
         #DATA RETRIEVAL STEP
         ##########################################################################################
-        self.fullImgData = []
-        self.fullThumbnailData = []
-        noImgsToProcess = self.num_imgs//self.size
-        startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
-        batchSize = int(self.num_components*2//self.samplingFactor)
-        for batch in range(0, noImgsToProcess, batchSize): 
-            startInd = startingPoint+batch
-            binned_imgs, thumbnails = self.get_formatted_images(startInd, batchSize, includeThumbnails=True)
+#        self.fullImgData = []
+#        self.fullThumbnailData = []
+#        noImgsToProcess = self.num_imgs//self.size
+#        batchSize = int(self.num_components*2//self.samplingFactor)
+#        for batch in range(0, noImgsToProcess, batchSize): 
+#            startInd = startingPoint+batch
+#            binned_imgs, thumbnails = self.get_formatted_images(startInd, batchSize, includeThumbnails=True)
 #            print("aodijwaodijaodij", binned_imgs.shape, thumbnails.shape)
-            self.fullImgData.append(binned_imgs)
-            self.fullThumbnailData.append(thumbnails)
-        print(self.imgsTracked)
+#            self.fullImgData.append(binned_imgs)
+#            self.fullThumbnailData.append(thumbnails)
+#        print(self.imgsTracked)
+        
+        startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
+        self.fullImgData, self.fullThumbnailData = self.get_formatted_images(startingPoint, self.num_imgs//self.size, includeThumbnails=True)
 
         filenameTest0 = random.randint(0, 10)
         filenameTest0 = self.comm.allgather(filenameTest0) 
@@ -1732,7 +1743,7 @@ class WrapperFullFD:
         
         
         if self.rank==0:
-            print("here 1")
+#            print("here 1")
             st = time.perf_counter()
             visMe = visualizeFD(inputFile="/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData".format(self.currRun),
                             outputFile="./UMAPVis_{}.html".format(self.currRun),
@@ -1740,9 +1751,9 @@ class WrapperFullFD:
                             nprocs=freqDir.size,
                             userGroupings=[],
                             includeABOD=True)
-            print("here 2")
+#            print("here 2")
             visMe.fullVisualize()
-            print("here 3")
+#            print("here 3")
             visMe.userSave()
             et = time.perf_counter()
             print("UMAP HTML Generation Processing time: {}".format(et - st))
