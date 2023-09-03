@@ -1215,6 +1215,7 @@ class visualizeFD:
             else:
                 outlierLabels.append(str(0))
         self.experData_df['anomDet'] = outlierLabels
+        self.experData_df['anom_backgroundColor'] = [Category20[20][int(x)] for x in outlierLabels]
 
     def setUserGroupings(self, userGroupings):
         """
@@ -1238,6 +1239,7 @@ class visualizeFD:
         self.newLabels = np.array(self.relabel_to_closest_zero(newLabels))
         self.experData_df['cluster'] = [str(x) for x in self.newLabels[self.clustered]]
         self.experData_df['ptColor'] = [x for x in self.experData_df['cluster']]
+        self.experData_df['dbscan_backgroundColor'] = [Category20[20][x] for x in self.newLabels]
         self.experData_df['backgroundColor'] = [Category20[20][x] for x in self.newLabels]
         medoid_lst = self.genMedoids(self.newLabels, self.clusterable_embedding)
         self.medoidInds = [x[1] for x in medoid_lst]
@@ -1260,6 +1262,7 @@ class visualizeFD:
                 opticsNewLabels.append(j)
         opticsNewLabels = list(np.array(opticsNewLabels) + 1)
         self.opticsNewLabels = np.array(self.relabel_to_closest_zero(opticsNewLabels))
+        self.experData_df['optics_backgroundColor'] = [Category20[20][x] for x in self.opticsNewLabels[self.opticsClust.ordering_]]
 
     def genHTML(self):
         datasource = ColumnDataSource(self.experData_df)
@@ -1270,17 +1273,19 @@ class visualizeFD:
             width = 2000, height = 600
         )
         plot_figure.add_tools(HoverTool(tooltips="""
-        <div style="background-color:@backgroundColor;">
-            <div>
-                <img src='@image' style='float: left; margin: 0px 15px 15px 0px'/>
+        <div style="width: 170; height: 64; background-color:@backgroundColor; margin: 5px 0px 0px 0px">
+            <div style='width: 64; height: 64; float: left;'>
+                <img src='@image'; float: left;'/>
             </div>
-            <div>
-                <span style='font-size: 10px; color: #224499'>Cluster #</span>
-                <span style='font-size: 9px'>@cluster</span>
-            </div>
-            <div>
-                <span style='font-size: 10px; color: #224499'>Image #</span>
-                <span style='font-size: 9px'>@imgind</span>
+            <div style="height: 64;">
+                <div style='margin-left: 75; margin-top: 20'>
+                    <span style='font-size: 15px; color: #224499'>Cluster </span>
+                    <span style='font-size: 15px'>@cluster</span>
+                </div>
+                <div style='margin-left: 75; margin-top: 20'>
+                    <span style='font-size: 15px; color: #224499'>Image </span>
+                    <span style='font-size: 15px'>@imgind</span>
+                </div>
             </div>
         </div>
         """))
@@ -1355,7 +1360,10 @@ class visualizeFD:
         const anomDet = datasource.data.anomDet
         const imgind = datasource.data.imgind
         const backgroundColor = datasource.data.backgroundColor
-        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind, backgroundColor}
+        const dbscan_backgroundColor = datasource.data.dbscan_backgroundColor
+        const anom_backgroundColor = datasource.data.anom_backgroundColor
+        const optics_backgroundColor = datasource.data.optics_backgroundColor
+        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind, backgroundColor, dbscan_backgroundColor, anom_backgroundColor, optics_backgroundColor}
         """)
         cols.js_on_change('value', callback)
 
@@ -1414,12 +1422,8 @@ class visualizeFD:
             tools=('pan, wheel_zoom, reset'),
             width = 2000, height = 400
         )
-
         space = np.arange(self.numImgsToUse)
-#        space = np.arange(self.numImgsToUse)[self.opticsClust.ordering_]
-#        reachability = self.opticsClust.reachability_[self.opticsClust.ordering_]
         reachability = self.opticsClust.reachability_
-
         opticsData_df = pd.DataFrame({'x':space,'y':reachability})
         opticsData_df['clusterForScatterPlot'] = [str(x) for x in self.opticsNewLabels]
         opticsData_df['cluster'] = [str(x) for x in self.opticsNewLabels[self.opticsClust.ordering_]]
@@ -1427,7 +1431,6 @@ class visualizeFD:
         color_mapping2 = CategoricalColorMapper(factors=[str(x) for x in list(set(self.opticsNewLabels))],
                                                palette=Category20[20])
         opticssource = ColumnDataSource(opticsData_df)
-
         reachabilityDiag.circle(
             'x',
             'y',
@@ -1451,22 +1454,28 @@ class visualizeFD:
             const cluster = datasource.data.cluster
             const anomDet = datasource.data.anomDet
             const imgind = datasource.data.imgind
-            const backgroundColor = datasource.data.backgroundColor
+            const dbscan_backgroundColor = datasource.data.dbscan_backgroundColor
+            const anom_backgroundColor = datasource.data.anom_backgroundColor
+            const optics_backgroundColor = datasource.data.optics_backgroundColor
 
             const opticsClust = opticssource.data.clusterForScatterPlot
 
             let ptColor = null
+            let backgroundColor = null
 
             if (cb_obj.active==0){
                 ptColor = cluster
+                backgroundColor = dbscan_backgroundColor
             }
             else if (cb_obj.active==1){
                 ptColor = opticsClust
+                backgroundColor = optics_backgroundColor
             }
             else{
                 ptColor = anomDet
+                backgroundColor = anom_backgroundColor
             }
-            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind, backgroundColor}
+            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind, backgroundColor, dbscan_backgroundColor, anom_backgroundColor, optics_backgroundColor}
         """)
         radio_button_group.js_on_change("active", radioGroup_js)
 
@@ -1753,31 +1762,31 @@ class WrapperFullFD:
         ##########################################################################################
         
         
-        if self.rank==0:
+#        if self.rank==0:
 #            print("here 1")
-            st = time.perf_counter()
-
-            skipSize = 8 
-            numImgsToUse = int(self.num_imgs/skipSize)
-            visMe = visualizeFD(inputFile="/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData".format(self.currRun),
-                            outputFile="./UMAPVis_{}.html".format(self.currRun),
-                            numImgsToUse=self.num_imgs,
-                            nprocs=self.size,
-                            userGroupings=[],
-                            includeABOD=True,
-                            skipSize = skipSize,
-                            umap_n_neighbors=numImgsToUse//40,
-                            umap_random_state=42,
-                            hdbscan_min_samples=int(numImgsToUse*0.75//40),
-                            hdbscan_min_cluster_size=int(numImgsToUse//40),
-                            optics_min_samples=150, optics_xi = 0.05, optics_min_cluster_size = 0.05)
-#            print("here 2")
-            visMe.fullVisualize()
-#            print("here 3")
-            visMe.userSave()
-            et = time.perf_counter()
-            print("UMAP HTML Generation Processing time: {}".format(et - st))
-            print("TOTAL PROCESING TIME: {}".format(et - stfull))
+#            st = time.perf_counter()
+#
+#            skipSize = 8 
+#            numImgsToUse = int(self.num_imgs/skipSize)
+#            visMe = visualizeFD(inputFile="/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData".format(self.currRun),
+#                            outputFile="./UMAPVis_{}.html".format(self.currRun),
+#                            numImgsToUse=self.num_imgs,
+#                            nprocs=self.size,
+#                            userGroupings=[],
+#                            includeABOD=True,
+#                            skipSize = skipSize,
+#                            umap_n_neighbors=numImgsToUse//40,
+#                            umap_random_state=42,
+#                            hdbscan_min_samples=int(numImgsToUse*0.75//40),
+#                            hdbscan_min_cluster_size=int(numImgsToUse//40),
+#                            optics_min_samples=150, optics_xi = 0.05, optics_min_cluster_size = 0.05)
+##            print("here 2")
+#            visMe.fullVisualize()
+##            print("here 3")
+#            visMe.userSave()
+#            et = time.perf_counter()
+#            print("UMAP HTML Generation Processing time: {}".format(et - st))
+#            print("TOTAL PROCESING TIME: {}".format(et - stfull))
 
 class FD_ImageProcessing:
     #How to use these functions: call each of them on the image. Append the result if it is not "None" to nimg_batch.
