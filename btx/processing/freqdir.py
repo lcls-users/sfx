@@ -288,31 +288,6 @@ class FreqDir(DimRed):
 #        else:
 #            return np.array(nimg_batch).T
 
-    ###########################################################################
-
-    #How to use these functions: call each of them on the image. Append the result if it is not "None" to nimg_batch.
-    def intensityFunc_threshold(img):
-        if img is None:
-            return img
-        else:
-            secondQuartile = np.sort(img)[-1]//4
-            return (img>secondQuartile)*img
-
-    def intensityFunc_removeZeroIntensity(img, currIntensity):
-        if currIntensity<50000:
-            return None
-        else:
-            return img
-
-    def intensityFunc_normalizeIntensity(img, currIntensity):
-        if img is None:
-            return img
-
-        if currIntensity<50000:
-            return img
-        else:
-            return img/currIntensity
-    ###########################################################################
 
     def fetch_and_update_model(self, n, currInd):
         """
@@ -646,7 +621,7 @@ class MergeTree:
         
         self.divBy = divBy
         
-        time.sleep(5)
+        time.sleep(30)
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
@@ -821,7 +796,7 @@ class ApplyCompression:
 #        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile2, os.path.isfile(readFile2)))
 #        while(not os.path.isfile(readFile2)):
 #            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile2, self.rank))
-        time.sleep(5)
+        time.sleep(30)
         with h5py.File(readFile2, 'r') as hf:
             self.data = hf["sketch"][:]
 #            self.mean = hf["mean"][:]
@@ -1031,7 +1006,9 @@ class visualizeFD:
     """
     Visualize FD Dimension Reduction using UMAP and DBSCAN
     """
-    def __init__(self, inputFile, outputFile, numImgsToUse, nprocs, includeABOD, userGroupings):
+    def __init__(self, inputFile, outputFile, numImgsToUse, nprocs, includeABOD, userGroupings, 
+            skipSize, umap_n_neighbors, umap_random_state, hdbscan_min_samples, hdbscan_min_cluster_size,
+            optics_min_samples, optics_xi, optics_min_cluster_size):
         self.inputFile = inputFile
         self.outputFile = outputFile
         output_file(filename=outputFile, title="Static HTML file")
@@ -1040,6 +1017,14 @@ class visualizeFD:
         self.nprocs = nprocs
         self.includeABOD = includeABOD
         self.userGroupings = userGroupings
+        self.skipSize = skipSize
+        self.umap_n_neighbors = umap_n_neighbors
+        self.umap_random_state = umap_random_state
+        self.hdbscan_min_samples=hdbscan_min_samples
+        self.hdbscan_min_cluster_size=hdbscan_min_cluster_size
+        self.optics_min_samples=optics_min_samples
+        self.optics_xi = optics_xi
+        self.optics_min_cluster_size = optics_min_cluster_size
 
     def embeddable_image(self, data):
         img_data = np.uint8(cm.jet(data/max(data.flatten()))*255)
@@ -1178,29 +1163,29 @@ class visualizeFD:
             intensities.append(np.sum(img.flatten()))
         intensities = np.array(intensities)
 
-        skipMe = 8
-        self.imgs = imgs[:self.numImgsToUse:skipMe]
-        self.projections = projections[:self.numImgsToUse:skipMe]
-        self.intensities = intensities[:self.numImgsToUse:skipMe]
-        self.numImgsToUse = int(self.numImgsToUse/skipMe)
+        self.imgs = imgs[:self.numImgsToUse:self.skipSize]
+        self.projections = projections[:self.numImgsToUse:self.skipSize]
+        self.intensities = intensities[:self.numImgsToUse:self.skipSize]
+
+        self.numImgsToUse = int(self.numImgsToUse/self.skipSize)
 
         if len(self.imgs)!= self.numImgsToUse:
             raise TypeError("NUMBER OF IMAGES REQUESTED ({}) EXCEEDS NUMBER OF DATA POINTS PROVIDED ({})".format(len(self.imgs), self.numImgsToUse))
 
         self.clusterable_embedding = umap.UMAP(
-            n_neighbors=self.numImgsToUse//40,
+            n_neighbors=self.umap_n_neighbors,
+            random_state=self.umap_random_state,
             n_components=2,
-            random_state=42
         ).fit_transform(self.projections)
 
         self.labels = hdbscan.HDBSCAN(
-            min_samples=int(self.numImgsToUse*0.75//40),
-            min_cluster_size=int(self.numImgsToUse//40),
+            min_samples = self.hdbscan_min_samples,
+            min_cluster_size = self.hdbscan_min_cluster_size
         ).fit_predict(self.clusterable_embedding)
         exclusionList = np.array([])
         self.clustered = np.isin(self.labels, exclusionList, invert=True)
 
-        self.opticsClust = OPTICS(min_samples=150, xi=0.05, min_cluster_size=0.05)
+        self.opticsClust = OPTICS(min_samples=self.optics_min_samples, xi=self.optics_xi, min_cluster_size=self.optics_min_cluster_size)
         self.opticsClust.fit(self.clusterable_embedding)
 #        self.opticsLabels = cluster_optics_dbscan(
 #            reachability=self.opticsClust.reachability_,
@@ -1214,7 +1199,7 @@ class visualizeFD:
 
         self.experData_df = pd.DataFrame({'x':self.clusterable_embedding[self.clustered, 0],'y':self.clusterable_embedding[self.clustered, 1]})
         self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
-        self.experData_df['imgind'] = np.arange(self.numImgsToUse)
+        self.experData_df['imgind'] = np.arange(self.numImgsToUse)*self.skipSize
 
     def genABOD(self):
         if self.includeABOD:
@@ -1253,6 +1238,7 @@ class visualizeFD:
         self.newLabels = np.array(self.relabel_to_closest_zero(newLabels))
         self.experData_df['cluster'] = [str(x) for x in self.newLabels[self.clustered]]
         self.experData_df['ptColor'] = [x for x in self.experData_df['cluster']]
+        self.experData_df['backgroundColor'] = [Category20[20][x] for x in self.newLabels]
         medoid_lst = self.genMedoids(self.newLabels, self.clusterable_embedding)
         self.medoidInds = [x[1] for x in medoid_lst]
         medoidBold = []
@@ -1284,14 +1270,17 @@ class visualizeFD:
             width = 2000, height = 600
         )
         plot_figure.add_tools(HoverTool(tooltips="""
-        <div>
+        <div style="background-color:@backgroundColor;">
             <div>
-                <img src='@image' style='float: left; margin: 5px 5px 5px 5px'/>
+                <img src='@image' style='float: left; margin: 0px 15px 15px 0px'/>
             </div>
             <div>
-                <span style='font-size: 16px; color: #224499'>Cluster #</span>
-                <span style='font-size: 18px'>@cluster</span>
-                <span style='font-size: 18px'>@imgind</span>
+                <span style='font-size: 10px; color: #224499'>Cluster #</span>
+                <span style='font-size: 9px'>@cluster</span>
+            </div>
+            <div>
+                <span style='font-size: 10px; color: #224499'>Image #</span>
+                <span style='font-size: 9px'>@imgind</span>
             </div>
         </div>
         """))
@@ -1365,13 +1354,14 @@ class visualizeFD:
         const ptColor = datasource.data.ptColor
         const anomDet = datasource.data.anomDet
         const imgind = datasource.data.imgind
-        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind}
+        const backgroundColor = datasource.data.backgroundColor
+        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind, backgroundColor}
         """)
         cols.js_on_change('value', callback)
 
 
         imgsPlot = figure(width=2000, height=150, toolbar_location=None)
-        imgsPlot.image(image=[self.imgs[imgind][::-1] for imgind in self.medoidInds],
+        imgsPlot.image(image=[self.imgs[imgindMe][::-1] for imgindMe in self.medoidInds],
                 x=[0.25+xind for xind in range(len(self.medoidInds))],
                 y=0,
                 dw=0.5, dh=1,
@@ -1396,10 +1386,10 @@ class visualizeFD:
                     clearInterval(looop);
                     }
                 else if(slider_val1 >= index[index.length - 1]) {
-                    cb_obj.label = '► Play';
+//                    cb_obj.label = '► Play';
                     slider.value = [0, slider_val1-slider_val0];
-                    cb_obj.active = false;
-                    clearInterval(looop);
+//                   cb_obj.active = false;
+//                    clearInterval(looop);
                     }
                 else if(slider_val1 !== index[index.length - 1]){
                     slider.value = [index.filter((item) => item > slider_val0)[0], index.filter((item) => item > slider_val1)[0]];
@@ -1425,13 +1415,14 @@ class visualizeFD:
             width = 2000, height = 400
         )
 
-#        space = np.arange(self.numImgsToUse)
-        space = np.arange(self.numImgsToUse)[self.opticsClust.ordering_]
+        space = np.arange(self.numImgsToUse)
+#        space = np.arange(self.numImgsToUse)[self.opticsClust.ordering_]
 #        reachability = self.opticsClust.reachability_[self.opticsClust.ordering_]
         reachability = self.opticsClust.reachability_
 
         opticsData_df = pd.DataFrame({'x':space,'y':reachability})
-        opticsData_df['cluster'] = [str(x) for x in self.opticsNewLabels]
+        opticsData_df['clusterForScatterPlot'] = [str(x) for x in self.opticsNewLabels]
+        opticsData_df['cluster'] = [str(x) for x in self.opticsNewLabels[self.opticsClust.ordering_]]
         opticsData_df['ptColor'] = [x for x in opticsData_df['cluster']]
         color_mapping2 = CategoricalColorMapper(factors=[str(x) for x in list(set(self.opticsNewLabels))],
                                                palette=Category20[20])
@@ -1460,8 +1451,9 @@ class visualizeFD:
             const cluster = datasource.data.cluster
             const anomDet = datasource.data.anomDet
             const imgind = datasource.data.imgind
+            const backgroundColor = datasource.data.backgroundColor
 
-            const opticsClust = opticssource.data.cluster
+            const opticsClust = opticssource.data.clusterForScatterPlot
 
             let ptColor = null
 
@@ -1474,7 +1466,7 @@ class visualizeFD:
             else{
                 ptColor = anomDet
             }
-            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind}
+            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind, backgroundColor}
         """)
         radio_button_group.js_on_change("active", radioGroup_js)
 
@@ -1533,7 +1525,7 @@ class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
     """
-    def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, num_components, alpha, rankAdapt, downsample, bin_factor, threshold, normalizeIntensity, noZeroIntensity, samplingFactor, priming, divBy, batchSize):
+    def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, num_components, alpha, rankAdapt, downsample, bin_factor, threshold, normalizeIntensity, noZeroIntensity, samplingFactor, priming, divBy, batchSize, thresholdQuantile):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1552,6 +1544,7 @@ class WrapperFullFD:
         self.priming=priming
         self.divBy = divBy 
         self.batchSize = batchSize
+        self.thresholdQuantile = thresholdQuantile
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -1566,6 +1559,8 @@ class WrapperFullFD:
         else:
             self.currRun = None
         self.currRun = self.comm.bcast(self.currRun, root=0)
+
+        self.imageProcessor = FD_ImageProcessing(minIntensity=(self.bin_factor**2)*50000, thresholdQuantile=self.thresholdQuantile, eluAlpha=0.01)
 
     def assembleImgsToSave(self, imgs):
         """
@@ -1617,31 +1612,47 @@ class WrapperFullFD:
         imgs = imgs[
             [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
         ]
-        num_valid_imgs, p, x, y = imgs.shape
+        if len(imgs.shape)==4:
+            num_valid_imgs, p, x, y = imgs.shape
+        else:
+            p = 1
+            num_valid_imgs, x, y = imgs.shape
         img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
         img_batch[img_batch<0] = 0
         nimg_batch = []
         for img in img_batch.T:
-            if self.threshold:
-                secondQuartile = np.quantile(img, 0.93)
-                nimg = (img>secondQuartile)*img
-#                elu_v = np.vectorize(self.elu)
-#                nimg = elu_v(img-secondQuartile)+secondQuartile
-            else:
-                nimg = img
-
+            nimg = img
             currIntensity = np.sum(nimg.flatten(), dtype=np.double)
-#            print("RANK: {} ***** INTENSITY: {}".format(self.rank, currIntensity))
-            if self.noZeroIntensity and currIntensity< (self.bin_factor**2) * 50000:
-                continue
-            else:
-                if currIntensity>=(self.bin_factor**2) * 50000 and self.normalizeIntensity:
-#                if not self.normalizeIntensity:
-                    nimg_batch.append(nimg/currIntensity)
-                else:
-#                    nimg_batch.append(nimg)
-                    nimg_batch.append(np.zeros(nimg.shape))
+            if self.threshold:
+                nimg = self.imageProcessor.threshold(nimg)
+            if self.noZeroIntensity:
+                nimg = self.imageProcessor.removeZeroIntensity(nimg, currIntensity)
+            if self.normalizeIntensity:
+                nimg = self.imageProcessor.normalizeIntensity(nimg, currIntensity)
+            if nimg is not None:
+                nimg_batch.append(nimg)
         nimg_batch = np.array(nimg_batch)
+#            self.imageProcessor.normalizeIntensity(self.imageProcessor(removeZeroIntensity(self.imageProcessor.threshold(img))
+#            if self.threshold:
+#                secondQuartile = np.quantile(img, self.thresholdQuantile)
+#                nimg = (img>secondQuartile)*img
+##                elu_v = np.vectorize(self.elu)
+##                nimg = elu_v(img-secondQuartile)+secondQuartile
+#            else:
+#                nimg = img
+#
+#            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
+##            print("RANK: {} ***** INTENSITY: {}".format(self.rank, currIntensity))
+#            if self.noZeroIntensity and currIntensity< (self.bin_factor**2) * 50000:
+#                continue
+#            else:
+#                if currIntensity>=(self.bin_factor**2) * 50000 and self.normalizeIntensity:
+##                if not self.normalizeIntensity:
+#                    nimg_batch.append(nimg/currIntensity)
+#                else:
+##                    nimg_batch.append(nimg)
+#                    nimg_batch.append(np.zeros(nimg.shape))
+#        nimg_batch = np.array(nimg_batch)
         if self.downsample:
             binned_imgs = bin_data(np.reshape(nimg_batch,(num_valid_imgs, p, x, y)), self.bin_factor)
             binned_num_valid_imgs, binned_p, binned_x, binned_y = binned_imgs.shape
@@ -1675,9 +1686,9 @@ class WrapperFullFD:
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
         self.fullImgData, self.fullThumbnailData = self.get_formatted_images(startingPoint, self.num_imgs//self.size, includeThumbnails=True)
 
-        filenameTest0 = random.randint(0, 10)
-        filenameTest0 = self.comm.allgather(filenameTest0) 
-        print("TEST 0: ", self.rank, filenameTest0)
+#        filenameTest0 = random.randint(0, 10)
+#        filenameTest0 = self.comm.allgather(filenameTest0) 
+#        print("TEST 0: ", self.rank, filenameTest0)
 
         #SKETCHING STEP
         ##########################################################################################
@@ -1693,9 +1704,9 @@ class WrapperFullFD:
         et = time.perf_counter()
         print("Estimated time for frequent directions rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
 
-        filenameTest1 = random.randint(0, 10)
-        filenameTest1 = self.comm.allgather(filenameTest1) 
-        print("TEST 1: ", self.rank, filenameTest1)
+#        filenameTest1 = random.randint(0, 10)
+#        filenameTest1 = self.comm.allgather(filenameTest1) 
+#        print("TEST 1: ", self.rank, filenameTest1)
 
         #MERGING STEP
         ##########################################################################################
@@ -1716,9 +1727,9 @@ class WrapperFullFD:
         et = time.perf_counter()
         print("Estimated time merge tree for rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
 
-        filenameTest2 = random.randint(0, 10)
-        filenameTest2 = self.comm.allgather(filenameTest2) 
-        print("TEST 2: ", self.rank, filenameTest2)
+#        filenameTest2 = random.randint(0, 10)
+#        filenameTest2 = self.comm.allgather(filenameTest2) 
+#        print("TEST 2: ", self.rank, filenameTest2)
 
         #PROJECTION STEP
         ##########################################################################################
@@ -1735,9 +1746,9 @@ class WrapperFullFD:
         
         self.comm.barrier()
         self.comm.Barrier()
-        filenameTest3 = random.randint(0, 10)
-        filenameTest3 = self.comm.allgather(filenameTest3) 
-        print("TEST 3: ", self.rank, filenameTest3)
+#        filenameTest3 = random.randint(0, 10)
+#        filenameTest3 = self.comm.allgather(filenameTest3) 
+#        print("TEST 3: ", self.rank, filenameTest3)
 
         ##########################################################################################
         
@@ -1745,12 +1756,21 @@ class WrapperFullFD:
         if self.rank==0:
 #            print("here 1")
             st = time.perf_counter()
+
+            skipSize = 8 
+            numImgsToUse = int(self.num_imgs/skipSize)
             visMe = visualizeFD(inputFile="/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData".format(self.currRun),
                             outputFile="./UMAPVis_{}.html".format(self.currRun),
                             numImgsToUse=self.num_imgs,
-                            nprocs=freqDir.size,
+                            nprocs=self.size,
                             userGroupings=[],
-                            includeABOD=True)
+                            includeABOD=True,
+                            skipSize = skipSize,
+                            umap_n_neighbors=numImgsToUse//40,
+                            umap_random_state=42,
+                            hdbscan_min_samples=int(numImgsToUse*0.75//40),
+                            hdbscan_min_cluster_size=int(numImgsToUse//40),
+                            optics_min_samples=150, optics_xi = 0.05, optics_min_cluster_size = 0.05)
 #            print("here 2")
             visMe.fullVisualize()
 #            print("here 3")
@@ -1759,4 +1779,45 @@ class WrapperFullFD:
             print("UMAP HTML Generation Processing time: {}".format(et - st))
             print("TOTAL PROCESING TIME: {}".format(et - stfull))
 
+class FD_ImageProcessing:
+    #How to use these functions: call each of them on the image. Append the result if it is not "None" to nimg_batch.
+    def __init__(self, minIntensity, thresholdQuantile, eluAlpha):
+        self.minIntensity = minIntensity
+        self.thresholdQuantile = thresholdQuantile
+        self.eluAlpha = eluAlpha
 
+    def elu(self,x):
+        if x > 0:
+            return x
+        else:
+            return self.eluAlpha*(math.exp(x)-1)
+
+    def eluThreshold(self, img):
+        if img is None:
+            return img
+        else:
+            elu_v = np.vectorize(self.elu)
+            secondQuartile = np.quantile(img, self.thresholdQuantile)
+            return(elu_v(img-secondQuartile)+secondQuartile)
+
+
+    def threshold(self, img):
+        if img is None:
+            return img
+        else:
+            secondQuartile = np.quantile(img, self.thresholdQuantile)
+            return (img>secondQuartile)*img
+
+    def removeZeroIntensity(self, img, currIntensity):
+        if currIntensity<self.minIntensity:
+            return None
+        else:
+            return img
+
+    def normalizeIntensity(self, img, currIntensity):
+        if img is None:
+            return img
+        elif currIntensity<self.minIntensity:
+            return np.zeros(img.shape)
+        else:
+            return img/currIntensity
