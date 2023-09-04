@@ -129,6 +129,7 @@ class FreqDir(DimRed):
         output_dir,
         currRun,
         imgData,
+        imgsTracked,
         alpha=0,
         rankAdapt=False,
         merger=False,
@@ -152,8 +153,6 @@ class FreqDir(DimRed):
         self.rank= rank
         self.size = size
 
-        self.psi.counter = start_offset + self.num_images*self.rank//self.size
-
         self.currRun = currRun
 
         self.output_dir = output_dir
@@ -172,7 +171,7 @@ class FreqDir(DimRed):
         self.nextZeroRow = 0
         self.alpha = alpha
 #        self.mean = None
-        self.imgsTracked = []
+        self.imgsTracked = imgsTracked
 
         self.rankAdapt = rankAdapt
         self.increaseEll = False
@@ -625,7 +624,7 @@ class MergeTree:
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
-        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, priming=False, imgData = None) 
+        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, priming=False, imgData = None, imgsTracked=None) 
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
@@ -684,8 +683,9 @@ class MergeTree:
             fullLen = len(self.allWriteDirecs)
             for readMe in self.allWriteDirecs:
                 with h5py.File(readMe, 'r') as hf:
-                    if self.fullMean is None:
+#                    if self.fullMean is None:
 #                        self.fullMean = hf["mean"][:]
+                    if self.fullNumIncorp==0:
                         self.fullNumIncorp = hf["sketch"].attrs["numImgsIncorp"]
                         self.fullImgsTracked = hf["imgsTracked"][:]
                     else:
@@ -714,6 +714,7 @@ class MergeTree:
                     hf.create_dataset("imgsTracked",  data=self.fullImgsTracked)
 #                print("CREATED FILE: ", filename2)
                 self.comm.send(filename2, dest=ind, tag=ind)
+            print("aodiwjaomwdklmduhi22adjdqoi2jd", self.fullImgsTracked)
         else:
             print("RECEIVED FILE NAME: ", self.comm.recv(source=0, tag=self.rank))
         self.comm.barrier()
@@ -1273,16 +1274,16 @@ class visualizeFD:
             width = 2000, height = 600
         )
         plot_figure.add_tools(HoverTool(tooltips="""
-        <div style="width: 170; height: 64; background-color:@backgroundColor; margin: 5px 0px 0px 0px">
+        <div style="width: 170; height: 64; background-color:@backgroundColor; margin: 5px 0px 5px 0px">
             <div style='width: 64; height: 64; float: left;'>
                 <img src='@image'; float: left;'/>
             </div>
             <div style="height: 64;">
-                <div style='margin-left: 75; margin-top: 20'>
+                <div style='margin-left: 75; margin-top: 10'>
                     <span style='font-size: 15px; color: #224499'>Cluster </span>
                     <span style='font-size: 15px'>@cluster</span>
                 </div>
-                <div style='margin-left: 75; margin-top: 20'>
+                <div style='margin-left: 75; margin-top: 10'>
                     <span style='font-size: 15px; color: #224499'>Image </span>
                     <span style='font-size: 15px'>@imgind</span>
                 </div>
@@ -1571,108 +1572,110 @@ class WrapperFullFD:
 
         self.imageProcessor = FD_ImageProcessing(minIntensity=(self.bin_factor**2)*50000, thresholdQuantile=self.thresholdQuantile, eluAlpha=0.01)
 
-    def assembleImgsToSave(self, imgs):
-        """
-        Form the images from psana pixel index map and downsample images. 
+        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, start_offset=start_offset, num_imgs=num_imgs, threshold=threshold, noZeroIntensity=noZeroIntensity, normalizeIntensity=normalizeIntensity, downsample=downsample, bin_factor=bin_factor, thresholdQuantile=thresholdQuantile)
 
-        Parameters
-        ----------
-        imgs: ndarray
-            images to downsample
-        """
-        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
-
-        saveMe = []
-        for img in imgs:
-            imgRe = np.reshape(img, self.psi.det.shape())
-            imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
-            saveMe.append(np.array(Image.fromarray(imgRe).resize((64, 64))))
-        return np.array(saveMe)
-#        imgsRe = np.reshape(imgs.T, (imgs.shape[1], 
-#            self.imgGrabber.psi.det.shape()[0], 
-#            self.imgGrabber.psi.det.shape()[1], 
-#            self.imgGrabber.psi.det.shape()[2]))
-#        return assemble_image_stack_batch(imgsRe, pixel_index_map)
-
-    def get_formatted_images(self, startInd, n, includeThumbnails=False):
-        """
-        Fetch n - x image segments from run, where x is the number of 'dead' images.
-
-        Parameters
-        ----------
-        n : int
-            number of images to retrieve
-        start_index : int
-            start index of subsection of data to retrieve
-        end_index : int
-            end index of subsection of data to retrieve
-
-        Returns
-        -------
-        ndarray, shape (end_index-start_index, n-x)
-            n-x retrieved image segments of dimension end_index-start_index
-        """
-        self.psi.counter = startInd
-        self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
-        print(self.imgsTracked)
-
-        imgs = self.psi.get_images(n, assemble=False)
-
-        imgs = imgs[
-            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
-        ]
-        if len(imgs.shape)==4:
-            num_valid_imgs, p, x, y = imgs.shape
-        else:
-            p = 1
-            num_valid_imgs, x, y = imgs.shape
-        img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
-        img_batch[img_batch<0] = 0
-        nimg_batch = []
-        for img in img_batch.T:
-            nimg = img
-            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
-            if self.threshold:
-                nimg = self.imageProcessor.threshold(nimg)
-            if self.noZeroIntensity:
-                nimg = self.imageProcessor.removeZeroIntensity(nimg, currIntensity)
-            if self.normalizeIntensity:
-                nimg = self.imageProcessor.normalizeIntensity(nimg, currIntensity)
-            if nimg is not None:
-                nimg_batch.append(nimg)
-        nimg_batch = np.array(nimg_batch)
-#            self.imageProcessor.normalizeIntensity(self.imageProcessor(removeZeroIntensity(self.imageProcessor.threshold(img))
-#            if self.threshold:
-#                secondQuartile = np.quantile(img, self.thresholdQuantile)
-#                nimg = (img>secondQuartile)*img
-##                elu_v = np.vectorize(self.elu)
-##                nimg = elu_v(img-secondQuartile)+secondQuartile
-#            else:
-#                nimg = img
+#    def assembleImgsToSave(self, imgs):
+#        """
+#        Form the images from psana pixel index map and downsample images. 
 #
+#        Parameters
+#        ----------
+#        imgs: ndarray
+#            images to downsample
+#        """
+#        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+#
+#        saveMe = []
+#        for img in imgs:
+#            imgRe = np.reshape(img, self.psi.det.shape())
+#            imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
+#            saveMe.append(np.array(Image.fromarray(imgRe).resize((64, 64))))
+#        return np.array(saveMe)
+##        imgsRe = np.reshape(imgs.T, (imgs.shape[1], 
+##            self.imgGrabber.psi.det.shape()[0], 
+##            self.imgGrabber.psi.det.shape()[1], 
+##            self.imgGrabber.psi.det.shape()[2]))
+##        return assemble_image_stack_batch(imgsRe, pixel_index_map)
+#
+#    def get_formatted_images(self, startInd, n, includeThumbnails=False):
+#        """
+#        Fetch n - x image segments from run, where x is the number of 'dead' images.
+#
+#        Parameters
+#        ----------
+#        n : int
+#            number of images to retrieve
+#        start_index : int
+#            start index of subsection of data to retrieve
+#        end_index : int
+#            end index of subsection of data to retrieve
+#
+#        Returns
+#        -------
+#        ndarray, shape (end_index-start_index, n-x)
+#            n-x retrieved image segments of dimension end_index-start_index
+#        """
+#        self.psi.counter = startInd
+#        self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
+#        print(self.imgsTracked)
+#
+#        imgs = self.psi.get_images(n, assemble=False)
+#
+#        imgs = imgs[
+#            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+#        ]
+#        if len(imgs.shape)==4:
+#            num_valid_imgs, p, x, y = imgs.shape
+#        else:
+#            p = 1
+#            num_valid_imgs, x, y = imgs.shape
+#        img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+#        img_batch[img_batch<0] = 0
+#        nimg_batch = []
+#        for img in img_batch.T:
+#            nimg = img
 #            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
-##            print("RANK: {} ***** INTENSITY: {}".format(self.rank, currIntensity))
-#            if self.noZeroIntensity and currIntensity< (self.bin_factor**2) * 50000:
-#                continue
-#            else:
-#                if currIntensity>=(self.bin_factor**2) * 50000 and self.normalizeIntensity:
-##                if not self.normalizeIntensity:
-#                    nimg_batch.append(nimg/currIntensity)
-#                else:
-##                    nimg_batch.append(nimg)
-#                    nimg_batch.append(np.zeros(nimg.shape))
+#            if self.threshold:
+#                nimg = self.imageProcessor.threshold(nimg)
+#            if self.noZeroIntensity:
+#                nimg = self.imageProcessor.removeZeroIntensity(nimg, currIntensity)
+#            if self.normalizeIntensity:
+#                nimg = self.imageProcessor.normalizeIntensity(nimg, currIntensity)
+#            if nimg is not None:
+#                nimg_batch.append(nimg)
 #        nimg_batch = np.array(nimg_batch)
-        if self.downsample:
-            binned_imgs = bin_data(np.reshape(nimg_batch,(num_valid_imgs, p, x, y)), self.bin_factor)
-            binned_num_valid_imgs, binned_p, binned_x, binned_y = binned_imgs.shape
-            binned_imgs = np.reshape(binned_imgs, (binned_num_valid_imgs, binned_p * binned_x * binned_y)).T
-#            print(binned_imgs.shape)
-        else:
-            binned_imgs = nimg_batch.T
-        if includeThumbnails:
-            return (binned_imgs, self.assembleImgsToSave(np.reshape(nimg_batch, (num_valid_imgs, p, x, y))))
-        else:
-            return binned_imgs
+##            self.imageProcessor.normalizeIntensity(self.imageProcessor(removeZeroIntensity(self.imageProcessor.threshold(img))
+##            if self.threshold:
+##                secondQuartile = np.quantile(img, self.thresholdQuantile)
+##                nimg = (img>secondQuartile)*img
+###                elu_v = np.vectorize(self.elu)
+###                nimg = elu_v(img-secondQuartile)+secondQuartile
+##            else:
+##                nimg = img
+##
+##            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
+###            print("RANK: {} ***** INTENSITY: {}".format(self.rank, currIntensity))
+##            if self.noZeroIntensity and currIntensity< (self.bin_factor**2) * 50000:
+##                continue
+##            else:
+##                if currIntensity>=(self.bin_factor**2) * 50000 and self.normalizeIntensity:
+###                if not self.normalizeIntensity:
+##                    nimg_batch.append(nimg/currIntensity)
+##                else:
+###                    nimg_batch.append(nimg)
+##                    nimg_batch.append(np.zeros(nimg.shape))
+##        nimg_batch = np.array(nimg_batch)
+#        if self.downsample:
+#            binned_imgs = bin_data(np.reshape(nimg_batch,(num_valid_imgs, p, x, y)), self.bin_factor)
+#            binned_num_valid_imgs, binned_p, binned_x, binned_y = binned_imgs.shape
+#            binned_imgs = np.reshape(binned_imgs, (binned_num_valid_imgs, binned_p * binned_x * binned_y)).T
+##            print(binned_imgs.shape)
+#        else:
+#            binned_imgs = nimg_batch.T
+#        if includeThumbnails:
+#            return (binned_imgs, self.assembleImgsToSave(np.reshape(nimg_batch, (num_valid_imgs, p, x, y))))
+#        else:
+#            return binned_imgs
 
     @profile(filename="fullFD_profile")
     def runMe(self):
@@ -1693,7 +1696,7 @@ class WrapperFullFD:
 #        print(self.imgsTracked)
         
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
-        self.fullImgData, self.fullThumbnailData = self.get_formatted_images(startingPoint, self.num_imgs//self.size, includeThumbnails=True)
+        self.fullImgData, self.fullThumbnailData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, includeThumbnails=True)
 
 #        filenameTest0 = random.randint(0, 10)
 #        filenameTest0 = self.comm.allgather(filenameTest0) 
@@ -1705,7 +1708,7 @@ class WrapperFullFD:
                 det_type=self.det_type, output_dir=self.writeToHere, num_components=self.num_components, alpha=self.alpha, rankAdapt=self.rankAdapt,
                 merger=False, mergerFeatures=0, downsample=self.downsample, bin_factor=self.bin_factor,
                 threshold=self.threshold, normalizeIntensity=self.normalizeIntensity, noZeroIntensity=self.noZeroIntensity,
-                currRun = self.currRun, samplingFactor=self.samplingFactor, priming=self.priming, imgData = self.fullImgData)
+                currRun = self.currRun, samplingFactor=self.samplingFactor, priming=self.priming, imgData = self.fullImgData, imgsTracked = self.imgsTracked)
         print("STARTING SKETCHING FOR {}".format(self.currRun))
         st = time.perf_counter()
         freqDir.run()
@@ -1830,3 +1833,102 @@ class FD_ImageProcessing:
             return np.zeros(img.shape)
         else:
             return img/currIntensity
+
+
+class DataRetriever:
+    def __init__(self, exp, det_type, run, start_offset, num_imgs, threshold, noZeroIntensity, normalizeIntensity, downsample, bin_factor, thresholdQuantile):
+        self.exp = exp
+        self.det_type = det_type
+        self.run = run
+        self.start_offset = start_offset
+        self.num_imgs = num_imgs
+        self.threshold = threshold
+        self.noZeroIntensity = noZeroIntensity
+        self.normalizeIntensity = normalizeIntensity
+        self.downsample = downsample
+        self.bin_factor = bin_factor
+        self.thresholdQuantile = thresholdQuantile
+        self.imgsTracked = []
+
+        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+        self.psi.counter = self.start_offset
+        
+        self.imageProcessor = FD_ImageProcessing(minIntensity=(self.bin_factor**2)*50000, thresholdQuantile=self.thresholdQuantile, eluAlpha=0.01)
+
+
+    def assembleImgsToSave(self, imgs):
+        """
+        Form the images from psana pixel index map and downsample images. 
+
+        Parameters
+        ----------
+        imgs: ndarray
+            images to downsample
+        """
+        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+
+        saveMe = []
+        for img in imgs:
+            imgRe = np.reshape(img, self.psi.det.shape())
+            imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
+            saveMe.append(np.array(Image.fromarray(imgRe).resize((64, 64))))
+        return np.array(saveMe)
+
+    def get_formatted_images(self, startInd, n, includeThumbnails=False):
+        """
+        Fetch n - x image segments from run, where x is the number of 'dead' images.
+
+        Parameters
+        ----------
+        n : int
+            number of images to retrieve
+        start_index : int
+            start index of subsection of data to retrieve
+        end_index : int
+            end index of subsection of data to retrieve
+
+        Returns
+        -------
+        ndarray, shape (end_index-start_index, n-x)
+            n-x retrieved image segments of dimension end_index-start_index
+        """
+        self.psi.counter = startInd
+        self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
+        print(self.imgsTracked)
+
+        imgs = self.psi.get_images(n, assemble=False)
+
+        imgs = imgs[
+            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+        ]
+        if len(imgs.shape)==4:
+            num_valid_imgs, p, x, y = imgs.shape
+        else:
+            p = 1
+            num_valid_imgs, x, y = imgs.shape
+        img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+        img_batch[img_batch<0] = 0
+        nimg_batch = []
+        for img in img_batch.T:
+            nimg = img
+            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
+            if self.threshold:
+                nimg = self.imageProcessor.threshold(nimg)
+            if self.noZeroIntensity:
+                nimg = self.imageProcessor.removeZeroIntensity(nimg, currIntensity)
+            if self.normalizeIntensity:
+                nimg = self.imageProcessor.normalizeIntensity(nimg, currIntensity)
+            if nimg is not None:
+                nimg_batch.append(nimg)
+        nimg_batch = np.array(nimg_batch)
+        if self.downsample:
+            binned_imgs = bin_data(np.reshape(nimg_batch,(num_valid_imgs, p, x, y)), self.bin_factor)
+            binned_num_valid_imgs, binned_p, binned_x, binned_y = binned_imgs.shape
+            binned_imgs = np.reshape(binned_imgs, (binned_num_valid_imgs, binned_p * binned_x * binned_y)).T
+#            print(binned_imgs.shape)
+        else:
+            binned_imgs = nimg_batch.T
+        if includeThumbnails:
+            return (binned_imgs, self.assembleImgsToSave(np.reshape(nimg_batch, (num_valid_imgs, p, x, y))), self.imgsTracked)
+        else:
+            return (binned_imgs, self.imgsTracked)
