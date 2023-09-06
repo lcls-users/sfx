@@ -130,23 +130,18 @@ class FreqDir(DimRed):
         currRun,
         imgData,
         imgsTracked,
-        alpha=0,
-        rankAdapt=False,
-        merger=False,
-        mergerFeatures=0,
-        downsample=False,
-        bin_factor=2,
-        threshold=False,
-        normalizeIntensity=False,
-        noZeroIntensity=False, 
-        samplingFactor=1.0, 
-        num_components=10, 
-        batch_size = 10,
-        priming=False
+        alpha,
+        rankAdapt,
+        merger,
+        mergerFeatures,
+        downsample,
+        bin_factor,
+        samplingFactor, 
+        num_components, 
     ):
 
         super().__init__(exp=exp, run=run, det_type=det_type, start_offset=start_offset,
-                num_images=num_imgs, num_components=num_components, batch_size=batch_size, priming=priming,
+                num_images=num_imgs, num_components=num_components, batch_size=0, priming=False,
                 downsample=downsample, bin_factor=bin_factor, output_dir=output_dir)
 
         self.comm = comm
@@ -171,44 +166,27 @@ class FreqDir(DimRed):
         self.nextZeroRow = 0
         self.alpha = alpha
 #        self.mean = None
-        self.imgsTracked = imgsTracked
 
         self.rankAdapt = rankAdapt
         self.increaseEll = False
-        self.threshold = threshold
-        self.noZeroIntensity = noZeroIntensity
-        self.normalizeIntensity=normalizeIntensity
 
         self.samplingFactor = samplingFactor
 
         self.imgData = imgData
+        self.imgsTracked = imgsTracked
 
     def run(self):
         """
         Perform frequent directions matrix sketching
         on run subject to initialization parameters.
         """
-        noImgsToProcess = self.num_images//self.size
-        for currInd, batch in enumerate(range(0,noImgsToProcess,int(self.ell*2//self.samplingFactor))):
-            self.fetch_and_update_model(int(self.ell*2//self.samplingFactor), currInd)
-
-    def fetch_and_update_model(self, n, currInd):
-        """
-        Fetch images and update model.
-
-        Parameters
-        ----------
-        n : int
-            number of images to incorporate
-        """
-        img_batch = self.imgData[:, currInd*n:currInd*(n+1)]
-
+        img_batch = self.imgData
         if self.samplingFactor <1:
-            psamp = PrioritySampling(int(n*self.samplingFactor), self.d)
+            psamp = PrioritySampling(int((img_batch.shape[1])*self.samplingFactor), self.d)
             for row in img_batch.T:
                 psamp.update(row)
             img_batch = np.array(psamp.sketch.get()).T
-
+        self.update_model(img_batch)
 #        if self.mean is None:
 #            self.mean = np.mean(img_batch, axis=1)
 #        else:
@@ -217,8 +195,6 @@ class FreqDir(DimRed):
 #             self.mean = (self.mean*self.num_incorporated_images + np.sum(img_batch, axis=1, dtype=np.double))/(
 #                    self.num_incorporated_images + (img_batch.shape[1]))
 #        self.update_model((img_batch.T - self.mean).T)
-        self.update_model(img_batch)
-
 
     def update_model(self, X):
         """
@@ -521,11 +497,11 @@ class MergeTree:
         
         self.divBy = divBy
         
-        time.sleep(10)
+        time.sleep(15)
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
-        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, downsample=False, bin_factor=0, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, priming=False, imgData = None, imgsTracked=None) 
+        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = None, imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1)
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
@@ -629,7 +605,6 @@ class ApplyCompression:
     normalizeIntensity: whether data should be normalized to have total intensity of one
     noZeroIntensity: whether data with low total intensity should be discarded
     readFile: H5 file with matrix sketch
-    batchSize: Number of images to process at each iteration
     data: numpy array housing current matrix sketch
     mean: geometric mean of data processed
     num_incorporated_images: number of images processed so far
@@ -655,15 +630,9 @@ class ApplyCompression:
         det_type,
         readFile,
         output_dir,
-        batchSize,
-        threshold,
-        noZeroIntensity,
-        normalizeIntensity,
         currRun,
         imgData, 
         thumbnailData,
-        downsample=False,
-        bin_factor=2
     ):
 
         self.comm = comm
@@ -683,7 +652,7 @@ class ApplyCompression:
 #        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile2, os.path.isfile(readFile2)))
 #        while(not os.path.isfile(readFile2)):
 #            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile2, self.rank))
-        time.sleep(10)
+        time.sleep(15)
         with h5py.File(readFile2, 'r') as hf:
             self.data = hf["sketch"][:]
 #            self.mean = hf["mean"][:]
@@ -1165,7 +1134,7 @@ class visualizeFD:
                 x=[0.25+xind for xind in range(len(self.medoidInds))],
                 y=0,
                 dw=0.5, dh=1,
-                palette="Plasma256", level="image")
+                palette="Turbo256", level="image")
         imgsPlot.axis.visible = False
         imgsPlot.grid.visible = False
         for xind in range(len(self.medoidInds)):
@@ -1320,7 +1289,7 @@ class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
     """
-    def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, num_components, alpha, rankAdapt, downsample, bin_factor, threshold, normalizeIntensity, noZeroIntensity, samplingFactor, priming, divBy, batchSize, thresholdQuantile):
+    def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, num_components, alpha, rankAdapt, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1333,12 +1302,13 @@ class WrapperFullFD:
         self.downsample=downsample
         self.bin_factor= bin_factor
         self.threshold= threshold
+        self.eluThreshold = eluThreshold
+        self.eluAlpha = eluAlpha
         self.normalizeIntensity=normalizeIntensity
         self.noZeroIntensity=noZeroIntensity
+        self.minIntensity = minIntensity
         self.samplingFactor=samplingFactor
-        self.priming=priming
         self.divBy = divBy 
-        self.batchSize = batchSize
         self.thresholdQuantile = thresholdQuantile
 
         self.comm = MPI.COMM_WORLD
@@ -1355,24 +1325,22 @@ class WrapperFullFD:
             self.currRun = None
         self.currRun = self.comm.bcast(self.currRun, root=0)
 
-        self.imageProcessor = FD_ImageProcessing(minIntensity=(self.bin_factor**2)*50000, thresholdQuantile=self.thresholdQuantile, eluAlpha=0.01)
-
-        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, start_offset=start_offset, num_imgs=num_imgs, threshold=threshold, noZeroIntensity=noZeroIntensity, normalizeIntensity=normalizeIntensity, downsample=downsample, bin_factor=bin_factor, thresholdQuantile=thresholdQuantile)
+        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile)
+        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 
 #    @profile(filename="fullFD_profile")
     def runMe(self):
         stfull = time.perf_counter()
 
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
-        self.fullImgData, self.fullThumbnailData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, includeThumbnails=True)
+        self.fullImgData, self.fullThumbnailData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size)
 
         #SKETCHING STEP
         ##########################################################################################
         freqDir = FreqDir(comm= self.comm, rank=self.rank, size = self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
                 det_type=self.det_type, output_dir=self.writeToHere, num_components=self.num_components, alpha=self.alpha, rankAdapt=self.rankAdapt,
                 merger=False, mergerFeatures=0, downsample=self.downsample, bin_factor=self.bin_factor,
-                threshold=self.threshold, normalizeIntensity=self.normalizeIntensity, noZeroIntensity=self.noZeroIntensity,
-                currRun = self.currRun, samplingFactor=self.samplingFactor, priming=self.priming, imgData = self.fullImgData, imgsTracked = self.imgsTracked)
+                currRun = self.currRun, samplingFactor=self.samplingFactor, imgData = self.fullImgData, imgsTracked = self.imgsTracked)
         print("{} STARTING SKETCHING FOR {}".format(self.rank, self.currRun))
         st = time.perf_counter()
         freqDir.run()
@@ -1399,10 +1367,7 @@ class WrapperFullFD:
 
         #PROJECTION STEP
         ##########################################################################################
-        appComp = ApplyCompression(comm=self.comm, rank = self.rank, size=self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
-                det_type=self.det_type, readFile = mergedSketchFilename, output_dir = self.writeToHere,
-                batchSize=self.batchSize, threshold=self.threshold, normalizeIntensity=self.normalizeIntensity, noZeroIntensity=self.noZeroIntensity,
-                downsample=self.downsample, bin_factor=self.bin_factor, currRun = self.currRun, imgData = self.fullImgData, thumbnailData = self.fullThumbnailData)
+        appComp = ApplyCompression(comm=self.comm, rank = self.rank, size=self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,det_type=self.det_type, readFile = mergedSketchFilename, output_dir = self.writeToHere, currRun = self.currRun, imgData = self.fullImgData, thumbnailData = self.fullThumbnailData)
         st = time.perf_counter()
         appComp.run()
         appComp.write()
@@ -1445,10 +1410,25 @@ class WrapperFullFD:
             print("TOTAL PROCESING TIME: {}".format(et - stfull))
 
 class FD_ImageProcessing:
-    def __init__(self, minIntensity, thresholdQuantile, eluAlpha):
+    def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile):
+        self.threshold = threshold
+        self.eluThreshold = eluThreshold
+        self.eluAlpha = eluAlpha
+        self.noZeroIntensity = noZeroIntensity
+        self.normalizeIntensity = normalizeIntensity
         self.minIntensity = minIntensity
         self.thresholdQuantile = thresholdQuantile
-        self.eluAlpha = eluAlpha
+
+    def processImg(self, nimg, currIntensity):
+        if self.threshold:
+            nimg = self.thresholdFunc(nimg)
+        if self.eluThreshold:
+            nimg = self.eluThresholdFunc(nimg)
+        if self.noZeroIntensity:
+            nimg = self.removeZeroIntensityFunc(nimg, currIntensity)
+        if self.normalizeIntensity:
+            nimg = self.normalizeIntensityFunc(nimg, currIntensity)
+        return nimg
 
     def elu(self,x):
         if x > 0:
@@ -1456,7 +1436,7 @@ class FD_ImageProcessing:
         else:
             return self.eluAlpha*(math.exp(x)-1)
 
-    def eluThreshold(self, img):
+    def eluThresholdFunc(self, img):
         if img is None:
             return img
         else:
@@ -1464,48 +1444,42 @@ class FD_ImageProcessing:
             secondQuartile = np.quantile(img, self.thresholdQuantile)
             return(elu_v(img-secondQuartile)+secondQuartile)
 
-    def threshold(self, img):
+    def thresholdFunc(self, img):
         if img is None:
             return img
         else:
             secondQuartile = np.quantile(img, self.thresholdQuantile)
             return (img>secondQuartile)*img
 
-    def removeZeroIntensity(self, img, currIntensity):
+    def removeZeroIntensityFunc(self, img, currIntensity):
         if currIntensity<self.minIntensity:
             return None
         else:
             return img
 
-    def normalizeIntensity(self, img, currIntensity):
+    def normalizeIntensityFunc(self, img, currIntensity):
         if img is None:
             return img
         elif currIntensity<self.minIntensity:
-            return np.zeros(img.shape)
+            return np.zeros(img.shape)+1
         else:
-            return img/currIntensity
+            return img/np.sum(img.flatten(), dtype=np.double)
 
 
 class DataRetriever:
-    def __init__(self, exp, det_type, run, start_offset, num_imgs, threshold, noZeroIntensity, normalizeIntensity, downsample, bin_factor, thresholdQuantile):
+    def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
         self.exp = exp
         self.det_type = det_type
         self.run = run
-        self.start_offset = start_offset
-        self.num_imgs = num_imgs
-        self.threshold = threshold
-        self.noZeroIntensity = noZeroIntensity
-        self.normalizeIntensity = normalizeIntensity
         self.downsample = downsample
         self.bin_factor = bin_factor
-        self.thresholdQuantile = thresholdQuantile
         self.imgsTracked = []
+        self.thumbnailHeight = thumbnailHeight
+        self.thumbnailWidth = thumbnailWidth
 
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-        self.psi.counter = self.start_offset
-        
-        self.imageProcessor = FD_ImageProcessing(minIntensity=(self.bin_factor**2)*50000, thresholdQuantile=self.thresholdQuantile, eluAlpha=0.01)
 
+        self.imageProcessor = imageProcessor
 
     def assembleImgsToSave(self, imgs):
         """
@@ -1522,10 +1496,10 @@ class DataRetriever:
         for img in imgs:
             imgRe = np.reshape(img, self.psi.det.shape())
             imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
-            saveMe.append(np.array(Image.fromarray(imgRe).resize((64, 64))))
+            saveMe.append(np.array(Image.fromarray(imgRe).resize((self.thumbnailHeight, self.thumbnailWidth))))
         return np.array(saveMe)
 
-    def get_formatted_images(self, startInd, n, includeThumbnails=False):
+    def get_formatted_images(self, startInd, n):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
 
@@ -1552,33 +1526,26 @@ class DataRetriever:
         imgs = imgs[
             [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
         ]
-        if len(imgs.shape)==4:
-            num_valid_imgs, p, x, y = imgs.shape
-        else:
-            p = 1
-            num_valid_imgs, x, y = imgs.shape
+        thumbnails = self.assembleImgsToSave(imgs)
+
+        if self.downsample:
+            imgs = bin_data(imgs, self.bin_factor)
+        num_valid_imgs, p, x, y = imgs.shape
         img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
         img_batch[img_batch<0] = 0
+
+        num_valid_thumbnails, tx, ty = thumbnails.shape
+        thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
+
         nimg_batch = []
-        for img in img_batch.T:
-            nimg = img
-            currIntensity = np.sum(nimg.flatten(), dtype=np.double)
-            if self.threshold:
-                nimg = self.imageProcessor.threshold(nimg)
-            if self.noZeroIntensity:
-                nimg = self.imageProcessor.removeZeroIntensity(nimg, currIntensity)
-            if self.normalizeIntensity:
-                nimg = self.imageProcessor.normalizeIntensity(nimg, currIntensity)
+        nthumbnail_batch = []
+        for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
+            currIntensity = np.sum(img.flatten(), dtype=np.double)
+            nimg = self.imageProcessor.processImg(img, currIntensity)
+            nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
             if nimg is not None:
                 nimg_batch.append(nimg)
-        nimg_batch = np.array(nimg_batch)
-        if self.downsample:
-            binned_imgs = bin_data(np.reshape(nimg_batch,(num_valid_imgs, p, x, y)), self.bin_factor)
-            binned_num_valid_imgs, binned_p, binned_x, binned_y = binned_imgs.shape
-            binned_imgs = np.reshape(binned_imgs, (binned_num_valid_imgs, binned_p * binned_x * binned_y)).T
-        else:
-            binned_imgs = nimg_batch.T
-        if includeThumbnails:
-            return (binned_imgs, self.assembleImgsToSave(np.reshape(nimg_batch, (num_valid_imgs, p, x, y))), self.imgsTracked)
-        else:
-            return (binned_imgs, self.imgsTracked)
+                nthumbnail_batch.append(nthumbnail)
+        nimg_batch = np.array(nimg_batch).T
+        nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
+        return (nimg_batch, nthumbnail_batch, self.imgsTracked)
