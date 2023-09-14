@@ -62,12 +62,10 @@ class PsanaInterface:
         Check whether calibration data is available.
         """
         self.calibrate = True
-        self.no_cmod = no_cmod
         evt = self.runner.event(self.times[0])
         if (self.det.pedestals(evt) is None) or (self.det.gain(evt) is None):
             logger.warning("Warning: calibration data unavailable, returning uncalibrated data")
             self.calibrate = False
-            self.no_cmod = True
 
     def turn_calibration_off(self):
         """
