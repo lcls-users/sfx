@@ -515,7 +515,7 @@ def draw_sketch(config):
     setup = config.setup
     task = config.draw_sketch
     """ Perform Frequent Direction Sketching on run. """
-    taskdir = os.path.join(setup.root_dir, 'draw_sketch')
+    taskdir = os.path.join(setup.root_dir, 'sketch')
     os.makedirs(taskdir, exist_ok=True)
     fd = WrapperFullFD(exp=setup.exp, run=setup.run, det_type=setup.det_type,
                        task.start_offset, task.num_imgs, task.writeToHere, task.grabImgSteps,
@@ -532,7 +532,7 @@ def show_sketch():
     setup = config.setup
     task = config.show_sketch
     """ Display Sketch. """
-    taskdir = os.path.join(setup.root_dir, 'show_sketch')
+    taskdir = os.path.join(setup.root_dir, 'sketch')
     os.makedirs(taskdir, exist_ok=True)
     fd = WrapperFullFD(exp=setup.exp, run=setup.run, det_type=setup.det_type,
                        task.start_offset, task.num_imgs, task.writeToHere, task.grabImgSteps,
