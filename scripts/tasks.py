@@ -509,3 +509,37 @@ def timetool_correct(config):
             logger.info('No model found! Will return the nominal delay uncorrected!')
 
     tt.timetool_correct(run, nominal, model, figs)
+
+def draw_sketch(config):
+    from btx.processing.freqdir import WrapperFullFD
+    setup = config.setup
+    task = config.draw_sketch
+    """ Perform Frequent Direction Sketching on run. """
+    taskdir = os.path.join(setup.root_dir, 'draw_sketch')
+    os.makedirs(taskdir, exist_ok=True)
+    fd = WrapperFullFD(exp=setup.exp, run=setup.run, det_type=setup.det_type,
+                       task.start_offset, task.num_imgs, task.writeToHere, task.grabImgSteps,
+                       task.num_components, task.alpha, task.rankAdapt, task.rankAdaptMinError,
+                       task.downsample, task.bin_factor, task.threshold, task.eluThreshold,
+                       task.eluAlpha, task.normalizeIntensity, task.noZeroIntensity,
+                       task.minIntensity, task.samplingFactor, task.divBy, task.thresholdQuantile)
+    logger.info(f'Performing Frequent Direction Sketching for run {setup.run} of {setup.exp}...')
+    fd.runMe()
+    logger.debug('Done!')
+
+def show_sketch():
+    from btx.processing.freqdir import WrapperFullFD
+    setup = config.setup
+    task = config.show_sketch
+    """ Display Sketch. """
+    taskdir = os.path.join(setup.root_dir, 'show_sketch')
+    os.makedirs(taskdir, exist_ok=True)
+    fd = WrapperFullFD(exp=setup.exp, run=setup.run, det_type=setup.det_type,
+                       task.start_offset, task.num_imgs, task.writeToHere, task.grabImgSteps,
+                       task.num_components, task.alpha, task.rankAdapt, task.rankAdaptMinError,
+                       task.downsample, task.bin_factor, task.threshold, task.eluThreshold,
+                       task.eluAlpha, task.normalizeIntensity, task.noZeroIntensity,
+                       task.minIntensity, task.samplingFactor, task.divBy, task.thresholdQuantile)
+    logger.info(f'Display Sketch for run {setup.run} of {setup.exp}...')
+    fd.visualizeMe()
+    logger.debug('Done!')
