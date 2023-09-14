@@ -11,7 +11,8 @@ class PsanaInterface:
 
     def __init__(self, exp, run, det_type,
                  event_receiver=None, event_code=None, event_logic=True,
-                 ffb_mode=False, track_timestamps=False, calibdir=None):
+                 ffb_mode=False, track_timestamps=False, calibdir=None,
+                 no_cmod=False):
         self.exp = exp # experiment name, str
         self.hutch = exp[:3] # hutch name, str
         self.run = run # run number, int
@@ -21,10 +22,10 @@ class PsanaInterface:
         self.event_receiver = event_receiver # 'evr0' or 'evr1', str
         self.event_code = event_code # event code, int
         self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
-        self.set_up(det_type, ffb_mode, calibdir)
+        self.set_up(det_type, ffb_mode, calibdir, no_cmod)
         self.counter = 0
 
-    def set_up(self, det_type, ffb_mode, calibdir=None):
+    def set_up(self, det_type, ffb_mode, calibdir=None, no_cmod=False):
         """
         Instantiate DataSource and Detector objects; use the run 
         functionality to retrieve all psana.EventTimes.
@@ -37,6 +38,8 @@ class PsanaInterface:
             if True, set up in an FFB-compatible style
         calibdir: str
             directory to alternative calibration files
+        no_cmod: bool
+            if True, deactivate common mode detector correction
         """
         ds_args=f'exp={self.exp}:run={self.run}:idx'
         if ffb_mode:
@@ -52,16 +55,19 @@ class PsanaInterface:
         if calibdir is not None:
             setOption('psana.calib_dir', calibdir)
         self._calib_data_available()
+        self.no_cmod = no_cmod
 
     def _calib_data_available(self):
         """
         Check whether calibration data is available.
         """
         self.calibrate = True
+        self.no_cmod = no_cmod
         evt = self.runner.event(self.times[0])
         if (self.det.pedestals(evt) is None) or (self.det.gain(evt) is None):
             logger.warning("Warning: calibration data unavailable, returning uncalibrated data")
             self.calibrate = False
+            self.no_cmod = True
 
     def turn_calibration_off(self):
         """
@@ -361,7 +367,10 @@ class PsanaInterface:
                         img = self.det.image(evt=evt)
                 else:
                     if self.calibrate:
-                        img = self.det.calib(evt=evt)
+                        cmod = self.det.common_mode(evt=evt)
+                        if self.no_cmod:
+                            cmod[1] = 0
+                        img = self.det.calib(evt=evt, cmpars=cmod)
                     else:
                         img = self.det.raw(evt=evt)
                         if self.det_type == 'epix10k2M':

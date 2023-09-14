@@ -1495,7 +1495,7 @@ class DataRetriever:
         self.thumbnailHeight = thumbnailHeight
         self.thumbnailWidth = thumbnailWidth
 
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type, no_cmod=True)
 
         self.imageProcessor = imageProcessor
 
