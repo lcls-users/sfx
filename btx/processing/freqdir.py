@@ -132,6 +132,7 @@ class FreqDir(DimRed):
         imgsTracked,
         alpha,
         rankAdapt,
+        rankAdaptMinError,
         merger,
         mergerFeatures,
         downsample,
@@ -168,6 +169,7 @@ class FreqDir(DimRed):
 #        self.mean = None
 
         self.rankAdapt = rankAdapt
+        self.rankAdaptMinError = rankAdaptMinError
         self.increaseEll = False
 
         self.samplingFactor = samplingFactor
@@ -244,8 +246,8 @@ class FreqDir(DimRed):
                         copyBatch = self.sketch[self.ell:,:].copy()
                         self.rotate()
                         if canRankAdapt and self.rankAdapt:
-                            reconError = np.sqrt(self.lowMemoryReconstructionErrorUnscaled(copyBatch))
-                            if (reconError > 0.08):
+                            reconError = np.sqrt(self.lowMemoryReconstructionErrorScaled(copyBatch))
+                            if (reconError > self.rankAdaptMinError):
                                 self.increaseEll = True
                 self.sketch[self.nextZeroRow,:] = row 
                 self.nextZeroRow += 1
@@ -326,11 +328,12 @@ class FreqDir(DimRed):
         	matrixCenteredT - G @ G.T @ matrixCenteredT, 'fro')**2)/(
                 (np.linalg.norm(matrixCenteredT - Ak, 'fro'))**2) 
 
-    def lowMemoryReconstructionError(self, matrixCentered):
+    def lowMemoryReconstructionErrorScaled(self, matrixCentered):
         """ 
         Compute the low memory reconstruction error of the matrix sketch
-        against given data. This si the same as reconstructionError,
-        but estimates the norm computation and does not scale by the matrix. 
+        against given data. This is the same as reconstructionError,
+        but estimates the norm computation and does not scale by the 
+        minimum projection matrix, but rather by the matrix norm itself. 
 
         Parameters
         ----------
@@ -348,7 +351,7 @@ class FreqDir(DimRed):
         matSketchT = matSketch.T
         U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
         G = U[:,:k]
-        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 10)/
+        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 50)/
                 np.linalg.norm(matrixCenteredT, 'fro')**2)
 
     def estimFrobNormSquared(self, addMe, arrs, its):
@@ -501,10 +504,11 @@ class MergeTree:
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
-        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = None, imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1)
+        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, rankAdaptMinError=1, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = None, imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1)
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
+        print(self.buffSizes)
 
         self.fd.update_model(self.data.T)
 
@@ -787,7 +791,7 @@ class visualizeFD:
     """
     def __init__(self, inputFile, outputFile, numImgsToUse, nprocs, includeABOD, userGroupings, 
             skipSize, umap_n_neighbors, umap_random_state, hdbscan_min_samples, hdbscan_min_cluster_size,
-            optics_min_samples, optics_xi, optics_min_cluster_size):
+            optics_min_samples, optics_xi, optics_min_cluster_size, outlierQuantile):
         self.inputFile = inputFile
         self.outputFile = outputFile
         output_file(filename=outputFile, title="Static HTML file")
@@ -804,6 +808,7 @@ class visualizeFD:
         self.optics_min_samples=optics_min_samples
         self.optics_xi = optics_xi
         self.optics_min_cluster_size = optics_min_cluster_size
+        self.outlierQuantile = outlierQuantile
 
     def embeddable_image(self, data):
         img_data = np.uint8(cm.jet(data/max(data.flatten()))*255)
@@ -877,22 +882,32 @@ class visualizeFD:
                 ac = cpt - apt
                 if math.isclose(np.linalg.norm(ab), 0.0) or math.isclose(np.linalg.norm(ac), 0.0):
                     count += 1
+                    print("TOO CLOSE")
                     continue
                 outlier_factors.append(np.dot(ab, ac)/((np.linalg.norm(ab)**2) * (np.linalg.norm(ac))))
-            abofs.append(np.var(np.array(outlier_factors)))
+            print("CURRENT POINT: ", pts[a], test_list, outlier_factors, np.var(np.array(outlier_factors)))
+            if(len(outlier_factors)==0):
+                abofs.append(np.inf)
+            else:
+                abofs.append(np.var(np.array(outlier_factors)))
         return abofs
 
-    def getOutliers(self, lst, divBy):
-        lstCopy = lst.copy()
-        lstCopy.sort()
-        quart10 = lstCopy[len(lstCopy)//divBy]
+    def getOutliers(self, lst):
+#        lstCopy = lst.copy()
+#        lstCopy.sort()
+#        quart10 = lstCopy[len(lstCopy)//divBy]
+
+        lstQuant = np.quantile(np.array(lst), self.outlierQuantile)
+        print("AIDJWOIJDAOWIDJWAOIDJAWOIDWJA", lstQuant, lst)
         outlierInds = []
         notOutlierInds = []
         for j in range(len(lst)):
-            if lst[j]<quart10:
+            if lst[j]>lstQuant:
                 outlierInds.append(j)
             else:
                 notOutlierInds.append(j)
+        print("OUTLIER INDS: ", outlierInds)
+        print("NOT OUTLIER INDS: ", notOutlierInds)
         return np.array(outlierInds), np.array(notOutlierInds)
 
     def genHist(self, vals, endClass):
@@ -937,6 +952,7 @@ class visualizeFD:
             n_neighbors=self.umap_n_neighbors,
             random_state=self.umap_random_state,
             n_components=2,
+            min_dist=0.25,
         ).fit_transform(self.projections)
 
         self.labels = hdbscan.HDBSCAN(
@@ -948,15 +964,13 @@ class visualizeFD:
 
         self.opticsClust = OPTICS(min_samples=self.optics_min_samples, xi=self.optics_xi, min_cluster_size=self.optics_min_cluster_size)
         self.opticsClust.fit(self.clusterable_embedding)
-#        self.opticsLabels = cluster_optics_dbscan(
-#            reachability=self.opticsClust.reachability_,
-#            core_distances=self.opticsClust.core_distances_,
-#            ordering=self.opticsClust.ordering_,
-#            eps=2,
-#        )
-
-#        self.opticsLabels = self.opticsClust.labels_[self.opticsClust.ordering_]
-        self.opticsLabels = self.opticsClust.labels_
+        self.opticsLabels = cluster_optics_dbscan(
+            reachability=self.opticsClust.reachability_,
+            core_distances=self.opticsClust.core_distances_,
+            ordering=self.opticsClust.ordering_,
+            eps=2.5,
+        )
+#        self.opticsLabels = self.opticsClust.labels_
 
         self.experData_df = pd.DataFrame({'x':self.clusterable_embedding[self.clustered, 0],'y':self.clusterable_embedding[self.clustered, 1]})
         self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
@@ -965,7 +979,7 @@ class visualizeFD:
     def genABOD(self):
         if self.includeABOD:
             abod = self.fastABOD(self.projections, 10)
-            outliers, notOutliers = self.getOutliers(abod, 10)
+            outliers, notOutliers = self.getOutliers(abod)
         else:
             outliers = []
             notOutliers = []
@@ -1023,7 +1037,8 @@ class visualizeFD:
                 opticsNewLabels.append(j)
         opticsNewLabels = list(np.array(opticsNewLabels) + 1)
         self.opticsNewLabels = np.array(self.relabel_to_closest_zero(opticsNewLabels))
-        self.experData_df['optics_backgroundColor'] = [Category20[20][x] for x in self.opticsNewLabels[self.opticsClust.ordering_]]
+#        self.experData_df['optics_backgroundColor'] = [Category20[20][x] for x in self.opticsNewLabels[self.opticsClust.ordering_]]
+        self.experData_df['optics_backgroundColor'] = [Category20[20][x] for x in self.opticsNewLabels]
 
     def genHTML(self):
         datasource = ColumnDataSource(self.experData_df)
@@ -1184,7 +1199,8 @@ class visualizeFD:
             width = 2000, height = 400
         )
         space = np.arange(self.numImgsToUse)
-        reachability = self.opticsClust.reachability_
+        reachability = self.opticsClust.reachability_[self.opticsClust.ordering_]
+#        reachability = self.opticsClust.reachability_
         opticsData_df = pd.DataFrame({'x':space,'y':reachability})
         opticsData_df['clusterForScatterPlot'] = [str(x) for x in self.opticsNewLabels]
         opticsData_df['cluster'] = [str(x) for x in self.opticsNewLabels[self.opticsClust.ordering_]]
@@ -1289,7 +1305,7 @@ class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
     """
-    def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, num_components, alpha, rankAdapt, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile):
+    def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1299,6 +1315,7 @@ class WrapperFullFD:
         self.num_components=num_components
         self.alpha = alpha
         self.rankAdapt = rankAdapt
+        self.rankAdaptMinError = rankAdaptMinError
         self.downsample=downsample
         self.bin_factor= bin_factor
         self.threshold= threshold
@@ -1318,6 +1335,7 @@ class WrapperFullFD:
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
         self.psi.counter = self.start_offset + self.num_imgs*self.rank//self.size
         self.imgsTracked = []
+        self.grabImgSteps = grabImgSteps
 
         if self.rank==0:
             self.currRun = datetime.now().strftime("%y%m%d%H%M%S")
@@ -1333,12 +1351,12 @@ class WrapperFullFD:
         stfull = time.perf_counter()
 
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
-        self.fullImgData, self.fullThumbnailData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size)
+        self.fullImgData, self.fullThumbnailData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps)
 
         #SKETCHING STEP
         ##########################################################################################
         freqDir = FreqDir(comm= self.comm, rank=self.rank, size = self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
-                det_type=self.det_type, output_dir=self.writeToHere, num_components=self.num_components, alpha=self.alpha, rankAdapt=self.rankAdapt,
+                det_type=self.det_type, output_dir=self.writeToHere, num_components=self.num_components, alpha=self.alpha, rankAdapt=self.rankAdapt, rankAdaptMinError = self.rankAdaptMinError,
                 merger=False, mergerFeatures=0, downsample=self.downsample, bin_factor=self.bin_factor,
                 currRun = self.currRun, samplingFactor=self.samplingFactor, imgData = self.fullImgData, imgsTracked = self.imgsTracked)
         print("{} STARTING SKETCHING FOR {}".format(self.rank, self.currRun))
@@ -1400,7 +1418,8 @@ class WrapperFullFD:
                             umap_random_state=42,
                             hdbscan_min_samples=int(numImgsToUse*0.75//40),
                             hdbscan_min_cluster_size=int(numImgsToUse//40),
-                            optics_min_samples=150, optics_xi = 0.05, optics_min_cluster_size = 0.05)
+                            optics_min_samples=150, optics_xi = 0.05, optics_min_cluster_size = 0.05, 
+                            outlierQuantile=0.3)
 #            print("here 2")
             visMe.fullVisualize()
 #            print("here 3")
@@ -1473,7 +1492,6 @@ class DataRetriever:
         self.run = run
         self.downsample = downsample
         self.bin_factor = bin_factor
-        self.imgsTracked = []
         self.thumbnailHeight = thumbnailHeight
         self.thumbnailWidth = thumbnailWidth
 
@@ -1499,7 +1517,23 @@ class DataRetriever:
             saveMe.append(np.array(Image.fromarray(imgRe).resize((self.thumbnailHeight, self.thumbnailWidth))))
         return np.array(saveMe)
 
-    def get_formatted_images(self, startInd, n):
+    def split_range(self, start, end, num_tuples):
+        if start==end:
+            raise ValueError('Range processing error: start value equals end value, which leads to no images processed.')
+            return
+        total_elements = end - start
+        batch_size = total_elements // num_tuples
+        tuples = []
+        for i in range(num_tuples - 1):
+            batch_start = start + i * batch_size
+            batch_end = batch_start + batch_size
+            tuples.append((batch_start, batch_end))
+        last_batch_start = start + (num_tuples - 1) * batch_size
+        last_batch_end = end
+        tuples.append((last_batch_start, last_batch_end))
+        return tuples    
+
+    def get_formatted_images(self, startInd, n, num_steps):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
 
@@ -1517,35 +1551,46 @@ class DataRetriever:
         ndarray, shape (end_index-start_index, n-x)
             n-x retrieved image segments of dimension end_index-start_index
         """
-        self.psi.counter = startInd
-        self.imgsTracked.append((self.psi.counter, self.psi.counter + n))
-        print("Images tracked:", self.imgsTracked)
+        fullimgs = None
+        fullthumbnails = None
+        imgsTracked = []
+        runs = self.split_range(startInd, startInd+n, num_steps)
+        for runStart, runEnd in runs:
+            self.psi.counter = runStart
+            imgsTracked.append((runStart, runEnd))
 
-        imgs = self.psi.get_images(n, assemble=False)
+            imgs = self.psi.get_images(runEnd-runStart, assemble=False)
 
-        imgs = imgs[
-            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
-        ]
-        thumbnails = self.assembleImgsToSave(imgs)
+            imgs = imgs[
+                [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+            ]
+            thumbnails = self.assembleImgsToSave(imgs)
 
-        if self.downsample:
-            imgs = bin_data(imgs, self.bin_factor)
-        num_valid_imgs, p, x, y = imgs.shape
-        img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
-        img_batch[img_batch<0] = 0
+            if self.downsample:
+                imgs = bin_data(imgs, self.bin_factor)
+            num_valid_imgs, p, x, y = imgs.shape
+            img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+            img_batch[img_batch<0] = 0
+    
+            num_valid_thumbnails, tx, ty = thumbnails.shape
+            thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
 
-        num_valid_thumbnails, tx, ty = thumbnails.shape
-        thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
-
-        nimg_batch = []
-        nthumbnail_batch = []
-        for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
-            currIntensity = np.sum(img.flatten(), dtype=np.double)
-            nimg = self.imageProcessor.processImg(img, currIntensity)
-            nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
-            if nimg is not None:
-                nimg_batch.append(nimg)
-                nthumbnail_batch.append(nthumbnail)
-        nimg_batch = np.array(nimg_batch).T
-        nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
-        return (nimg_batch, nthumbnail_batch, self.imgsTracked)
+            nimg_batch = []
+            nthumbnail_batch = []
+            for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
+                currIntensity = np.sum(img.flatten(), dtype=np.double)
+                nimg = self.imageProcessor.processImg(img, currIntensity)
+                nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
+                if nimg is not None:
+                    nimg_batch.append(nimg)
+                    nthumbnail_batch.append(nthumbnail)
+            nimg_batch = np.array(nimg_batch).T
+            nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
+            if fullimgs is None:
+                fullimgs = nimg_batch
+                fullthumbnails = nthumbnail_batch
+            else:
+                fullimgs = np.hstack((fullimgs, nimg_batch))
+                fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
+        print("Images tracked:", imgsTracked)
+        return (fullimgs, fullthumbnails, imgsTracked)
