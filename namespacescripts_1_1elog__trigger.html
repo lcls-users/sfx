@@ -99,6 +99,8 @@ Variables</h2></td></tr>
 <tr class="separator:a701e3273dea035a5fcd47b2450a7b7f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe2195304ebbee6ceac310a2ac8a0e98"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacescripts_1_1elog__trigger.html#afe2195304ebbee6ceac310a2ac8a0e98">account</a> = args.account if args.account else f&quot;lcls:{<a class="el" href="namespacescripts_1_1elog__trigger.html#a07ee30d61d5929300108371109ab7ce9">experiment_name</a>}&quot;</td></tr>
 <tr class="separator:afe2195304ebbee6ceac310a2ac8a0e98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19f5c58c41f265f55b11b7ecba5a79ab"><td class="memItemLeft" align="right" valign="top">dictionary&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacescripts_1_1elog__trigger.html#a19f5c58c41f265f55b11b7ecba5a79ab">dag_run_data</a></td></tr>
+<tr class="separator:a19f5c58c41f265f55b11b7ecba5a79ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Variable Documentation</h2>
 <a id="afe2195304ebbee6ceac310a2ac8a0e98"></a>
@@ -169,6 +171,42 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a19f5c58c41f265f55b11b7ecba5a79ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19f5c58c41f265f55b11b7ecba5a79ab">&#9670;&nbsp;</a></span>dag_run_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">dictionary scripts.elog_trigger.dag_run_data</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;=  {</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;        <span class="stringliteral">&quot;dag_run_id&quot;</span>: <a class="code" href="namespacebtx_1_1interfaces_1_1istream.html#a0ca866c2fbd1db1711e140c8fcffc177">str</a>(uuid.uuid4()),</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;        <span class="stringliteral">&quot;conf&quot;</span>: {</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;            <span class="stringliteral">&quot;experiment&quot;</span>: experiment_name,</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;            <span class="stringliteral">&quot;run_id&quot;</span>: <a class="code" href="namespacebtx_1_1interfaces_1_1istream.html#a0ca866c2fbd1db1711e140c8fcffc177">str</a>(run_num) + datetime.datetime.utcnow().isoformat(),</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;            <span class="stringliteral">&quot;JID_UPDATE_COUNTERS&quot;</span>: os.environ[<span class="stringliteral">&quot;JID_UPDATE_COUNTERS&quot;</span>],</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;            <span class="stringliteral">&quot;ARP_ROOT_JOB_ID&quot;</span>: os.environ[<span class="stringliteral">&quot;ARP_JOB_ID&quot;</span>],</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;            <span class="stringliteral">&quot;ARP_LOCATION&quot;</span>: <span class="stringliteral">&#39;S3DF&#39;</span>, <span class="comment">#os.environ[&quot;ARP_LOCATION&quot;],</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;            <span class="stringliteral">&quot;Authorization&quot;</span>: auth_header,</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;            <span class="stringliteral">&quot;user&quot;</span>: getpass.getuser(),</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;            <span class="stringliteral">&quot;parameters&quot;</span>: {</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;                <span class="stringliteral">&quot;config_file&quot;</span>: args.config,</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;                <span class="stringliteral">&quot;dag&quot;</span>: args.dag,</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;                <span class="stringliteral">&quot;queue&quot;</span>: args.queue,</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;                <span class="stringliteral">&quot;ncores&quot;</span>: args.ncores,</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;                <span class="stringliteral">&quot;experiment_name&quot;</span>: experiment_name,</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;                <span class="stringliteral">&quot;run_number&quot;</span>: run_num,</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;                <span class="stringliteral">&quot;account&quot;</span>: account</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;            }</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        }</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    }</div>
+<div class="ttc" id="anamespacebtx_1_1interfaces_1_1istream_html_a0ca866c2fbd1db1711e140c8fcffc177"><div class="ttname"><a href="namespacebtx_1_1interfaces_1_1istream.html#a0ca866c2fbd1db1711e140c8fcffc177">btx.interfaces.istream.str</a></div><div class="ttdeci">str</div><div class="ttdef"><b>Definition:</b> istream.py:676</div></div>
+</div><!-- fragment -->
 </div>
 </div>
 <a id="a5392678a40ced767476e57aa672ec72e"></a>
@@ -272,7 +310,7 @@ Variables</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Sep 13 2023 23:19:04 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Thu Sep 14 2023 00:20:13 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
