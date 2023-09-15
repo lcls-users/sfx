@@ -367,8 +367,8 @@ class PsanaInterface:
                     if self.calibrate:
                         cmpars = None
                         if self.no_cmod:
-                            cmpars = 0
-                        img = self.det.calib(evt=evt, cmpars)
+                            cmpars = [0,0,0] 
+                        img = self.det.calib(evt=evt, cmpars=cmpars)
                     else:
                         img = self.det.raw(evt=evt)
                         if self.det_type == 'epix10k2M':

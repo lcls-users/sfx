@@ -138,12 +138,13 @@ class FreqDir(DimRed):
         downsample,
         bin_factor,
         samplingFactor, 
-        num_components, 
+        num_components,
+        psi,
     ):
 
         super().__init__(exp=exp, run=run, det_type=det_type, start_offset=start_offset,
                 num_images=num_imgs, num_components=num_components, batch_size=0, priming=False,
-                downsample=downsample, bin_factor=bin_factor, output_dir=output_dir)
+                downsample=downsample, bin_factor=bin_factor, output_dir=output_dir, psi=psi)
 
         self.comm = comm
         self.rank= rank
@@ -456,7 +457,7 @@ class FreqDir(DimRed):
         filename : string
             Name of h5 file where sketch, mean of data, and indices of data processed is written
         """
-        self.comm.barrier()
+#        self.comm.barrier()
         filename = self.output_dir + '{}_sketch_{}.h5'.format(self.currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
@@ -493,18 +494,18 @@ class MergeTree:
     currRun: Current datetime used to identify run
     """
 
-    def __init__(self, comm, rank, size, exp, run, det_type, divBy, readFile, output_dir, allWriteDirecs, currRun):
+    def __init__(self, comm, rank, size, exp, run, det_type, divBy, readFile, output_dir, allWriteDirecs, currRun, psi):
         self.comm = comm
         self.rank = rank
         self.size = size
         
         self.divBy = divBy
         
-        time.sleep(15)
+#        time.sleep(5)
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
-        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, rankAdaptMinError=1, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = None, imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1)
+        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, rankAdaptMinError=1, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = None, imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1, psi=psi)
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
@@ -656,7 +657,7 @@ class ApplyCompression:
 #        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile2, os.path.isfile(readFile2)))
 #        while(not os.path.isfile(readFile2)):
 #            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile2, self.rank))
-        time.sleep(15)
+#        time.sleep(5)
         with h5py.File(readFile2, 'r') as hf:
             self.data = hf["sketch"][:]
 #            self.mean = hf["mean"][:]
@@ -1358,7 +1359,7 @@ class WrapperFullFD:
         freqDir = FreqDir(comm= self.comm, rank=self.rank, size = self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
                 det_type=self.det_type, output_dir=self.writeToHere, num_components=self.num_components, alpha=self.alpha, rankAdapt=self.rankAdapt, rankAdaptMinError = self.rankAdaptMinError,
                 merger=False, mergerFeatures=0, downsample=self.downsample, bin_factor=self.bin_factor,
-                currRun = self.currRun, samplingFactor=self.samplingFactor, imgData = self.fullImgData, imgsTracked = self.imgsTracked)
+                currRun = self.currRun, samplingFactor=self.samplingFactor, imgData = self.fullImgData, imgsTracked = self.imgsTracked, psi=self.psi)
         print("{} STARTING SKETCHING FOR {}".format(self.rank, self.currRun))
         st = time.perf_counter()
         freqDir.run()
@@ -1376,7 +1377,7 @@ class WrapperFullFD:
         for j in range(freqDir.size):
             allNames.append(fullSketchFilename + str(j) + ".h5")
         mergeTree = MergeTree(comm=self.comm, rank=self.rank, size=self.size, exp=self.exp, run=self.run, det_type=self.det_type, divBy=self.divBy, readFile = localSketchFilename,
-                output_dir=self.writeToHere, allWriteDirecs=allNames, currRun = self.currRun)
+                output_dir=self.writeToHere, allWriteDirecs=allNames, currRun = self.currRun, psi=self.psi)
         st = time.perf_counter()
         mergeTree.merge()
         mergedSketchFilename = mergeTree.write()
@@ -1393,11 +1394,11 @@ class WrapperFullFD:
         print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
         print("Estimated full processing time for rank {0}/{1}: {2}".format(self.rank, self.size, et - stfull))
 
-        self.comm.barrier()
-        self.comm.Barrier()
-        filenameTest3 = random.randint(0, 10)
-        filenameTest3 = self.comm.allgather(filenameTest3)
-        print("TEST 3: ", self.rank, filenameTest3)
+#        self.comm.barrier()
+#        self.comm.Barrier()
+#        filenameTest3 = random.randint(0, 10)
+#        filenameTest3 = self.comm.allgather(filenameTest3)
+#        print("TEST 3: ", self.rank, filenameTest3)
 
     def visualizeMe(self):
         #UMAP STEP

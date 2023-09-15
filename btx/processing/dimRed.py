@@ -39,15 +39,19 @@ class DimRed:
         priming=False,
         downsample=False,
         bin_factor=2,
-        output_dir=""
+        output_dir="", 
+        psi=None
     ):
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
 
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-        self.psi.counter = start_offset
+        if psi is None:
+            self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+            self.psi.counter = start_offset
+        else:
+            self.psi = psi
         self.start_offset = start_offset
 
         self.priming = priming
