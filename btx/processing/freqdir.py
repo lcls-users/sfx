@@ -1305,7 +1305,7 @@ class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
     """
-    def __init__(self, start_offset, num_imgs, exp, run, det_type, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile):
+    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1399,6 +1399,7 @@ class WrapperFullFD:
         filenameTest3 = self.comm.allgather(filenameTest3)
         print("TEST 3: ", self.rank, filenameTest3)
 
+    def visualizeMe(self):
         #UMAP STEP
         ##########################################################################################
         if self.rank==0:
@@ -1426,7 +1427,7 @@ class WrapperFullFD:
             visMe.userSave()
             et = time.perf_counter()
             print("UMAP HTML Generation Processing time: {}".format(et - st))
-            print("TOTAL PROCESING TIME: {}".format(et - stfull))
+            #print("TOTAL PROCESING TIME: {}".format(et - stfull))
 
 class FD_ImageProcessing:
     def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile):
