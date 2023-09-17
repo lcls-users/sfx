@@ -248,6 +248,7 @@ class FreqDir(DimRed):
                         self.rotate()
                         if canRankAdapt and self.rankAdapt:
                             reconError = np.sqrt(self.lowMemoryReconstructionErrorScaled(copyBatch))
+                            print("RANK ADAPT RECON ERROR: ", reconError)
                             if (reconError > self.rankAdaptMinError):
                                 self.increaseEll = True
                 self.sketch[self.nextZeroRow,:] = row 
@@ -329,76 +330,96 @@ class FreqDir(DimRed):
         	matrixCenteredT - G @ G.T @ matrixCenteredT, 'fro')**2)/(
                 (np.linalg.norm(matrixCenteredT - Ak, 'fro'))**2) 
 
+#    def lowMemoryReconstructionErrorScaled(self, matrixCentered):
+#        """ 
+#        Compute the low memory reconstruction error of the matrix sketch
+#        against given data. This is the same as reconstructionError,
+#        but estimates the norm computation and does not scale by the 
+#        minimum projection matrix, but rather by the matrix norm itself. 
+#
+#        Parameters
+#        ----------
+#        matrixCentered: ndarray
+#           Data to compare matrix sketch to 
+#
+#        Returns
+#        -------
+#        float,
+#            Data subtracted by data projected onto sketched space, scaled by matrix elements
+#       """
+#        matSketch = self.sketch[:self.ell, :]
+#        print("RANK ADAPTIVE SHAPE:",matrixCentered.shape, matSketch.shape)
+##        k = 10
+#        matrixCenteredT = matrixCentered.T
+#        matSketchT = matSketch.T
+#        U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
+##        G = U[:,:k]
+#        G = U
+#        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 50)/
+#                np.linalg.norm(matrixCenteredT, 'fro')**2)
+
     def lowMemoryReconstructionErrorScaled(self, matrixCentered):
-        """ 
-        Compute the low memory reconstruction error of the matrix sketch
-        against given data. This is the same as reconstructionError,
-        but estimates the norm computation and does not scale by the 
-        minimum projection matrix, but rather by the matrix norm itself. 
-
-        Parameters
-        ----------
-        matrixCentered: ndarray
-           Data to compare matrix sketch to 
-
-        Returns
-        -------
-        float,
-            Data subtracted by data projected onto sketched space, scaled by matrix elements
-       """
-        matSketch = self.sketch
-        k = 10
+        matSketch = self.sketch[:self.ell, :]
         matrixCenteredT = matrixCentered.T
         matSketchT = matSketch.T
         U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
-        G = U[:,:k]
-        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 50)/
-                np.linalg.norm(matrixCenteredT, 'fro')**2)
+        G = U
+        return self.estimFrobNormJ(matrixCenteredT, [G,G.T,matrixCenteredT], 20)/np.linalg.norm(matrixCenteredT, 'fro')
 
-    def estimFrobNormSquared(self, addMe, arrs, its):
-        """ 
-        Estimate the Frobenius Norm of product of arrs matrices 
-        plus addME matrix using its iterations. 
-
-        Parameters
-        ----------
-        arrs: list of ndarray
-           Matrices to multiply together
-
-        addMe: ndarray
-            Matrix to add to others
-
-        its: int
-            Number of iterations to average over
-
-        Returns
-        -------
-        sumMe/its*no_rows : float
-            Estimate of frobenius norm of product
-            of arrs matrices plus addMe matrix
-
-        Notes
-        -----
-        Frobenius estimation is the expected value of matrix
-        multiplied by random vector from multivariate normal distribution
-        based on [1]. 
-
-        [1] Norm and Trace Estimation with Random Rank-one Vectors 
-        Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
-        Analysis and Applications 2021 42:1, 202-223
-       """
-        no_rows = arrs[-1].shape[1]
-        v = np.random.normal(size=no_rows)
-        v_hat = v / np.linalg.norm(v)
+    def estimFrobNormJ(self, addMe, arrs, k):
+        m, n = addMe.shape
+        randMat = np.random.normal(0, 1, size=(n, k))
+        minusMe = addMe @ randMat
         sumMe = 0
-        for j in range(its):
-            v = np.random.normal(size=no_rows)
-            v_hat = v / np.linalg.norm(v)
-            v_addMe = addMe @ v_hat
-            for arr in arrs[::-1]:
-                v_hat = arr @ v_hat
-            sumMe = sumMe + (np.linalg.norm(v_addMe - v_hat))**2
-        return sumMe/its*no_rows
+        for arr in arrs[::-1]:
+            randMat = arr @ randMat
+        sumMe += math.sqrt(1/k) * np.linalg.norm(randMat - minusMe, 'fro')
+        return sumMe
+
+#    def estimFrobNormSquared(self, addMe, arrs, its):
+#        """ 
+#        Estimate the Frobenius Norm of product of arrs matrices 
+#        plus addME matrix using its iterations. 
+#
+#        Parameters
+#        ----------
+#        arrs: list of ndarray
+#           Matrices to multiply together
+#
+#        addMe: ndarray
+#            Matrix to add to others
+#
+#        its: int
+#            Number of iterations to average over
+#
+#        Returns
+#        -------
+#        sumMe/its*no_rows : float
+#            Estimate of frobenius norm of product
+#            of arrs matrices plus addMe matrix
+#
+#        Notes
+#        -----
+#        Frobenius estimation is the expected value of matrix
+#        multiplied by random vector from multivariate normal distribution
+#        based on [1]. 
+#
+#        [1] Norm and Trace Estimation with Random Rank-one Vectors 
+#        Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
+#        Analysis and Applications 2021 42:1, 202-223
+#       """
+#        no_rows = arrs[-1].shape[1]
+#        v = np.random.normal(size=no_rows)
+#        v_hat = v / np.linalg.norm(v)
+#        sumMe = 0
+#        for j in range(its):
+#            v = np.random.normal(size=no_rows)
+#            v_hat = v / np.linalg.norm(v)
+#            v_addMe = addMe @ v_hat
+#            for arr in arrs[::-1]:
+#                v_hat = arr @ v_hat
+#            sumMe = sumMe + (np.linalg.norm(v_addMe - v_hat))**2
+#        return sumMe/its*no_rows
 
 
     def gatherFreqDirsSerial(self):
@@ -509,7 +530,7 @@ class MergeTree:
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
-        print(self.buffSizes)
+#        print(self.buffSizes)
 
         self.fd.update_model(self.data.T)
 
@@ -620,7 +641,6 @@ class ApplyCompression:
     non-downsampled data for thumbnail generation
     components: Principal Components of matrix sketch
     processedData: Data projected onto matrix sketch range
-    smallImages: Downsampled images for visualization purposes 
     """
 
     def __init__(
@@ -637,7 +657,6 @@ class ApplyCompression:
         output_dir,
         currRun,
         imgData, 
-        thumbnailData,
     ):
 
         self.comm = comm
@@ -657,7 +676,7 @@ class ApplyCompression:
 #        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile2, os.path.isfile(readFile2)))
 #        while(not os.path.isfile(readFile2)):
 #            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile2, self.rank))
-#        time.sleep(5)
+        time.sleep(5)
         with h5py.File(readFile2, 'r') as hf:
             self.data = hf["sketch"][:]
 #            self.mean = hf["mean"][:]
@@ -666,12 +685,10 @@ class ApplyCompression:
         self.components = Vt
         
         self.processedData = None
-        self.smallImgs = None
 
         self.imageIndicesProcessed = []
 
         self.imgData = imgData
-        self.thumbnailData = thumbnailData
 
 
     def run(self):
@@ -680,11 +697,8 @@ class ApplyCompression:
 
         Note: If-Else statement is from previous/future work enabling streaming processing. 
         """
-        if self.smallImgs is None:
-            self.smallImgs = self.thumbnailData
-        else:
-            self.smallImgs = np.concatenate((self.smallImgs, self.thumbnailData), axis=0)
         self.apply_compression(self.imgData)
+        return self.data
 
     def apply_compression(self, X):
         """
@@ -707,7 +721,6 @@ class ApplyCompression:
         filename = self.output_dir + '{}_ProjectedData_{}.h5'.format(self.currRun, self.rank)
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("ProjectedData",  data=self.processedData)
-            hf.create_dataset("SmallImages", data=self.smallImgs)
 #        print("CREATED FILE: ", filename)
         self.comm.barrier()
         return filename
@@ -883,10 +896,10 @@ class visualizeFD:
                 ac = cpt - apt
                 if math.isclose(np.linalg.norm(ab), 0.0) or math.isclose(np.linalg.norm(ac), 0.0):
                     count += 1
-                    print("TOO CLOSE")
+#                    print("TOO CLOSE")
                     continue
                 outlier_factors.append(np.dot(ab, ac)/((np.linalg.norm(ab)**2) * (np.linalg.norm(ac))))
-            print("CURRENT POINT: ", pts[a], test_list, outlier_factors, np.var(np.array(outlier_factors)))
+#            print("CURRENT POINT: ", pts[a], test_list, outlier_factors, np.var(np.array(outlier_factors)))
             if(len(outlier_factors)==0):
                 abofs.append(np.inf)
             else:
@@ -899,7 +912,7 @@ class visualizeFD:
 #        quart10 = lstCopy[len(lstCopy)//divBy]
 
         lstQuant = np.quantile(np.array(lst), self.outlierQuantile)
-        print("AIDJWOIJDAOWIDJWAOIDJAWOIDWJA", lstQuant, lst)
+#        print("AIDJWOIJDAOWIDJWAOIDJAWOIDWJA", lstQuant, lst)
         outlierInds = []
         notOutlierInds = []
         for j in range(len(lst)):
@@ -907,8 +920,8 @@ class visualizeFD:
                 outlierInds.append(j)
             else:
                 notOutlierInds.append(j)
-        print("OUTLIER INDS: ", outlierInds)
-        print("NOT OUTLIER INDS: ", notOutlierInds)
+#        print("OUTLIER INDS: ", outlierInds)
+#        print("NOT OUTLIER INDS: ", notOutlierInds)
         return np.array(outlierInds), np.array(notOutlierInds)
 
     def genHist(self, vals, endClass):
@@ -1281,27 +1294,6 @@ class visualizeFD:
         output_notebook()
         show(self.viewResults)
 
-def profile(filename=None, comm=MPI.COMM_WORLD):
-  def prof_decorator(f):
-    def wrap_f(*args, **kwargs):
-      pr = cProfile.Profile()
-      pr.enable()
-      result = f(*args, **kwargs)
-      pr.disable()
-
-      if filename is None:
-        pr.print_stats()
-      else:
-        filename_r = filename + ".{}".format(comm.rank)
-        pr.dump_stats(filename_r)
-
-      return result
-    return wrap_f
-  return prof_decorator
-
-def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
-
 class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
@@ -1347,12 +1339,99 @@ class WrapperFullFD:
         self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile)
         self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 
-#    @profile(filename="fullFD_profile")
+#    def lowMemoryReconstructionErrorScaled(self, matrixCentered, matSketch):
+#        """ 
+#        Compute the low memory reconstruction error of the matrix sketch
+#        against given data. This is the same as reconstructionError,
+#        but estimates the norm computation and does not scale by the 
+#        minimum projection matrix, but rather by the matrix norm itself. 
+#
+#        Parameters
+#        ----------
+#        matrixCentered: ndarray
+#           Data to compare matrix sketch to 
+#
+#        Returns
+#        -------
+#        float,
+#            Data subtracted by data projected onto sketched space, scaled by matrix elements
+#       """
+##        k = 10
+#        matrixCenteredT = matrixCentered.T
+#        matSketchT = matSketch.T
+#        U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
+##        G = U[:,:k]
+#        G = U
+#        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 50)/
+#                np.linalg.norm(matrixCenteredT, 'fro')**2)
+#
+#    def estimFrobNormSquared(self, addMe, arrs, its):
+#        """ 
+#        Estimate the Frobenius Norm of product of arrs matrices 
+#        plus addME matrix using its iterations. 
+#
+#        Parameters
+#        ----------
+#        arrs: list of ndarray
+#           Matrices to multiply together
+#
+#        addMe: ndarray
+#            Matrix to add to others
+##
+#        its: int
+#            Number of iterations to average over
+#
+#        Returns
+#        -------
+#        sumMe/its*no_rows : float
+#            Estimate of frobenius norm of product
+#            of arrs matrices plus addMe matrix
+#
+#        Notes
+#        -----
+#        Frobenius estimation is the expected value of matrix
+#        multiplied by random vector from multivariate normal distribution
+#        based on [1]. 
+#
+#        [1] Norm and Trace Estimation with Random Rank-one Vectors 
+#        Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
+#        Analysis and Applications 2021 42:1, 202-223
+#       """
+#        no_rows = arrs[-1].shape[1]
+#        v = np.random.normal(size=no_rows)
+#        v_hat = v / np.linalg.norm(v)
+#        sumMe = 0
+#        for j in range(its):
+#            v = np.random.normal(size=no_rows)
+#            v_hat = v / np.linalg.norm(v)
+#            v_addMe = addMe @ v_hat
+#            for arr in arrs[::-1]:
+#                v_hat = arr @ v_hat
+#            sumMe = sumMe + (np.linalg.norm(v_addMe - v_hat))**2
+#        return sumMe/its*no_rows
+
+    def lowMemoryReconstructionErrorScaled(self, matrixCentered, matSketch):
+        matrixCenteredT = matrixCentered.T
+        matSketchT = matSketch.T
+        U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
+        G = U
+        return self.estimFrobNormJ(matrixCenteredT, [G,G.T,matrixCenteredT], 20)/np.linalg.norm(matrixCenteredT, 'fro')
+
+    def estimFrobNormJ(self, addMe, arrs, k):
+        m, n = addMe.shape
+        randMat = np.random.normal(0, 1, size=(n, k))
+        minusMe = addMe @ randMat
+        sumMe = 0
+        for arr in arrs[::-1]:
+            randMat = arr @ randMat
+        sumMe += math.sqrt(1/k) * np.linalg.norm(randMat - minusMe, 'fro')
+        return sumMe
+
     def runMe(self):
         stfull = time.perf_counter()
 
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
-        self.fullImgData, self.fullThumbnailData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps)
+        self.fullImgData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=False)
 
         #SKETCHING STEP
         ##########################################################################################
@@ -1386,9 +1465,9 @@ class WrapperFullFD:
 
         #PROJECTION STEP
         ##########################################################################################
-        appComp = ApplyCompression(comm=self.comm, rank = self.rank, size=self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,det_type=self.det_type, readFile = mergedSketchFilename, output_dir = self.writeToHere, currRun = self.currRun, imgData = self.fullImgData, thumbnailData = self.fullThumbnailData)
+        appComp = ApplyCompression(comm=self.comm, rank = self.rank, size=self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,det_type=self.det_type, readFile = mergedSketchFilename, output_dir = self.writeToHere, currRun = self.currRun, imgData = self.fullImgData)
         st = time.perf_counter()
-        appComp.run()
+        self.matSketch = appComp.run()
         appComp.write()
         et = time.perf_counter()
         print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
@@ -1400,12 +1479,25 @@ class WrapperFullFD:
 #        filenameTest3 = self.comm.allgather(filenameTest3)
 #        print("TEST 3: ", self.rank, filenameTest3)
 
+    def addThumbnailsToProjectH5(self):
+#        print("Gathering thumbnails")
+        startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
+        _,self.fullThumbnailData,_ = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
+        file_name = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData_{}.h5".format(self.currRun, self.rank)
+        f1 = h5py.File(file_name, 'r+')
+        f1.create_dataset("SmallImages",  data=self.fullThumbnailData)
+        f1.close()
+        self.comm.barrier()
+
+
     def visualizeMe(self):
+        st = time.perf_counter()
+        self.addThumbnailsToProjectH5()
         #UMAP STEP
         ##########################################################################################
         if self.rank==0:
-            print("here 1")
-            st = time.perf_counter()
+
+#            print("here 1")
 
             skipSize = 8
             numImgsToUse = int(self.num_imgs/skipSize)
@@ -1535,7 +1627,7 @@ class DataRetriever:
         tuples.append((last_batch_start, last_batch_end))
         return tuples    
 
-    def get_formatted_images(self, startInd, n, num_steps):
+    def get_formatted_images(self, startInd, n, num_steps, getThumbnails):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
 
@@ -1566,7 +1658,8 @@ class DataRetriever:
             imgs = imgs[
                 [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
             ]
-            thumbnails = self.assembleImgsToSave(imgs)
+            if getThumbnails:
+                thumbnails = self.assembleImgsToSave(imgs)
 
             if self.downsample:
                 imgs = bin_data(imgs, self.bin_factor)
@@ -1574,25 +1667,43 @@ class DataRetriever:
             img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
             img_batch[img_batch<0] = 0
     
-            num_valid_thumbnails, tx, ty = thumbnails.shape
-            thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
+            if getThumbnails:
+                num_valid_thumbnails, tx, ty = thumbnails.shape
+                thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
 
-            nimg_batch = []
-            nthumbnail_batch = []
-            for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
-                currIntensity = np.sum(img.flatten(), dtype=np.double)
-                nimg = self.imageProcessor.processImg(img, currIntensity)
-                nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
-                if nimg is not None:
-                    nimg_batch.append(nimg)
-                    nthumbnail_batch.append(nthumbnail)
-            nimg_batch = np.array(nimg_batch).T
-            nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
-            if fullimgs is None:
-                fullimgs = nimg_batch
-                fullthumbnails = nthumbnail_batch
+            if getThumbnails:
+                nimg_batch = []
+                nthumbnail_batch = []
+                for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
+                    currIntensity = np.sum(img.flatten(), dtype=np.double)
+                    nimg = self.imageProcessor.processImg(img, currIntensity)
+                    nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
+                    if nimg is not None:
+                        nimg_batch.append(nimg)
+                        nthumbnail_batch.append(nthumbnail)
+                nimg_batch = np.array(nimg_batch).T
+                nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
+                if fullimgs is None:
+                    fullimgs = nimg_batch
+                    fullthumbnails = nthumbnail_batch
+                else:
+                    fullimgs = np.hstack((fullimgs, nimg_batch))
+                    fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
             else:
-                fullimgs = np.hstack((fullimgs, nimg_batch))
-                fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
+                nimg_batch = []
+                for img in img_batch.T:
+                    currIntensity = np.sum(img.flatten(), dtype=np.double)
+                    nimg = self.imageProcessor.processImg(img, currIntensity)
+                    if nimg is not None:
+                        nimg_batch.append(nimg)
+                nimg_batch = np.array(nimg_batch).T
+                if fullimgs is None:
+                    fullimgs = nimg_batch
+                else:
+                    fullimgs = np.hstack((fullimgs, nimg_batch))
+
         print("Images tracked:", imgsTracked)
-        return (fullimgs, fullthumbnails, imgsTracked)
+        if getThumbnails:
+            return (fullimgs, fullthumbnails, imgsTracked)
+        else:
+            return (fullimgs, imgsTracked)
