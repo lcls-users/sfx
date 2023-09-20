@@ -11,7 +11,7 @@ class PsanaInterface:
 
     def __init__(self, exp, run, det_type,
                  event_receiver=None, event_code=None, event_logic=True,
-                 ffb_mode=False, track_timestamps=False, calibdir=None):
+                 ffb_mode=False, track_timestamps=False, xtcdir=None, calibdir=None):
         self.exp = exp # experiment name, str
         self.hutch = exp[:3] # hutch name, str
         self.run = run # run number, int
@@ -21,10 +21,10 @@ class PsanaInterface:
         self.event_receiver = event_receiver # 'evr0' or 'evr1', str
         self.event_code = event_code # event code, int
         self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
-        self.set_up(det_type, ffb_mode, calibdir)
+        self.set_up(det_type, xtcdir, calibdir)
         self.counter = 0
 
-    def set_up(self, det_type, ffb_mode, calibdir=None):
+    def set_up(self, det_type, xtcdir=None, calibdir=None):
         """
         Instantiate DataSource and Detector objects; use the run 
         functionality to retrieve all psana.EventTimes.
@@ -33,14 +33,16 @@ class PsanaInterface:
         ----------
         det_type : str
             detector type, e.g. epix10k2M or jungfrau4M
-        ffb_mode : bool
-            if True, set up in an FFB-compatible style
+        xtcdir: str
+            directory to alternative XTC files
         calibdir: str
             directory to alternative calibration files
         """
         ds_args=f'exp={self.exp}:run={self.run}:idx'
-        if ffb_mode:
-            ds_args += f':dir=/cds/data/drpsrcf/{self.exp[:3]}/{self.exp}/xtc'
+        if xtcdir is not None:
+            ds_args += f':dir={xtcdir}'
+        #if ffb_mode:
+        #    ds_args += f':dir=/cds/data/drpsrcf/{self.exp[:3]}/{self.exp}/xtc'
         
         self.ds = psana.DataSource(ds_args)   
         self.det = psana.Detector(det_type, self.ds.env())
