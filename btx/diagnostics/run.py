@@ -22,7 +22,7 @@ class RunDiagnostics:
     Class to compute powders and trajectories of various image statistics
     and event characteristics for a given run.
     """    
-    def __init__(self, exp, run, det_type, xtcdir, hutch):
+    def __init__(self, exp, run, det_type, xtcdir=None, hutch=None):
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
                                   xtcdir=xtcdir, hutch=hutch, track_timestamps=True)
         self.pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(run))
