@@ -11,9 +11,13 @@ class PsanaInterface:
 
     def __init__(self, exp, run, det_type,
                  event_receiver=None, event_code=None, event_logic=True,
-                 ffb_mode=False, track_timestamps=False, xtcdir=None, calibdir=None):
+                 ffb_mode=False, track_timestamps=False, hutch=None,
+                 xtcdir=None, calibdir=None):
         self.exp = exp # experiment name, str
-        self.hutch = exp[:3] # hutch name, str
+        if hutch is None:
+            self.hutch = exp[:3] # hutch name, str
+        else:
+            self.hutch = hutch
         self.run = run # run number, int
         self.det_type = det_type # detector name, str
         self.track_timestamps = track_timestamps # bool, keep event info

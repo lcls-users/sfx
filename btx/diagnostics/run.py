@@ -22,9 +22,9 @@ class RunDiagnostics:
     Class to compute powders and trajectories of various image statistics
     and event characteristics for a given run.
     """    
-    def __init__(self, exp, run, det_type, xtcdir):
+    def __init__(self, exp, run, det_type, xtcdir, hutch):
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
-                                  xtcdir=xtcdir, track_timestamps=True)
+                                  xtcdir=xtcdir, hutch=hutch, track_timestamps=True)
         self.pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(run))
         self.powders = dict() 
         self.stats = dict()
@@ -768,7 +768,8 @@ def main():
     rd = RunDiagnostics(exp=params.exp,
                         run=params.run,
                         det_type=params.det_type,
-                        xtcdir=params.xtcdir)
+                        xtcdir=params.xtcdir,
+                        hutch=params.hutch)
     rd.compute_run_stats(max_events=params.max_events, 
                          mask=params.mask, 
                          threshold=params.mean_threshold,
@@ -799,6 +800,7 @@ def parse_input():
     parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M',  required=True, type=str)
     parser.add_argument('-o', '--outdir', help='Output directory for powders and plots', required=True, type=str)
     parser.add_argument('-x', '--xtcdir', help='Alternative XTC directory', required=False, default=None,type=str)
+    parser.add_argument('--hutch', help='Hutch name', required=False, default=None, type=str)
     parser.add_argument('-m', '--mask', help='Binary mask for computing trajectories', required=False, type=str)
     parser.add_argument('--max_events', help='Number of images to process, -1 for full run', required=False, default=-1, type=int)
     parser.add_argument('--mean_threshold', help='Exclude images with a mean above this threshold', required=False, type=float)
