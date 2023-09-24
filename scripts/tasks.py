@@ -518,11 +518,16 @@ def draw_sketch(config):
     taskdir = os.path.join(setup.root_dir, 'sketch')
     os.makedirs(taskdir, exist_ok=True)
     fd = WrapperFullFD(exp=setup.exp, run=setup.run, det_type=setup.det_type,
-                       task.start_offset, task.num_imgs, task.writeToHere, task.grabImgSteps,
-                       task.num_components, task.alpha, task.rankAdapt, task.rankAdaptMinError,
-                       task.downsample, task.bin_factor, task.threshold, task.eluThreshold,
-                       task.eluAlpha, task.normalizeIntensity, task.noZeroIntensity,
-                       task.minIntensity, task.samplingFactor, task.divBy, task.thresholdQuantile)
+                       start_offset=task.start_offset, num_imgs=task.num_imgs, 
+                       writeToHere=task.writeToHere, grabImgSteps=task.grabImgSteps,
+                       num_components=task.num_components, alpha=task.alpha, 
+                       rankAdapt=task.rankAdapt, rankAdaptMinError=task.rankAdaptMinError,
+                       downsample=task.downsample, bin_factor=task.bin_factor, 
+                       threshold=task.threshold, eluThreshold=task.eluThreshold,
+                       eluAlpha=task.eluAlpha, normalizeIntensity=task.normalizeIntensity, 
+                       noZeroIntensity=task.noZeroIntensity, minIntensity=task.minIntensity, 
+                       samplingFactor=task.samplingFactor, divBy=task.divBy, 
+                       thresholdQuantile=task.thresholdQuantile)
     logger.info(f'Performing Frequent Direction Sketching for run {setup.run} of {setup.exp}...')
     fd.runMe()
     logger.debug('Done!')
@@ -535,11 +540,16 @@ def show_sketch():
     taskdir = os.path.join(setup.root_dir, 'sketch')
     os.makedirs(taskdir, exist_ok=True)
     fd = WrapperFullFD(exp=setup.exp, run=setup.run, det_type=setup.det_type,
-                       task.start_offset, task.num_imgs, task.writeToHere, task.grabImgSteps,
-                       task.num_components, task.alpha, task.rankAdapt, task.rankAdaptMinError,
-                       task.downsample, task.bin_factor, task.threshold, task.eluThreshold,
-                       task.eluAlpha, task.normalizeIntensity, task.noZeroIntensity,
-                       task.minIntensity, task.samplingFactor, task.divBy, task.thresholdQuantile)
+                       start_offset=task.start_offset, num_imgs=task.num_imgs, 
+                       writeToHere=task.writeToHere, grabImgSteps=task.grabImgSteps,
+                       num_components=task.num_components, alpha=task.alpha, 
+                       rankAdapt=task.rankAdapt, rankAdaptMinError=task.rankAdaptMinError,
+                       downsample=task.downsample, bin_factor=task.bin_factor, 
+                       threshold=task.threshold, eluThreshold=task.eluThreshold,
+                       eluAlpha=task.eluAlpha, normalizeIntensity=task.normalizeIntensity, 
+                       noZeroIntensity=task.noZeroIntensity, minIntensity=task.minIntensity, 
+                       samplingFactor=task.samplingFactor, divBy=task.divBy, 
+                       thresholdQuantile=task.thresholdQuantile)
     logger.info(f'Display Sketch for run {setup.run} of {setup.exp}...')
     fd.visualizeMe()
     logger.debug('Done!')

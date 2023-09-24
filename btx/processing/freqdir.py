@@ -140,12 +140,28 @@ class FreqDir(DimRed):
         samplingFactor, 
         num_components,
         psi,
+        usePSI
     ):
 
-        super().__init__(exp=exp, run=run, det_type=det_type, start_offset=start_offset,
-                num_images=num_imgs, num_components=num_components, batch_size=0, priming=False,
-                downsample=downsample, bin_factor=bin_factor, output_dir=output_dir, psi=psi)
+########################
+        if usePSI:
+            super().__init__(exp=exp, run=run, det_type=det_type, start_offset=start_offset,
+                    num_images=num_imgs, num_components=num_components, batch_size=0, priming=False,
+                    downsample=downsample, bin_factor=bin_factor, output_dir=output_dir, psi=psi)
+        else:
+            self.start_offset = start_offset
+            self.downsample = False
+            self.bin_factor = 0
+            self.output_dir = output_dir
+            self.num_components = num_components
+            self.num_features,self.num_images = imgData.shape 
+            print("NUM IMAGES: ", self.num_images)
 
+            self.task_durations = dict({})
+
+            self.num_incorporated_images = 0
+            self.outliers, self.pc_data = [], []
+########################
         self.comm = comm
         self.rank= rank
         self.size = size
@@ -526,7 +542,7 @@ class MergeTree:
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
-        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, rankAdaptMinError=1, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = None, imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1, psi=psi)
+        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, rankAdaptMinError=1, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = None, imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1, psi=psi, usePSI=True)
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
@@ -795,7 +811,6 @@ class PrioritySampling:
         wi = np.linalg.norm(vec)**2
         pi = wi/ui
         self.sketch.push(vec, pi, wi)
-
 
 
 
@@ -1298,7 +1313,7 @@ class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
     """
-    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile):
+    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, usePSI=True):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1325,10 +1340,15 @@ class WrapperFullFD:
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
 
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-        self.psi.counter = self.start_offset + self.num_imgs*self.rank//self.size
         self.imgsTracked = []
         self.grabImgSteps = grabImgSteps
+
+        self.usePSI = usePSI
+        if usePSI:
+            self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+            self.psi.counter = self.start_offset + self.num_imgs*self.rank//self.size
+        else:
+            self.psi = None
 
         if self.rank==0:
             self.currRun = datetime.now().strftime("%y%m%d%H%M%S")
@@ -1427,18 +1447,43 @@ class WrapperFullFD:
         sumMe += math.sqrt(1/k) * np.linalg.norm(randMat - minusMe, 'fro')
         return sumMe
 
-    def runMe(self):
-        stfull = time.perf_counter()
-
+    def retrieveImages(self):
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
         self.fullImgData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=False)
+
+    def genSynthData(self):
+        self.fullImgData = np.random.rand(70000, 100000//self.size)
+        self.imgsTracked = [(0, self.rank)]
+
+    def genDecayingSVD(self):
+        A = np.random.rand(matrixSize, matrixSize)\n
+        A = A.T @ A\n
+        eigVals, eigVecs = np.linalg.eig(A)\n
+        diag_entries = list(np.random.rand(matrixSize))\n
+        diag_entries.sort()\n
+        diag_entries = np.array(diag_entries[::-1])\n
+        D = np.diag(diag_entries) + np.eye(matrixSize)\n
+        return (eigVecs @ (D) @ eigVecs.T)
+
+    def runMe(self):
+
+        stfull = time.perf_counter()
+
+        #DATA RETRIEVAL STEP
+        ##########################################################################################
+        if self.usePSI:
+            self.retrieveImages()
+        else:
+            self.genSynthData()
+        et = time.perf_counter()
+        print("Estimated time for data retrieval for rank {0}/{1}: {2}".format(self.rank, self.size, et - stfull))
 
         #SKETCHING STEP
         ##########################################################################################
         freqDir = FreqDir(comm= self.comm, rank=self.rank, size = self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,
                 det_type=self.det_type, output_dir=self.writeToHere, num_components=self.num_components, alpha=self.alpha, rankAdapt=self.rankAdapt, rankAdaptMinError = self.rankAdaptMinError,
                 merger=False, mergerFeatures=0, downsample=self.downsample, bin_factor=self.bin_factor,
-                currRun = self.currRun, samplingFactor=self.samplingFactor, imgData = self.fullImgData, imgsTracked = self.imgsTracked, psi=self.psi)
+                currRun = self.currRun, samplingFactor=self.samplingFactor, imgData = self.fullImgData, imgsTracked = self.imgsTracked, psi=self.psi, usePSI=self.usePSI)
         print("{} STARTING SKETCHING FOR {}".format(self.rank, self.currRun))
         st = time.perf_counter()
         freqDir.run()
@@ -1488,7 +1533,6 @@ class WrapperFullFD:
         f1.create_dataset("SmallImages",  data=self.fullThumbnailData)
         f1.close()
         self.comm.barrier()
-
 
     def visualizeMe(self):
         st = time.perf_counter()
@@ -1649,25 +1693,35 @@ class DataRetriever:
         fullthumbnails = None
         imgsTracked = []
         runs = self.split_range(startInd, startInd+n, num_steps)
+        print(runs) 
         for runStart, runEnd in runs:
+#            print("RETRIEVING: [", runStart, ":", runEnd,"]")
             self.psi.counter = runStart
             imgsTracked.append((runStart, runEnd))
 
+#            print("getting images")
             imgs = self.psi.get_images(runEnd-runStart, assemble=False)
 
+#            print("Removing nan images")
             imgs = imgs[
                 [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
             ]
+
             if getThumbnails:
+#                print("Assembling thumbnails")
                 thumbnails = self.assembleImgsToSave(imgs)
 
             if self.downsample:
+#                print("Downsampling images")
                 imgs = bin_data(imgs, self.bin_factor)
+#            print("Flattening images")
             num_valid_imgs, p, x, y = imgs.shape
             img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
+#            print("Image values less than 0 setting to 0")
             img_batch[img_batch<0] = 0
     
             if getThumbnails:
+#                print("FLattening thumbnails")
                 num_valid_thumbnails, tx, ty = thumbnails.shape
                 thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
 
@@ -1693,16 +1747,19 @@ class DataRetriever:
                 nimg_batch = []
                 for img in img_batch.T:
                     currIntensity = np.sum(img.flatten(), dtype=np.double)
+#                    print("Starting image processing of size {}".format(img_batch.T.shape))
                     nimg = self.imageProcessor.processImg(img, currIntensity)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                 nimg_batch = np.array(nimg_batch).T
+#                print("hstacking")
                 if fullimgs is None:
+
                     fullimgs = nimg_batch
                 else:
                     fullimgs = np.hstack((fullimgs, nimg_batch))
 
-        print("Images tracked:", imgsTracked)
+#        print("Images tracked:", imgsTracked)
         if getThumbnails:
             return (fullimgs, fullthumbnails, imgsTracked)
         else:
