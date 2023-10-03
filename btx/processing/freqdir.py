@@ -39,8 +39,8 @@ import base64
 
 from datetime import datetime
 
-import umap
-import hdbscan
+#import umap
+#import hdbscan
 from sklearn.cluster import OPTICS, cluster_optics_dbscan
 
 from matplotlib import colors
@@ -815,7 +815,7 @@ class PrioritySampling:
         self.sketch.push(vec, pi, wi)
 
 
-
+'''
 class visualizeFD:
     """
     Visualize FD Dimension Reduction using UMAP and DBSCAN
@@ -1313,6 +1313,7 @@ class visualizeFD:
         from bokeh.io import output_notebook
         output_notebook()
         show(self.viewResults)
+'''
 
 class WrapperFullFD:
     """
@@ -1544,7 +1545,7 @@ class WrapperFullFD:
         et3 = time.perf_counter()
         print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et3 - st3))
         print("Estimated full processing time for rank {0}/{1}: {2}, {3}".format(self.rank, self.size, (et1 + et2 + et3 - st1 - st2 - st3), et3 - stfull))
-
+        self.addThumbnailsToProjectH5()
         return (et1 + et2 + et3 - st1 - st2 - st3)
 
 #        self.comm.barrier()
@@ -1562,7 +1563,7 @@ class WrapperFullFD:
         f1.create_dataset("SmallImages",  data=self.fullThumbnailData)
         f1.close()
         self.comm.barrier()
-
+'''
     def visualizeMe(self):
         st = time.perf_counter()
         self.addThumbnailsToProjectH5()
@@ -1595,6 +1596,7 @@ class WrapperFullFD:
             et = time.perf_counter()
             print("UMAP HTML Generation Processing time: {}".format(et - st))
             #print("TOTAL PROCESING TIME: {}".format(et - stfull))
+'''
 
 class FD_ImageProcessing:
     def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile):
