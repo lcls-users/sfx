@@ -131,7 +131,8 @@ CORES=${CORES:=1}
 if [ ${TASK} != 'find_peaks' ] &&\
    [ ${TASK} != 'stream_analysis' ] &&\
    [ ${TASK} != 'determine_cell' ] &&\
-   [ ${TASK} != 'opt_geom' ]; then
+   [ ${TASK} != 'opt_geom' ] &&\
+   [ ${TASK} != 'draw_sketch' ]; then
   CORES=1
 fi
 

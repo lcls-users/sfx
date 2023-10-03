@@ -39,8 +39,8 @@ import base64
 
 from datetime import datetime
 
-import umap
-import hdbscan
+#import umap
+#import hdbscan
 from sklearn.cluster import OPTICS, cluster_optics_dbscan
 
 from matplotlib import colors
@@ -953,6 +953,9 @@ class visualizeFD:
         return [*range(endClass+1)], [*range(1, endClass+2)]
 
     def genUMAP(self):
+        import umap
+        import hdbscan
+
         imgs = None
         projections = None
         for currRank in range(self.nprocs):
