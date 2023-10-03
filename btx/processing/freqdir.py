@@ -308,10 +308,12 @@ class FreqDir(DimRed):
             toShrink[-1] = 0
             toShrink = sqrt(toShrink)
             toShrink[:int(self.ell*(1-self.alpha))] = sCopy[:int(self.ell*(1-self.alpha))]
-            self.sketch[:self.ell:,:] = dot(diag(toShrink), Vt[:self.ell,:])
+            #self.sketch[:self.ell:,:] = dot(diag(toShrink), Vt[:self.ell,:]) #JOHN: Removed this extra colon 10/01/2023
+            self.sketch[:self.ell,:] = dot(diag(toShrink), Vt[:self.ell,:])
             self.sketch[self.ell:,:] = 0
             self.nextZeroRow = self.ell
         else:
+            print(S.shape, self.ell)
             self.sketch[:ssize,:] = diag(s) @ Vt[:ssize,:]
             self.sketch[ssize:,:] = 0
             self.nextZeroRow = ssize
@@ -531,18 +533,18 @@ class MergeTree:
     currRun: Current datetime used to identify run
     """
 
-    def __init__(self, comm, rank, size, exp, run, det_type, divBy, readFile, output_dir, allWriteDirecs, currRun, psi):
+    def __init__(self, comm, rank, size, exp, run, det_type, divBy, readFile, output_dir, allWriteDirecs, currRun, psi, usePSI):
         self.comm = comm
         self.rank = rank
         self.size = size
         
         self.divBy = divBy
         
-#        time.sleep(5)
+        time.sleep(10)
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
-        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, rankAdaptMinError=1, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = None, imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1, psi=psi, usePSI=True)
+        self.fd = FreqDir(comm=comm, rank=rank, size=size, num_imgs=0, start_offset=0, currRun = currRun, rankAdapt=False, rankAdaptMinError=1, exp=exp, run=run, det_type=det_type, num_components=self.data.shape[0], alpha=0.2, merger=True, mergerFeatures = self.data.shape[1], output_dir=output_dir, imgData = np.random.rand(2, 2), imgsTracked=None, downsample=False, bin_factor=1, samplingFactor=1, psi=psi, usePSI=usePSI)
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
@@ -692,7 +694,7 @@ class ApplyCompression:
 #        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile2, os.path.isfile(readFile2)))
 #        while(not os.path.isfile(readFile2)):
 #            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile2, self.rank))
-        time.sleep(5)
+        time.sleep(10)
         with h5py.File(readFile2, 'r') as hf:
             self.data = hf["sketch"][:]
 #            self.mean = hf["mean"][:]
@@ -963,6 +965,8 @@ class visualizeFD:
                     imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
                     projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
 
+        print("AOIDWJOIAWDJ", len(imgs), len(projections))
+
         intensities = []
         for img in imgs:
             intensities.append(np.sum(img.flatten()))
@@ -981,7 +985,8 @@ class visualizeFD:
             n_neighbors=self.umap_n_neighbors,
             random_state=self.umap_random_state,
             n_components=2,
-            min_dist=0.25,
+#            min_dist=0.25,
+            min_dist=0.1,
         ).fit_transform(self.projections)
 
         self.labels = hdbscan.HDBSCAN(
@@ -1357,7 +1362,7 @@ class WrapperFullFD:
         self.currRun = self.comm.bcast(self.currRun, root=0)
 
         self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile)
-        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
+        self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 150, thumbnailWidth = 150)
 
 #    def lowMemoryReconstructionErrorScaled(self, matrixCentered, matSketch):
 #        """ 
@@ -1455,15 +1460,36 @@ class WrapperFullFD:
         self.fullImgData = np.random.rand(70000, 100000//self.size)
         self.imgsTracked = [(0, self.rank)]
 
-    def genDecayingSVD(self):
-        A = np.random.rand(matrixSize, matrixSize)\n
-        A = A.T @ A\n
-        eigVals, eigVecs = np.linalg.eig(A)\n
-        diag_entries = list(np.random.rand(matrixSize))\n
-        diag_entries.sort()\n
-        diag_entries = np.array(diag_entries[::-1])\n
-        D = np.diag(diag_entries) + np.eye(matrixSize)\n
-        return (eigVecs @ (D) @ eigVecs.T)
+#    def genDecayingSVD(self):
+#        numFeats = 70000
+#        numSamps = 100000//self.size
+#        A = np.random.rand(matrixSize, matrixSize)
+##        A = A.T @ A
+#        eigVals, eigVecs = np.linalg.eig(A)
+#        diag_entries = list(np.random.rand(matrixSize))
+##        diag_entries.sort()
+#        multMe = np.ones(numSamps)
+##        diag_entries = np.array(diag_entries[::-1])
+#        D = np.diag(diag_entries) + np.eye(matrixSize)
+#        return (eigVecs @ (D) @ eigVecs.T)
+
+    def compDecayingSVD(self, seedMe, a, b):
+        numFeats = a
+        numSamps = b//self.size
+        perturbation = np.random.rand(numSamps, numFeats)*0.1
+        np.random.seed(seedMe)
+        A1 = np.random.rand(numSamps, numFeats) 
+        Q1, R1 = np.linalg.qr(A1)
+        Q1 = Q1 + perturbation
+        A2 = np.random.rand(numFeats, numFeats) #Modify
+        Q2, R2 = np.linalg.qr(A2)
+        S = list(np.random.rand(numFeats)) #Modify
+        S.sort()
+        S = S[::-1]
+        for j in range(len(S)): #Modify
+            S[j] = (2**(-16*(j+1)/len(S)))*S[j]
+        self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
+        self.imgsTracked = [(0, numSamps)]
 
     def runMe(self):
 
@@ -1471,12 +1497,13 @@ class WrapperFullFD:
 
         #DATA RETRIEVAL STEP
         ##########################################################################################
-        if self.usePSI:
-            self.retrieveImages()
-        else:
-            self.genSynthData()
-        et = time.perf_counter()
-        print("Estimated time for data retrieval for rank {0}/{1}: {2}".format(self.rank, self.size, et - stfull))
+#        if self.usePSI:
+#            self.retrieveImages()
+#        else:
+#            self.compDecayingSVD()
+##            self.genSynthData()
+#        et = time.perf_counter()
+#        print("Estimated time for data retrieval for rank {0}/{1}: {2}".format(self.rank, self.size, et - stfull))
 
         #SKETCHING STEP
         ##########################################################################################
@@ -1485,11 +1512,11 @@ class WrapperFullFD:
                 merger=False, mergerFeatures=0, downsample=self.downsample, bin_factor=self.bin_factor,
                 currRun = self.currRun, samplingFactor=self.samplingFactor, imgData = self.fullImgData, imgsTracked = self.imgsTracked, psi=self.psi, usePSI=self.usePSI)
         print("{} STARTING SKETCHING FOR {}".format(self.rank, self.currRun))
-        st = time.perf_counter()
+        st1 = time.perf_counter()
         freqDir.run()
         localSketchFilename = freqDir.write()
-        et = time.perf_counter()
-        print("Estimated time for frequent directions rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
+        et1 = time.perf_counter()
+        print("Estimated time for frequent directions rank {0}/{1}: {2}".format(self.rank, self.size, et1 - st1))
 
         #MERGING STEP
         ##########################################################################################
@@ -1501,22 +1528,24 @@ class WrapperFullFD:
         for j in range(freqDir.size):
             allNames.append(fullSketchFilename + str(j) + ".h5")
         mergeTree = MergeTree(comm=self.comm, rank=self.rank, size=self.size, exp=self.exp, run=self.run, det_type=self.det_type, divBy=self.divBy, readFile = localSketchFilename,
-                output_dir=self.writeToHere, allWriteDirecs=allNames, currRun = self.currRun, psi=self.psi)
-        st = time.perf_counter()
+                output_dir=self.writeToHere, allWriteDirecs=allNames, currRun = self.currRun, psi=self.psi, usePSI=self.usePSI)
+        st2 = time.perf_counter()
         mergeTree.merge()
         mergedSketchFilename = mergeTree.write()
-        et = time.perf_counter()
-        print("Estimated time merge tree for rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
+        et2 = time.perf_counter()
+        print("Estimated time merge tree for rank {0}/{1}: {2}".format(self.rank, self.size, et2 - st2))
 
         #PROJECTION STEP
         ##########################################################################################
         appComp = ApplyCompression(comm=self.comm, rank = self.rank, size=self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,det_type=self.det_type, readFile = mergedSketchFilename, output_dir = self.writeToHere, currRun = self.currRun, imgData = self.fullImgData)
-        st = time.perf_counter()
+        st3 = time.perf_counter()
         self.matSketch = appComp.run()
         appComp.write()
-        et = time.perf_counter()
-        print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et - st))
-        print("Estimated full processing time for rank {0}/{1}: {2}".format(self.rank, self.size, et - stfull))
+        et3 = time.perf_counter()
+        print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et3 - st3))
+        print("Estimated full processing time for rank {0}/{1}: {2}, {3}".format(self.rank, self.size, (et1 + et2 + et3 - st1 - st2 - st3), et3 - stfull))
+
+        return (et1 + et2 + et3 - st1 - st2 - st3)
 
 #        self.comm.barrier()
 #        self.comm.Barrier()
@@ -1528,7 +1557,7 @@ class WrapperFullFD:
 #        print("Gathering thumbnails")
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
         _,self.fullThumbnailData,_ = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
-        file_name = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData_{}.h5".format(self.currRun, self.rank)
+        file_name = self.writeToHere+"{}_ProjectedData_{}.h5".format(self.currRun, self.rank)
         f1 = h5py.File(file_name, 'r+')
         f1.create_dataset("SmallImages",  data=self.fullThumbnailData)
         f1.close()
@@ -1543,16 +1572,17 @@ class WrapperFullFD:
 
 #            print("here 1")
 
-            skipSize = 8
+            skipSize = 1
             numImgsToUse = int(self.num_imgs/skipSize)
-            visMe = visualizeFD(inputFile="/sdf/data/lcls/ds/mfx/mfxp23120/scratch/winnicki/h5writes/{}_ProjectedData".format(self.currRun),
+            visMe = visualizeFD(inputFile=self.writeToHere+"{}_ProjectedData".format(self.currRun),
                             outputFile="./UMAPVis_{}.html".format(self.currRun),
                             numImgsToUse=self.num_imgs,
                             nprocs=self.size,
                             userGroupings=[],
                             includeABOD=True,
                             skipSize = skipSize,
-                            umap_n_neighbors=numImgsToUse//40,
+#                            umap_n_neighbors=numImgsToUse//40,
+                            umap_n_neighbors=numImgsToUse//4000,
                             umap_random_state=42,
                             hdbscan_min_samples=int(numImgsToUse*0.75//40),
                             hdbscan_min_cluster_size=int(numImgsToUse//40),
@@ -1761,6 +1791,129 @@ class DataRetriever:
 
 #        print("Images tracked:", imgsTracked)
         if getThumbnails:
+            return (fullimgs, fullthumbnails, imgsTracked)
+        else:
+            return (fullimgs, imgsTracked)
+
+
+class SinglePanelDataRetriever:
+    def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
+        self.exp = exp
+        self.det_type = det_type
+        self.run = run
+        self.thumbnailHeight = thumbnailHeight
+        self.thumbnailWidth = thumbnailWidth
+
+        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+
+        self.imageProcessor = imageProcessor
+
+    def split_range(self, start, end, num_tuples):
+        if start==end:
+            raise ValueError('Range processing error: start value equals end value, which leads to no images processed.')
+            return
+        total_elements = end - start
+        batch_size = total_elements // num_tuples
+        tuples = []
+        for i in range(num_tuples - 1):
+            batch_start = start + i * batch_size
+            batch_end = batch_start + batch_size
+            tuples.append((batch_start, batch_end))
+        last_batch_start = start + (num_tuples - 1) * batch_size
+        last_batch_end = end
+        tuples.append((last_batch_start, last_batch_end))
+        return tuples    
+
+    def get_formatted_images(self, startInd, n, num_steps, getThumbnails):
+        """
+        Fetch n - x image segments from run, where x is the number of 'dead' images.
+
+        Parameters
+        ----------
+        n : int
+            number of images to retrieve
+        start_index : int
+            start index of subsection of data to retrieve
+        end_index : int
+            end index of subsection of data to retrieve
+
+        Returns
+        -------
+        ndarray, shape (end_index-start_index, n-x)
+            n-x retrieved image segments of dimension end_index-start_index
+        """
+        fullimgs = None
+        fullthumbnails = None
+        imgsTracked = []
+        runs = self.split_range(startInd, startInd+n, num_steps)
+        print(runs) 
+        for runStart, runEnd in runs:
+#            print("RETRIEVING: [", runStart, ":", runEnd,"]")
+            self.psi.counter = runStart
+            imgsTracked.append((runStart, runEnd))
+
+#            print("getting images")
+            imgs = self.psi.get_images(runEnd-runStart, assemble=False)
+
+#            print("Removing nan images")
+            imgs = imgs[
+                [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+            ]
+
+            if getThumbnails:
+                saveMe = []
+                for img in imgs:
+                    saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
+                thumbnails = np.array(saveMe)
+                print("thumbaaowdijaoiajw", len(imgs), len(thumbnails))
+
+            num_valid_imgs, x, y = imgs.shape
+            img_batch = np.reshape(imgs, (num_valid_imgs, x * y)).T
+#            print("Image values less than 0 setting to 0")
+            img_batch[img_batch<0] = 0
+    
+            if getThumbnails:
+#                print("FLattening thumbnails")
+                num_valid_thumbnails, tx, ty = thumbnails.shape
+                thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
+
+            if getThumbnails:
+                nimg_batch = []
+                nthumbnail_batch = []
+                for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
+                    currIntensity = np.sum(img.flatten(), dtype=np.double)
+                    nimg = self.imageProcessor.processImg(img, currIntensity)
+                    nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
+                    if nimg is not None:
+                        nimg_batch.append(nimg)
+                        nthumbnail_batch.append(nthumbnail)
+                nimg_batch = np.array(nimg_batch).T
+                nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
+                if fullimgs is None:
+                    fullimgs = nimg_batch
+                    fullthumbnails = nthumbnail_batch
+                else:
+                    fullimgs = np.hstack((fullimgs, nimg_batch))
+                    fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
+            else:
+                nimg_batch = []
+                for img in img_batch.T:
+                    currIntensity = np.sum(img.flatten(), dtype=np.double)
+#                    print("Starting image processing of size {}".format(img_batch.T.shape))
+                    nimg = self.imageProcessor.processImg(img, currIntensity)
+                    if nimg is not None:
+                        nimg_batch.append(nimg)
+                nimg_batch = np.array(nimg_batch).T
+#                print("hstacking")
+                if fullimgs is None:
+
+                    fullimgs = nimg_batch
+                else:
+                    fullimgs = np.hstack((fullimgs, nimg_batch))
+
+#        print("Images tracked:", imgsTracked)
+        if getThumbnails:
+            print(fullimgs.shape, fullthumbnails.shape, imgsTracked)
             return (fullimgs, fullthumbnails, imgsTracked)
         else:
             return (fullimgs, imgsTracked)
