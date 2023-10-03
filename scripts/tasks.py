@@ -539,17 +539,22 @@ def show_sketch():
     """ Display Sketch. """
     taskdir = os.path.join(setup.root_dir, 'sketch')
     os.makedirs(taskdir, exist_ok=True)
-    fd = WrapperFullFD(exp=setup.exp, run=setup.run, det_type=setup.det_type,
-                       start_offset=task.start_offset, num_imgs=task.num_imgs, 
-                       writeToHere=task.writeToHere, grabImgSteps=task.grabImgSteps,
-                       num_components=task.num_components, alpha=task.alpha, 
-                       rankAdapt=task.rankAdapt, rankAdaptMinError=task.rankAdaptMinError,
-                       downsample=task.downsample, bin_factor=task.bin_factor, 
-                       threshold=task.threshold, eluThreshold=task.eluThreshold,
-                       eluAlpha=task.eluAlpha, normalizeIntensity=task.normalizeIntensity, 
-                       noZeroIntensity=task.noZeroIntensity, minIntensity=task.minIntensity, 
-                       samplingFactor=task.samplingFactor, divBy=task.divBy, 
-                       thresholdQuantile=task.thresholdQuantile)
-    logger.info(f'Display Sketch for run {setup.run} of {setup.exp}...')
-    fd.visualizeMe()
+    visMe = visualizeFD(inputFile=taskdir + "{}_ProjectedData".format(setup.run),
+                        outputFile="./UMAPVis_{}.html".format(setup.run),
+                        numImgsToUse=task.num_imgs,
+                        nprocs=task.nprocs,
+                        userGroupings=[],
+                        includeABOD=True,
+                        skipSize=task.skip_size,
+                        #                            umap_n_neighbors=numImgsToUse//40,
+                        umap_n_neighbors=task.num_imgs_to_use // 4000,
+                        umap_random_state=42,
+                        hdbscan_min_samples=int(task.num_imgs_to_use * 0.75 // 40),
+                        hdbscan_min_cluster_size=int(task.num_imgs_to_use // 40),
+                        optics_min_samples=150, optics_xi=0.05, optics_min_cluster_size=0.05,
+                        outlierQuantile=0.3)
+    #            print("here 2")
+    visMe.fullVisualize()
+    #            print("here 3")
+    visMe.userSave()
     logger.debug('Done!')

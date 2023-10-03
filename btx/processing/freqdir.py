@@ -23,15 +23,15 @@ from mpi4py import MPI
 from matplotlib import pyplot as plt
 from matplotlib import colors
 
-from btx.misc.shortcuts import TaskTimer
-
-from btx.interfaces.ipsana import (
-    PsanaInterface,
-    bin_data,
-    bin_pixel_index_map,
-    retrieve_pixel_index_map,
-    assemble_image_stack_batch,
-)
+# from btx.misc.shortcuts import TaskTimer
+#
+# from btx.interfaces.ipsana import (
+#     PsanaInterface,
+#     bin_data,
+#     bin_pixel_index_map,
+#     retrieve_pixel_index_map,
+#     assemble_image_stack_batch,
+# )
 
 from PIL import Image
 from io import BytesIO
@@ -1320,6 +1320,7 @@ class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
     """
+    from btx.interfaces.ipsana import PsanaInterface
     def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, usePSI=True):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
@@ -1352,13 +1353,13 @@ class WrapperFullFD:
 
         self.usePSI = usePSI
         if usePSI:
-            self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+            self.psi = self.PsanaInterface(exp=exp, run=run, det_type=det_type)
             self.psi.counter = self.start_offset + self.num_imgs*self.rank//self.size
         else:
             self.psi = None
 
         if self.rank==0:
-            self.currRun = datetime.now().strftime("%y%m%d%H%M%S")
+            self.currRun = run #datetime.now().strftime("%y%m%d%H%M%S")
         else:
             self.currRun = None
         self.currRun = self.comm.bcast(self.currRun, root=0)
@@ -1565,39 +1566,6 @@ class WrapperFullFD:
         f1.close()
         self.comm.barrier()
 
-    def visualizeMe(self):
-        st = time.perf_counter()
-#        self.addThumbnailsToProjectH5()
-        #UMAP STEP
-        ##########################################################################################
-        if self.rank==0:
-
-#            print("here 1")
-
-            skipSize = 1
-            numImgsToUse = int(self.num_imgs/skipSize)
-            visMe = visualizeFD(inputFile=self.writeToHere+"{}_ProjectedData".format(self.currRun),
-                            outputFile="./UMAPVis_{}.html".format(self.currRun),
-                            numImgsToUse=self.num_imgs,
-                            nprocs=self.size,
-                            userGroupings=[],
-                            includeABOD=True,
-                            skipSize = skipSize,
-#                            umap_n_neighbors=numImgsToUse//40,
-                            umap_n_neighbors=numImgsToUse//4000,
-                            umap_random_state=42,
-                            hdbscan_min_samples=int(numImgsToUse*0.75//40),
-                            hdbscan_min_cluster_size=int(numImgsToUse//40),
-                            optics_min_samples=150, optics_xi = 0.05, optics_min_cluster_size = 0.05, 
-                            outlierQuantile=0.3)
-#            print("here 2")
-            visMe.fullVisualize()
-#            print("here 3")
-            visMe.userSave()
-            et = time.perf_counter()
-            print("UMAP HTML Generation Processing time: {}".format(et - st))
-            #print("TOTAL PROCESING TIME: {}".format(et - stfull))
-
 class FD_ImageProcessing:
     def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile):
         self.threshold = threshold
@@ -1656,6 +1624,12 @@ class FD_ImageProcessing:
 
 
 class DataRetriever:
+    from btx.interfaces.ipsana import (
+        PsanaInterface,
+        bin_data,
+        retrieve_pixel_index_map,
+        assemble_image_stack_batch,
+    )
     def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
         self.exp = exp
         self.det_type = det_type
@@ -1665,7 +1639,7 @@ class DataRetriever:
         self.thumbnailHeight = thumbnailHeight
         self.thumbnailWidth = thumbnailWidth
 
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type, no_cmod=True)
+        self.psi = self.PsanaInterface(exp=exp, run=run, det_type=det_type, no_cmod=True)
 
         self.imageProcessor = imageProcessor
 
@@ -1678,12 +1652,12 @@ class DataRetriever:
         imgs: ndarray
             images to downsample
         """
-        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+        pixel_index_map = self.retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
 
         saveMe = []
         for img in imgs:
             imgRe = np.reshape(img, self.psi.det.shape())
-            imgRe = assemble_image_stack_batch(imgRe, pixel_index_map)
+            imgRe = self.assemble_image_stack_batch(imgRe, pixel_index_map)
             saveMe.append(np.array(Image.fromarray(imgRe).resize((self.thumbnailHeight, self.thumbnailWidth))))
         return np.array(saveMe)
 
@@ -1745,7 +1719,7 @@ class DataRetriever:
 
             if self.downsample:
 #                print("Downsampling images")
-                imgs = bin_data(imgs, self.bin_factor)
+                imgs = self.bin_data(imgs, self.bin_factor)
 #            print("Flattening images")
             num_valid_imgs, p, x, y = imgs.shape
             img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
@@ -1786,7 +1760,6 @@ class DataRetriever:
                 nimg_batch = np.array(nimg_batch).T
 #                print("hstacking")
                 if fullimgs is None:
-
                     fullimgs = nimg_batch
                 else:
                     fullimgs = np.hstack((fullimgs, nimg_batch))
@@ -1799,6 +1772,7 @@ class DataRetriever:
 
 
 class SinglePanelDataRetriever:
+    from btx.interfaces.ipsana import PsanaInterface
     def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
         self.exp = exp
         self.det_type = det_type
@@ -1806,7 +1780,7 @@ class SinglePanelDataRetriever:
         self.thumbnailHeight = thumbnailHeight
         self.thumbnailWidth = thumbnailWidth
 
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+        self.psi = self.PsanaInterface(exp=exp, run=run, det_type=det_type)
 
         self.imageProcessor = imageProcessor
 
