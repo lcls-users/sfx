@@ -1893,3 +1893,43 @@ class SinglePanelDataRetriever:
             return (fullimgs, fullthumbnails, imgsTracked)
         else:
             return (fullimgs, imgsTracked)
+
+def main():
+    """
+    Perform Frequent Direction Visualization.
+    """
+    params = parse_input()
+    os.makedirs(os.path.join(params.outdir, "figs"), exist_ok=True)
+    visMe = visualizeFD(inputFile=params.outdir + f"{params.run:04}_ProjectedData",
+                        outputFile=params.outdir + f"figs/UMAPVis_{params.run:04}.html",
+                        numImgsToUse=params.num_imgs,
+                        nprocs=params.nprocs,
+                        userGroupings=[],
+                        includeABOD=True,
+                        skipSize=params.skip_size,
+                        umap_n_neighbors=params.num_imgs_to_use // 4000,
+                        umap_random_state=42,
+                        hdbscan_min_samples=int(params.num_imgs_to_use * 0.75 // 40),
+                        hdbscan_min_cluster_size=int(params.num_imgs_to_use // 40),
+                        optics_min_samples=150, optics_xi=0.05, optics_min_cluster_size=0.05,
+                        outlierQuantile=0.3)
+    visMe.fullVisualize()
+    visMe.userSave()
+def parse_input():
+    """
+    Parse command line input.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--exp', help='Experiment name', required=True, type=str)
+    parser.add_argument('-r', '--run', help='Run number', required=True, type=int)
+    parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M',  required=True, type=str)
+    parser.add_argument('-o', '--outdir', help='Output directory for powders and plots', required=True, type=str)
+    parser.add_argument('--num_imgs', help='Number of images to process, -1 for full run', required=False, default=-1, type=int)
+    parser.add_argument('--nprocs', help='Number of cores used for upstream analysis', required=False, type=int)
+    parser.add_argument('--skip_size', help='Skip size', required=False, type=int)
+    parser.add_argument('--num_imgs_to_use', help="Number of images to use", required=False, type=int)
+
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    main()

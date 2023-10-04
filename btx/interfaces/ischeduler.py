@@ -118,6 +118,8 @@ class JobScheduler:
         if "xgandalf" in dependencies:
             dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/:$PATH\n"
             dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/eigen3/Eigen/:$PATH"
+        if "fdviz" in dependencies:
+            dep_paths += f"conda activate /sdf/group/lcls/ds/tools/conda_envs/johnw-ana-4.0.48-py3"
         dep_paths += "\n"
         
         with open(self.jobfile, 'a') as jfile:

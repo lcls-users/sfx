@@ -533,28 +533,29 @@ def draw_sketch(config):
     logger.debug('Done!')
 
 def show_sketch():
-    from btx.processing.freqdir import WrapperFullFD
+    from btx.interfaces.ischeduler import JobScheduler
     setup = config.setup
     task = config.show_sketch
     """ Display Sketch. """
     taskdir = os.path.join(setup.root_dir, 'sketch')
     os.makedirs(taskdir, exist_ok=True)
-    visMe = visualizeFD(inputFile=taskdir + "{}_ProjectedData".format(setup.run),
-                        outputFile="./UMAPVis_{}.html".format(setup.run),
-                        numImgsToUse=task.num_imgs,
-                        nprocs=task.nprocs,
-                        userGroupings=[],
-                        includeABOD=True,
-                        skipSize=task.skip_size,
-                        #                            umap_n_neighbors=numImgsToUse//40,
-                        umap_n_neighbors=task.num_imgs_to_use // 4000,
-                        umap_random_state=42,
-                        hdbscan_min_samples=int(task.num_imgs_to_use * 0.75 // 40),
-                        hdbscan_min_cluster_size=int(task.num_imgs_to_use // 40),
-                        optics_min_samples=150, optics_xi=0.05, optics_min_cluster_size=0.05,
-                        outlierQuantile=0.3)
-    #            print("here 2")
-    visMe.fullVisualize()
-    #            print("here 3")
-    visMe.userSave()
+    script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../btx/processing/freqdir.py")
+    command = f"python {script_path}"
+    command += f" -e {setup.exp} -r {setup.run} -d {setup.det_type} -o {taskdir}"
+    if task.get('num_imgs') is not None:
+        command += f" --num_imgs={task.num_imgs}"
+    if task.get('nprocs') is not None:
+        command += f" --nprocs={task.nprocs}"
+    if task.get('skip_size') is not None:
+        command += f" --skip_size={task.skip_size}"
+    if task.get('num_imgs_to_use') is not None:
+        command += f" --num_imgs_to_use={task.num_imgs_to_use}"
+    js = JobScheduler(os.path.join(".", f'fd_{setup.run:04}.sh'),
+                      queue=setup.queue,
+                      ncores=task.ncores,
+                      jobname=f'fd_{setup.run:04}')
+    js.write_header()
+    js.write_main(f"{command}\n", dependencies=['psana','fdviz'])
+    js.clean_up()
+    js.submit()
     logger.debug('Done!')
