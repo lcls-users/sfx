@@ -819,6 +819,8 @@ class visualizeFD:
     """
     Visualize FD Dimension Reduction using UMAP and DBSCAN
     """
+    umap = __import__('umap')
+    hdbscan = __import__('hdbscan')
     def __init__(self, inputFile, outputFile, numImgsToUse, nprocs, includeABOD, userGroupings, 
             skipSize, umap_n_neighbors, umap_random_state, hdbscan_min_samples, hdbscan_min_cluster_size,
             optics_min_samples, optics_xi, optics_min_cluster_size, outlierQuantile):
@@ -953,8 +955,6 @@ class visualizeFD:
         return [*range(endClass+1)], [*range(1, endClass+2)]
 
     def genUMAP(self):
-        import umap
-        import hdbscan
 
         imgs = None
         projections = None
@@ -966,8 +966,6 @@ class visualizeFD:
                 else:
                     imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
                     projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
-
-        print("AOIDWJOIAWDJ", len(imgs), len(projections))
 
         intensities = []
         for img in imgs:
@@ -983,7 +981,7 @@ class visualizeFD:
         if len(self.imgs)!= self.numImgsToUse:
             raise TypeError("NUMBER OF IMAGES REQUESTED ({}) EXCEEDS NUMBER OF DATA POINTS PROVIDED ({})".format(len(self.imgs), self.numImgsToUse))
 
-        self.clusterable_embedding = umap.UMAP(
+        self.clusterable_embedding = self.umap.UMAP(
             n_neighbors=self.umap_n_neighbors,
             random_state=self.umap_random_state,
             n_components=2,
@@ -991,7 +989,7 @@ class visualizeFD:
             min_dist=0.1,
         ).fit_transform(self.projections)
 
-        self.labels = hdbscan.HDBSCAN(
+        self.labels = self.hdbscan.HDBSCAN(
             min_samples = self.hdbscan_min_samples,
             min_cluster_size = self.hdbscan_min_cluster_size
         ).fit_predict(self.clusterable_embedding)
@@ -1320,7 +1318,8 @@ class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
     """
-    from btx.interfaces.ipsana import PsanaInterface
+#    from btx.interfaces.ipsana import PsanaInterface
+    btx = __import__('btx')
     def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, usePSI=True):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
@@ -1353,7 +1352,7 @@ class WrapperFullFD:
 
         self.usePSI = usePSI
         if usePSI:
-            self.psi = self.PsanaInterface(exp=exp, run=run, det_type=det_type)
+            self.psi = self.btx.interfaces.ipsana.PsanaInterface(exp=exp, run=run, det_type=det_type)
             self.psi.counter = self.start_offset + self.num_imgs*self.rank//self.size
         else:
             self.psi = None
@@ -1365,7 +1364,8 @@ class WrapperFullFD:
         self.currRun = self.comm.bcast(self.currRun, root=0)
 
         self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile)
-        self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 150, thumbnailWidth = 150)
+#        self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
+        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 
 #    def lowMemoryReconstructionErrorScaled(self, matrixCentered, matSketch):
 #        """ 
@@ -1624,12 +1624,13 @@ class FD_ImageProcessing:
 
 
 class DataRetriever:
-    from btx.interfaces.ipsana import (
-        PsanaInterface,
-        bin_data,
-        retrieve_pixel_index_map,
-        assemble_image_stack_batch,
-    )
+    btx = __import__('btx')
+#    from btx.interfaces.ipsana import (
+#        PsanaInterface,
+#        bin_data,
+#        retrieve_pixel_index_map,
+#        assemble_image_stack_batch,
+#    )
     def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
         self.exp = exp
         self.det_type = det_type
@@ -1639,7 +1640,8 @@ class DataRetriever:
         self.thumbnailHeight = thumbnailHeight
         self.thumbnailWidth = thumbnailWidth
 
-        self.psi = self.PsanaInterface(exp=exp, run=run, det_type=det_type, no_cmod=True)
+#        self.psi = self.PsanaInterface(exp=exp, run=run, det_type=det_type, no_cmod=True)
+        self.psi = self.btx.interfaces.ipsana.PsanaInterface(exp=exp, run=run, det_type=det_type)
 
         self.imageProcessor = imageProcessor
 
@@ -1652,12 +1654,12 @@ class DataRetriever:
         imgs: ndarray
             images to downsample
         """
-        pixel_index_map = self.retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+        pixel_index_map = self.btx.interfaces.ipsana.retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
 
         saveMe = []
         for img in imgs:
             imgRe = np.reshape(img, self.psi.det.shape())
-            imgRe = self.assemble_image_stack_batch(imgRe, pixel_index_map)
+            imgRe = self.btx.interfaces.ipsana.assemble_image_stack_batch(imgRe, pixel_index_map)
             saveMe.append(np.array(Image.fromarray(imgRe).resize((self.thumbnailHeight, self.thumbnailWidth))))
         return np.array(saveMe)
 
@@ -1719,7 +1721,7 @@ class DataRetriever:
 
             if self.downsample:
 #                print("Downsampling images")
-                imgs = self.bin_data(imgs, self.bin_factor)
+                imgs = self.btx.interfaces.ipsana.bin_data(imgs, self.bin_factor)
 #            print("Flattening images")
             num_valid_imgs, p, x, y = imgs.shape
             img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
@@ -1772,7 +1774,8 @@ class DataRetriever:
 
 
 class SinglePanelDataRetriever:
-    from btx.interfaces.ipsana import PsanaInterface
+#    from btx.interfaces.ipsana import PsanaInterface
+    btx = __import__('btx')
     def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
         self.exp = exp
         self.det_type = det_type
@@ -1780,7 +1783,7 @@ class SinglePanelDataRetriever:
         self.thumbnailHeight = thumbnailHeight
         self.thumbnailWidth = thumbnailWidth
 
-        self.psi = self.PsanaInterface(exp=exp, run=run, det_type=det_type)
+        self.psi = self.btx.interfaces.ipsana.PsanaInterface(exp=exp, run=run, det_type=det_type)
 
         self.imageProcessor = imageProcessor
 
@@ -1841,7 +1844,6 @@ class SinglePanelDataRetriever:
                 for img in imgs:
                     saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
                 thumbnails = np.array(saveMe)
-                print("thumbaaowdijaoiajw", len(imgs), len(thumbnails))
 
             num_valid_imgs, x, y = imgs.shape
             img_batch = np.reshape(imgs, (num_valid_imgs, x * y)).T

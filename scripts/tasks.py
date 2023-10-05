@@ -529,6 +529,7 @@ def draw_sketch(config):
                        samplingFactor=task.samplingFactor, divBy=task.divBy, 
                        thresholdQuantile=task.thresholdQuantile)
     logger.info(f'Performing Frequent Direction Sketching for run {setup.run} of {setup.exp}...')
+    fd.retrieveImages()
     fd.runMe()
     logger.debug('Done!')
 
