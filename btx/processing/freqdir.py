@@ -148,6 +148,7 @@ class FreqDir(DimRed):
             super().__init__(exp=exp, run=run, det_type=det_type, start_offset=start_offset,
                     num_images=num_imgs, num_components=num_components, batch_size=0, priming=False,
                     downsample=downsample, bin_factor=bin_factor, output_dir=output_dir, psi=psi)
+            self.num_features,self.num_images = imgData.shape
         else:
             self.start_offset = start_offset
             self.downsample = False
@@ -155,7 +156,6 @@ class FreqDir(DimRed):
             self.output_dir = output_dir
             self.num_components = num_components
             self.num_features,self.num_images = imgData.shape 
-            print("NUM IMAGES: ", self.num_images)
 
             self.task_durations = dict({})
 
@@ -313,7 +313,6 @@ class FreqDir(DimRed):
             self.sketch[self.ell:,:] = 0
             self.nextZeroRow = self.ell
         else:
-            print(S.shape, self.ell)
             self.sketch[:ssize,:] = diag(s) @ Vt[:ssize,:]
             self.sketch[ssize:,:] = 0
             self.nextZeroRow = ssize
@@ -842,6 +841,7 @@ class visualizeFD:
         self.optics_min_cluster_size = optics_min_cluster_size
         self.outlierQuantile = outlierQuantile
 
+
     def embeddable_image(self, data):
         img_data = np.uint8(cm.jet(data/max(data.flatten()))*255)
 #        image = Image.fromarray(img_data, mode='RGBA').resize((75, 75), Image.Resampling.BICUBIC)
@@ -972,6 +972,9 @@ class visualizeFD:
             intensities.append(np.sum(img.flatten()))
         intensities = np.array(intensities)
 
+        if self.numImgsToUse==-1:
+            self.numImgsToUse = len(imgs)
+
         self.imgs = imgs[:self.numImgsToUse:self.skipSize]
         self.projections = projections[:self.numImgsToUse:self.skipSize]
         self.intensities = intensities[:self.numImgsToUse:self.skipSize]
@@ -998,13 +1001,13 @@ class visualizeFD:
 
         self.opticsClust = OPTICS(min_samples=self.optics_min_samples, xi=self.optics_xi, min_cluster_size=self.optics_min_cluster_size)
         self.opticsClust.fit(self.clusterable_embedding)
-        self.opticsLabels = cluster_optics_dbscan(
-            reachability=self.opticsClust.reachability_,
-            core_distances=self.opticsClust.core_distances_,
-            ordering=self.opticsClust.ordering_,
-            eps=2.5,
-        )
-#        self.opticsLabels = self.opticsClust.labels_
+#        self.opticsLabels = cluster_optics_dbscan(
+#            reachability=self.opticsClust.reachability_,
+#            core_distances=self.opticsClust.core_distances_,
+#            ordering=self.opticsClust.ordering_,
+#            eps=2.5,
+#        )
+        self.opticsLabels = self.opticsClust.labels_
 
         self.experData_df = pd.DataFrame({'x':self.clusterable_embedding[self.clustered, 0],'y':self.clusterable_embedding[self.clustered, 1]})
         self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
@@ -1320,7 +1323,7 @@ class WrapperFullFD:
     """
 #    from btx.interfaces.ipsana import PsanaInterface
     btx = __import__('btx')
-    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, usePSI=True):
+    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, unitVar, usePSI=True):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1342,6 +1345,7 @@ class WrapperFullFD:
         self.samplingFactor=samplingFactor
         self.divBy = divBy 
         self.thresholdQuantile = thresholdQuantile
+        self.unitVar = unitVar
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -1363,9 +1367,9 @@ class WrapperFullFD:
             self.currRun = None
         self.currRun = self.comm.bcast(self.currRun, root=0)
 
-        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile)
-#        self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
-        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
+        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar)
+        self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
+#        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 
 #    def lowMemoryReconstructionErrorScaled(self, matrixCentered, matSketch):
 #        """ 
@@ -1567,7 +1571,7 @@ class WrapperFullFD:
         self.comm.barrier()
 
 class FD_ImageProcessing:
-    def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile):
+    def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile, unitVar):
         self.threshold = threshold
         self.eluThreshold = eluThreshold
         self.eluAlpha = eluAlpha
@@ -1575,6 +1579,7 @@ class FD_ImageProcessing:
         self.normalizeIntensity = normalizeIntensity
         self.minIntensity = minIntensity
         self.thresholdQuantile = thresholdQuantile
+        self.unitVar = unitVar
 
     def processImg(self, nimg, currIntensity):
         if self.threshold:
@@ -1585,6 +1590,8 @@ class FD_ImageProcessing:
             nimg = self.removeZeroIntensityFunc(nimg, currIntensity)
         if self.normalizeIntensity:
             nimg = self.normalizeIntensityFunc(nimg, currIntensity)
+        if self.unitVar:
+            nimg = self.unitVarFunc(nimg, currIntensity)
         return nimg
 
     def elu(self,x):
@@ -1621,6 +1628,35 @@ class FD_ImageProcessing:
             return np.zeros(img.shape)+1
         else:
             return img/np.sum(img.flatten(), dtype=np.double)
+
+    def unitVarFunc(self, img, currIntensity):
+        if img is None or currIntensity<self.minIntensity:
+            return img
+        else:
+            return img/img.std(axis=0)
+#            return (img - img.mean(axis=0)) / img.std(axis=0)
+
+    def centerImgFunc(self, img, roi_w, roi_h):
+        if img is None: 
+            return img
+        else:
+            nimg = np.pad(img, max(roi_w, roi_h)+1)
+            if  np.sum(img.flatten(), dtype=np.double)<10000:
+                cogx, cogy = (roi_w, roi_h)
+            else:
+                cogx, cogy  = self.calcCenterGrav(nimg)
+#            return nimg[cogy-(roi_h):cogy+(roi_h//2), cogx-(roi_w):cogx+(roi_w//2)]
+            return nimg[cogx-(roi_w//2):cogx+(roi_w//2), cogy-(roi_h//2):cogy+(roi_h//2)]
+
+
+    def calcCenterGrav(self, grid):
+        M_total = np.sum(grid)
+        row_indices, col_indices = np.indices(grid.shape)
+        X_c = np.sum(row_indices * grid) / M_total
+        Y_c = np.sum(col_indices * grid) / M_total
+        return (round(X_c), round(Y_c))
+
+
 
 
 class DataRetriever:
@@ -1839,6 +1875,11 @@ class SinglePanelDataRetriever:
                 [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
             ]
 
+            jimgs = []
+            for img in imgs:
+                jimgs.append(self.imageProcessor.centerImgFunc(self.imageProcessor.thresholdFunc(img),100,100))
+            imgs = np.array(jimgs)
+
             if getThumbnails:
                 saveMe = []
                 for img in imgs:
@@ -1865,12 +1906,15 @@ class SinglePanelDataRetriever:
                     if nimg is not None:
                         nimg_batch.append(nimg)
                         nthumbnail_batch.append(nthumbnail)
+                    else:
+                        num_valid_thumbnails -= 1
+                        num_valid_imgs -= 1
                 nimg_batch = np.array(nimg_batch).T
                 nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
                 if fullimgs is None:
                     fullimgs = nimg_batch
                     fullthumbnails = nthumbnail_batch
-                else:
+                elif len(nimg_batch)!=0:
                     fullimgs = np.hstack((fullimgs, nimg_batch))
                     fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
             else:
@@ -1881,12 +1925,15 @@ class SinglePanelDataRetriever:
                     nimg = self.imageProcessor.processImg(img, currIntensity)
                     if nimg is not None:
                         nimg_batch.append(nimg)
+                    else:
+                        num_valid_imgs -= 1
                 nimg_batch = np.array(nimg_batch).T
+#                print(nimg_batch.shape)
 #                print("hstacking")
                 if fullimgs is None:
-
                     fullimgs = nimg_batch
-                else:
+                elif len(nimg_batch)!=0:
+#                    print(fullimgs.shape, nimg_batch.shape, nimg_batch)
                     fullimgs = np.hstack((fullimgs, nimg_batch))
 
 #        print("Images tracked:", imgsTracked)
