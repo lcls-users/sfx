@@ -124,8 +124,10 @@ class JobScheduler:
         
         with open(self.jobfile, 'a') as jfile:
             jfile.write(dep_paths)
+            logger.info(dep_paths)
             if 'SIT_PSDM_DATA' in os.environ:
                 jfile.write(f"export SIT_PSDM_DATA={os.environ['SIT_PSDM_DATA']}\n")
+                logger.info(f"export SIT_PSDM_DATA={os.environ['SIT_PSDM_DATA']}\n")
 
     def write_main(self, application, dependencies=[]):
         """ Write application and source requested dependencies. """
@@ -135,6 +137,7 @@ class JobScheduler:
         pythonpath = self._find_python_path()
         with open(self.jobfile, 'a') as jfile:
             jfile.write(application.replace("python", pythonpath))
+            logger.info(application.replace("python", pythonpath))
 
     def submit(self):
         """ Submit to queue. """
@@ -145,3 +148,4 @@ class JobScheduler:
         """ Add a line to delete submission file."""
         with open(self.jobfile, 'a') as jfile:
             jfile.write(f"if [ -f {self.jobfile} ]; then rm -f {self.jobfile}; fi")
+            logger.info(f"if [ -f {self.jobfile} ]; then rm -f {self.jobfile}; fi")
