@@ -41,11 +41,15 @@ class JobScheduler:
 
         self.ana_conda_manage = f'{self.ana_conda_dir}conda1/manage/bin/'
         self.ana_conda_bin = f'{self.ana_conda_dir}conda1/inst/envs/ana-4.0.47-py3/bin/'
+        self.pythonpath = None
 
     def _find_python_path(self):
         """ Determine the relevant python path. """
         pythonpath=None
-        possible_paths = [f"{self.ana_conda_bin}python"]
+        if self.pythonpath is None:
+            possible_paths = [f"{self.ana_conda_bin}python"]
+        else:
+            possible_paths = [f"{self.pythonpath}"]
     
         try:
             pythonpath = os.environ['WHICHPYTHON']
@@ -120,6 +124,7 @@ class JobScheduler:
             dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/eigen3/Eigen/:$PATH"
         if "fdviz" in dependencies:
             dep_paths += f"conda activate /sdf/group/lcls/ds/tools/conda_envs/johnw-ana-4.0.48-py3"
+            self.pythonpath = "/sdf/group/lcls/ds/tools/conda_envs/johnw-ana-4.0.48-py3/bin/python"
         dep_paths += "\n"
         
         with open(self.jobfile, 'a') as jfile:
