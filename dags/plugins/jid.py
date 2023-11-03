@@ -9,6 +9,7 @@ import getpass
 import time
 import requests
 
+import os
 import logging
 LOG = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ class JIDSlurmOperator( BaseOperator ):
       #run_at='SLAC',
       slurm_script=None,
       poke_interval=30,
+      branch_id=None,
       *args, **kwargs ):
 
     super(JIDSlurmOperator, self).__init__(*args, **kwargs)
@@ -57,6 +59,7 @@ class JIDSlurmOperator( BaseOperator ):
     #  self.slurm_script = slurm_script
     self.slurm_script = slurm_script
     self.poke_interval = poke_interval
+    self.branch_id = branch_id
 
   def create_control_doc( self, context):
     """
@@ -78,6 +81,23 @@ class JIDSlurmOperator( BaseOperator ):
 
     def __slurm_parameters__(params, task_id, location):
       return __params_to_args__(params) + " --task " + task_id + " --facility " + location
+    
+    def __new_config_path__(config_path, exp_name, branch_id):
+      config_dir, config_file_name = os.path.split(config_path)
+      config_name, file_extension = os.path.splitext(config_file_name)
+
+      new_config_name = f"{exp_name}_sample_{self.branch_id}" + file_extension
+      new_config_dir = os.path.join(config_dir, exp_name + "_init_samples_configs")
+
+      return os.path.join(new_config_dir, new_config_name)
+    
+    
+    if self.branch_id is not None:
+      # Overwrite the config file path (add subdir and change file name)
+      config_path = context.get('dag_run').conf.get('parameters', {}).get('config_file')
+      exp_name = context.get('dag_run').conf.get('experiment')
+      new_config_path = __new_config_path__(config_path, exp_name, self.branch_id)
+      context["dag_run"]["parameters"]["config_file"] = new_config_path
 
     return {
       "_id" : str(uuid.uuid4()),

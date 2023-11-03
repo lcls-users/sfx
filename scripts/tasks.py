@@ -5,6 +5,8 @@ import glob
 import shutil
 import numpy as np
 import itertools
+import yaml
+import csv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -509,5 +511,115 @@ def timetool_correct(config):
             logger.info('No model found! Will return the nominal delay uncorrected!')
 
     tt.timetool_correct(run, nominal, model, figs)
+
+def bayesian_optimization(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    setup = config.setup
+    task = config.bayesian_opt
+    """ Perform an iteration of the Bayesian optimization. """
+    # Read the output of the loop tasks
+    loop_output_file = os.path.join(setup.root_dir, task.score_task, config[task.score_task]["tag"])
+    # with h5py.File(filename, 'r') as f:
+    #     exp = str(np.asarray(f.get('exp')))[2:-1]
+    #     run = int(np.asarray(f.get('run')))
+    #     det_type = str(np.asarray(f.get('det_type')))[2:-1]
+    #     start_img = int(np.asarray(f.get('start_offset')))
+    #     loadings = np.asarray(f.get('loadings'))
+    #     U = np.asarray(f.get('U'))
+    #     S = np.asarray(f.get('S'))
+    #     V = np.asarray(f.get('V'))
+
+def bo_init_samples_configs(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    setup = config.setup
+    task = config.bayesian_opt
+    """ Generates the config files that will be used to generate the initial samples for the Bayesian optimization. """
+    if hasattr(task, 'n_samples_init'):
+        n_samples_init = task.n_samples_init
+
+        # Get the parameters to overwrite
+        params_ranges_keys = [key for key in config if key.startswith("range_")]
+        params_names = [key.replace("range_", "") for key in params_ranges_keys]
+
+        # Generate the parameter samples
+        param_samples = BayesianOptimization.random_param_samples(config, params_ranges_keys)
+
+        # Get the first task of the loop sequence
+        task_to_optimize = config.get(task.task_to_optimize)
+
+        # Get the task generating the scores
+        score_task = config.get(task.score_task)
+
+        # Generate the subdir
+        subdir_name = setup.exp + "_init_samples_configs"
+        subdir_path = os.path.join(setup.root_dir, "tutorial", subdir_name)
+        os.mkdir(subdir_path)
+
+        # Generate the config files
+        for i in range(n_samples_init):
+            config_temp = config.copy()
+            # Overwrite the parameters
+            for j in range(len(params_names)):
+                config_temp[task_to_optimize][params_names[j]] = param_samples[i,j]
+
+            # Overwrite the score task tag to change the name of the score output file
+            config_temp[score_task]["tag"] = config_temp[score_task]["tag"] + f"_sample_{i+1}"
+
+            # Write the config file
+            config_file_name = f"{setup.exp}_sample_{i+1}.yaml"
+            config_file_path = os.path.join(subdir_path, config_file_name)
+
+            with open(config_file_path, 'w') as file:
+                yaml.dump(config_temp, file)
+            
+
+        logger.info(f'Generated {n_samples_init} config files.')
+    else:
+        logger.info('The number of config files to generate was not defined!')
+
+def bo_aggregate_init_samples(config):
+    setup = config.setup
+    task = config.bayesian_opt
+    """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
+    n_samples_init = task.n_samples_init
+    params_ranges_keys = [key for key in config if key.startswith("range_")]
+    params_names = [key.replace("range_", "") for key in params_ranges_keys]
+    n_params = len(params_names)
+    # Get the first task of the loop sequence
+    task_to_optimize = config.get(task.task_to_optimize)
+    # Get the task generating the scores
+    score_task = config.get(task.score_task)
+    # Get the score and the parameters of each sample
+    samples_scores = np.empty(shape=(n_samples_init, 1))
+    samples_params = np.empty(shape=(n_samples_init, n_params))
+    for i in range(n_samples_init):
+        # Get the parameters in the config file
+        subdir_name = setup.exp + "_init_samples_configs"
+        config_file_name = f"{setup.exp}_sample_{i+1}.yaml"
+        config_file_path = os.path.join(setup.root_dir, "tutorial", subdir_name, config_file_name)
+        with open(config_file_path, 'r') as file:
+            config_data = yaml.safe_load(file)
+        for j in range(n_params):
+            samples_params[i,j] = config_data[task_to_optimize][params_names[j]]
+
+        # Get the score in the score output file
+        score_file_name = f"{task.tag}_sample_{i+1}_{task.fom}_n1.dat" 
+        score_file_path = os.path.join("./", task.score_task, score_task.tag, "hkl", score_file_name)
+        with open(score_file_path, 'r') as file:
+            lines = file.readlines()
+        data = lines[1].strip().split(',')
+        score = data[1] # The score is located at the 2nd column
+        samples_scores[i,1] = score
+
+    # Write the scores and the parameters of the samples in a .dat file
+    output_file_path = os.path.join(setup.root_dir, "btx", "diagnostics", f"{setup.exp}_bayesian_opt.dat")
+    with open(output_file_path, 'w', newline='') as file:
+        writer = csv.writer(file, delimiter=',')
+        # Write a header row with column names
+        writer.writerow(['score'] + params_names)
+        # Write the data
+        data_to_write = [(score, *params) for score, params in zip(samples_scores, samples_params)]
+        writer.writerows(data_to_write)
+
 
 

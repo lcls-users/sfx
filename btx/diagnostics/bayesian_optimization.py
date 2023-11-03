@@ -2,12 +2,11 @@
 File: bayesian_optimization.py
 Author: Paul-Emile Giacomelli
 Date: Fall 2023
-Description: Bayesian optimization logic to be implemented in DAGs
+Description: Bayesian optimization logic to be implemented in Airflow Branch Operator and Slurm Job
 """
 
 
 # Imports
-
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,55 +17,31 @@ from scipy.stats import norm
 
 class BayesianOptimization:
 
-    # Initialization
-
     def __init__(self):
-        # TODO: get the config to perform the initializations
-
-        # Save maximum number of iterations
-        self.max_iterations = config.bayesian_opt.max_iterations
-        # Initialize number of iterations
-        self.iteration = 0
-
-        # Get the initial samples
-        params_ranges_keys = [key for key in config if key.startswith("range_")]
-        n_params = len(params_ranges_keys)
-
-        n_points = 100
-        sample_inputs_init = np.zeros(shape=(n_points, 1))
-
-        n_samples = config.bayesian_opt.n_samples_init
-
-        param_ranges = []
-
-        for i in range(n_params):
-            param_min = config["bayesian_opt"][params_ranges_keys[i]][0]
-            param_max = config["bayesian_opt"][params_ranges_keys[i]][1]
-
-            param_range = np.linspace(param_min, param_max, n_points)
-            param_sample_init = np.random.choice(param_range, size=n_samples)
-
-            param_ranges.append(param_range)
-            sample_inputs_init = np.column_stack((sample_inputs_init, param_sample_init))
-
-        self.sample_inputs = sample_inputs_init
-
-        meshes = np.meshgrid(*param_ranges, indexing='ij')
-        self.input_range = np.column_stack([mesh.ravel() for mesh in meshes])
-
-        # TODO: execute the "loop tasks chain" n_samples times, and save the scores
-
-
-        # Initialize Gaussian Process
-        match config.bayesian_opt.kernel:
-            case "rbf":
-                self.kernel = RBF(length_scale=[1.0]*n_params, length_scale_bounds=(1e-2, 1e3))
-            case _:
-                raise KeyError(f"The kernel {config.bayesian_opt.kernel} does not exist.")
-        self.gp_model = GaussianProcessRegressor(kernel=self.kernel)
-
         pass
 
+    # Initial samples
+
+    def random_param_samples(config, params_ranges_keys):
+        n_params = len(params_ranges_keys)
+        n_samples = config.bayesian_opt.n_samples_init
+        n_points = config.bayesian_opt.n_points_per_param
+
+        random_param_samples = np.empty(shape=(n_samples, n_params))
+
+        for i in range(n_params):
+            # Get the parameter range
+            param_min, param_max = config["bayesian_opt"][params_ranges_keys[i]]
+
+            # Get n_samples random values of the parameter within its range 
+            param_range = np.linspace(param_min, param_max, n_points)
+            param_sample = np.random.choice(param_range, size=n_samples)
+
+            random_param_samples[:, i] = param_sample
+
+        # Return a matrix with each row containing a set of random parameters
+        return random_param_samples
+    
         
     # Acquisition functions
 
