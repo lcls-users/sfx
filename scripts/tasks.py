@@ -514,21 +514,11 @@ def timetool_correct(config):
 
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
-    setup = config.setup
-    task = config.bayesian_opt
     """ Perform an iteration of the Bayesian optimization. """
-    # Read the output of the loop tasks
-    loop_output_file = os.path.join(setup.root_dir, task.score_task, config[task.score_task]["tag"])
-    # with h5py.File(filename, 'r') as f:
-    #     exp = str(np.asarray(f.get('exp')))[2:-1]
-    #     run = int(np.asarray(f.get('run')))
-    #     det_type = str(np.asarray(f.get('det_type')))[2:-1]
-    #     start_img = int(np.asarray(f.get('start_offset')))
-    #     loadings = np.asarray(f.get('loadings'))
-    #     U = np.asarray(f.get('U'))
-    #     S = np.asarray(f.get('S'))
-    #     V = np.asarray(f.get('V'))
-
+    logger.info('Running an iteration of the Bayesian Optimization.')
+    BayesianOptimization.run_bayesian_opt(config)
+    logger.info('Done!')
+    
 def bo_init_samples_configs(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     setup = config.setup
@@ -556,6 +546,7 @@ def bo_init_samples_configs(config):
         os.mkdir(subdir_path)
 
         # Generate the config files
+        logger.info(f'Generating {n_samples_init} config files.')
         for i in range(n_samples_init):
             config_temp = config.copy()
             # Overwrite the parameters
@@ -572,8 +563,7 @@ def bo_init_samples_configs(config):
             with open(config_file_path, 'w') as file:
                 yaml.dump(config_temp, file)
             
-
-        logger.info(f'Generated {n_samples_init} config files.')
+        logger.info('Done!')
     else:
         logger.info('The number of config files to generate was not defined!')
 
@@ -582,6 +572,7 @@ def bo_aggregate_init_samples(config):
     task = config.bayesian_opt
     """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
     n_samples_init = task.n_samples_init
+    # Get the names of the parameters
     params_ranges_keys = [key for key in config if key.startswith("range_")]
     params_names = [key.replace("range_", "") for key in params_ranges_keys]
     n_params = len(params_names)
@@ -589,9 +580,12 @@ def bo_aggregate_init_samples(config):
     task_to_optimize = config.get(task.task_to_optimize)
     # Get the task generating the scores
     score_task = config.get(task.score_task)
+
     # Get the score and the parameters of each sample
     samples_scores = np.empty(shape=(n_samples_init, 1))
     samples_params = np.empty(shape=(n_samples_init, n_params))
+
+    logger.info('Aggregating the scores and parameters of the initial samples.')
     for i in range(n_samples_init):
         # Get the parameters in the config file
         subdir_name = setup.exp + "_init_samples_configs"
@@ -621,5 +615,6 @@ def bo_aggregate_init_samples(config):
         data_to_write = [(score, *params) for score, params in zip(samples_scores, samples_params)]
         writer.writerows(data_to_write)
 
+    logger.info('Done!')
 
 

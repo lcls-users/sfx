@@ -2,7 +2,7 @@
 File: bayesian_optimization.py
 Author: Paul-Emile Giacomelli
 Date: Fall 2023
-Description: Bayesian optimization logic to be implemented in Airflow Branch Operator and Slurm Job
+Description: Bayesian optimization logic to be implemented in Airflow Branch Operator and Slurm task
 """
 
 
@@ -13,12 +13,23 @@ import matplotlib.pyplot as plt
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 from scipy.stats import norm
+import os
+import csv
+import yaml
 
 
 class BayesianOptimization:
 
-    def __init__(self):
-        pass
+    def __init__(self, criterion_name, first_loop_task, exit_loop_task, max_iterations=None):
+        match criterion_name:
+            case "max_iterations":
+                self.iteration = 0
+                self.max_iterations = max_iterations
+            case _:
+                raise KeyError(f"The stop criterion name {criterion_name} does not exist.")
+        self.criterion_name = criterion_name
+        self.first_loop_task = first_loop_task
+        self.exit_loop_task = exit_loop_task
 
     # Initial samples
 
@@ -78,15 +89,58 @@ class BayesianOptimization:
     
     # Bayesian Optimization
 
-    def run_bayesian_opt(self, loop_task_name, exit_task_name):
-        if self.iteration > 0:
-            # TODO: get the score from the interation that has just been run
-            # new_y = black_box_function(x, new_input[0], new_input[1], new_input[2])
-            # sample_y = np.append(sample_y, new_y)
-            pass
+    # Function to be used by Slurm task
+    def run_bayesian_opt(self, config):
+        setup = config.setup
+        task = config.bayesian_opt
+        # Get the first task of the loop sequence
+        task_to_optimize = config.get(task.task_to_optimize)
+        # Get the task generating the scores
+        score_task = config.get(task.score_task)
+
+        ### 1. Save the current parameters and the associated score
+
+        # Get the current parameters
+        params_ranges_keys = [key for key in config if key.startswith("range_")]
+        params_names = [key.replace("range_", "") for key in params_ranges_keys]
+        n_params = len(params_names)
+        params = np.array([config[task_to_optimize][params_names[j]] for j in range(n_params)])
+
+        # Get the score from the interation that has just been run
+        score_file_name = f"{task.tag}_{task.fom}_n1.dat" 
+        score_file_path = os.path.join("./", task.score_task, score_task.tag, "hkl", score_file_name)
+        with open(score_file_path, 'r') as file:
+            lines = file.readlines()
+        data = lines[1].strip().split(',')
+        score = data[1] # The score is located at the 2nd column
+
+        # Save the current parameters and the associated score
+        output_file_path = os.path.join(setup.root_dir, "btx", "diagnostics", f"{setup.exp}_bayesian_opt.dat")
+        with open(output_file_path, 'a', newline='') as file:
+            writer = csv.writer(file, delimiter=',')
+            # Write the data
+            data_to_write = [(score, *params)]
+            writer.writerows(data_to_write)
+        
+        ### 2. Get all samples scores and parameters
+
+        # Read all scores and parameters from the .dat file
+        with open(output_file_path, 'r') as file:
+            reader = csv.reader(file, delimiter=',')
+            next(reader)  # Skip the header row
+            data_rows = list(reader)
+
+        # Extract scores and parameters from data_rows
+        sample_y = np.array([row[0] for row in data_rows], dtype=float)
+        sample_inputs = np.array([row[1:] for row in data_rows], dtype=float)
+        
+        ### 3. Determine the next set of parameters to be used
 
         # 1. Fit the Gaussian process model to the sampled points
-        self.gp_model.fit(sample_inputs, sample_y)
+        length_scale = [1.0] * n_params
+        kernel = RBF(length_scale=length_scale, length_scale_bounds=(1e-2, 1e3))
+        gp_model = GaussianProcessRegressor(kernel=kernel)
+        gp_model.fit(sample_inputs, sample_y)
 
         # 2. Determine the point with the highest observed function value
         best_idx = np.argmax(sample_y)
@@ -94,20 +148,44 @@ class BayesianOptimization:
         best_y = sample_y[best_idx]
 
         # 3. Generate the Acquisition Function using the Gaussian Process
-        af = self.acquisition_function("expected_improvement", [self.input_range, self.gp_model, best_y])
+        af_name = task.acquisition_function
 
-        # 4. Select the next point based on the Acquisition Function
-        if self.iteration < self.max_iterations - 1:
-            new_idx = np.argmax(af)
-            new_input = self.input_range[new_idx]
-            sample_inputs = np.vstack((sample_inputs, new_input))
+        n_points_per_param = task.n_points_per_param
+        input_range = np.zeros((n_points_per_param, n_params))
+        for i, key in enumerate(params_ranges_keys):
+            param_range = task.get(key)
+            min_value = param_range[0]
+            max_value = param_range[1]
+            input_range[:, i] = np.linspace(min_value, max_value, n_points_per_param)
+        
+        af = self.acquisition_function(af_name, [input_range, gp_model, best_y])
 
-            # TODO: actually modify the parameters of the peak finding function (through config? through return?)
-            
+        # 4. Select the next set of parameters based on the Acquisition Function
+        new_idx = np.argmax(af)
+        new_input = input_range[new_idx]
+
+        # 5. Overwrite the new set of parameters in the config .yaml file
+        for i, param_name in enumerate(params_names):
+            task_to_optimize[param_name] = new_input[i]
+        
+        config_file_path = os.path.join(setup.root_dir, "btx", "tutorial", f"{setup.exp}_bayesian_opt.yaml")
+        with open(config_file_path, 'w') as yaml_file:
+            yaml.dump(config, yaml_file, default_flow_style=False)
+
+    # Function to be used by Airflow Branch Operator
+    def stop_criterion(self):
+        match self.criterion_name:
+            case "max_iterations":
+                stop_criterion = self.iteration >= self.max_iterations
+            case _:
+                pass # Already checked in class initialization
+        
+        if stop_criterion == False:
+            # Run another iteration
             self.iteration += 1
-
-            # Execute the first task of the loop tasks sequence
-            return loop_task_name
+            return self.first_loop_task
         else:
             # Exit the loop
-            return exit_task_name
+            return self.exit_loop_task
+    
+    

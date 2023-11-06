@@ -24,14 +24,22 @@ dag = DAG(
     description=description,
   )
 
-# Tasks SETUP
+# PARAMETERS (must be the same as in the config .yaml file)
 
-# Number of initial samples (must be the same as in the config .yaml file)
+# Number of initial samples
 n_samples_init = 5
+# Maximum number of iterations
+max_iterations = 10
+
+# Tasks SETUP
 
 # Generate the config files for the initial samples
 task_id='bo_init_samples_configs'
 bo_init_samples_configs = JIDSlurmOperator( task_id=task_id, dag=dag)
+
+# Task to aggregate the scores and parameters of the samples
+task_id='bo_aggregate_init_samples'
+bo_aggregate_init_samples = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 # Generate the N initial samples
 for branch_id in range(1, n_samples_init + 1):
@@ -46,12 +54,8 @@ for branch_id in range(1, n_samples_init + 1):
   merge = JIDSlurmOperator( task_id=f"merge_{branch_id}", branch_id=branch_id, dag=dag)
 
   # Draw the branch
-  bo_init_samples_configs >> find_peaks >> index >> stream_analysis >> merge
-    
-
-# Aggregate the scores and parameters of the samples
-task_id='bo_aggregate_init_samples'
-bo_aggregate_init_samples = JIDSlurmOperator( task_id=task_id, dag=dag)
+  bo_init_samples_configs >> find_peaks >> index >> stream_analysis >> merge >> bo_aggregate_init_samples
+  
 
 # Define the tasks for the Bayesian optimization (post-initialization)
 task_id='find_peaks'
@@ -76,11 +80,14 @@ task_id='elog_display'
 elog_display = JIDSlurmOperator(task_id=task_id, dag=dag)
 
 # Branch Operator to simulate the while loop
-bayesian_opt = BayesianOptimization()
+bayesian_opt = BayesianOptimization(criterion_name="max_iterations",
+                                    first_loop_task="find_peaks",
+                                    exit_loop_task="solve",
+                                    max_iterations=max_iterations)
 
 branch = BranchPythonOperator(
     task_id='bayesian_opt_branch_task',
-    python_callable=bayesian_opt.run_bayesian_opt(find_peaks.task_id, solve.task_id),
+    python_callable=bayesian_opt.stop_criterion(),
     provide_context=False,
     dag=dag
   )
