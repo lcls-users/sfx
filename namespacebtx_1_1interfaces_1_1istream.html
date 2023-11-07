@@ -91,9 +91,9 @@ Functions</h2></td></tr>
 <tr class="memitem:aa60e17985a692acb8ed9ac1a8f6369b4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#aa60e17985a692acb8ed9ac1a8f6369b4">cluster_cell_params</a> (cell, out_clusters, out_cell, in_cell=None, eps=5, min_samples=5)</td></tr>
 <tr class="memdesc:aa60e17985a692acb8ed9ac1a8f6369b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply DBScan clustering to unit cell parameters and write the most prevalent unit cell parameters to a CrystFEL cell file.  <a href="namespacebtx_1_1interfaces_1_1istream.html#aa60e17985a692acb8ed9ac1a8f6369b4">More...</a><br /></td></tr>
 <tr class="separator:aa60e17985a692acb8ed9ac1a8f6369b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac18ae253c750862dbd17162181c4de9e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#ac18ae253c750862dbd17162181c4de9e">launch_stream_analysis</a> (in_stream, out_stream, fig_dir, tmp_exe, queue, ncores, cell_only=False, <a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a547dd9d2c0e2ba1f2926378defe59ea7">cell_out</a>=None, cell_ref=None, addl_command=None)</td></tr>
-<tr class="memdesc:ac18ae253c750862dbd17162181c4de9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Launch stream analysis task using iScheduler.  <a href="namespacebtx_1_1interfaces_1_1istream.html#ac18ae253c750862dbd17162181c4de9e">More...</a><br /></td></tr>
-<tr class="separator:ac18ae253c750862dbd17162181c4de9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c20b317583428d4ec8b86bad84c6389"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a5c20b317583428d4ec8b86bad84c6389">launch_stream_analysis</a> (in_stream, out_stream, fig_dir, tmp_exe, queue, ncores, cell_only=False, <a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a547dd9d2c0e2ba1f2926378defe59ea7">cell_out</a>=None, cell_ref=None, addl_command=None, slurm_account=&quot;lcls&quot;)</td></tr>
+<tr class="memdesc:a5c20b317583428d4ec8b86bad84c6389"><td class="mdescLeft">&#160;</td><td class="mdescRight">Launch stream analysis task using iScheduler.  <a href="namespacebtx_1_1interfaces_1_1istream.html#a5c20b317583428d4ec8b86bad84c6389">More...</a><br /></td></tr>
+<tr class="separator:a5c20b317583428d4ec8b86bad84c6389"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a210275a608433d30b1dc642f59909502"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a7a2eefb056409958768f26984093ff67">int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a210275a608433d30b1dc642f59909502">get_most_recent_run</a> (<a class="el" href="namespacebtx_1_1interfaces_1_1istream.html#a2ddfb67797cb20159f095646ea63df46">list</a> streams)</td></tr>
 <tr class="memdesc:a210275a608433d30b1dc642f59909502"><td class="mdescLeft">&#160;</td><td class="mdescRight">From a list of stream files, get the most recent run.  <a href="namespacebtx_1_1interfaces_1_1istream.html#a210275a608433d30b1dc642f59909502">More...</a><br /></td></tr>
 <tr class="separator:a210275a608433d30b1dc642f59909502"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -209,8 +209,8 @@ Returns</h2>
 
 </div>
 </div>
-<a id="ac18ae253c750862dbd17162181c4de9e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac18ae253c750862dbd17162181c4de9e">&#9670;&nbsp;</a></span>launch_stream_analysis()</h2>
+<a id="a5c20b317583428d4ec8b86bad84c6389"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c20b317583428d4ec8b86bad84c6389">&#9670;&nbsp;</a></span>launch_stream_analysis()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -273,7 +273,13 @@ Returns</h2>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>addl_command</em> = <code>None</code>&#160;</td>
+          <td class="paramname"><em>addl_command</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>slurm_account</em> = <code>&quot;lcls&quot;</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -491,7 +497,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Oct 23 2023 13:41:03 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Tue Nov 7 2023 19:30:56 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

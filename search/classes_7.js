@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['kratkyanalyzer_699',['KratkyAnalyzer',['../classsaxs_1_1KratkyAnalyzer.html',1,'saxs']]]
+  ['kratkyanalyzer_700',['KratkyAnalyzer',['../classsaxs_1_1KratkyAnalyzer.html',1,'saxs']]]
 ];

@@ -3,7 +3,7 @@ var searchData=
   ['launch_326',['launch',['../classmerge_1_1StreamtoMtz.html#acae59213b071b0bb0347e3a8aff9b31f',1,'merge.StreamtoMtz.launch()'],['../classindexer_1_1Indexer.html#ac011b37f669fc87b89affdfc45729120',1,'indexer.Indexer.launch()']]],
   ['launch_5findexing_327',['launch_indexing',['../classbtx_1_1diagnostics_1_1geoptimizer_1_1Geoptimizer.html#a9bb072a711ca1d5e8fb14688be30712b',1,'btx::diagnostics::geoptimizer::Geoptimizer']]],
   ['launch_5fmerging_328',['launch_merging',['../classbtx_1_1diagnostics_1_1geoptimizer_1_1Geoptimizer.html#a246fc068c0c5770dcaa0f2e53086fe5e',1,'btx::diagnostics::geoptimizer::Geoptimizer']]],
-  ['launch_5fstream_5fanalysis_329',['launch_stream_analysis',['../namespacebtx_1_1interfaces_1_1istream.html#ac18ae253c750862dbd17162181c4de9e',1,'btx::interfaces::istream']]],
+  ['launch_5fstream_5fanalysis_329',['launch_stream_analysis',['../namespacebtx_1_1interfaces_1_1istream.html#a5c20b317583428d4ec8b86bad84c6389',1,'btx::interfaces::istream']]],
   ['launch_5fstream_5fwrangling_330',['launch_stream_wrangling',['../classbtx_1_1diagnostics_1_1geoptimizer_1_1Geoptimizer.html#afde3f2bfbff10239ff8af8f696eb7563',1,'btx::diagnostics::geoptimizer::Geoptimizer']]],
   ['left_331',['left',['../classbtx_1_1io_1_1h5terminalapp_1_1Cursor.html#afba7c6658d2183e2724ef3f6f2c8947d',1,'btx::io::h5terminalapp::Cursor']]],
   ['level_332',['level',['../namespacescripts_1_1elog__trigger.html#ad7fc7c852cb7c1dccea4be2505c774d4',1,'scripts.elog_trigger.level()'],['../namespacescripts_1_1tasks.html#a3640bf10f871b8dd176d96a9dc361421',1,'scripts.tasks.level()'],['../namespacescripts_1_1setup__btx.html#a9c9c54977461cf66840c575eee20906f',1,'scripts.setup_btx.level()']]],
