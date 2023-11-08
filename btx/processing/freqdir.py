@@ -47,9 +47,11 @@ from matplotlib import colors
 import matplotlib as mpl
 from matplotlib import cm
 
+from bokeh.transform import linear_cmap
+from bokeh.util.hex import hexbin
 from bokeh.plotting import figure, show, output_file, save
 from bokeh.models import HoverTool, CategoricalColorMapper, LinearColorMapper, ColumnDataSource, CustomJS, Slider, RangeSlider, Toggle, RadioButtonGroup, Range1d, Label
-from bokeh.palettes import Viridis256, Cividis256, Turbo256, Category20, Plasma3
+from bokeh.palettes import Viridis256, Cividis256, Turbo256, Category20, Plasma3, Plasma256, Plasma11
 from bokeh.layouts import column, row
 
 import cProfile
@@ -958,14 +960,22 @@ class visualizeFD:
 
         imgs = None
         projections = None
+        trueIntensities = None
         for currRank in range(self.nprocs):
             with h5py.File(self.inputFile+"_"+str(currRank)+".h5", 'r') as hf:
                 if imgs is None:
                     imgs = hf["SmallImages"][:]
                     projections = hf["ProjectedData"][:]
+                    trueIntensities = hf["TrueIntensities"][:]
                 else:
                     imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
                     projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
+                    trueIntensities = np.concatenate((trueIntensities, hf["TrueIntensities"][:]), axis=0)
+
+        for intensMe in trueIntensities:
+            print(intensMe)
+            if(np.isnan(intensMe)):
+                print("This is NAN")
 
         intensities = []
         for img in imgs:
@@ -1013,6 +1023,13 @@ class visualizeFD:
         self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
         self.experData_df['imgind'] = np.arange(self.numImgsToUse)*self.skipSize
 
+#        self.experData_df['trueIntensities'] = [str(int(math.abs(x)/max(np.abs(trueIntensities))*19)) for x in trueIntensities]
+        self.experData_df['trueIntensities'] = [5 for x in trueIntensities]
+#        self.experData_df['trueIntensities_backgroundColor'] = [Plasma256[int(math.abs(x)/max(np.abs(trueIntensities))*255)] for x in trueIntensities]
+        self.experData_df['trueIntensities_backgroundColor'] = [5 for x in trueIntensities]
+        print("aowdijaoidjwaoij", len(self.experData_df['trueIntensities']), self.experData_df['trueIntensities'], type(self.experData_df['trueIntensities']))
+        print(trueIntensities)
+
     def genABOD(self):
         if self.includeABOD:
             abod = self.fastABOD(self.projections, 10)
@@ -1028,6 +1045,8 @@ class visualizeFD:
                 outlierLabels.append(str(0))
         self.experData_df['anomDet'] = outlierLabels
         self.experData_df['anom_backgroundColor'] = [Category20[20][int(x)] for x in outlierLabels]
+
+        print("2adwjiaomd", len(self.experData_df['anomDet']), self.experData_df['anomDet'], type(self.experData_df['anomDet']))
 
     def setUserGroupings(self, userGroupings):
         """
@@ -1079,12 +1098,19 @@ class visualizeFD:
 
     def genHTML(self):
         datasource = ColumnDataSource(self.experData_df)
-        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Category20[20])
+        #JOHN CHANGE 20231020
+#        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Category20[20])
+        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Plasma256[::16])
         plot_figure = figure(
             title='UMAP projection with DBSCAN clustering of the LCLS dataset',
             tools=('pan, wheel_zoom, reset'),
             width = 2000, height = 600
         )
+        
+#        bins = hexbin(self.clusterable_embedding[self.clustered, 0], self.clusterable_embedding[self.clustered, 1], 0.5)
+#        plot_figure.hex_tile(q="q", r="r", size=0.5, line_color=None, source=bins,
+#           fill_color=linear_cmap('counts', 'Viridis256', 0, max(bins.counts)))
+
         plot_figure.add_tools(HoverTool(tooltips="""
         <div style="width: 170; height: 64; background-color:@backgroundColor; margin: 5px 0px 5px 0px">
             <div style='width: 64; height: 64; float: left;'>
@@ -1171,12 +1197,14 @@ class visualizeFD:
         const cluster = datasource.data.cluster
         const ptColor = datasource.data.ptColor
         const anomDet = datasource.data.anomDet
+        const trueIntensities = datasource.data.trueIntensities
         const imgind = datasource.data.imgind
         const backgroundColor = datasource.data.backgroundColor
         const dbscan_backgroundColor = datasource.data.dbscan_backgroundColor
         const anom_backgroundColor = datasource.data.anom_backgroundColor
         const optics_backgroundColor = datasource.data.optics_backgroundColor
-        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind, backgroundColor, dbscan_backgroundColor, anom_backgroundColor, optics_backgroundColor}
+        const trueIntensities_backgroundColor = datasource.data.trueIntensities_backgroundColor
+        datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, trueIntensities, imgind, backgroundColor, dbscan_backgroundColor, anom_backgroundColor, optics_backgroundColor, trueIntensities_backgroundColor}
         """)
         cols.js_on_change('value', callback)
 
@@ -1257,7 +1285,7 @@ class visualizeFD:
         reachabilityDiag.line([0, len(opticsData_df['ptColor'])], [2, 2], line_width=2, color="black", line_dash="dashed")
         reachabilityDiag.y_range = Range1d(-1, 10)
 
-        LABELS = ["DBSCAN Clustering", "OPTICS Clustering", "Anomaly Detection"]
+        LABELS = ["DBSCAN Clustering", "OPTICS Clustering", "Anomaly Detection", "True Intensity"]
         radio_button_group = RadioButtonGroup(labels=LABELS, active=0)
         radioGroup_js = CustomJS(args=dict(datasource=datasource, opticssource=opticssource), code="""
             const x = datasource.data.x
@@ -1266,10 +1294,12 @@ class visualizeFD:
             const medoidBold = datasource.data.medoidBold
             const cluster = datasource.data.cluster
             const anomDet = datasource.data.anomDet
+            const trueIntensities = datasource.data.trueIntensities
             const imgind = datasource.data.imgind
             const dbscan_backgroundColor = datasource.data.dbscan_backgroundColor
             const anom_backgroundColor = datasource.data.anom_backgroundColor
             const optics_backgroundColor = datasource.data.optics_backgroundColor
+            const trueIntensities_backgroundColor = datasource.data.trueIntensities_backgroundColor
 
             const opticsClust = opticssource.data.clusterForScatterPlot
 
@@ -1284,21 +1314,29 @@ class visualizeFD:
                 ptColor = opticsClust
                 backgroundColor = optics_backgroundColor
             }
-            else{
+            else if (cb_obj.active==2) {
                 ptColor = anomDet
                 backgroundColor = anom_backgroundColor
             }
-            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, imgind, backgroundColor, dbscan_backgroundColor, anom_backgroundColor, optics_backgroundColor}
+            else {
+                ptColor = trueIntensities
+                backgroundColor = trueIntensities_backgroundColor
+            }
+            datasource.data = { x, y, image, cluster, medoidBold, ptColor, anomDet, trueIntensities, imgind, backgroundColor, dbscan_backgroundColor, anom_backgroundColor, optics_backgroundColor, trueIntensities_backgroundColor}
         """)
         radio_button_group.js_on_change("active", radioGroup_js)
 
         self.viewResults = column(plot_figure, p, imgsPlot, row(cols, toggl, radio_button_group), reachabilityDiag)
+
+    def genCSV(self):
+        self.experData_df.to_csv(self.outputFile[:-4]+"csv")
 
     def fullVisualize(self):
         self.genUMAP()
         self.genABOD()
         self.genLabels()
         self.genHTML()
+        self.genCSV()
 
     def updateLabels(self):
         self.genLabels()
@@ -1323,7 +1361,7 @@ class WrapperFullFD:
     """
 #    from btx.interfaces.ipsana import PsanaInterface
     btx = __import__('btx')
-    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, unitVar, usePSI=True):
+    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, unitVar=False, usePSI=True):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1563,10 +1601,11 @@ class WrapperFullFD:
     def addThumbnailsToProjectH5(self):
 #        print("Gathering thumbnails")
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
-        _,self.fullThumbnailData,_ = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
+        _,self.fullThumbnailData,_,self.trueIntensitiesData = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
         file_name = self.writeToHere+"{}_ProjectedData_{}.h5".format(self.currRun, self.rank)
         f1 = h5py.File(file_name, 'r+')
         f1.create_dataset("SmallImages",  data=self.fullThumbnailData)
+        f1.create_dataset("TrueIntensities",  data=np.array(self.trueIntensitiesData))
         f1.close()
         self.comm.barrier()
 
@@ -1861,7 +1900,8 @@ class SinglePanelDataRetriever:
         fullthumbnails = None
         imgsTracked = []
         runs = self.split_range(startInd, startInd+n, num_steps)
-        print(runs) 
+        print(runs)
+        trueIntensities = []
         for runStart, runEnd in runs:
 #            print("RETRIEVING: [", runStart, ":", runEnd,"]")
             self.psi.counter = runStart
@@ -1875,10 +1915,19 @@ class SinglePanelDataRetriever:
                 [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
             ]
 
-            jimgs = []
-            for img in imgs:
-                jimgs.append(self.imageProcessor.centerImgFunc(self.imageProcessor.thresholdFunc(img),100,100))
-            imgs = np.array(jimgs)
+            origTrueIntensities = [np.sum(img.flatten(), dtype=np.double) for img in imgs]
+            newTrueIntensities = []
+            for j in origTrueIntensities:
+                if j>0:
+                    newTrueIntensities.append(0)
+                else:
+                    newTrueIntensities.append(np.log(j))
+            origTrueIntensities = newTrueIntensities
+
+#            jimgs = []
+#            for img in imgs:
+#                jimgs.append(self.imageProcessor.centerImgFunc(self.imageProcessor.thresholdFunc(img),100,100))
+#            imgs = np.array(jimgs)
 
             if getThumbnails:
                 saveMe = []
@@ -1899,13 +1948,15 @@ class SinglePanelDataRetriever:
             if getThumbnails:
                 nimg_batch = []
                 nthumbnail_batch = []
-                for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
+                ntrueIntensity_batch = []
+                for img, thumbnail, trueIntens in zip(img_batch.T, thumbnail_batch.T, origTrueIntensities):
                     currIntensity = np.sum(img.flatten(), dtype=np.double)
                     nimg = self.imageProcessor.processImg(img, currIntensity)
                     nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                         nthumbnail_batch.append(nthumbnail)
+                        ntrueIntensity_batch.append(trueIntens)
                     else:
                         num_valid_thumbnails -= 1
                         num_valid_imgs -= 1
@@ -1917,6 +1968,7 @@ class SinglePanelDataRetriever:
                 elif len(nimg_batch)!=0:
                     fullimgs = np.hstack((fullimgs, nimg_batch))
                     fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
+                trueIntensities += ntrueIntensity_batch
             else:
                 nimg_batch = []
                 for img in img_batch.T:
@@ -1939,7 +1991,7 @@ class SinglePanelDataRetriever:
 #        print("Images tracked:", imgsTracked)
         if getThumbnails:
             print(fullimgs.shape, fullthumbnails.shape, imgsTracked)
-            return (fullimgs, fullthumbnails, imgsTracked)
+            return (fullimgs, fullthumbnails, imgsTracked, trueIntensities)
         else:
             return (fullimgs, imgsTracked)
 
@@ -1949,7 +2001,7 @@ def main():
     """
     params = parse_input()
     os.makedirs(os.path.join(params.outdir, "figs"), exist_ok=True)
-    visMe = visualizeFD(inputFile=params.outdir + f"{params.run:04}_ProjectedData",
+    visMe = visualizeFD(inputFile=params.outdir + f"/{params.run:04}_ProjectedData",
                         outputFile=params.outdir + f"figs/UMAPVis_{params.run:04}.html",
                         numImgsToUse=params.num_imgs,
                         nprocs=params.nprocs,

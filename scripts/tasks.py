@@ -533,7 +533,7 @@ def draw_sketch(config):
     fd.runMe()
     logger.debug('Done!')
 
-def show_sketch():
+def show_sketch(config):
     from btx.interfaces.ischeduler import JobScheduler
     setup = config.setup
     task = config.show_sketch
@@ -553,7 +553,7 @@ def show_sketch():
         command += f" --num_imgs_to_use={task.num_imgs_to_use}"
     js = JobScheduler(os.path.join(".", f'fd_{setup.run:04}.sh'),
                       queue=setup.queue,
-                      ncores=task.ncores,
+                      ncores=task.nprocs,
                       jobname=f'fd_{setup.run:04}')
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana','fdviz'])
