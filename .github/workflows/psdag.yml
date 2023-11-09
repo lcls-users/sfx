@@ -20,5 +20,5 @@ jobs:
           destination-github-username: 'slac-lcls'
           destination-repository-name: 'psdag'
           commit-message: 'btx DAGs update'
-          target-directory: '/btx'
+          target-directory: '/btx-dev'
           target-branch: main
