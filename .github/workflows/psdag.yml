@@ -1,0 +1,24 @@
+name: psDAG
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy-dags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pushes to another repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_PSDAG_PUSH_KEY }}
+        with:
+          source-directory: 'dags'
+          destination-github-username: 'slac-lcls'
+          destination-repository-name: 'psdag'
+          commit-message: 'btx DAGs update'
+          target-directory: '/btx'
+          target-branch: main
