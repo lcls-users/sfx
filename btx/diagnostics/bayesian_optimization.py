@@ -33,7 +33,19 @@ class BayesianOptimization:
 
     # Initial samples
 
-    def random_param_samples(config, params_ranges_keys):
+    def random_param_samples(self, config):
+        """
+        Function called by the "bo_init_samples_configs" task.
+
+        Creates a matrix with each row containing a set of random parameters.
+        Each parameter value falls into the range that has been defined in the config.
+
+        Parameters
+        ----------
+        config : AttrDict
+            The current config.
+        """
+        params_ranges_keys = [key for key in config if key.startswith("range_")]
         n_params = len(params_ranges_keys)
         n_samples = config.bayesian_opt.n_samples_init
         n_points = config.bayesian_opt.n_points_per_param
@@ -56,24 +68,43 @@ class BayesianOptimization:
         
     # Acquisition functions
 
-    def expected_improvement(X, gp_model, best_y):
+    def expected_improvement(self, X, gp_model, best_y):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         z = (y_pred - best_y) / y_std
         ei = (y_pred - best_y) * norm.cdf(z) + y_std * norm.pdf(z)
         return ei
 
-    def upper_confidence_bound(X, gp_model, beta):
+    def upper_confidence_bound(self, X, gp_model, beta):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         ucb = y_pred + beta * y_std
         return ucb
 
-    def probability_of_improvement(X, gp_model, best_y):
+    def probability_of_improvement(self, X, gp_model, best_y):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         z = (y_pred - best_y) / y_std
         pi = norm.cdf(z)
         return pi
 
     def acquisition_function(self, function_name, inputs):
+        """
+        Calls the appropriate acquisition function.
+
+        Parameters
+        ----------
+        function_name : str
+            The name of the acquisition function to call.
+        inputs : List
+            List of inputs:
+                - input_range:
+                    Matrix of shape (n_points_per_param, n_params).
+                    Each column of the matrix is a linspace of parameter values with "n_points_per_param" points.
+                - gp_model: GaussianProcessRegressor
+                    The current Gaussian process.
+                - best_y or beta: float
+                    Highest observed function value.
+                    or
+                    Parameter for Upper Confidence Bound.
+        """
         output = None
         match function_name:
             case "ei" | "expected_improvement":
@@ -89,8 +120,17 @@ class BayesianOptimization:
     
     # Bayesian Optimization
 
-    # Function to be used by Slurm task
     def run_bayesian_opt(self, config):
+        """
+        Function called by the "bayesian_optimization" task.
+
+        Runs one iteration of the Bayesian optimization.
+
+        Parameters
+        ----------
+        config : AttrDict
+            The current config.
+        """
         setup = config.setup
         task = config.bayesian_opt
         # Get the first task of the loop sequence
@@ -98,7 +138,7 @@ class BayesianOptimization:
         # Get the task generating the scores
         score_task = config.get(task.score_task)
 
-        ### 1. Save the current parameters and the associated score
+        ##### 1. Save the current parameters and the associated score
 
         # Get the current parameters
         params_ranges_keys = [key for key in config if key.startswith("range_")]
@@ -108,21 +148,21 @@ class BayesianOptimization:
 
         # Get the score from the interation that has just been run
         score_file_name = f"{task.tag}_{task.fom}_n1.dat" 
-        score_file_path = os.path.join("./", task.score_task, score_task.tag, "hkl", score_file_name)
+        score_file_path = os.path.join(setup.root_dir, task.score_task, score_task.tag, "hkl", score_file_name)
         with open(score_file_path, 'r') as file:
             lines = file.readlines()
         data = lines[1].strip().split(',')
         score = data[1] # The score is located at the 2nd column
 
         # Save the current parameters and the associated score
-        output_file_path = os.path.join(setup.root_dir, "btx", "diagnostics", f"{setup.exp}_bayesian_opt.dat")
+        output_file_path = os.path.join(setup.root_dir, "bayesian_opt", task.tag, f"{setup.exp}_bayesian_opt.dat")
         with open(output_file_path, 'a', newline='') as file:
             writer = csv.writer(file, delimiter=',')
             # Write the data
             data_to_write = [(score, *params)]
             writer.writerows(data_to_write)
         
-        ### 2. Get all samples scores and parameters
+        ##### 2. Get all samples scores and parameters
 
         # Read all scores and parameters from the .dat file
         with open(output_file_path, 'r') as file:
@@ -134,7 +174,7 @@ class BayesianOptimization:
         sample_y = np.array([row[0] for row in data_rows], dtype=float)
         sample_inputs = np.array([row[1:] for row in data_rows], dtype=float)
         
-        ### 3. Determine the next set of parameters to be used
+        ##### 3. Determine the next set of parameters to be used
 
         # 1. Fit the Gaussian process model to the sampled points
         length_scale = [1.0] * n_params
@@ -168,12 +208,20 @@ class BayesianOptimization:
         for i, param_name in enumerate(params_names):
             task_to_optimize[param_name] = new_input[i]
         
-        config_file_path = os.path.join(setup.root_dir, "btx", "tutorial", f"{setup.exp}_bayesian_opt.yaml")
+        config_file_path = os.path.join(setup.root_dir, "yamls", f"{setup.exp}_bayesian_opt.yaml")
         with open(config_file_path, 'w') as yaml_file:
             yaml.dump(config, yaml_file, default_flow_style=False)
 
-    # Function to be used by Airflow Branch Operator
     def stop_criterion(self):
+        """
+        Function called by the Airflow Branch Operator.
+
+        Returns the name of the next task to execute given the state of the stop criterion. 
+
+        Parameters
+        ----------
+        None
+        """
         match self.criterion_name:
             case "max_iterations":
                 stop_criterion = self.iteration >= self.max_iterations
@@ -187,5 +235,6 @@ class BayesianOptimization:
         else:
             # Exit the loop
             return self.exit_loop_task
+        
     
     

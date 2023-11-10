@@ -71,7 +71,7 @@ bayesian_opt:
   tag: 'sample2'
   task_to_optimize: "find_peaks"
   score_task: "merge"
-  fom: "R_split"
+  fom: "Rsplit"
   kernel: "rbf"
   acquisition_function: "expected_improvement"
   max_iterations: 10

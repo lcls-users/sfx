@@ -524,6 +524,10 @@ def bo_init_samples_configs(config):
     setup = config.setup
     task = config.bayesian_opt
     """ Generates the config files that will be used to generate the initial samples for the Bayesian optimization. """
+    taskdir = os.path.join(setup.root_dir, "bayesian_opt")
+    os.makedirs(taskdir, exist_ok=True)
+    os.makedirs(os.path.join(taskdir, task.tag), exist_ok=True)
+
     if hasattr(task, 'n_samples_init'):
         n_samples_init = task.n_samples_init
 
@@ -532,7 +536,7 @@ def bo_init_samples_configs(config):
         params_names = [key.replace("range_", "") for key in params_ranges_keys]
 
         # Generate the parameter samples
-        param_samples = BayesianOptimization.random_param_samples(config, params_ranges_keys)
+        param_samples = BayesianOptimization.random_param_samples(config)
 
         # Get the first task of the loop sequence
         task_to_optimize = config.get(task.task_to_optimize)
@@ -542,8 +546,8 @@ def bo_init_samples_configs(config):
 
         # Generate the subdir
         subdir_name = setup.exp + "_init_samples_configs"
-        subdir_path = os.path.join(setup.root_dir, "tutorial", subdir_name)
-        os.mkdir(subdir_path)
+        subdir_path = os.path.join(setup.root_dir, "bayesian_opt", task.tag, subdir_name)
+        os.makedirs(subdir_path)
 
         # Generate the config files
         logger.info(f'Generating {n_samples_init} config files.')
@@ -586,11 +590,12 @@ def bo_aggregate_init_samples(config):
     samples_params = np.empty(shape=(n_samples_init, n_params))
 
     logger.info('Aggregating the scores and parameters of the initial samples.')
+    subdir_name = setup.exp + "_init_samples_configs"
+    subdir_path = os.path.join(setup.root_dir, "bayesian_opt", task.tag, subdir_name)
     for i in range(n_samples_init):
         # Get the parameters in the config file
-        subdir_name = setup.exp + "_init_samples_configs"
         config_file_name = f"{setup.exp}_sample_{i+1}.yaml"
-        config_file_path = os.path.join(setup.root_dir, "tutorial", subdir_name, config_file_name)
+        config_file_path = os.path.join(subdir_path, config_file_name)
         with open(config_file_path, 'r') as file:
             config_data = yaml.safe_load(file)
         for j in range(n_params):
@@ -598,7 +603,7 @@ def bo_aggregate_init_samples(config):
 
         # Get the score in the score output file
         score_file_name = f"{task.tag}_sample_{i+1}_{task.fom}_n1.dat" 
-        score_file_path = os.path.join("./", task.score_task, score_task.tag, "hkl", score_file_name)
+        score_file_path = os.path.join(setup.root_dir, task.score_task, score_task.tag, "hkl", score_file_name)
         with open(score_file_path, 'r') as file:
             lines = file.readlines()
         data = lines[1].strip().split(',')
@@ -606,7 +611,7 @@ def bo_aggregate_init_samples(config):
         samples_scores[i,1] = score
 
     # Write the scores and the parameters of the samples in a .dat file
-    output_file_path = os.path.join(setup.root_dir, "btx", "diagnostics", f"{setup.exp}_bayesian_opt.dat")
+    output_file_path = os.path.join(setup.root_dir, "bayesian_opt", task.tag, f"{setup.exp}_bayesian_opt.dat")
     with open(output_file_path, 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',')
         # Write a header row with column names
@@ -614,6 +619,9 @@ def bo_aggregate_init_samples(config):
         # Write the data
         data_to_write = [(score, *params) for score, params in zip(samples_scores, samples_params)]
         writer.writerows(data_to_write)
+
+    # Remove the subdir containing the initial samples config files
+    shutil.rmtree(subdir_path)
 
     logger.info('Done!')
 
