@@ -67,7 +67,7 @@ merge:
   nshells: 10
   highres: 1.6
 
-bayesian_opt:
+bayesian_optimization:
   tag: 'sample2'
   task_to_optimize: "find_peaks"
   score_task: "merge"
