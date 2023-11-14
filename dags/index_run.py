@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 from airflow import DAG
-from plugins.jid import JIDSlurmOperator
+from btx.plugins.jid import JIDSlurmOperator
 
 # DAG SETUP
 description='BTX index run DAG'
