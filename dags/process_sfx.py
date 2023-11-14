@@ -1,7 +1,9 @@
 from datetime import datetime
 import os
 from airflow import DAG
-from plugins.jid import JIDSlurmOperator
+import importlib
+jid = importlib.import_module("btx-dev.plugins.jid")
+JIDSlurmOperator = jid.JIDSlurmOperator
 
 # DAG SETUP
 description='BTX process SFX DAG'
