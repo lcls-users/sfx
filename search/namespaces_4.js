@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['optimize_5fgeometry_745',['optimize_geometry',['../namespaceoptimize__geometry.html',1,'']]]
+  ['peak_5ffinder_764',['peak_finder',['../namespacepeak__finder.html',1,'']]],
+  ['pipca_765',['pipca',['../namespacepipca.html',1,'']]]
 ];

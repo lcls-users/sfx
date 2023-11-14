@@ -76,38 +76,42 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
-<tr class="memitem:namespaceprocess__sfx"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html">process_sfx</a></td></tr>
+<tr class="memitem:namespacedags_1_1process__sfx"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html">dags.process_sfx</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a834ea994b6467a74c066b31522a09e10"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#a834ea994b6467a74c066b31522a09e10">process_sfx.description</a> = 'BTX process SFX DAG'</td></tr>
-<tr class="separator:a834ea994b6467a74c066b31522a09e10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed21a3e5939b55118020998d96a3d45d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#aed21a3e5939b55118020998d96a3d45d">process_sfx.dag_name</a> = os.path.splitext(os.path.basename(__file__))[0]</td></tr>
-<tr class="separator:aed21a3e5939b55118020998d96a3d45d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a465cb9d7263d345bbd714882f7eb1ccc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#a465cb9d7263d345bbd714882f7eb1ccc">process_sfx.dag</a></td></tr>
-<tr class="separator:a465cb9d7263d345bbd714882f7eb1ccc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5eaa405d3c0ecea264f9cc25d2dfcb5f"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#a5eaa405d3c0ecea264f9cc25d2dfcb5f">process_sfx.task_id</a> = 'find_peaks'</td></tr>
-<tr class="separator:a5eaa405d3c0ecea264f9cc25d2dfcb5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5bedb76d0bfcef973efe83637f8035a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#ac5bedb76d0bfcef973efe83637f8035a">process_sfx.find_peaks</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:ac5bedb76d0bfcef973efe83637f8035a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e2455abc4fcf6dbc5efc6192cad3373"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#a6e2455abc4fcf6dbc5efc6192cad3373">process_sfx.elog1</a> = JIDSlurmOperator(task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:a6e2455abc4fcf6dbc5efc6192cad3373"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a946497ac069e204ea31e10046329bf30"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#a946497ac069e204ea31e10046329bf30">process_sfx.index</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:a946497ac069e204ea31e10046329bf30"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4b4375728a55af0ebe330043da5edb1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#ae4b4375728a55af0ebe330043da5edb1">process_sfx.stream_analysis</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:ae4b4375728a55af0ebe330043da5edb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94d059549ed6c16af200d82e76323b27"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#a94d059549ed6c16af200d82e76323b27">process_sfx.merge</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:a94d059549ed6c16af200d82e76323b27"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab275491f725cebe86be7bb4d613dbbc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#aab275491f725cebe86be7bb4d613dbbc">process_sfx.solve</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:aab275491f725cebe86be7bb4d613dbbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa3f8aa6a9d1635f972cc318f7fd1c5e1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceprocess__sfx.html#aa3f8aa6a9d1635f972cc318f7fd1c5e1">process_sfx.elog_display</a> = JIDSlurmOperator(task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:aa3f8aa6a9d1635f972cc318f7fd1c5e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9106a34f010a18ab23fef1f4bc0d68ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a9106a34f010a18ab23fef1f4bc0d68ff">dags.process_sfx.jid</a> = importlib.import_module(&quot;btx-dev.plugins.jid&quot;)</td></tr>
+<tr class="separator:a9106a34f010a18ab23fef1f4bc0d68ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a680560d6465768e147b930ec7b67a2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a4a680560d6465768e147b930ec7b67a2">dags.process_sfx.JIDSlurmOperator</a> = jid.JIDSlurmOperator</td></tr>
+<tr class="separator:a4a680560d6465768e147b930ec7b67a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab693bb6df89c08ac23b6547f810690d4"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#ab693bb6df89c08ac23b6547f810690d4">dags.process_sfx.description</a> = 'BTX process SFX DAG'</td></tr>
+<tr class="separator:ab693bb6df89c08ac23b6547f810690d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a34915cc75785e6c7356f41375a6202"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a3a34915cc75785e6c7356f41375a6202">dags.process_sfx.dag_name</a> = os.path.splitext(os.path.basename(__file__))[0]</td></tr>
+<tr class="separator:a3a34915cc75785e6c7356f41375a6202"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6db92b82a5a5801250ca6fee04649dff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a6db92b82a5a5801250ca6fee04649dff">dags.process_sfx.dag</a></td></tr>
+<tr class="separator:a6db92b82a5a5801250ca6fee04649dff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2f67d854ec0c8f69b1f523d68502f36"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#ad2f67d854ec0c8f69b1f523d68502f36">dags.process_sfx.task_id</a> = 'find_peaks'</td></tr>
+<tr class="separator:ad2f67d854ec0c8f69b1f523d68502f36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ae8c07f9b41835267042417bed863bc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a1ae8c07f9b41835267042417bed863bc">dags.process_sfx.find_peaks</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:a1ae8c07f9b41835267042417bed863bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01434901d291151074d88726aff22e36"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a01434901d291151074d88726aff22e36">dags.process_sfx.elog1</a> = JIDSlurmOperator(task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:a01434901d291151074d88726aff22e36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aacf62884181fb5454d8ac8c8d9fba07c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#aacf62884181fb5454d8ac8c8d9fba07c">dags.process_sfx.index</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:aacf62884181fb5454d8ac8c8d9fba07c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4780371c9674f1db7cc1ef8d5b38d4e3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a4780371c9674f1db7cc1ef8d5b38d4e3">dags.process_sfx.stream_analysis</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:a4780371c9674f1db7cc1ef8d5b38d4e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a074fb1eac2597dd9de5fcd88cddfc1c0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a074fb1eac2597dd9de5fcd88cddfc1c0">dags.process_sfx.merge</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:a074fb1eac2597dd9de5fcd88cddfc1c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a1d8de9e92e863c579d21539411b08b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#a4a1d8de9e92e863c579d21539411b08b">dags.process_sfx.solve</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:a4a1d8de9e92e863c579d21539411b08b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8c0c7b6a63212b1889b21d92d0bbb2e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1process__sfx.html#ae8c0c7b6a63212b1889b21d92d0bbb2e">dags.process_sfx.elog_display</a> = JIDSlurmOperator(task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:ae8c0c7b6a63212b1889b21d92d0bbb2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Nov 9 2023 22:02:21 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Tue Nov 14 2023 19:41:27 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

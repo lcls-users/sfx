@@ -76,30 +76,34 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
-<tr class="memitem:namespaceoptimize__geometry"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoptimize__geometry.html">optimize_geometry</a></td></tr>
+<tr class="memitem:namespacedags_1_1optimize__geometry"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html">dags.optimize_geometry</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:acf94faea1db24dec5b0e4aa6261ef55f"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoptimize__geometry.html#acf94faea1db24dec5b0e4aa6261ef55f">optimize_geometry.description</a> = 'BTX optimize geometry DAG'</td></tr>
-<tr class="separator:acf94faea1db24dec5b0e4aa6261ef55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a418286937c0e4d929aa75ead2d71b14f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoptimize__geometry.html#a418286937c0e4d929aa75ead2d71b14f">optimize_geometry.dag_name</a> = os.path.splitext(os.path.basename(__file__))[0]</td></tr>
-<tr class="separator:a418286937c0e4d929aa75ead2d71b14f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62a628c3fed59d8ffb8b3e3641b127a3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoptimize__geometry.html#a62a628c3fed59d8ffb8b3e3641b127a3">optimize_geometry.dag</a></td></tr>
-<tr class="separator:a62a628c3fed59d8ffb8b3e3641b127a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4222e907016d603c1075cad1bfbc5efa"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoptimize__geometry.html#a4222e907016d603c1075cad1bfbc5efa">optimize_geometry.task_id</a> = 'run_analysis'</td></tr>
-<tr class="separator:a4222e907016d603c1075cad1bfbc5efa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a705f66e924be045fef0f8f3f0b33c220"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoptimize__geometry.html#a705f66e924be045fef0f8f3f0b33c220">optimize_geometry.run_analysis</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:a705f66e924be045fef0f8f3f0b33c220"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa3e83843f96a5bce6db8212bb51ad8df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoptimize__geometry.html#aa3e83843f96a5bce6db8212bb51ad8df">optimize_geometry.opt_geom</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:aa3e83843f96a5bce6db8212bb51ad8df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a801de82fdbf02f6e29acf2f4bc1e8f24"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoptimize__geometry.html#a801de82fdbf02f6e29acf2f4bc1e8f24">optimize_geometry.elog_display</a> = JIDSlurmOperator(task_id=task_id, dag=dag)</td></tr>
-<tr class="separator:a801de82fdbf02f6e29acf2f4bc1e8f24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1e46014e8db1341ada6375f6e0b2ebf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#aa1e46014e8db1341ada6375f6e0b2ebf">dags.optimize_geometry.jid</a> = importlib.import_module(&quot;btx-dev.plugins.jid&quot;)</td></tr>
+<tr class="separator:aa1e46014e8db1341ada6375f6e0b2ebf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3e8a44bb616f88bb67c81603d4236d0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#af3e8a44bb616f88bb67c81603d4236d0">dags.optimize_geometry.JIDSlurmOperator</a> = jid.JIDSlurmOperator</td></tr>
+<tr class="separator:af3e8a44bb616f88bb67c81603d4236d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a622555dc0f08418040fa33238334ba11"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#a622555dc0f08418040fa33238334ba11">dags.optimize_geometry.description</a> = 'BTX optimize geometry DAG'</td></tr>
+<tr class="separator:a622555dc0f08418040fa33238334ba11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4122cf6d604f77a4f2d7e96b6072b973"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#a4122cf6d604f77a4f2d7e96b6072b973">dags.optimize_geometry.dag_name</a> = os.path.splitext(os.path.basename(__file__))[0]</td></tr>
+<tr class="separator:a4122cf6d604f77a4f2d7e96b6072b973"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a449add97c2b8e052897985042c39a37e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#a449add97c2b8e052897985042c39a37e">dags.optimize_geometry.dag</a></td></tr>
+<tr class="separator:a449add97c2b8e052897985042c39a37e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a197e64936db2363d12a6306acabb942e"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#a197e64936db2363d12a6306acabb942e">dags.optimize_geometry.task_id</a> = 'run_analysis'</td></tr>
+<tr class="separator:a197e64936db2363d12a6306acabb942e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef5d6ee7e0f7463ffb965078eeea29ef"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#aef5d6ee7e0f7463ffb965078eeea29ef">dags.optimize_geometry.run_analysis</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:aef5d6ee7e0f7463ffb965078eeea29ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a467284f65f505819f7b9d5379b2cb3fe"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#a467284f65f505819f7b9d5379b2cb3fe">dags.optimize_geometry.opt_geom</a> = JIDSlurmOperator( task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:a467284f65f505819f7b9d5379b2cb3fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2dee2964144b19e797dfa95f495181dd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1optimize__geometry.html#a2dee2964144b19e797dfa95f495181dd">dags.optimize_geometry.elog_display</a> = JIDSlurmOperator(task_id=task_id, dag=dag)</td></tr>
+<tr class="separator:a2dee2964144b19e797dfa95f495181dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Nov 9 2023 22:02:21 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Tue Nov 14 2023 19:41:27 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

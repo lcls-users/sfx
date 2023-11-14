@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['visualize_5fsample_1385',['visualize_sample',['../namespacetest2.html#a6502ebe81e224d8e333ed9ef493c5ee4',1,'test2']]]
+  ['visualize_5fsample_1394',['visualize_sample',['../namespacedags_1_1test2.html#aeae96962131aeb30ab7b49171fbafe69',1,'dags::test2']]]
 ];
