@@ -44,7 +44,7 @@ def determine_configuration(
         elif args.workflow == "geometry" or args.workflow == "behenate":
             dag = "optimize_geometry"
 
-    btx_base_dir: str = "/sdf/group/lcls/ds/tools/btx/scripts"
+    btx_base_dir: str = "/sdf/group/lcls/ds/tools/btx/dev/scripts"
     btx_executable: str = "elog_trigger.py"
     executable: str = f"{btx_base_dir}/{btx_executable}"
 
