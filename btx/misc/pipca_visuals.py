@@ -21,12 +21,22 @@ def display_dashboard(filename):
     Displays an interactive dashboard with a PC plot, scree plot, 
     and intensity heatmaps of the selected source image as well as 
     its reconstructed image using the model obtained by pipca.
+
+    Parameters
+    -----------------
+    filename : str
+            Name of the read document to display figures
     """
-    (
-        exp, run, det_type,
-        start_img, loadings,
-        U, S, V
-    ) = unpack_pipca_model_file(filename)
+    data = unpack_pipca_model_file(filename)
+
+    exp = data['exp']
+    run = data['run']
+    loadings = data['loadings']
+    det_type = data['det_type']
+    start_img = data['start_img']
+    U = data['U']
+    S = data['S']
+    V = data['V']
 
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     psi.counter = start_img
@@ -54,7 +64,7 @@ def display_dashboard(filename):
         opts = dict(width=400, height=300, color='Image', cmap='rainbow', colorbar=True,
                     show_grid=True, shared_axes=False, toolbar='above', tools=['hover'])
         scatter = hv.Points(scatter_data, kdims=[PCx, PCy], vdims=['Image'], 
-                            label="%s vs %s" % (PCx.title(), PCy.title())).opts(**opts)
+                            label=f"{PCx.title()} vs {PCy.title()}").opts(**opts)
             
         posxy.source = scatter
         return scatter
@@ -128,12 +138,19 @@ def display_eigenimages(filename):
     """
     Displays a PC selector widget and a heatmap of the
     eigenimage corresponding to the selected PC.
+    
+    Parameters
+    -----------------
+    filename : str
+            Name of the read document to display figures
     """
-    (
-        exp, run, det_type,
-        start_img, _,
-        U, _, _
-    ) = unpack_pipca_model_file(filename)
+    data = unpack_pipca_model_file(filename)
+    
+    exp = data['exp']
+    run = data['run']
+    det_type = data['det_type']
+    start_img = data['start_img']
+    U = data['U']
 
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     psi.counter = start_img
@@ -159,7 +176,7 @@ def display_eigenimages(filename):
         # Downsample so heatmap is at most 100 x 100
         hm_data = construct_heatmap_data(img, 100)
     
-        opts = dict(width=400, height=300, cmap='BrBG', colorbar=True,
+        opts = dict(width=400, height=300, cmap='plasma', colorbar=True,
                     symmetric=True, shared_axes=False, toolbar='above')
         heatmap = hv.HeatMap(hm_data, label="%s Eigenimage" % (component.title())).aggregate(function=np.mean).opts(**opts)
         
@@ -178,36 +195,21 @@ def unpack_pipca_model_file(filename):
 
     Returns
     -------
-    exp: str
-        experiment name
-    run: int
-        run number
-    det_type: str
-        detector type
-    start_img: int
-        index f starting image in the run
-    loadings: ndarray, shape (q x n)
-        loadings matrix containing PC data
-    U: ndarray, shape (d x q)
-        principal components or eigenimages.
-        U matrix from pipca model
-    S: ndarray, shape (q,)
-        singular values.
-        S matrix from pipca model
-    V: ndarray, shape (n x q)
-        V matrix from pipca model
+    data: dict
+        A dictionary containing the extracted data from the h5 file.
     """
+    data = {}
     with h5py.File(filename, 'r') as f:
-        exp = str(np.asarray(f.get('exp')))[2:-1]
-        run = int(np.asarray(f.get('run')))
-        det_type = str(np.asarray(f.get('det_type')))[2:-1]
-        start_img = int(np.asarray(f.get('start_offset')))
-        loadings = np.asarray(f.get('loadings'))
-        U = np.asarray(f.get('U'))
-        S = np.asarray(f.get('S'))
-        V = np.asarray(f.get('V'))
+        data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
+        data['run'] = int(np.asarray(f.get('run')))
+        data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1]
+        data['start_img'] = int(np.asarray(f.get('start_offset')))
+        data['loadings'] = np.asarray(f.get('loadings'))
+        data['U'] = np.asarray(f.get('U'))
+        data['S'] = np.asarray(f.get('S'))
+        data['V'] = np.asarray(f.get('V'))
 
-    return exp, run, det_type, start_img, loadings, U, S, V
+    return data
 
 def closest_image_index(x, y, PCx_vector, PCy_vector):
     """
@@ -229,15 +231,9 @@ def closest_image_index(x, y, PCx_vector, PCy_vector):
     img_source:
         index of the image closest to tap location
     """
-    img_source = None
-    min_diff = None
-    square_diff = None
     
-    for i, (xv, yv) in enumerate(zip(PCx_vector, PCy_vector)):    
-        square_diff = (x - xv) ** 2 + (y - yv) ** 2
-        if (min_diff is None or square_diff < min_diff):
-            min_diff = square_diff
-            img_source = i
+    square_diff = (PCx_vector - x)**2 + (PCy_vector - y)**2
+    img_source = square_diff.argmin()
     
     return img_source
 
@@ -257,27 +253,28 @@ def construct_heatmap_data(img, max_pixels):
     hm_data : ndarray, shape ((x_pixels*y__pixels) x 3)
         coordinates to be displayed by hv.Heatmap (row, col, color)
     """
-    x_pixels, y_pixels = img.shape
-    bin_factor_x = int(x_pixels / max_pixels)
-    bin_factor_y = int(y_pixels / max_pixels)
     
-    while x_pixels % bin_factor_x != 0:
-        bin_factor_x += 1
+    y_pixels, x_pixels = img.shape
+    bin_factor_y = int(y_pixels / max_pixels)
+    bin_factor_x = int(x_pixels / max_pixels)
+
     while y_pixels % bin_factor_y != 0:
         bin_factor_y += 1
-    
-    img = img.reshape((x_pixels, y_pixels))
-    binned_img = img.reshape(int(x_pixels / bin_factor_x),
-                                bin_factor_x,
-                                int(y_pixels / bin_factor_y),
-                                bin_factor_y).mean(-1).mean(1)
-    
-    # Creates hm_data array for heatmap
-    bin_x_pixels, bin_y_pixels = binned_img.shape
-    rows = np.tile(np.arange(bin_x_pixels).reshape((bin_x_pixels, 1)), bin_y_pixels).flatten()
-    cols = np.tile(np.arange(bin_y_pixels), bin_x_pixels)
-    
-    hm_data = np.stack((rows, cols, binned_img.flatten()))
-    hm_data = hm_data.T.reshape((bin_x_pixels * bin_y_pixels, 3))
-    
+    while x_pixels % bin_factor_x != 0:
+        bin_factor_x += 1
+
+    img = img.reshape((y_pixels, x_pixels))
+    binned_img = img.reshape(int(y_pixels / bin_factor_y),
+                            bin_factor_y,
+                            int(x_pixels / bin_factor_x),
+                            bin_factor_x).mean(-1).mean(1)
+
+    # Create hm_data array for heatmap
+    bin_y_pixels, bin_x_pixels = binned_img.shape
+    rows = np.tile(np.arange(bin_y_pixels).reshape((bin_y_pixels, 1)), bin_x_pixels).flatten()
+    cols = np.tile(np.arange(bin_x_pixels), bin_y_pixels)
+
+    # Create hm_data array for heatmap
+    hm_data = np.stack((rows, cols, binned_img.flatten())).T
+
     return hm_data
