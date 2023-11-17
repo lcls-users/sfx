@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['visualizesample_722',['VisualizeSample',['../classbtx_1_1misc_1_1visuals_1_1VisualizeSample.html',1,'btx::misc::visuals']]]
+  ['visualizesample_741',['VisualizeSample',['../classbtx_1_1misc_1_1visuals_1_1VisualizeSample.html',1,'btx::misc::visuals']]]
 ];
