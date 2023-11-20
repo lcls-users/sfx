@@ -10,9 +10,12 @@ Description: DAG for Bayesian optimization applied to peak finding
 from datetime import datetime
 import os
 from airflow import DAG
-from plugins.jid import JIDSlurmOperator
 from airflow.operators.python import BranchPythonOperator
-from btx.diagnostics.bayesian_optimization import BayesianOptimization
+import importlib
+jid = importlib.import_module("btx-dev.plugins.jid")
+JIDSlurmOperator = jid.JIDSlurmOperator
+operators_utils = importlib.import_module("btx-dev.plugins.operators_utils")
+OperatorsUtils = operators_utils.OperatorsUtils
 
 # DAG SETUP
 description='BTX Bayesian Optimization Peak Finding SFX DAG'
@@ -81,14 +84,14 @@ task_id='elog_display'
 elog_display = JIDSlurmOperator(task_id=task_id, dag=dag )
 
 # Branch Operator to simulate the while loop
-bayesian_opt = BayesianOptimization(criterion_name="max_iterations",
+op_utils = OperatorsUtils(criterion_name="max_iterations",
                                     first_loop_task="find_peaks",
                                     exit_loop_task="solve",
                                     max_iterations=max_iterations)
 
 branch = BranchPythonOperator(
     task_id='bayesian_opt_branch_task',
-    python_callable=bayesian_opt.stop_criterion(),
+    python_callable=op_utils.bo_stop_criterion(),
     provide_context=False,
     dag=dag
   )

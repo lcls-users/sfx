@@ -87,7 +87,8 @@ class JIDSlurmOperator( BaseOperator ):
       config_name, file_extension = os.path.splitext(config_file_name)
 
       new_config_name = f"{exp_name}_sample_{self.branch_id}" + file_extension
-      new_config_dir = os.path.join(config_dir, exp_name + "_init_samples_configs")
+      new_config_dir = config_dir.rstrip(os.path.sep + "yamls")
+      new_config_dir = os.path.join(new_config_dir, "bayesian_opt", exp_name + "_init_samples_configs")
 
       return os.path.join(new_config_dir, new_config_name)
     

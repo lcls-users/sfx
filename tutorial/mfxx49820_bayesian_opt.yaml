@@ -70,6 +70,7 @@ merge:
 bayesian_optimization:
   tag: 'sample2'
   task_to_optimize: "find_peaks"
+  opt_type: "min"
   score_task: "merge"
   fom: "Rsplit"
   kernel: "rbf"
