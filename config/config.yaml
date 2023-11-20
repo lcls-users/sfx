@@ -73,6 +73,21 @@ merge:
   nshells: 10
   highres: 2.5
 
+bayesian_optimization:
+  tag: ''
+  task_to_optimize: 'find_peaks'
+  opt_type: 'min'
+  score_task: 'merge'
+  fom: 'Rsplit'
+  kernel: 'rbf'
+  acquisition_function: 'expected_improvement'
+  max_iterations: 10
+  n_samples_init: 5
+  n_points_per_param: 100
+  range_amax_thr: [20, 60]
+  range_atot_thr: [100, 200]
+  range_son_min: [5, 15]
+
 solve:
   tag: ''
   pdb: ''
