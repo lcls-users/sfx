@@ -590,7 +590,9 @@ def cluster_cell_params(cell, out_clusters, out_cell, in_cell=None, eps=5, min_s
     return clustering.labels_
 
 def launch_stream_analysis(in_stream, out_stream, fig_dir, tmp_exe, queue, ncores, 
-                           cell_only=False, cell_out=None, cell_ref=None, addl_command=None):
+                           cell_only=False, cell_out=None, cell_ref=None, addl_command=None,
+                           slurm_account="lcls"):
+                           
     """
     Launch stream analysis task using iScheduler.
     
@@ -631,7 +633,8 @@ def launch_stream_analysis(in_stream, out_stream, fig_dir, tmp_exe, queue, ncore
         if cell_ref is not None:
             command += f" --cell_ref={cell_ref}"
         
-    js = JobScheduler(tmp_exe, ncores=ncores, jobname=f'stream_analysis', queue=queue)
+    js = JobScheduler(tmp_exe, ncores=ncores, jobname=f'stream_analysis', queue=queue,
+                      account=slurm_account)
     js.write_header()
     js.write_main(f"{command}\n")
     js.write_main(f"cat {in_stream} > {out_stream}\n")

@@ -6,7 +6,7 @@ cd ../
 
 echo "# Date: `date` | User: `whoami` | Location: $PWD"
 
-for repo in btx mrxv; do
+for repo in dev stable ../mrxv; do
   repo_path=../${repo}
   if [ -d $repo_path ]; then
     cd $repo_path

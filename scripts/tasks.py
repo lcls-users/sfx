@@ -101,7 +101,8 @@ def run_analysis(config):
     js = JobScheduler(os.path.join(".", f'ra_{setup.run:04}.sh'), 
                       queue=setup.queue,
                       ncores=task.ncores,
-                      jobname=f'ra_{setup.run:04}')
+                      jobname=f'ra_{setup.run:04}',
+                      account=setup.account)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'])
     js.clean_up()
@@ -196,7 +197,7 @@ def index(config):
     indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir,
                           geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate,
                           multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64,
-                          time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False)
+                          time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False, slurm_account=setup.account)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.launch()
     logger.info(f'Indexing launched!')
@@ -269,7 +270,8 @@ def stream_analysis(config):
                            ncores=task.get('ncores') if task.get('ncores') is not None else 6,
                            cell_only=task.get('cell_only') if task.get('cell_only') is not None else False,
                            cell_out=os.path.join(setup.root_dir, 'cell', f'{task.tag}.cell'),
-                           cell_ref=task.get('ref_cell'))
+                           cell_ref=task.get('ref_cell'),
+                           slurm_account=setup.account)
     logger.info(f'Stream analysis launched')
 
 def determine_cell(config):
@@ -308,7 +310,8 @@ def merge(config):
     stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile, queue=setup.get('queue'),
                                 ncores=task.get('ncores') if task.get('ncores') is not None else 16,
                                 mtz_dir=os.path.join(setup.root_dir, "solve", f"{task.tag}"),
-                                anomalous=task.get('anomalous') if task.get('anomalous') is not None else False)
+                                anomalous=task.get('anomalous') if task.get('anomalous') is not None else False,
+                                slurm_account=setup.account)
     stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model,
                                   min_res=task.get('min_res'), push_res=task.get('push_res'), max_adu=task.get('max_adu'))
     for ns in [1, task.nshells]:
@@ -330,7 +333,8 @@ def solve(config):
                taskdir,
                queue=setup.get('queue'),
                ncores=task.get('ncores') if task.get('ncores') is not None else 16,
-               anomalous=task.get('anomalous') if task.get('anomalous') is not None else False)
+               anomalous=task.get('anomalous') if task.get('anomalous') is not None else False,
+               slurm_account=setup.account)
     logger.info(f'Dimple launched!')
 
 def refine_geometry(config, task=None):
@@ -364,7 +368,9 @@ def refine_geometry(config, task=None):
                         geom_file,
                         task.dx,
                         task.dy,
-                        task.dz)
+                        task.dz,
+                        slurm_account=setup.account
+    )
     geopt.launch_indexing(setup.exp, setup.det_type, config.index, cell_file)
     geopt.launch_stream_wrangling(config.stream_analysis)
     geopt.launch_merging(config.merge)

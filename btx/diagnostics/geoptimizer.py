@@ -18,8 +18,10 @@ class Geoptimizer:
     """
     Class for refining the geometry. 
     """
-    def __init__(self, queue, task_dir, scan_dir, runs, input_geom, dx_scan, dy_scan, dz_scan):
-
+    def __init__(self, queue, task_dir, scan_dir, runs, input_geom, dx_scan, dy_scan, dz_scan,
+                 slurm_account="lcls"
+    ):
+        self.slurm_account = slurm_account
         self.queue = queue # queue to submit jobs to, str
         self.task_dir = task_dir # path to indexing directory, str
         self.scan_dir = scan_dir # path to scan directory, str
@@ -115,7 +117,8 @@ class Geoptimizer:
                 idxr = Indexer(exp=exp, run=run, det_type=det_type, tag=params.tag, tag_cxi=params.get('tag_cxi'), taskdir=self.task_dir, 
                                geom=gfile, cell=cell_file, int_rad=params.int_radius, methods=params.methods, tolerance=params.tolerance, no_revalidate=params.no_revalidate, 
                                multi=params.multi, profile=params.profile, queue=self.queue, ncores=params.get('ncores') if params.get('ncores') is not None else 64,
-                               time=params.get('time') if params.get('time') is not None else '1:00:00')
+                               time=params.get('time') if params.get('time') is not None else '1:00:00',
+                               slurm_account=self.slurm_account)
                 idxr.tmp_exe = jobfile
                 idxr.stream = stream
                 idxr.launch(addl_command=f"echo {jobname} | tee -a {statusfile}\n",
@@ -153,7 +156,9 @@ class Geoptimizer:
                                    ncores=params.get('ncores') if params.get('ncores') is not None else 16,
                                    cell_out=os.path.join(celldir, f"g{num}.cell"),
                                    cell_ref=params.get('ref_cell'),
-                                   addl_command=f"echo {jobname} | tee -a {statusfile}\n")
+                                   addl_command=f"echo {jobname} | tee -a {statusfile}\n",
+                                   slurm_account=self.slurm_account
+            )
             jobnames.append(jobname)
             time.sleep(self.frequency)
             
@@ -189,7 +194,9 @@ class Geoptimizer:
             cellfile = os.path.join(self.scan_dir, f"cell/g{num}.cell")
             
             stream_to_mtz = StreamtoMtz(instream, params.symmetry, mergedir, cellfile, queue=self.queue, tmp_exe=jobfile,
-                                        ncores=params.get('ncores') if params.get('ncores') is not None else 16)
+                                        ncores=params.get('ncores') if params.get('ncores') is not None else 16,
+                                        slurm_account=self.slurm_account
+            )
             stream_to_mtz.cmd_partialator(iterations=params.iterations, model=params.model, 
                                           min_res=params.get('min_res'), push_res=params.get('push_res'))
             stream_to_mtz.cmd_compare_hkl(foms=['CCstar','Rsplit'], nshells=1, highres=params.get('highres'))

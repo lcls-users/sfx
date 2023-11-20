@@ -141,7 +141,7 @@ def f2mtz_command(outmtz):
     
     return command
 
-def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16, anomalous=False):
+def run_dimple(mtz, pdb, outdir, queue='milano', ncores=16, anomalous=False, slurm_account="lcls"):
     """
     Run dimple to solve the structure: 
     http://ccp4.github.io/dimple/.
@@ -166,7 +166,8 @@ def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16, anomalous=False):
                       logdir=outdir,
                       ncores=ncores, 
                       jobname=f'dimple', 
-                      queue=queue)
+                      queue=queue,
+                      account=slurm_account)
     js.write_header()
     js.write_main(command + "\n", dependencies=['ccp4'])
     js.clean_up()
