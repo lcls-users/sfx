@@ -7,6 +7,10 @@ Miscellaneous functions for aiding analysis during LCLS experiments.
 
 see *Doxygen* documentation here: https://lcls-users.github.io/btx/
 
+## Git Flow convention
+
+As of October 19 2023, this repository uses the git flow convention. All required information can be found in this short and clear cheatsheet: http://dominhhai.github.io/git-flow-cheatsheet/index.html
+
 ## Contributing
 This repository is the centralized location to discuss and share calibration files, documentation, scripts and code for SFX analysis.
 

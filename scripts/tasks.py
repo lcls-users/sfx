@@ -5,6 +5,8 @@ import glob
 import shutil
 import numpy as np
 import itertools
+import yaml
+import csv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -515,3 +517,22 @@ def timetool_correct(config):
             logger.info('No model found! Will return the nominal delay uncorrected!')
 
     tt.timetool_correct(run, nominal, model, figs)
+
+def bayesian_optimization(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Perform an iteration of the Bayesian optimization. """
+    logger.info('Running an iteration of the Bayesian Optimization.')
+    BayesianOptimization.run_bayesian_opt(config)
+    logger.info('Done!')
+    
+def bo_init_samples_configs(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Generates the config files that will be used to generate the initial samples for the Bayesian optimization. """
+    BayesianOptimization.init_samples_configs(config, logger)
+
+def bo_aggregate_init_samples(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
+    BayesianOptimization.aggregate_init_samples(config, logger)
+
+

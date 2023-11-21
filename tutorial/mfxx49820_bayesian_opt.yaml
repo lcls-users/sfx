@@ -1,13 +1,9 @@
 setup:
-  queue: 'milano'
-  account: ''
-  root_dir: ''
-  exp: ''
-  run: 5
+  queue: 'anaq'
+  root_dir: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/'
+  exp: 'mfxx49820'
+  run: 15
   det_type: 'epix10k2M'
-  cell: ''
-
-elog_display:
 
 fetch_mask:
   dataset: '/data/data'
@@ -22,14 +18,12 @@ build_mask:
 
 run_analysis:
   max_events: -1
-  ncores: 2
 
 opt_geom:
-  dx: -6 6 5
-  dy: -6 6 5
   n_iterations: 5
-  n_peaks: 4
+  n_peaks: 3
   threshold: 1000000
+  center: 823 833
 
 find_peaks:
   tag: ''
@@ -47,40 +41,40 @@ find_peaks:
   nsigm: 10.0
 
 index:
-  time: '1:30:00'
+  time: '3:00:00'
   ncores: 64
-  tag: ''
-  tag_cxi: ''
+  tag: 'sample2'
   int_radius: '3,4,5'
   methods: 'mosflm'
   tolerance: '5,5,5,1.5'
   no_revalidate: True
   multi: True
   profile: True
-  cell: ''
+  cell: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/cell/sample2.cell'
 
 stream_analysis:
-  tag: ''
-  cell_only: False
-  ncores: 6
+  tag: 'sample2'
+
+determine_cell:
+  tag: 'sample2'
 
 merge:
-  tag: ''
+  tag: 'sample2'
   symmetry: '4/mmm_uac'
   iterations: 1
   model: 'unity'
   foms: 'CCstar Rsplit'
   nshells: 10
-  highres: 2.5
+  highres: 1.6
 
 bayesian_optimization:
-  tag: ''
-  task_to_optimize: 'find_peaks'
-  opt_type: 'min'
-  score_task: 'merge'
-  fom: 'Rsplit'
-  kernel: 'rbf'
-  acquisition_function: 'expected_improvement'
+  tag: 'sample2'
+  task_to_optimize: "find_peaks"
+  opt_type: "min"
+  score_task: "merge"
+  fom: "Rsplit"
+  kernel: "rbf"
+  acquisition_function: "expected_improvement"
   max_iterations: 10
   n_samples_init: 5
   n_points_per_param: 100
@@ -89,5 +83,17 @@ bayesian_optimization:
   range_son_min: [5, 15]
 
 solve:
-  tag: ''
-  pdb: ''
+  tag: 'sample2'
+  pdb: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/cell/193l.pdb'
+
+refine_center:
+  runs: 16 33
+  dx: -1 1 3
+  dy: -1 1 3
+ 
+refine_distance:
+  runs: 16 33 1
+  dz: -0.001 0.001 5
+
+elog_display:
+
