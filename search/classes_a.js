@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['peakfinder_727',['PeakFinder',['../classpeak__finder_1_1PeakFinder.html',1,'peak_finder']]],
-  ['pipca_728',['PiPCA',['../classpipca_1_1PiPCA.html',1,'pipca']]],
-  ['pixeltracker_729',['PixelTracker',['../classbtx_1_1diagnostics_1_1run_1_1PixelTracker.html',1,'btx::diagnostics::run']]],
-  ['porodanalyzer_730',['PorodAnalyzer',['../classsaxs_1_1PorodAnalyzer.html',1,'saxs']]],
-  ['psanainterface_731',['PsanaInterface',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html',1,'btx::interfaces::ipsana']]]
+  ['operatorsutils_760',['OperatorsUtils',['../classdags_1_1plugins_1_1operators__utils_1_1OperatorsUtils.html',1,'dags::plugins::operators_utils']]],
+  ['optimizeconcentriccircles_761',['OptimizeConcentricCircles',['../classbtx_1_1misc_1_1radial_1_1OptimizeConcentricCircles.html',1,'btx::misc::radial']]]
 ];

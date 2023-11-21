@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['geomopt_713',['GeomOpt',['../classbtx_1_1diagnostics_1_1geom__opt_1_1GeomOpt.html',1,'btx::diagnostics::geom_opt']]],
-  ['geoptimizer_714',['Geoptimizer',['../classbtx_1_1diagnostics_1_1geoptimizer_1_1Geoptimizer.html',1,'btx::diagnostics::geoptimizer']]],
-  ['guinieranalyzer_715',['GuinierAnalyzer',['../classsaxs_1_1GuinierAnalyzer.html',1,'saxs']]],
-  ['guinierresult_716',['GuinierResult',['../classsaxs_1_1GuinierResult.html',1,'saxs']]]
+  ['eloginterface_745',['eLogInterface',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html',1,'btx::interfaces::ielog']]],
+  ['epix10k2m_5fcalibration_746',['epix10k2M_calibration',['../classbtx_1_1diagnostics_1_1detector_1_1epix10k2M__calibration.html',1,'btx::diagnostics::detector']]]
 ];

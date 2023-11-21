@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['concentriccircles_709',['ConcentricCircles',['../classbtx_1_1misc_1_1radial_1_1ConcentricCircles.html',1,'btx::misc::radial']]],
-  ['cursor_710',['Cursor',['../classbtx_1_1io_1_1h5terminalapp_1_1Cursor.html',1,'btx::io::h5terminalapp']]]
+  ['bayesianoptimization_742',['BayesianOptimization',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html',1,'btx::diagnostics::bayesian_optimization']]]
 ];

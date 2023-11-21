@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['radial_2epy_823',['radial.py',['../radial_8py.html',1,'']]],
-  ['rawimagetimetool_2epy_824',['rawimagetimetool.py',['../rawimagetimetool_8py.html',1,'']]],
-  ['readme_2emd_825',['README.md',['../README_8md.html',1,'']]],
-  ['run_2epy_826',['run.py',['../run_8py.html',1,'']]],
-  ['run_5fstats_2epy_827',['run_stats.py',['../run__stats_8py.html',1,'']]]
+  ['peak_5ffinder_2epy_859',['peak_finder.py',['../peak__finder_8py.html',1,'']]],
+  ['pipca_2epy_860',['pipca.py',['../pipca_8py.html',1,'']]],
+  ['pipca_5fvisuals_2epy_861',['pipca_visuals.py',['../pipca__visuals_8py.html',1,'']]],
+  ['process_5fsaxs_2epy_862',['process_saxs.py',['../process__saxs_8py.html',1,'']]],
+  ['process_5fsfx_2epy_863',['process_sfx.py',['../process__sfx_8py.html',1,'']]]
 ];
