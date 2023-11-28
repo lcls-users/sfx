@@ -49,41 +49,20 @@ bo_aggregate_init_samples = JIDSlurmOperator( task_id=task_id, dag=dag )
 for branch_id in range(1, n_samples_init + 1):
 
   # Define the tasks of the branch
-  find_peaks = JIDSlurmOperator( task_id=f"find_peaks_b{branch_id}", branch_id=branch_id, dag=dag)
+  find_peaks = JIDSlurmOperator( task_id=f"find_peaks__sample{branch_id:03d}", branch_id=branch_id, dag=dag)
 
-  index = JIDSlurmOperator( task_id=f"index_b{branch_id}", branch_id=branch_id, dag=dag )
+  index = JIDSlurmOperator( task_id=f"index__sample{branch_id:03d}", branch_id=branch_id, dag=dag )
 
-  stream_analysis = JIDSlurmOperator( task_id=f"stream_analysis_b{branch_id}", branch_id=branch_id, dag=dag )
+  stream_analysis = JIDSlurmOperator( task_id=f"stream_analysis__sample{branch_id:03d}", branch_id=branch_id, dag=dag )
 
-  merge = JIDSlurmOperator( task_id=f"merge_b{branch_id}", branch_id=branch_id, dag=dag )
+  merge = JIDSlurmOperator( task_id=f"merge__sample{branch_id:03d}", branch_id=branch_id, dag=dag )
 
   # Draw the branch
   bo_init_samples_configs >> find_peaks >> index >> stream_analysis >> merge >> bo_aggregate_init_samples
   
 
-# Define the tasks for the Bayesian optimization (post-initialization)
-task_id='find_peaks'
-find_peaks = JIDSlurmOperator( task_id=task_id, dag=dag )
 
-task_id='index'
-index = JIDSlurmOperator( task_id=task_id, dag=dag )
-
-task_id='stream_analysis'
-stream_analysis = JIDSlurmOperator( task_id=task_id, dag=dag )
-
-task_id='merge'
-merge = JIDSlurmOperator( task_id=task_id, dag=dag )
-
-task_id='bayesian_optimization'
-bayesian_optimization = JIDSlurmOperator( task_id=task_id, dag=dag )
-
-task_id='solve'
-solve = JIDSlurmOperator( task_id=task_id, dag=dag )
-
-task_id='elog_display'
-elog_display = JIDSlurmOperator(task_id=task_id, dag=dag )
-
-# Branch Operator to simulate the while loop
+# Branch Operator
 op_utils = OperatorsUtils(criterion_name="max_iterations",
                                     first_loop_task="find_peaks",
                                     exit_loop_task="solve",
@@ -92,7 +71,7 @@ op_utils = OperatorsUtils(criterion_name="max_iterations",
 # Generate the branch operators
 branch_operators = []
 
-for id in range(1, max_iterations + 1):
+for id in range(1, max_iterations + 2):
   branch = BranchPythonOperator(
     task_id=f'bayesian_opt_branch_task_{id}',
     python_callable=op_utils.bo_stop_criterion,
@@ -104,10 +83,27 @@ for id in range(1, max_iterations + 1):
 bo_aggregate_init_samples >> branch_operators[0]
 
 # Draw all branches
-for i in range(max_iterations-1):
+for i in range(max_iterations):
+  # Define the tasks for this iteration
+  find_peaks = JIDSlurmOperator( task_id=f'find_peaks__bo{i:03d}', dag=dag )
+
+  index = JIDSlurmOperator( task_id=f'index__bo{i:03d}', dag=dag )
+
+  stream_analysis = JIDSlurmOperator( task_id=f'stream_analysis__bo{i:03d}', dag=dag )
+
+  merge = JIDSlurmOperator( task_id=f'merge__bo{i:03d}', dag=dag )
+
+  bayesian_optimization = JIDSlurmOperator( task_id=f'bayesian_optimization__bo{i:03d}', dag=dag )
+
+  # Draw the branch
   branch_operators[i] >> find_peaks >> index >> stream_analysis >> merge >> bayesian_optimization >> branch_operators[i+1]
 
+
 # Exit
+solve = JIDSlurmOperator( task_id='solve', dag=dag )
+
+elog_display = JIDSlurmOperator(task_id='elog_display', dag=dag )
+
 branch_operators[-1] >> solve >> elog_display
 
 
