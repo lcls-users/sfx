@@ -45,7 +45,7 @@ bo_init_samples_configs = JIDSlurmOperator( task_id=task_id, dag=dag )
 task_id='bo_aggregate_init_samples'
 bo_aggregate_init_samples = JIDSlurmOperator( task_id=task_id, dag=dag )
 
-# Generate the N initial samples
+# Generate the initial samples
 for branch_id in range(1, n_samples_init + 1):
 
   # Define the tasks of the branch
@@ -89,13 +89,25 @@ op_utils = OperatorsUtils(criterion_name="max_iterations",
                                     exit_loop_task="solve",
                                     max_iterations=max_iterations)
 
-branch = BranchPythonOperator(
-    task_id='bayesian_opt_branch_task',
+# Generate the branch operators
+branch_operators = []
+
+for id in range(1, max_iterations + 1):
+  branch = BranchPythonOperator(
+    task_id=f'bayesian_opt_branch_task_{id}',
     python_callable=op_utils.bo_stop_criterion,
     dag=dag
   )
+  branch_operators.append(branch)
 
-# Draw the DAG
-bo_aggregate_init_samples >> branch
-branch >> find_peaks >> index >> stream_analysis >> merge >> bayesian_optimization >> branch
-branch >> solve >> elog_display
+# Connect the aggregate task to the first branch operator
+bo_aggregate_init_samples >> branch_operators[0]
+
+# Draw all branches
+for i in range(max_iterations-1):
+  branch_operators[i] >> find_peaks >> index >> stream_analysis >> merge >> bayesian_optimization >> branch_operators[i+1]
+
+# Exit
+branch_operators[-1] >> solve >> elog_display
+
+
