@@ -7,7 +7,7 @@ var searchData=
   ['adu_5fto_5fkev_41',['adu_to_keV',['../classbtx_1_1diagnostics_1_1detector_1_1epix10k2M__calibration.html#aae932fee0797ec01018640663f5c987c',1,'btx::diagnostics::detector::epix10k2M_calibration']]],
   ['ag_5fbehenate_2epy_42',['ag_behenate.py',['../ag__behenate_8py.html',1,'']]],
   ['agbehenate_43',['AgBehenate',['../classbtx_1_1diagnostics_1_1ag__behenate_1_1AgBehenate.html',1,'btx::diagnostics::ag_behenate']]],
-  ['aggregate_5finit_5fsamples_44',['aggregate_init_samples',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#aee42b1891f45be6f1329b17b87b43078',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['aggregate_5finit_5fsamples_44',['aggregate_init_samples',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ac48804aede184c5ba064035b722c25e9',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['airflow_5fs3df_45',['airflow_s3df',['../namespacescripts_1_1elog__trigger.html#a412513d3ff4780d4ef11e53f937cca72',1,'scripts::elog_trigger']]],
   ['alg_46',['alg',['../classpeak__finder_1_1PeakFinder.html#a562340317b68f85502bf3f4334e37d77',1,'peak_finder::PeakFinder']]],
   ['amax_5fthr_47',['amax_thr',['../classpeak__finder_1_1PeakFinder.html#a770a8007f885419c62410fdc9ddb1355',1,'peak_finder::PeakFinder']]],

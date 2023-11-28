@@ -19,7 +19,7 @@ var searchData=
   ['rpc_1120',['rpc',['../classdags_1_1plugins_1_1jid_1_1JIDSlurmOperator.html#aa01d77054a6944c79d699a7296f2e3a1',1,'dags::plugins::jid::JIDSlurmOperator']]],
   ['run_1121',['run',['../classbtx_1_1io_1_1h5terminalapp_1_1H5TerminalApp.html#ad7e5026c1aa8ae7c3bc15140590fc259',1,'btx::io::h5terminalapp::H5TerminalApp']]],
   ['run_5fanalysis_1122',['run_analysis',['../namespacescripts_1_1tasks.html#a20d6f19dab22ab63f0a8fc6e5edf93bf',1,'scripts::tasks']]],
-  ['run_5fbayesian_5fopt_1123',['run_bayesian_opt',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a78d9470714a0e1f09b838cbc2d40a19a',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['run_5fbayesian_5fopt_1123',['run_bayesian_opt',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ae20cddc8220f60911946d3dcb1ee12dc',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['run_5fdimple_1124',['run_dimple',['../namespacebtx_1_1interfaces_1_1imtz.html#a8f31beb384c889a58be2752d856e1a93',1,'btx::interfaces::imtz']]],
   ['run_5fmodel_1125',['run_model',['../classpipca_1_1PiPCA.html#a89a1feb9f1ccbc45cd3a28f8044b96e9',1,'pipca::PiPCA']]]
 ];

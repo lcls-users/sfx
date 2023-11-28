@@ -16,7 +16,7 @@ var searchData=
   ['indexer_5fobj_342',['indexer_obj',['../namespaceindexer.html#a27a1e740edb82da317e478964c98598a',1,'indexer']]],
   ['indexing_5fsummary_343',['indexing_summary',['../classindexer_1_1Indexer.html#a3a13c00ed8f1521d6bd14e28c75a44ce',1,'indexer::Indexer']]],
   ['init_5fparams_344',['init_params',['../classbtx_1_1misc_1_1radial_1_1OptimizeConcentricCircles.html#a225f1a208413ec675394d68644a6c196',1,'btx::misc::radial::OptimizeConcentricCircles']]],
-  ['init_5fsamples_5fconfigs_345',['init_samples_configs',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#aa279ae358378657e978ec1ab5533b963',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['init_5fsamples_5fconfigs_345',['init_samples_configs',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#af2382b4c95b60f622f10ef63286ec615',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['input_5ffile_346',['input_file',['../namespacebtx_1_1interfaces_1_1istream.html#a5cf43fa37190cf28f0ac03cda28e9fe9',1,'btx.interfaces.istream.input_file()'],['../namespacebtx_1_1misc_1_1metrology.html#ab64d7515971644e958fae1cc7761bcba',1,'btx.misc.metrology.input_file()']]],
   ['input_5ffiles_347',['input_files',['../classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a7c3c3aac765c101598e249566faaef48',1,'btx::interfaces::istream::StreamInterface']]],
   ['int_348',['int',['../namespacebtx_1_1interfaces_1_1istream.html#a7a2eefb056409958768f26984093ff67',1,'btx::interfaces::istream']]],
