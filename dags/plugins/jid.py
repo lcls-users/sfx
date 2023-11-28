@@ -88,7 +88,7 @@ class JIDSlurmOperator( BaseOperator ):
       
       if len(parts) == 2:
         # Remove the suffix
-        return '_'.join(parts[:-1])
+        return parts[:-1]
       else:
         # Return the task_id as is
         return task_id
