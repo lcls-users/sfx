@@ -88,7 +88,7 @@ class BayesianOptimization:
     # Bayesian Optimization
 
     @classmethod
-    def run_bayesian_opt(self, config):
+    def run_bayesian_opt(cls, config):
         """
         Function called by the "bayesian_optimization" task.
 
@@ -109,16 +109,16 @@ class BayesianOptimization:
         ##### 1. Save the current parameters and the associated score
 
         # Get the current parameters
-        n_params, params, params_names, params_ranges_keys= self.get_parameters(config, task_to_optimize)
+        n_params, params, params_names, params_ranges_keys= cls.get_parameters(config, task_to_optimize)
 
         # Get the score from the interation that has just been run
-        score = self.get_last_score(setup, task, score_task)
+        score = cls.get_last_score(setup, task, score_task)
 
         # Save the current parameters and the associated score
-        self.save_iteration(setup, task, score, params)
+        cls.save_iteration(setup, task, score, params)
         
         ##### 2. Get all samples scores and parameters
-        sample_y, sample_inputs = self.read_bo_history(setup, task)
+        sample_y, sample_inputs = cls.read_bo_history(setup, task)
         
         ##### 3. Determine the next set of parameters to be used
 
@@ -142,8 +142,8 @@ class BayesianOptimization:
 
         # 3. Generate the Acquisition Function using the Gaussian Process
         af_name = task.acquisition_function
-        if hasattr(self, af_name):
-            af = getattr(self, af_name)
+        if hasattr(cls, af_name):
+            af = getattr(cls, af_name)
         else:
             raise KeyError(f"The acquisition function name {af_name} does not exist.")
 
@@ -169,10 +169,10 @@ class BayesianOptimization:
         new_input = input_range[new_idx]
 
         # 5. Overwrite the new set of parameters in the config .yaml file
-        self.overwrite_params(config, setup, task_to_optimize, params_names, new_input)
+        cls.overwrite_params(config, setup, task_to_optimize, params_names, new_input)
 
     @classmethod
-    def init_samples_configs(self, config, logger):
+    def init_samples_configs(cls, config, logger):
         """
         Function called by the "bo_init_samples_configs" task.
 
@@ -199,7 +199,7 @@ class BayesianOptimization:
             params_names = [key.replace("range_", "") for key in params_ranges_keys]
 
             # Generate the parameter samples
-            param_samples = self.random_param_samples(config)
+            param_samples = cls.random_param_samples(config)
 
             # Get the first task of the loop sequence
             task_to_optimize = config.get(task.task_to_optimize)
@@ -235,7 +235,7 @@ class BayesianOptimization:
             raise NameError('The number of config files to generate was not defined!')
     
     @classmethod
-    def aggregate_init_samples(self, config, logger):
+    def aggregate_init_samples(cls, config, logger):
         """
         Function called by the "bo_aggregate_init_samples" task.
 
@@ -256,7 +256,7 @@ class BayesianOptimization:
         # Get the task generating the scores
         score_task = config.get(task.score_task)
         # Get the names of the parameters
-        n_params, _, params_names, _ = self.get_parameters(config, task_to_optimize)
+        n_params, _, params_names, _ = cls.get_parameters(config, task_to_optimize)
         # Get the score and the parameters of each sample
         samples_scores = np.empty(shape=(n_samples_init, 1))
         samples_params = np.empty(shape=(n_samples_init, n_params))

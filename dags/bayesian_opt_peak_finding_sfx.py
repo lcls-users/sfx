@@ -49,13 +49,13 @@ bo_aggregate_init_samples = JIDSlurmOperator( task_id=task_id, dag=dag )
 for branch_id in range(1, n_samples_init + 1):
 
   # Define the tasks of the branch
-  find_peaks = JIDSlurmOperator( task_id=f"find_peaks", branch_id=branch_id, dag=dag )
+  find_peaks = JIDSlurmOperator( task_id=f"find_peaks_b{branch_id}", branch_id=branch_id, dag=dag)
 
-  index = JIDSlurmOperator( task_id=f"index", branch_id=branch_id, dag=dag )
+  index = JIDSlurmOperator( task_id=f"index_b{branch_id}", branch_id=branch_id, dag=dag )
 
-  stream_analysis = JIDSlurmOperator( task_id=f"stream_analysis", branch_id=branch_id, dag=dag )
+  stream_analysis = JIDSlurmOperator( task_id=f"stream_analysis_b{branch_id}", branch_id=branch_id, dag=dag )
 
-  merge = JIDSlurmOperator( task_id=f"merge", branch_id=branch_id, dag=dag )
+  merge = JIDSlurmOperator( task_id=f"merge_b{branch_id}", branch_id=branch_id, dag=dag )
 
   # Draw the branch
   bo_init_samples_configs >> find_peaks >> index >> stream_analysis >> merge >> bo_aggregate_init_samples
@@ -98,5 +98,5 @@ branch = BranchPythonOperator(
 
 # Draw the DAG
 bo_aggregate_init_samples >> branch
-branch >> find_peaks >> index >> stream_analysis >> merge >> branch
+branch >> find_peaks >> index >> stream_analysis >> merge >> bayesian_optimization >> branch
 branch >> solve >> elog_display
