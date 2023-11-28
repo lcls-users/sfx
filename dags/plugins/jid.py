@@ -84,13 +84,13 @@ class JIDSlurmOperator( BaseOperator ):
       return __params_to_args__(params) + " --task " + task_id + " --facility " + location
     
     def __extract_task_id(task_id):
-      parts = task_id.split('_')
+      parts = task_id.split('__')
       
-      if parts[-1][-3:].isdigit():
-        # If the last part contains digits, it is removed
+      if len(parts) == 2:
+        # Remove the suffix
         return '_'.join(parts[:-1])
       else:
-        # If the last part does not contain any digit, the task_id can be returned as is
+        # Return the task_id as is
         return task_id
     
     def __new_config_path__(config_path, exp_name, branch_id):
