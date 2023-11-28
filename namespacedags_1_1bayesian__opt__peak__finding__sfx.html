@@ -118,6 +118,8 @@ Variables</h2></td></tr>
 <tr class="separator:a942f3a22e343bc6bd38ec30d9858f1aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5970816c6ec471ce85e471f26d2c6529"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1bayesian__opt__peak__finding__sfx.html#a5970816c6ec471ce85e471f26d2c6529">op_utils</a></td></tr>
 <tr class="separator:a5970816c6ec471ce85e471f26d2c6529"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada2d9a34037c9805cb8bf32050f8cfc2"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1bayesian__opt__peak__finding__sfx.html#ada2d9a34037c9805cb8bf32050f8cfc2">branch_operators</a> = []</td></tr>
+<tr class="separator:ada2d9a34037c9805cb8bf32050f8cfc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ab94efc50c90299008795009d6ad22f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedags_1_1bayesian__opt__peak__finding__sfx.html#a3ab94efc50c90299008795009d6ad22f">branch</a></td></tr>
 <tr class="separator:a3ab94efc50c90299008795009d6ad22f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -178,12 +180,25 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;=  BranchPythonOperator(</div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;    task_id=<span class="stringliteral">&#39;bayesian_opt_branch_task&#39;</span>,</div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    python_callable=op_utils.bo_stop_criterion(),</div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;    provide_context=<span class="keyword">False</span>,</div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;    dag=dag</div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;  )</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;    task_id=f<span class="stringliteral">&#39;bayesian_opt_branch_task_{id}&#39;</span>,</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    python_callable=op_utils.bo_stop_criterion,</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;    dag=dag</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;  )</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="ada2d9a34037c9805cb8bf32050f8cfc2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ada2d9a34037c9805cb8bf32050f8cfc2">&#9670;&nbsp;</a></span>branch_operators</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list dags.bayesian_opt_peak_finding_sfx.branch_operators = []</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
 </div>
 </div>
 <a id="ac02e1191e3ae1241368335f607c6fa54"></a>
@@ -438,7 +453,7 @@ Variables</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Nov 28 2023 15:47:13 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Tue Nov 28 2023 17:35:51 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
