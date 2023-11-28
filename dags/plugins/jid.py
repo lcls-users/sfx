@@ -80,7 +80,18 @@ class JIDSlurmOperator( BaseOperator ):
       return " ".join(["--" + k + " " + str(v) for k, v in params.items()])
 
     def __slurm_parameters__(params, task_id, location):
+      task_id = __extract_task_id(task_id)
       return __params_to_args__(params) + " --task " + task_id + " --facility " + location
+    
+    def __extract_task_id(task_id):
+      parts = task_id.split('_')
+      
+      if parts[-1][-3:].isdigit():
+        # If the last part contains digits, it is removed
+        return '_'.join(parts[:-1])
+      else:
+        # If the last part does not contain any digit, the task_id can be returned as is
+        return task_id
     
     def __new_config_path__(config_path, exp_name, branch_id):
       config_dir, config_file_name = os.path.split(config_path)
