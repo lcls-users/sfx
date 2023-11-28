@@ -91,7 +91,7 @@ op_utils = OperatorsUtils(criterion_name="max_iterations",
 
 branch = BranchPythonOperator(
     task_id='bayesian_opt_branch_task',
-    python_callable=op_utils.bo_stop_criterion(),
+    python_callable=op_utils.bo_stop_criterion,
     dag=dag
   )
 
