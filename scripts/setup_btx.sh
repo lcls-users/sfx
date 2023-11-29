@@ -98,6 +98,7 @@ fi
 ACCOUNT=${ACCOUNT:="lcls:${EXP}"}
 CORES=${CORES:=64}
 QUEUE=${QUEUE:="milano"}
+RESERVATION=${RESERVATION:="lcls:onshift"}
 WORKFLOW=${WORKFLOW:="sfx"}
 
 BTX_DIR="/sdf/group/lcls/ds/tools/btx/stable"
