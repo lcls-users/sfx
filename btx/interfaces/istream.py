@@ -75,7 +75,10 @@ class StreamInterface:
                 if key == 'n_crystal':
                     stream_data[key] = [np.array(arr) for arr in stream_data[key]]
                     for narr in range(1, len(stream_data[key])):
-                        stream_data[key][narr] += stream_data[key][narr-1][-1]+1
+                        if stream_data[key][narr - 1].any():
+                            stream_data[key][narr] += stream_data[key][narr - 1][-1] + 1
+                        else:
+                            stream_data[key][narr] += 0
                 stream_data[key] = np.concatenate(np.array(stream_data[key], dtype=object))
                 if key in ['n_crystal','n_chunk', 'n_crystal_cell', 'n_lattice', 'image_num', 'h', 'k', 'l']:
                     stream_data[key] = stream_data[key].astype(int)
@@ -591,7 +594,7 @@ def cluster_cell_params(cell, out_clusters, out_cell, in_cell=None, eps=5, min_s
 
 def launch_stream_analysis(in_stream, out_stream, fig_dir, tmp_exe, queue, ncores, 
                            cell_only=False, cell_out=None, cell_ref=None, addl_command=None,
-                           slurm_account="lcls"):
+                           slurm_account="lcls", slurm_reservation=""):
                            
     """
     Launch stream analysis task using iScheduler.
@@ -618,6 +621,10 @@ def launch_stream_analysis(in_stream, out_stream, fig_dir, tmp_exe, queue, ncore
         CrystFEL cell file to copy symmetry from
     addl_command : str
         additional command to add to end of job to launch
+    slurm_account : str
+        SLURM account to use. Default: "lcls"
+    slurm_reservation : str
+        SLURM reservation to use, if one. Default: ""
     """
     ncores_max = len(glob.glob(in_stream))
     if ncores > ncores_max:
@@ -634,7 +641,7 @@ def launch_stream_analysis(in_stream, out_stream, fig_dir, tmp_exe, queue, ncore
             command += f" --cell_ref={cell_ref}"
         
     js = JobScheduler(tmp_exe, ncores=ncores, jobname=f'stream_analysis', queue=queue,
-                      account=slurm_account)
+                      account=slurm_account, reservation=slurm_reservation)
     js.write_header()
     js.write_main(f"{command}\n")
     js.write_main(f"cat {in_stream} > {out_stream}\n")

@@ -123,7 +123,7 @@ if __name__ == "__main__":
         main_workflow: Dict[str, str] = {
             "name": "run_btx",
             "executable": executable,
-            "trigger": "START_OF_RUN",
+            "trigger": "END_OF_RUN",
             "location": "S3DF",
             "parameters": params
         }
