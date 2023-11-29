@@ -1,6 +1,6 @@
 setup:
   queue: 'anaq'
-  root_dir: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/'
+  root_dir: '/sdf/data/lcls/ds/mfx/mfxx49820/scratch/pegiaco/'
   exp: 'mfxx49820'
   run: 15
   det_type: 'epix10k2M'
@@ -26,7 +26,7 @@ opt_geom:
   center: 823 833
 
 find_peaks:
-  tag: ''
+  tag: 'sample2'
   psana_mask: False
   min_peaks: 10
   max_peaks: 2048
@@ -44,6 +44,7 @@ index:
   time: '3:00:00'
   ncores: 64
   tag: 'sample2'
+  tag_cxi: 'sample2'
   int_radius: '3,4,5'
   methods: 'mosflm'
   tolerance: '5,5,5,1.5'
