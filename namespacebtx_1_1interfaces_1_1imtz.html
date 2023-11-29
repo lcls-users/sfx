@@ -88,9 +88,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ab5e338d78a70e5ef834c8911fb114ee7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#ab5e338d78a70e5ef834c8911fb114ee7">f2mtz_command</a> (outmtz)</td></tr>
 <tr class="memdesc:ab5e338d78a70e5ef834c8911fb114ee7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return command to convert from an XDS-formatted hkl to an mtz file.  <a href="namespacebtx_1_1interfaces_1_1imtz.html#ab5e338d78a70e5ef834c8911fb114ee7">More...</a><br /></td></tr>
 <tr class="separator:ab5e338d78a70e5ef834c8911fb114ee7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8f31beb384c889a58be2752d856e1a93"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#a8f31beb384c889a58be2752d856e1a93">run_dimple</a> (mtz, pdb, outdir, <a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#a9179e99c3ea806d52cc5fbd013e38e05">queue</a>='milano', <a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#ace21312a3df0eb8bf558991c514124d0">ncores</a>=16, <a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#a2c9df78f7ad0d3ac3d09c38cde4da59e">anomalous</a>=False, slurm_account=&quot;lcls&quot;)</td></tr>
-<tr class="memdesc:a8f31beb384c889a58be2752d856e1a93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run dimple to solve the structure: <a href="http://ccp4.github.io/dimple/">http://ccp4.github.io/dimple/</a>.  <a href="namespacebtx_1_1interfaces_1_1imtz.html#a8f31beb384c889a58be2752d856e1a93">More...</a><br /></td></tr>
-<tr class="separator:a8f31beb384c889a58be2752d856e1a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a960dd4436ebf0cb48638828ef7c32041"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#a960dd4436ebf0cb48638828ef7c32041">run_dimple</a> (mtz, pdb, outdir, <a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#a9179e99c3ea806d52cc5fbd013e38e05">queue</a>='milano', <a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#ace21312a3df0eb8bf558991c514124d0">ncores</a>=16, <a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#a2c9df78f7ad0d3ac3d09c38cde4da59e">anomalous</a>=False, slurm_account=&quot;lcls&quot;, slurm_reservation=&quot;&quot;)</td></tr>
+<tr class="memdesc:a960dd4436ebf0cb48638828ef7c32041"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run dimple to solve the structure: <a href="http://ccp4.github.io/dimple/">http://ccp4.github.io/dimple/</a>.  <a href="namespacebtx_1_1interfaces_1_1imtz.html#a960dd4436ebf0cb48638828ef7c32041">More...</a><br /></td></tr>
+<tr class="separator:a960dd4436ebf0cb48638828ef7c32041"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae4b1877f1bd058f68410fc4c1d28a89"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1interfaces_1_1imtz.html#aae4b1877f1bd058f68410fc4c1d28a89">parse_input</a> ()</td></tr>
 <tr class="memdesc:aae4b1877f1bd058f68410fc4c1d28a89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse command line input.  <a href="namespacebtx_1_1interfaces_1_1imtz.html#aae4b1877f1bd058f68410fc4c1d28a89">More...</a><br /></td></tr>
 <tr class="separator:aae4b1877f1bd058f68410fc4c1d28a89"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -152,8 +152,8 @@ Returns</h2>
 
 </div>
 </div>
-<a id="a8f31beb384c889a58be2752d856e1a93"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8f31beb384c889a58be2752d856e1a93">&#9670;&nbsp;</a></span>run_dimple()</h2>
+<a id="a960dd4436ebf0cb48638828ef7c32041"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a960dd4436ebf0cb48638828ef7c32041">&#9670;&nbsp;</a></span>run_dimple()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -198,7 +198,13 @@ Returns</h2>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>slurm_account</em> = <code>&quot;lcls&quot;</code>&#160;</td>
+          <td class="paramname"><em>slurm_account</em> = <code>&quot;lcls&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>slurm_reservation</em> = <code>&quot;&quot;</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -211,7 +217,7 @@ Returns</h2>
 <p>Run dimple to solve the structure: <a href="http://ccp4.github.io/dimple/">http://ccp4.github.io/dimple/</a>. </p>
 <h2><a class="anchor" id="autotoc_md78"></a>
 Parameters</h2>
-<p>mtz : str input mtz file pdb : str input PDB file for phasing or rigid body refinement outdir : str output directory for storing results anomalous : bool if True, generate an anomalous difference map </p>
+<p>mtz : str input mtz file pdb : str input PDB file for phasing or rigid body refinement outdir : str output directory for storing results anomalous : bool if True, generate an anomalous difference map slurm_account : str SLURM account to use. Default: "lcls" slurm_reservation : str SLURM reservation to use, if one. Default: "" </p>
 
 </div>
 </div>
@@ -406,7 +412,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Nov 28 2023 22:08:58 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Nov 29 2023 23:22:54 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
