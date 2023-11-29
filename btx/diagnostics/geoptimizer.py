@@ -19,9 +19,10 @@ class Geoptimizer:
     Class for refining the geometry. 
     """
     def __init__(self, queue, task_dir, scan_dir, runs, input_geom, dx_scan, dy_scan, dz_scan,
-                 slurm_account="lcls"
+                 slurm_account="lcls", slurm_reservation=""
     ):
         self.slurm_account = slurm_account
+        self.slurm_reservation = slurm_reservation
         self.queue = queue # queue to submit jobs to, str
         self.task_dir = task_dir # path to indexing directory, str
         self.scan_dir = scan_dir # path to scan directory, str
@@ -118,7 +119,7 @@ class Geoptimizer:
                                geom=gfile, cell=cell_file, int_rad=params.int_radius, methods=params.methods, tolerance=params.tolerance, no_revalidate=params.no_revalidate, 
                                multi=params.multi, profile=params.profile, queue=self.queue, ncores=params.get('ncores') if params.get('ncores') is not None else 64,
                                time=params.get('time') if params.get('time') is not None else '1:00:00',
-                               slurm_account=self.slurm_account)
+                               slurm_account=self.slurm_account, slurm_reservation=self.slurm_reservation)
                 idxr.tmp_exe = jobfile
                 idxr.stream = stream
                 idxr.launch(addl_command=f"echo {jobname} | tee -a {statusfile}\n",
@@ -157,7 +158,8 @@ class Geoptimizer:
                                    cell_out=os.path.join(celldir, f"g{num}.cell"),
                                    cell_ref=params.get('ref_cell'),
                                    addl_command=f"echo {jobname} | tee -a {statusfile}\n",
-                                   slurm_account=self.slurm_account
+                                   slurm_account=self.slurm_account,
+                                   slurm_reservation=self.slurm_reservation
             )
             jobnames.append(jobname)
             time.sleep(self.frequency)
@@ -195,7 +197,8 @@ class Geoptimizer:
             
             stream_to_mtz = StreamtoMtz(instream, params.symmetry, mergedir, cellfile, queue=self.queue, tmp_exe=jobfile,
                                         ncores=params.get('ncores') if params.get('ncores') is not None else 16,
-                                        slurm_account=self.slurm_account
+                                        slurm_account=self.slurm_account,
+                                        slurm_reservation=self.slurm_reservation
             )
             stream_to_mtz.cmd_partialator(iterations=params.iterations, model=params.model, 
                                           min_res=params.get('min_res'), push_res=params.get('push_res'))

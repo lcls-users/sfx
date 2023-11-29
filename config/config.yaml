@@ -4,13 +4,13 @@ setup:
   root_dir: ''
   exp: ''
   run: 5
-  det_type: 'epix10k2M'
+  det_type: 'Rayonix'
   cell: ''
 
 elog_display:
 
 fetch_mask:
-  dataset: '/data/data'
+  dataset: '/entry_1/data_1/mask' # Rayonix - switch to /data/data for other det
 
 fetch_geom:
 
@@ -32,7 +32,7 @@ opt_geom:
   threshold: 1000000
 
 find_peaks:
-  tag: ''
+  tag: 'S1'
   psana_mask: False
   min_peaks: 10
   max_peaks: 2048
@@ -49,8 +49,8 @@ find_peaks:
 index:
   time: '1:30:00'
   ncores: 64
-  tag: ''
-  tag_cxi: ''
+  tag: 'S1'
+  tag_cxi: 'S1'
   int_radius: '3,4,5'
   methods: 'mosflm'
   tolerance: '5,5,5,1.5'
@@ -60,12 +60,12 @@ index:
   cell: ''
 
 stream_analysis:
-  tag: ''
+  tag: 'S1'
   cell_only: False
   ncores: 6
 
 merge:
-  tag: ''
+  tag: 'S1'
   symmetry: '4/mmm_uac'
   iterations: 1
   model: 'unity'
@@ -89,5 +89,5 @@ bayesian_optimization:
   range_son_min: [5, 15]
 
 solve:
-  tag: ''
+  tag: 'S1'
   pdb: ''

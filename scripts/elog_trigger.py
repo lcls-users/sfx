@@ -25,7 +25,14 @@ if __name__ == '__main__':
     parser.add_argument(
         "-a",
         "--account",
-        help="S3DF account to use, including repo and/or reservation.",
+        help="S3DF account to use, including repo.",
+        default=""
+    )
+    parser.add_argument(
+        "-r",
+        "--reservation",
+        type=str,
+        help="SLURM reservation to use (optional).",
         default=""
     )
     args = parser.parse_args()
@@ -44,6 +51,18 @@ if __name__ == '__main__':
 
     account = args.account if args.account else f"lcls:{experiment_name}"
 
+    params = {
+        "config_file": args.config,
+        "dag": f"slac_lcls_{args.dag}",
+        "queue": args.queue,
+        "ncores": args.ncores,
+        "experiment_name": experiment_name,
+        "run_number": run_num,
+        "account": account
+    }
+    if args.reservation:
+        params.update({"reservation": args.reservation})
+
     dag_run_data = {
         "dag_run_id": str(uuid.uuid4()),
         "conf": {
@@ -54,15 +73,7 @@ if __name__ == '__main__':
             "ARP_LOCATION": 'S3DF', #os.environ["ARP_LOCATION"],
             "Authorization": auth_header,
             "user": getpass.getuser(),
-            "parameters": {
-                "config_file": args.config,
-                "dag": args.dag,
-                "queue": args.queue,
-                "ncores": args.ncores,
-                "experiment_name": experiment_name,
-                "run_number": run_num,
-                "account": account
-            }
+            "parameters": params
         }
     }
     
