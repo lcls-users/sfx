@@ -175,6 +175,71 @@ class PiPCA:
                 f.create_dataset('V', data=V)
                 print(f'Model saved to {self.filename}')
 
+    def run_model_full(self, previous_U, previous_S, previous_mu, previous_var):
+        """
+        Perform iPCA on run subject to initialization parameters.
+        """
+        batch_size = self.batch_size
+        num_images = self.num_images
+
+        # initialize and prime model, if specified
+        if self.priming:
+            img_batch = self.get_formatted_images(
+                self.num_components, 0, self.num_features
+            )
+            self.prime_model(img_batch)
+
+        elif previous_U is not None:
+            self.U = previous_U
+            self.S = previous_S
+            self.mu = previous_mu
+            self.total_variance = previous_var
+
+        else:
+            self.U = np.zeros((self.split_counts[self.rank], self.num_components))
+            self.S = np.ones(self.num_components)
+            self.mu = np.zeros((self.split_counts[self.rank], 1))
+            self.total_variance = np.zeros((self.split_counts[self.rank], 1))
+
+        # divide remaining number of images into batches
+        # will become redundant in a streaming setting, need to change
+        rem_imgs = num_images - self.num_incorporated_images
+        batch_sizes = np.array(
+            [batch_size] * np.floor(rem_imgs / batch_size).astype(int)
+            + ([rem_imgs % batch_size] if rem_imgs % batch_size else [])
+        )
+
+        # define batch indices based on batch sizes
+        self.batch_indices = self.distribute_images_over_batches(batch_sizes)
+        self.batch_number = 0
+
+        # update model with remaining batches
+        for batch_size in batch_sizes:
+            self.fetch_and_update_model(batch_size)
+            
+        self.comm.Barrier()
+        
+        U = self.gather_U()
+        S = self.S
+        V = self.V
+        
+        if self.rank == 0:  
+            print("Model complete")
+        
+            # save model to an hdf5 file
+            with h5py.File(self.filename, 'w') as f:
+                f.create_dataset('exp', data=self.psi.exp)
+                f.create_dataset('run', data=self.psi.run)
+                f.create_dataset('det_type', data=self.psi.det_type)
+                f.create_dataset('start_offset', data=self.start_offset)
+                f.create_dataset('loadings', data=self.pc_data)
+                f.create_dataset('U', data=U)
+                f.create_dataset('S', data=S)
+                f.create_dataset('V', data=V)
+                f.create_dataset('mu', data=self.mu)
+                f.create_dataset('total_variance', data=self.total_variance)
+                print(f'Model saved to {self.filename}')
+
     def get_formatted_images(self, n, start_index, end_index):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
@@ -661,6 +726,30 @@ class PiPCA:
         )
         return var_tot
 
+    def get_model(self):
+        """
+        Method to retrieve model parameters.
+
+        Returns
+        -------
+        U_tot : ndarray, shape (d x q)
+            iPCA principal axes from model.
+        S_tot : ndarray, shape (1 x q)
+            iPCA singular values from model.
+        V_tot : ndarray, shape (n x q)
+            iPCA eigenimages from model.
+        mu_tot : ndarray, shape (1 x d)
+            Data mean computed from all input images.
+        var_tot : ndarray, shape (1 x d)
+            Sample data variance computed from all input images.
+        """
+        U_tot = self.gather_U()
+        S_tot = self.S
+        V_tot = self.V
+        mu_tot = self.gather_mu()
+        var_tot = self.gather_var()
+        return U_tot, S_tot, V_tot, mu_tot, var_tot
+
     def get_outliers(self):
         """
         Method to retrieve and print outliers on root process.
@@ -855,6 +944,8 @@ class PiPCA:
             batch_indices.append(total_indices)
         
         return np.array(batch_indices)
+    
+    
 
 def distribute_indices_over_ranks(d, size):
     """
@@ -970,3 +1061,4 @@ if __name__ == "__main__":
     pipca = PiPCA(**kwargs)
     pipca.run()
     pipca.get_outliers()
+

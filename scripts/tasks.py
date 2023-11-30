@@ -5,6 +5,7 @@ import glob
 import shutil
 import numpy as np
 import itertools
+import h5py
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -509,3 +510,160 @@ def timetool_correct(config):
             logger.info('No model found! Will return the nominal delay uncorrected!')
 
     tt.timetool_correct(run, nominal, model, figs)
+
+import time
+
+def pipca_offline(config):
+    from btx.processing.pipca import PiPCA
+    from btx.misc.pipca_visuals import compute_compression_loss_random_images
+
+    setup = config.setup
+    task = config.pipca_full
+    tag = task.tag
+    exp = setup.exp
+    run = task.run
+    det_type = setup.det_type
+    start_offset = task.start_offset
+    num_images = task.num_images
+    num_components = task.num_components
+    batch_size = task.batch_size
+    filename = "pipca_model.h5"
+
+    # Initialize U and S matrices to None
+    previous_U = None
+    previous_S = None
+    previous_mu_tot = None
+    previous_var_tot = None
+
+    # Delete the pipca_model.h5 file if it exists
+    if os.path.exists(filename):
+        os.remove(filename)
+
+    # Initialize a list to store the execution times and frobenius norms
+    execution_times = []
+    compression_loss_values = []
+
+    # Initialize lists to store the L2 norms
+    norm_diff_U_list = []
+    norm_diff_S_list = []
+    norm_diff_mu_list = []
+    norm_diff_var_list = []
+
+    #Initialize number of runs
+
+    # list_runs = get_runs(tag)
+    max_run = task.max_run
+    start_run = run
+
+    # Iterate through runs 
+    for run in range(start_run, start_run + max_run):
+
+        start_time = time.time()  
+        
+        # Create a PiPCA instance for the current run
+        pipca = PiPCA(
+            exp=exp,
+            run=run,
+            det_type=det_type,
+            num_images=num_images,
+            num_components=num_components,
+            batch_size=batch_size,
+            priming=False,
+            downsample=False,
+            bin_factor=2,
+            filename = filename
+        )
+
+        # Run iPCA for the current run
+        pipca.run_model_full(previous_U, previous_S, previous_mu_tot, previous_var_tot)
+        
+        end_time = time.time()  # Record the end time
+        execution_time = end_time - start_time  # Calculate the execution time
+        execution_times.append(execution_time)  # Append the execution time to the list
+
+        U = pipca.gather_U()
+        S = pipca.S
+        mu_tot = pipca.gather_mu()
+        var_tot = pipca.gather_var()
+
+        # Compute norms change
+        diff_U, diff_S, diff_mu, diff_var = (U - previous_U, S - previous_S, mu_tot - previous_mu_tot, var_tot - previous_var_tot) if previous_U is not None else (U, S, mu_tot, var_tot)
+        norm_diff_U_list.append(np.linalg.norm(diff_U)); norm_diff_S_list.append(np.linalg.norm(diff_S)); norm_diff_mu_list.append(np.linalg.norm(diff_mu)); norm_diff_var_list.append(np.linalg.norm(diff_var))
+
+        # Update U and S for the next run
+        previous_U = U
+        previous_S = S
+        previous_mu_tot = mu_tot
+        previous_var_tot = var_tot
+        
+        #Compute compression loss
+        compression_loss = compute_compression_loss_random_images(filename, num_components, 10)
+        compression_loss_values.append(compression_loss)
+
+    # Open HDF5 file for saving data
+    with h5py.File(filename, 'w') as f:
+
+        # Save execution times
+        f.create_dataset('execution_times', data=np.array(execution_times))
+
+        # Save compression loss values
+        f.create_dataset('compression_loss_values', data=np.array(compression_loss_values))
+
+        # Save norm_diff_U_list
+        f.create_dataset('norm_diff_U_list', data=np.array(norm_diff_U_list))
+
+        # Save norm_diff_S_list
+        f.create_dataset('norm_diff_S_list', data=np.array(norm_diff_S_list))
+
+        # Save norm_diff_mu_list
+        f.create_dataset('norm_diff_mu_list', data=np.array(norm_diff_mu_list))
+
+        # Save norm_diff_var_list
+        f.create_dataset('norm_diff_var_list', data=np.array(norm_diff_var_list))
+
+def pipca_online(config):
+    from btx.processing.pipca import PiPCA
+
+    setup = config.setup
+    task = config.pipca_full
+    tag = task.tag
+    exp = setup.exp
+    det_type = setup.det_type
+    start_offset = task.start_offset
+    num_images = task.num_images
+    num_components = task.num_components
+    batch_size = task.batch_size
+    filename = "pipca_model_online.h5"
+
+    # Get previous matrixes
+    if os.path.exists(filename):
+        with h5py.File(filename, 'r') as f:
+            previous_U = np.asarray(f.get('U'))
+            previous_S = np.asarray(f.get('S'))
+            previous_mu_tot = np.asarray(f.get('mu'))
+            previous_var_tot = np.asarray(f.get('total_variance'))
+            run = int(np.asarray(f.get('run'))) + 1 # start next run
+    else:
+        previous_U = None
+        previous_S = None
+        previous_mu_tot = None
+        previous_var_tot = None
+        run = task.run # use start run
+    
+    # Create a PiPCA instance for the current run
+    pipca = PiPCA(
+        exp=exp,
+        run=run,
+        det_type=det_type,
+        num_images=num_images,
+        num_components=num_components,
+        batch_size=batch_size,
+        priming=False,
+        downsample=False,
+        bin_factor=2,
+        filename = filename
+    )
+
+    # Run iPCA for the current run
+    pipca.run_model_full(previous_U, previous_S, previous_mu_tot, previous_var_tot)
+

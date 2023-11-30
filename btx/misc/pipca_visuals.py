@@ -278,3 +278,121 @@ def construct_heatmap_data(img, max_pixels):
     hm_data = np.stack((rows, cols, binned_img.flatten())).T
 
     return hm_data
+
+def compute_compression_loss(filename, num_components):
+    """
+    Compute average frobenius norms
+
+    Parameters:
+    -----------
+    filename : string
+        name of the h5 file
+    num_components: int
+        number of components used
+    
+    Returns:
+    --------
+    compression loss between initial dataset and pipca projected images
+    """
+    data = unpack_pipca_model_file(filename)
+
+    exp = data['exp']
+    run = data['run']
+    loadings = data['loadings']
+    det_type = data['det_type']
+    start_img = data['start_img']
+    U = data['U']
+    S = data['S']
+    V = data['V']
+
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    psi.counter = start_img
+
+    # Create PC dictionary and widgets
+    PCs = {f'PC{i}' : v for i, v in enumerate(loadings, start=1)}
+
+    # Create a list to store the Frobenius norms of the differences between images and their reconstructed counterparts
+    image_norms = []
+
+    # Iterate through all images and compute the Frobenius norms of the differences
+    for img_source in range(len(PCs['PC1'])):
+        counter = psi.counter
+        psi.counter = start_img + img_source
+        img = psi.get_images(1)
+        psi.counter = counter
+        img = img.squeeze()
+
+        p, x, y = psi.det.shape()
+        pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+        q = num_components
+        reconstructed_img = U[:, :q] @ np.diag(S[:q]) @ np.array([V[img_source][:q]]).T
+        reconstructed_img = reconstructed_img.reshape((p, x, y))
+        reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
+
+        # Compute the Frobenius norm of the difference between the original image and the reconstructed image
+        difference = np.abs(img - reconstructed_img)
+        norm = np.linalg.norm(difference, 'fro')
+        image_norms.append(norm)
+
+    # Calculate the average of the norms
+    average_norm = np.mean(image_norms)
+
+    return average_norm
+
+import random
+
+def compute_compression_loss_random_images(filename, num_components, num_images=10):
+    """
+    Compute average Frobenius norms for a random subset of images.
+
+    Parameters:
+    -----------
+    filename : string
+        name of the h5 file
+    num_components: int
+        number of components used
+    num_images: int, optional
+        number of random images to select (default is 10)
+
+    Returns:
+    --------
+    compression loss between the initial dataset and pipca projected images
+    """
+    data = unpack_pipca_model_file(filename)
+
+    exp, run, loadings, det_type, start_img, U, S, V = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V']
+
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    psi.counter = start_img
+
+    PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
+
+    image_norms = []
+    p, x, y = psi.det.shape()
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+    q = num_components
+
+    # Compute the projection matrix outside the loop
+    projection_matrix = U[:, :q] @ np.diag(S[:q])
+
+    random_indices = random.sample(range(len(PCs['PC1'])), num_images)
+
+    for img_source in random_indices:
+        counter = psi.counter
+        psi.counter = start_img + img_source
+        img = psi.get_images(1).squeeze()
+
+        reconstructed_img = projection_matrix @ np.array([V[img_source][:q]]).T
+        reconstructed_img = reconstructed_img.reshape((p, x, y))
+        reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
+
+        # Compute the Frobenius norm of the difference between the original image and the reconstructed image
+        difference = np.abs(img - reconstructed_img)
+        norm = np.linalg.norm(difference, 'fro')
+        image_norms.append(norm)
+
+        psi.counter = counter  # Reset counter for the next iteration
+
+    average_norm = np.mean(image_norms)
+    
+    return average_norm
