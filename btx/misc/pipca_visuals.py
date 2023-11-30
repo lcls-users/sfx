@@ -314,6 +314,9 @@ def compute_compression_loss(filename, num_components):
     # Create a list to store the Frobenius norms of the differences between images and their reconstructed counterparts
     image_norms = []
 
+    # Compute the projection matrix outside the loop
+    projection_matrix = U[:, :q] @ np.diag(S[:q])
+
     # Iterate through all images and compute the Frobenius norms of the differences
     for img_source in range(len(PCs['PC1'])):
         counter = psi.counter
@@ -325,7 +328,7 @@ def compute_compression_loss(filename, num_components):
         p, x, y = psi.det.shape()
         pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
         q = num_components
-        reconstructed_img = U[:, :q] @ np.diag(S[:q]) @ np.array([V[img_source][:q]]).T
+        reconstructed_img = projection_matrix @ np.array([V[img_source][:q]]).T
         reconstructed_img = reconstructed_img.reshape((p, x, y))
         reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
 
