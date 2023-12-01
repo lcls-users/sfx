@@ -549,6 +549,7 @@ def pipca_offline(config):
         previous_mu_tot = None
         previous_var_tot = None 
 
+    # Check values
     print(f"U: {previous_U}, type(U): {type(previous_U)}")
     print(f"S: {previous_S}, type(S): {type(previous_S)}")
     print(f"mu: {previous_mu_tot}, type(mu): {type(previous_mu_tot)}")
@@ -615,29 +616,65 @@ def pipca_offline(config):
         compression_loss = compute_compression_loss_random_images(filename_with_tag, num_components, 3)
         compression_loss_values.append(compression_loss)
 
-    # Open HDF5 file for saving data
-    with h5py.File(filename_with_tag, 'a') as f:
+        with h5py.File(filename_with_tag, 'a') as f:
+            # Check if 'execution_times' dataset exists, create if not
+            if 'execution_times' not in f:
+                f.create_dataset('execution_times', data=np.array(execution_times))
+            else:
+                # Append execution time to the existing dataset
+                existing_execution_times = f['execution_times'][:]
+                f['execution_times'].resize((len(existing_execution_times) + 1,))
+                f['execution_times'][-1] = execution_time
 
-        # Save execution times
-        f.create_dataset('execution_times', data=np.array(execution_times))
+            # Check if 'compression_loss_values' dataset exists, create if not
+            if 'compression_loss_values' not in f:
+                f.create_dataset('compression_loss_values', data=np.array(compression_loss_values))
+            else:
+                # Append compression loss to the existing dataset
+                existing_compression_loss_values = f['compression_loss_values'][:]
+                f['compression_loss_values'].resize((len(existing_compression_loss_values) + 1,))
+                f['compression_loss_values'][-1] = compression_loss
 
-        # Save compression loss values
-        f.create_dataset('compression_loss_values', data=np.array(compression_loss_values))
+            # Check if 'norm_diff_U_list' dataset exists, create if not
+            if 'norm_diff_U_list' not in f:
+                f.create_dataset('norm_diff_U_list', data=np.array(norm_diff_U_list))
+            else:
+                # Append norm_diff_U_list to the existing dataset
+                existing_norm_diff_U_list = f['norm_diff_U_list'][:]
+                f['norm_diff_U_list'].resize((len(existing_norm_diff_U_list) + 1,))
+                f['norm_diff_U_list'][-1] = np.linalg.norm(diff_U)
 
-        # Save norm_diff_U_list
-        f.create_dataset('norm_diff_U_list', data=np.array(norm_diff_U_list))
+            # Check if 'norm_diff_S_list' dataset exists, create if not
+            if 'norm_diff_S_list' not in f:
+                f.create_dataset('norm_diff_S_list', data=np.array(norm_diff_S_list))
+            else:
+                # Append norm_diff_S_list to the existing dataset
+                existing_norm_diff_S_list = f['norm_diff_S_list'][:]
+                f['norm_diff_S_list'].resize((len(existing_norm_diff_S_list) + 1,))
+                f['norm_diff_S_list'][-1] = np.linalg.norm(diff_S)
 
-        # Save norm_diff_S_list
-        f.create_dataset('norm_diff_S_list', data=np.array(norm_diff_S_list))
+            # Check if 'norm_diff_mu_list' dataset exists, create if not
+            if 'norm_diff_mu_list' not in f:
+                f.create_dataset('norm_diff_mu_list', data=np.array(norm_diff_mu_list))
+            else:
+                # Append norm_diff_mu_list to the existing dataset
+                existing_norm_diff_mu_list = f['norm_diff_mu_list'][:]
+                f['norm_diff_mu_list'].resize((len(existing_norm_diff_mu_list) + 1,))
+                f['norm_diff_mu_list'][-1] = np.linalg.norm(diff_mu)
 
-        # Save norm_diff_mu_list
-        f.create_dataset('norm_diff_mu_list', data=np.array(norm_diff_mu_list))
+            # Check if 'norm_diff_var_list' dataset exists, create if not
+            if 'norm_diff_var_list' not in f:
+                f.create_dataset('norm_diff_var_list', data=np.array(norm_diff_var_list))
+            else:
+                # Append norm_diff_var_list to the existing dataset
+                existing_norm_diff_var_list = f['norm_diff_var_list'][:]
+                f['norm_diff_var_list'].resize((len(existing_norm_diff_var_list) + 1,))
+                f['norm_diff_var_list'][-1] = np.linalg.norm(diff_var)
 
-        # Save norm_diff_var_list
-        f.create_dataset('norm_diff_var_list', data=np.array(norm_diff_var_list))
 
 def pipca_online(config):
     from btx.processing.pipca import PiPCA
+    from btx.misc.pipca_visuals import compute_compression_loss_random_images
 
     setup = config.setup
     task = config.pipca_full
@@ -670,6 +707,8 @@ def pipca_online(config):
         run = task.run # use start run
     
     # Create a PiPCA instance for the current run
+    start_time = time.time()  
+
     pipca = PiPCA(
         exp=exp,
         run=run,
@@ -686,3 +725,27 @@ def pipca_online(config):
     # Run iPCA for the current run
     pipca.run_model_full(previous_U, previous_S, previous_mu_tot, previous_var_tot)
 
+    end_time = time.time()  # Record the end time
+    execution_time = end_time - start_time  # Calculate the execution time
+
+    compression_loss = compute_compression_loss_random_images(filename_with_tag, num_components, 3)
+
+    # Open HDF5 file for saving data
+    with h5py.File(filename_with_tag, 'a') as f:
+        if 'execution_times' not in f:
+            f.create_dataset('execution_times', data=np.array([execution_time]))
+        else:
+            # Append execution time to the existing dataset
+            existing_execution_times = f['execution_times'][:]
+            f['execution_times'].resize((len(existing_execution_times) + 1,))
+            f['execution_times'][-1] = execution_time
+
+        # Check if 'compression_loss_values' dataset exists, create if not
+        if 'compression_loss_values' not in f:
+            f.create_dataset('compression_loss_values', data=np.array([compression_loss]))
+        else:
+            # Append compression loss to the existing dataset
+            existing_compression_loss_values = f['compression_loss_values'][:]
+            f['compression_loss_values'].resize((len(existing_compression_loss_values) + 1,))
+            f['compression_loss_values'][-1] = compression_loss
+            

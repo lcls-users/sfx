@@ -195,7 +195,6 @@ class PiPCA:
             self.mu = previous_mu
             self.total_variance = previous_var
 
-
         else:
             self.U = np.zeros((self.split_counts[self.rank], self.num_components))
             self.S = np.ones(self.num_components)
