@@ -519,7 +519,6 @@ def pipca_offline(config):
 
     setup = config.setup
     task = config.pipca_full
-    tag = task.tag
     exp = setup.exp
     run = task.run
     det_type = setup.det_type
@@ -527,17 +526,33 @@ def pipca_offline(config):
     num_images = task.num_images
     num_components = task.num_components
     batch_size = task.batch_size
-    filename = "pipca_model.h5"
+    filename = task.filename
+    tag = task.tag
+    path = task.path
+    overwrite = True
 
-    # Initialize U and S matrices to None
-    previous_U = None
-    previous_S = None
-    previous_mu_tot = None
-    previous_var_tot = None
+    filename_with_tag = f"{path}{filename}_{tag}.h5"
 
-    # Delete the pipca_model.h5 file if it exists
-    if os.path.exists(filename):
-        os.remove(filename)
+    if overwrite and os.path.exists(filename_with_tag):
+        os.remove(filename_with_tag)
+
+    # Initialize U, S, mu and var matrices
+    if os.path.exists(filename_with_tag):
+        with h5py.File(filename_with_tag, 'r') as f:
+            previous_U = np.asarray(f.get('U'))
+            previous_S = np.asarray(f.get('S'))
+            previous_mu_tot = np.asarray(f.get('mu'))
+            previous_var_tot = np.asarray(f.get('total_variance'))
+    else:
+        previous_U = None
+        previous_S = None
+        previous_mu_tot = None
+        previous_var_tot = None 
+
+    print(f"U: {previous_U}, type(U): {type(previous_U)}")
+    print(f"S: {previous_S}, type(S): {type(previous_S)}")
+    print(f"mu: {previous_mu_tot}, type(mu): {type(previous_mu_tot)}")
+    print(f"total_variance: {previous_var_tot}, type(total_variance): {type(previous_var_tot)}")
 
     # Initialize a list to store the execution times and frobenius norms
     execution_times = []
@@ -571,7 +586,7 @@ def pipca_offline(config):
             priming=False,
             downsample=False,
             bin_factor=2,
-            filename = filename
+            filename = filename_with_tag
         )
 
         # Run iPCA for the current run
@@ -597,11 +612,11 @@ def pipca_offline(config):
         previous_var_tot = var_tot
         
         #Compute compression loss
-        compression_loss = compute_compression_loss_random_images(filename, num_components, 10)
+        compression_loss = compute_compression_loss_random_images(filename_with_tag, num_components, 3)
         compression_loss_values.append(compression_loss)
 
     # Open HDF5 file for saving data
-    with h5py.File(filename, 'w') as f:
+    with h5py.File(filename_with_tag, 'a') as f:
 
         # Save execution times
         f.create_dataset('execution_times', data=np.array(execution_times))
@@ -633,11 +648,15 @@ def pipca_online(config):
     num_images = task.num_images
     num_components = task.num_components
     batch_size = task.batch_size
-    filename = "pipca_model_online.h5"
+    tag = task.tag
+    path = task.path
+    filename = task.filename
+
+    filename_with_tag = f"{path}{filename}_{tag}.h5"
 
     # Get previous matrixes
-    if os.path.exists(filename):
-        with h5py.File(filename, 'r') as f:
+    if os.path.exists(filename_with_tag):
+        with h5py.File(filename_with_tag, 'r') as f:
             previous_U = np.asarray(f.get('U'))
             previous_S = np.asarray(f.get('S'))
             previous_mu_tot = np.asarray(f.get('mu'))

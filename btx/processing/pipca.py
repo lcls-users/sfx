@@ -195,11 +195,17 @@ class PiPCA:
             self.mu = previous_mu
             self.total_variance = previous_var
 
+
         else:
             self.U = np.zeros((self.split_counts[self.rank], self.num_components))
             self.S = np.ones(self.num_components)
             self.mu = np.zeros((self.split_counts[self.rank], 1))
             self.total_variance = np.zeros((self.split_counts[self.rank], 1))
+
+        print(f"U: {self.U}, type(U): {type(self.U)}")
+        print(f"S: {self.S}, type(S): {type(self.S)}")
+        print(f"mu: {self.mu}, type(mu): {type(self.mu)}")
+        print(f"total_variance: {self.total_variance}, type(total_variance): {type(self.total_variance)}")
 
         # divide remaining number of images into batches
         # will become redundant in a streaming setting, need to change
@@ -369,6 +375,8 @@ class PiPCA:
                 self.task_durations, "center data and compute augment vector"
             ):
                 X_centered = X - np.tile(mu_m, m)
+
+
                 mean_augment_vector = np.sqrt(num_incorporated_images * m / (num_incorporated_images + m)) * (mu_m - mu_n)
 
                 X_augmented = np.hstack((X_centered, mean_augment_vector))
