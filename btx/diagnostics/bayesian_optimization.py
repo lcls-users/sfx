@@ -15,6 +15,7 @@ from scipy.stats import norm
 import os
 import csv
 import yaml
+import copy
 import shutil
 
 
@@ -32,7 +33,8 @@ class BayesianOptimization:
 
     # Initial samples
 
-    def random_param_samples(self, config):
+    @staticmethod
+    def random_param_samples(task, n_params, params_ranges_keys, n_samples, n_points):
         """
         Function called by the "bo_init_samples_configs" task.
 
@@ -41,19 +43,22 @@ class BayesianOptimization:
 
         Parameters
         ----------
-        config : AttrDict
-            The current config.
+        task : AttrDict
+            The "bayesian_optimization" section of "config".
+        n_params: Int
+            The number of parameters.
+        params_ranges_keys: List
+            The "range_X" keys (with X being a parameter name) to access the ranges of values for each parameter.
+        n_samples: Int
+            The number of initial samples for the Bayesian optimization.
+        n_points: Int
+            The number of points to use in linspaces.
         """
-        params_ranges_keys = [key for key in config if key.startswith("range_")]
-        n_params = len(params_ranges_keys)
-        n_samples = config.bayesian_opt.n_samples_init
-        n_points = config.bayesian_opt.n_points_per_param
-
         random_param_samples = np.empty(shape=(n_samples, n_params))
 
         for i in range(n_params):
             # Get the parameter range
-            param_min, param_max = config["bayesian_opt"][params_ranges_keys[i]]
+            param_min, param_max = task[params_ranges_keys[i]]
 
             # Get n_samples random values of the parameter within its range 
             param_range = np.linspace(param_min, param_max, n_points)
@@ -67,18 +72,21 @@ class BayesianOptimization:
         
     # Acquisition functions
 
-    def expected_improvement(self, X, gp_model, best_y):
+    @staticmethod
+    def expected_improvement(X, gp_model, best_y):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         z = (y_pred - best_y) / y_std
         ei = (y_pred - best_y) * norm.cdf(z) + y_std * norm.pdf(z)
         return ei
 
-    def upper_confidence_bound(self, X, gp_model, beta):
+    @staticmethod
+    def upper_confidence_bound(X, gp_model, beta):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         ucb = y_pred + beta * y_std
         return ucb
 
-    def probability_of_improvement(self, X, gp_model, best_y):
+    @staticmethod
+    def probability_of_improvement(X, gp_model, best_y):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         z = (y_pred - best_y) / y_std
         pi = norm.cdf(z)
@@ -109,7 +117,7 @@ class BayesianOptimization:
         ##### 1. Save the current parameters and the associated score
 
         # Get the current parameters
-        n_params, params, params_names, params_ranges_keys= cls.get_parameters(config, task_to_optimize)
+        n_params, params, params_names, params_ranges_keys= cls.get_parameters(task, task_to_optimize)
 
         # Get the score from the interation that has just been run
         score = cls.get_last_score(setup, task, score_task)
@@ -186,23 +194,22 @@ class BayesianOptimization:
             The logger used to report the progess of the tasks.
         """
         setup = config.setup
-        task = config.bayesian_opt
+        task = config.bayesian_optimization
         taskdir = os.path.join(setup.root_dir, "bayesian_opt")
         os.makedirs(taskdir, exist_ok=True)
         os.makedirs(os.path.join(taskdir, task.tag), exist_ok=True)
 
         if hasattr(task, 'n_samples_init'):
-            n_samples_init = task.n_samples_init
-
-            # Get the parameters to overwrite
-            params_ranges_keys = [key for key in config if key.startswith("range_")]
-            params_names = [key.replace("range_", "") for key in params_ranges_keys]
-
-            # Generate the parameter samples
-            param_samples = cls.random_param_samples(config)
-
             # Get the first task of the loop sequence
             task_to_optimize = config.get(task.task_to_optimize)
+
+            # Get the parameters to overwrite
+            n_params, _, params_names, params_ranges_keys= cls.get_parameters(task, task_to_optimize)
+
+            # Generate the parameter samples
+            n_samples = task.n_samples_init
+            n_points = task.n_points_per_param
+            param_samples = cls.random_param_samples(task, n_params, params_ranges_keys, n_samples, n_points)
 
             # Get the task generating the scores
             score_task = config.get(task.score_task)
@@ -210,25 +217,36 @@ class BayesianOptimization:
             # Generate the subdir
             subdir_name = setup.exp + "_init_samples_configs"
             subdir_path = os.path.join(setup.root_dir, "bayesian_opt", subdir_name)
-            os.makedirs(subdir_path)
+            os.makedirs(subdir_path, exist_ok=True)
 
             # Generate the config files
-            logger.info(f'Generating {n_samples_init} config files.')
-            for i in range(n_samples_init):
-                config_temp = config.copy()
+            logger.info(f'Generating {n_samples} config files.')
+            for i in range(n_samples):
+                config_temp = copy.copy(config)
                 # Overwrite the parameters
-                for j in range(len(params_names)):
-                    config_temp[task_to_optimize][params_names[j]] = param_samples[i,j]
+                for j in range(n_params):
+                    config_temp[task.task_to_optimize][params_names[j]] = float(param_samples[i,j])
 
-                # Overwrite the score task tag to change the name of the score output file
-                config_temp[score_task]["tag"] = config_temp[score_task]["tag"] + f"_sample_{i+1}"
+                # Overwrite the tags to change the name of the written files to avoid conflicts
+                for task_name in task.loop_tasks:
+                    if task_name == "index":
+                        config_temp[task_name]["tag_cxi"] = config_temp[task_name]["tag_cxi"] + f"_sample_{i+1}"
+                    config_temp[task_name]["tag"] = config_temp[task_name]["tag"] + f"_sample_{i+1}"
 
                 # Write the config file
                 config_file_name = f"{setup.exp}_sample_{i+1}.yaml"
                 config_file_path = os.path.join(subdir_path, config_file_name)
 
+                config_temp_dict = {key: dict(value) if value is not None else None for key, value in config_temp.items()}
+
                 with open(config_file_path, 'w') as file:
-                    yaml.dump(config_temp, file)
+                    yaml.dump(config_temp_dict, file, default_style=False)
+
+            # Generate the cell files
+            logger.info(f'Generating {n_samples} cell files.')
+            cell_dir_path = os.path.join(setup.root_dir, "cell")
+            for i in range(n_samples):
+                shutil.copy(os.path.join(cell_dir_path, f"{task.tag}.cell"), os.path.join(cell_dir_path, f"{task.tag}_sample_{i+1}.cell"))
                 
             logger.info('Done!')
         else:
@@ -249,38 +267,39 @@ class BayesianOptimization:
             The logger used to report the progess of the tasks.
         """
         setup = config.setup
-        task = config.bayesian_opt
-        n_samples_init = task.n_samples_init
+        task = config.bayesian_optimization
+        n_samples = task.n_samples_init
         # Get the first task of the loop sequence
         task_to_optimize = config.get(task.task_to_optimize)
         # Get the task generating the scores
         score_task = config.get(task.score_task)
         # Get the names of the parameters
-        n_params, _, params_names, _ = cls.get_parameters(config, task_to_optimize)
+        n_params, _, params_names, _ = cls.get_parameters(task, task_to_optimize)
         # Get the score and the parameters of each sample
-        samples_scores = np.empty(shape=(n_samples_init, 1))
-        samples_params = np.empty(shape=(n_samples_init, n_params))
+        samples_scores = np.empty(shape=(n_samples,))
+        samples_params = np.empty(shape=(n_samples, n_params))
 
         logger.info('Aggregating the scores and parameters of the initial samples.')
         subdir_name = setup.exp + "_init_samples_configs"
         subdir_path = os.path.join(setup.root_dir, "bayesian_opt", subdir_name)
-        for i in range(n_samples_init):
+        for i in range(n_samples):
             # Get the parameters in the config file
             config_file_name = f"{setup.exp}_sample_{i+1}.yaml"
             config_file_path = os.path.join(subdir_path, config_file_name)
             with open(config_file_path, 'r') as file:
                 config_data = yaml.safe_load(file)
             for j in range(n_params):
-                samples_params[i,j] = config_data[task_to_optimize][params_names[j]]
+                samples_params[i,j] = config_data[task.task_to_optimize][params_names[j]]
 
             # Get the score in the score output file
             score_file_name = f"{task.tag}_sample_{i+1}_{task.fom}_n1.dat" 
-            score_file_path = os.path.join(setup.root_dir, task.score_task, score_task.tag, "hkl", score_file_name)
+            score_file_path = os.path.join(setup.root_dir, task.score_task, f"{score_task.tag}_sample_{i+1}", "hkl", score_file_name)
             with open(score_file_path, 'r') as file:
                 lines = file.readlines()
             data = lines[1].strip().split(',')
-            score = data[1] # The score is located at the 2nd column
-            samples_scores[i,1] = score
+            elements = data[0].split() # Split the string into a list of elements
+            score = elements[1] # The score is located at the 2nd column
+            samples_scores[i] = score
 
         # Write the scores and the parameters of the samples in a .dat file
         output_file_path = os.path.join(setup.root_dir, "bayesian_opt", task.tag, f"{setup.exp}_bayesian_opt.dat")
@@ -292,32 +311,38 @@ class BayesianOptimization:
             data_to_write = [(score, *params) for score, params in zip(samples_scores, samples_params)]
             writer.writerows(data_to_write)
 
-        # Remove the subdir containing the initial samples config files
-        shutil.rmtree(subdir_path)
+        # Delete the unnecessary cell files
+        logger.info(f'Deleting {n_samples} cell files.')
+        cell_dir_path = os.path.join(setup.root_dir, "cell")
+        for i in range(n_samples):
+            os.remove(os.path.join(cell_dir_path, f"{task.tag}_sample_{i+1}.cell"))
+
 
         logger.info('Done!')
 
 
     # Utils
 
-    def get_parameters(self, config, task_to_optimize):
+    @staticmethod
+    def get_parameters(task, task_to_optimize):
         """
         Get the parameters number, values, names, and the keys to access their ranges.
 
         Parameters
         ----------
-        config : AttrDict
-            The current config.
+        task : AttrDict
+            The "bayesian_optimization" section of "config".
         task_to_optimize : AttrDict
             The section of "config" corresponding to the task to optimize.
         """
-        params_ranges_keys = [key for key in config if key.startswith("range_")]
+        params_ranges_keys = [key for key in task if key.startswith("range_")]
         params_names = [key.replace("range_", "") for key in params_ranges_keys]
         n_params = len(params_names)
-        params = np.array([config[task_to_optimize][params_names[j]] for j in range(n_params)])
+        params = np.array([task_to_optimize[params_names[j]] for j in range(n_params)])
         return n_params, params, params_names, params_ranges_keys
 
-    def get_last_score(self, setup, task, score_task):
+    @staticmethod
+    def get_last_score(setup, task, score_task):
         """
         Get the score of the latest iteration of the Bayesian optimization.
 
@@ -335,10 +360,12 @@ class BayesianOptimization:
         with open(score_file_path, 'r') as file:
             lines = file.readlines()
         data = lines[1].strip().split(',')
-        score = data[1] # The score is located at the 2nd column
+        elements = data[0].split() # Split the string into a list of elements
+        score = elements[1] # The score is located at the 2nd column
         return score
     
-    def save_iteration(self, setup, task, score, params):
+    @staticmethod
+    def save_iteration(setup, task, score, params):
         """
         Saves an iteration of the Bayesian optimization (score and parameters) in a .dat file.
 
@@ -360,7 +387,8 @@ class BayesianOptimization:
             data_to_write = [(score, *params)]
             writer.writerows(data_to_write)
 
-    def read_bo_history(self, setup, task):
+    @staticmethod
+    def read_bo_history(setup, task):
         """
         Read the score and the parameters of all past iterations from a .dat file.
 
@@ -384,7 +412,8 @@ class BayesianOptimization:
 
         return sample_y, sample_inputs
     
-    def overwrite_params(self, config, setup, task_to_optimize, params_names, new_input):
+    @staticmethod
+    def overwrite_params(config, setup, task_to_optimize, params_names, new_input):
         """
         Overwrite the new parameters in the config .yaml file.
 
@@ -402,11 +431,12 @@ class BayesianOptimization:
             The new values of the parameters.
         """
         for i, param_name in enumerate(params_names):
-            task_to_optimize[param_name] = new_input[i]
+            task_to_optimize[param_name] = float(new_input[i])
         
         config_file_path = os.path.join(setup.root_dir, "yamls", f"{setup.exp}_bayesian_opt.yaml")
+        config_dict = {key: dict(value) if value is not None else None for key, value in config.items()}
         with open(config_file_path, 'w') as yaml_file:
-            yaml.dump(config, yaml_file, default_flow_style=False)
+            yaml.dump(config_dict, yaml_file, default_flow_style=False)
     
         
     

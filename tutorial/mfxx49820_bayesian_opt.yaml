@@ -1,9 +1,11 @@
 setup:
-  queue: 'anaq'
+  queue: 'milano'
   root_dir: '/sdf/data/lcls/ds/mfx/mfxx49820/scratch/pegiaco/'
   exp: 'mfxx49820'
-  run: 15
+  run: 16
   det_type: 'epix10k2M'
+  account: 'lcls:mfxx49820'
+  reservation: ''
 
 fetch_mask:
   dataset: '/data/data'
@@ -51,7 +53,7 @@ index:
   no_revalidate: True
   multi: True
   profile: True
-  cell: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/cell/sample2.cell'
+  cell: '/sdf/data/lcls/ds/mfx/mfxx49820/scratch/pegiaco/cell/sample2.cell'
 
 stream_analysis:
   tag: 'sample2'
@@ -73,6 +75,7 @@ bayesian_optimization:
   task_to_optimize: "find_peaks"
   opt_type: "min"
   score_task: "merge"
+  loop_tasks: ["find_peaks", "index", "stream_analysis", "merge"]
   fom: "Rsplit"
   kernel: "rbf"
   acquisition_function: "expected_improvement"
