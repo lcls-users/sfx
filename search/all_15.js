@@ -22,6 +22,6 @@ var searchData=
   ['update_5fuglymol_709',['update_uglymol',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#a100913a50f18e9b4e5ed418f97050b21',1,'btx::interfaces::ielog::eLogInterface']]],
   ['update_5furl_710',['update_url',['../namespacescripts_1_1tasks.html#a547672661ede1e0881b4ad3178a0eb72',1,'scripts::tasks']]],
   ['update_5fv_711',['update_V',['../classpipca_1_1PiPCA.html#a0371c36f29f72e4bda7373295a50b16c',1,'pipca::PiPCA']]],
-  ['upper_5fconfidence_5fbound_712',['upper_confidence_bound',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a08700869a2dde17109265574d365383b',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['upper_5fconfidence_5fbound_712',['upper_confidence_bound',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a5d7f30a5ff21c885b8b1aa97d6ba562e',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['user_713',['user',['../classdags_1_1plugins_1_1jid_1_1JIDSlurmOperator.html#a451485064d725f4c8015b58cf09a85b6',1,'dags::plugins::jid::JIDSlurmOperator']]]
 ];

@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['save_5fiteration_1129',['save_iteration',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a9eeb432d45dcaa8983b8cee6e95a144f',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['save_5fiteration_1129',['save_iteration',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a73dc58cefb0224f91a146a51ea8561b8',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['save_5fmask_1130',['save_mask',['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html#af888d16d9dfbdbb9a82ae51abacdcf87',1,'btx::interfaces::imask::MaskInterface']]],
   ['save_5fpowders_1131',['save_powders',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a26ea5816cedd48c6d15184c46ffb6fc0',1,'btx::diagnostics::run::RunDiagnostics']]],
   ['save_5fresults_1132',['save_results',['../classbtx_1_1diagnostics_1_1geoptimizer_1_1Geoptimizer.html#a9a92fa499b047621ccfa8ffeb078a9f7',1,'btx::diagnostics::geoptimizer::Geoptimizer']]],

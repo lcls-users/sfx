@@ -1,9 +1,9 @@
 var searchData=
 [
   ['radial_5fprofile_1107',['radial_profile',['../namespacebtx_1_1misc_1_1radial.html#a7521b53628f02dfb5998b55647c6aeb2',1,'btx::misc::radial']]],
-  ['random_5fparam_5fsamples_1108',['random_param_samples',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a7b9b0be5a586c040bd6d45da67f62b53',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['random_5fparam_5fsamples_1108',['random_param_samples',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#aadb4fbeb9cc5c21363d86c2f44533e61',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['read_5fall_5fstreams_1109',['read_all_streams',['../classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a1d05166c06fec55c260ff075252c3096',1,'btx::interfaces::istream::StreamInterface']]],
-  ['read_5fbo_5fhistory_1110',['read_bo_history',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ad25d570a7aed8d587282c53770e7fb32',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['read_5fbo_5fhistory_1110',['read_bo_history',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a62f28fff732cf56597cca816a787b9b9',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['read_5fcell_5ffile_1111',['read_cell_file',['../namespacebtx_1_1interfaces_1_1istream.html#a73404765514f92d98ec2e1a83e65fdce',1,'btx::interfaces::istream']]],
   ['read_5fstream_1112',['read_stream',['../classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a88bc032cacdb25381554e37b4f3dce94',1,'btx::interfaces::istream::StreamInterface']]],
   ['record_5floadings_1113',['record_loadings',['../classpipca_1_1PiPCA.html#a5836b272ac07d1a93fba26619327692e',1,'pipca::PiPCA']]],

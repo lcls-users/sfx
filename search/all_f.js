@@ -18,5 +18,5 @@ var searchData=
   ['outliers_458',['outliers',['../classpipca_1_1PiPCA.html#a1095ee115bc097e5511aa49ee2ac633f',1,'pipca::PiPCA']]],
   ['output_459',['output',['../namespacebtx_1_1interfaces_1_1istream.html#a3f37f557269e7005f023b112767804dc',1,'btx::interfaces::istream']]],
   ['output_5fdir_460',['output_dir',['../classpipca_1_1PiPCA.html#a88ec3c500f3e1b1a688cf40dd8244cc5',1,'pipca::PiPCA']]],
-  ['overwrite_5fparams_461',['overwrite_params',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#af30c695c6c3412ff5b96d2f5a320e632',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]]
+  ['overwrite_5fparams_461',['overwrite_params',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a068900332db61507e7388323e7090b6e',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]]
 ];

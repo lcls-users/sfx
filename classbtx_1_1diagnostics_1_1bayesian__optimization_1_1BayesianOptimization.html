@@ -68,6 +68,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -79,15 +80,6 @@ $(function() {
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ac239df402e4ef7a1eef32f69db124a96"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ac239df402e4ef7a1eef32f69db124a96">__init__</a> (self, <a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a48ac5e41565460240810795d60289730">criterion_name</a>, <a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a01c9dafbe3519748e263306d5fe823d3">first_loop_task</a>, <a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a1890093814fe38010c59d106efcb2c43">exit_loop_task</a>, <a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a835e557b697fb2bb05f43c78d15ff415">max_iterations</a>=None)</td></tr>
 <tr class="separator:ac239df402e4ef7a1eef32f69db124a96"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b9b0be5a586c040bd6d45da67f62b53"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a7b9b0be5a586c040bd6d45da67f62b53">random_param_samples</a> (self, config)</td></tr>
-<tr class="memdesc:a7b9b0be5a586c040bd6d45da67f62b53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function called by the "bo_init_samples_configs" task.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a7b9b0be5a586c040bd6d45da67f62b53">More...</a><br /></td></tr>
-<tr class="separator:a7b9b0be5a586c040bd6d45da67f62b53"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a96cccc261de1cf73ac452aed6860b186"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a96cccc261de1cf73ac452aed6860b186">expected_improvement</a> (self, X, gp_model, best_y)</td></tr>
-<tr class="separator:a96cccc261de1cf73ac452aed6860b186"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08700869a2dde17109265574d365383b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a08700869a2dde17109265574d365383b">upper_confidence_bound</a> (self, X, gp_model, beta)</td></tr>
-<tr class="separator:a08700869a2dde17109265574d365383b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae63e732846719c566d4692c9c68ad382"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ae63e732846719c566d4692c9c68ad382">probability_of_improvement</a> (self, X, gp_model, best_y)</td></tr>
-<tr class="separator:ae63e732846719c566d4692c9c68ad382"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae20cddc8220f60911946d3dcb1ee12dc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ae20cddc8220f60911946d3dcb1ee12dc">run_bayesian_opt</a> (cls, config)</td></tr>
 <tr class="memdesc:ae20cddc8220f60911946d3dcb1ee12dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function called by the "bayesian_optimization" task.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ae20cddc8220f60911946d3dcb1ee12dc">More...</a><br /></td></tr>
 <tr class="separator:ae20cddc8220f60911946d3dcb1ee12dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -97,21 +89,33 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac48804aede184c5ba064035b722c25e9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ac48804aede184c5ba064035b722c25e9">aggregate_init_samples</a> (cls, config, logger)</td></tr>
 <tr class="memdesc:ac48804aede184c5ba064035b722c25e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function called by the "bo_aggregate_init_samples" task.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ac48804aede184c5ba064035b722c25e9">More...</a><br /></td></tr>
 <tr class="separator:ac48804aede184c5ba064035b722c25e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee53b8b0532eae6cf43f0a7fb162665f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#aee53b8b0532eae6cf43f0a7fb162665f">get_parameters</a> (self, config, task_to_optimize)</td></tr>
-<tr class="memdesc:aee53b8b0532eae6cf43f0a7fb162665f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the parameters number, values, names, and the keys to access their ranges.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#aee53b8b0532eae6cf43f0a7fb162665f">More...</a><br /></td></tr>
-<tr class="separator:aee53b8b0532eae6cf43f0a7fb162665f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3222aa7a8b99e46fc679f6658d2fe854"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a3222aa7a8b99e46fc679f6658d2fe854">get_last_score</a> (self, setup, task, score_task)</td></tr>
-<tr class="memdesc:a3222aa7a8b99e46fc679f6658d2fe854"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the score of the latest iteration of the Bayesian optimization.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a3222aa7a8b99e46fc679f6658d2fe854">More...</a><br /></td></tr>
-<tr class="separator:a3222aa7a8b99e46fc679f6658d2fe854"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9eeb432d45dcaa8983b8cee6e95a144f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a9eeb432d45dcaa8983b8cee6e95a144f">save_iteration</a> (self, setup, task, score, params)</td></tr>
-<tr class="memdesc:a9eeb432d45dcaa8983b8cee6e95a144f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Saves an iteration of the Bayesian optimization (score and parameters) in a .dat file.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a9eeb432d45dcaa8983b8cee6e95a144f">More...</a><br /></td></tr>
-<tr class="separator:a9eeb432d45dcaa8983b8cee6e95a144f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad25d570a7aed8d587282c53770e7fb32"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ad25d570a7aed8d587282c53770e7fb32">read_bo_history</a> (self, setup, task)</td></tr>
-<tr class="memdesc:ad25d570a7aed8d587282c53770e7fb32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read the score and the parameters of all past iterations from a .dat file.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ad25d570a7aed8d587282c53770e7fb32">More...</a><br /></td></tr>
-<tr class="separator:ad25d570a7aed8d587282c53770e7fb32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af30c695c6c3412ff5b96d2f5a320e632"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#af30c695c6c3412ff5b96d2f5a320e632">overwrite_params</a> (self, config, setup, task_to_optimize, params_names, new_input)</td></tr>
-<tr class="memdesc:af30c695c6c3412ff5b96d2f5a320e632"><td class="mdescLeft">&#160;</td><td class="mdescRight">Overwrite the new parameters in the config .yaml file.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#af30c695c6c3412ff5b96d2f5a320e632">More...</a><br /></td></tr>
-<tr class="separator:af30c695c6c3412ff5b96d2f5a320e632"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:aadb4fbeb9cc5c21363d86c2f44533e61"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#aadb4fbeb9cc5c21363d86c2f44533e61">random_param_samples</a> (task, n_params, params_ranges_keys, n_samples, n_points)</td></tr>
+<tr class="memdesc:aadb4fbeb9cc5c21363d86c2f44533e61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function called by the "bo_init_samples_configs" task.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#aadb4fbeb9cc5c21363d86c2f44533e61">More...</a><br /></td></tr>
+<tr class="separator:aadb4fbeb9cc5c21363d86c2f44533e61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdaa147db6976e42dfe37069c8dc94ae"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#abdaa147db6976e42dfe37069c8dc94ae">expected_improvement</a> (X, gp_model, best_y)</td></tr>
+<tr class="separator:abdaa147db6976e42dfe37069c8dc94ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d7f30a5ff21c885b8b1aa97d6ba562e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a5d7f30a5ff21c885b8b1aa97d6ba562e">upper_confidence_bound</a> (X, gp_model, beta)</td></tr>
+<tr class="separator:a5d7f30a5ff21c885b8b1aa97d6ba562e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1aa0dfd83933e615494c055f1119f5df"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a1aa0dfd83933e615494c055f1119f5df">probability_of_improvement</a> (X, gp_model, best_y)</td></tr>
+<tr class="separator:a1aa0dfd83933e615494c055f1119f5df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ebdf421ab96a6c81c4dfce4b0285fb2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a1ebdf421ab96a6c81c4dfce4b0285fb2">get_parameters</a> (task, task_to_optimize)</td></tr>
+<tr class="memdesc:a1ebdf421ab96a6c81c4dfce4b0285fb2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the parameters number, values, names, and the keys to access their ranges.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a1ebdf421ab96a6c81c4dfce4b0285fb2">More...</a><br /></td></tr>
+<tr class="separator:a1ebdf421ab96a6c81c4dfce4b0285fb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54641ad8caaa617804f5f17faeecb420"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a54641ad8caaa617804f5f17faeecb420">get_last_score</a> (setup, task, score_task)</td></tr>
+<tr class="memdesc:a54641ad8caaa617804f5f17faeecb420"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the score of the latest iteration of the Bayesian optimization.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a54641ad8caaa617804f5f17faeecb420">More...</a><br /></td></tr>
+<tr class="separator:a54641ad8caaa617804f5f17faeecb420"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73dc58cefb0224f91a146a51ea8561b8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a73dc58cefb0224f91a146a51ea8561b8">save_iteration</a> (setup, task, score, params)</td></tr>
+<tr class="memdesc:a73dc58cefb0224f91a146a51ea8561b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Saves an iteration of the Bayesian optimization (score and parameters) in a .dat file.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a73dc58cefb0224f91a146a51ea8561b8">More...</a><br /></td></tr>
+<tr class="separator:a73dc58cefb0224f91a146a51ea8561b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62f28fff732cf56597cca816a787b9b9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a62f28fff732cf56597cca816a787b9b9">read_bo_history</a> (setup, task)</td></tr>
+<tr class="memdesc:a62f28fff732cf56597cca816a787b9b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read the score and the parameters of all past iterations from a .dat file.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a62f28fff732cf56597cca816a787b9b9">More...</a><br /></td></tr>
+<tr class="separator:a62f28fff732cf56597cca816a787b9b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a068900332db61507e7388323e7090b6e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a068900332db61507e7388323e7090b6e">overwrite_params</a> (config, setup, task_to_optimize, params_names, new_input)</td></tr>
+<tr class="memdesc:a068900332db61507e7388323e7090b6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Overwrite the new parameters in the config .yaml file.  <a href="classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a068900332db61507e7388323e7090b6e">More...</a><br /></td></tr>
+<tr class="separator:a068900332db61507e7388323e7090b6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -214,21 +218,18 @@ Parameters</h2>
 
 </div>
 </div>
-<a id="a96cccc261de1cf73ac452aed6860b186"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96cccc261de1cf73ac452aed6860b186">&#9670;&nbsp;</a></span>expected_improvement()</h2>
+<a id="abdaa147db6976e42dfe37069c8dc94ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdaa147db6976e42dfe37069c8dc94ae">&#9670;&nbsp;</a></span>expected_improvement()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.expected_improvement </td>
           <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>X</em>, </td>
         </tr>
@@ -250,25 +251,27 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a3222aa7a8b99e46fc679f6658d2fe854"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3222aa7a8b99e46fc679f6658d2fe854">&#9670;&nbsp;</a></span>get_last_score()</h2>
+<a id="a54641ad8caaa617804f5f17faeecb420"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54641ad8caaa617804f5f17faeecb420">&#9670;&nbsp;</a></span>get_last_score()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.get_last_score </td>
           <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>setup</em>, </td>
         </tr>
@@ -290,6 +293,11 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Get the score of the latest iteration of the Bayesian optimization. </p>
@@ -299,23 +307,20 @@ Parameters</h2>
 
 </div>
 </div>
-<a id="aee53b8b0532eae6cf43f0a7fb162665f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee53b8b0532eae6cf43f0a7fb162665f">&#9670;&nbsp;</a></span>get_parameters()</h2>
+<a id="a1ebdf421ab96a6c81c4dfce4b0285fb2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ebdf421ab96a6c81c4dfce4b0285fb2">&#9670;&nbsp;</a></span>get_parameters()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.get_parameters </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
+          <td class="paramname"><em>task</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -329,12 +334,17 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Get the parameters number, values, names, and the keys to access their ranges. </p>
 <h2><a class="anchor" id="autotoc_md13"></a>
 Parameters</h2>
-<p>config : AttrDict The current config. task_to_optimize : AttrDict The section of "config" corresponding to the task to optimize. </p>
+<p>task : AttrDict The "bayesian_optimization" section of "config". task_to_optimize : AttrDict The section of "config" corresponding to the task to optimize. </p>
 
 </div>
 </div>
@@ -378,21 +388,18 @@ Parameters</h2>
 
 </div>
 </div>
-<a id="af30c695c6c3412ff5b96d2f5a320e632"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af30c695c6c3412ff5b96d2f5a320e632">&#9670;&nbsp;</a></span>overwrite_params()</h2>
+<a id="a068900332db61507e7388323e7090b6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a068900332db61507e7388323e7090b6e">&#9670;&nbsp;</a></span>overwrite_params()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.overwrite_params </td>
           <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>config</em>, </td>
         </tr>
@@ -426,6 +433,11 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Overwrite the new parameters in the config .yaml file. </p>
@@ -435,21 +447,18 @@ Parameters</h2>
 
 </div>
 </div>
-<a id="ae63e732846719c566d4692c9c68ad382"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae63e732846719c566d4692c9c68ad382">&#9670;&nbsp;</a></span>probability_of_improvement()</h2>
+<a id="a1aa0dfd83933e615494c055f1119f5df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1aa0dfd83933e615494c055f1119f5df">&#9670;&nbsp;</a></span>probability_of_improvement()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.probability_of_improvement </td>
           <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>X</em>, </td>
         </tr>
@@ -471,27 +480,53 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a7b9b0be5a586c040bd6d45da67f62b53"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b9b0be5a586c040bd6d45da67f62b53">&#9670;&nbsp;</a></span>random_param_samples()</h2>
+<a id="aadb4fbeb9cc5c21363d86c2f44533e61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aadb4fbeb9cc5c21363d86c2f44533e61">&#9670;&nbsp;</a></span>random_param_samples()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.random_param_samples </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
+          <td class="paramname"><em>task</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>config</em>&#160;</td>
+          <td class="paramname"><em>n_params</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>params_ranges_keys</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>n_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>n_points</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -499,31 +534,33 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Function called by the "bo_init_samples_configs" task. </p>
 <p>Creates a matrix with each row containing a set of random parameters. Each parameter value falls into the range that has been defined in the config.</p>
 <h2><a class="anchor" id="autotoc_md9"></a>
 Parameters</h2>
-<p>config : AttrDict The current config. </p>
+<p>task : AttrDict The "bayesian_optimization" section of "config". n_params: Int The number of parameters. params_ranges_keys: List The "range_X" keys (with X being a parameter name) to access the ranges of values for each parameter. n_samples: Int The number of initial samples for the Bayesian optimization. n_points: Int The number of points to use in linspaces. </p>
 
 </div>
 </div>
-<a id="ad25d570a7aed8d587282c53770e7fb32"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad25d570a7aed8d587282c53770e7fb32">&#9670;&nbsp;</a></span>read_bo_history()</h2>
+<a id="a62f28fff732cf56597cca816a787b9b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62f28fff732cf56597cca816a787b9b9">&#9670;&nbsp;</a></span>read_bo_history()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.read_bo_history </td>
           <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>setup</em>, </td>
         </tr>
@@ -539,6 +576,11 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Read the score and the parameters of all past iterations from a .dat file. </p>
@@ -582,21 +624,18 @@ Parameters</h2>
 
 </div>
 </div>
-<a id="a9eeb432d45dcaa8983b8cee6e95a144f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9eeb432d45dcaa8983b8cee6e95a144f">&#9670;&nbsp;</a></span>save_iteration()</h2>
+<a id="a73dc58cefb0224f91a146a51ea8561b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73dc58cefb0224f91a146a51ea8561b8">&#9670;&nbsp;</a></span>save_iteration()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.save_iteration </td>
           <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>setup</em>, </td>
         </tr>
@@ -624,6 +663,11 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Saves an iteration of the Bayesian optimization (score and parameters) in a .dat file. </p>
@@ -633,21 +677,18 @@ Parameters</h2>
 
 </div>
 </div>
-<a id="a08700869a2dde17109265574d365383b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a08700869a2dde17109265574d365383b">&#9670;&nbsp;</a></span>upper_confidence_bound()</h2>
+<a id="a5d7f30a5ff21c885b8b1aa97d6ba562e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d7f30a5ff21c885b8b1aa97d6ba562e">&#9670;&nbsp;</a></span>upper_confidence_bound()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">def btx.diagnostics.bayesian_optimization.BayesianOptimization.upper_confidence_bound </td>
           <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>X</em>, </td>
         </tr>
@@ -669,6 +710,11 @@ Parameters</h2>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -750,7 +796,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Nov 29 2023 23:22:54 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Dec 6 2023 19:08:37 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

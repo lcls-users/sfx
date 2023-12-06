@@ -26,7 +26,7 @@ var searchData=
   ['post_5fto_5felog_1100',['post_to_elog',['../namespacescripts_1_1tasks.html#ab3d4a2b67a4f0e6abd50d9729fb07066',1,'scripts::tasks']]],
   ['prime_5fmodel_1101',['prime_model',['../classpipca_1_1PiPCA.html#a44c2550e356536e17c900c981be31f79',1,'pipca::PiPCA']]],
   ['print_5fall_5fnodes_1102',['print_all_nodes',['../classbtx_1_1io_1_1ih5_1_1SmallDataReader.html#a1a201cf1e717289035d7766ef9c8de93',1,'btx::io::ih5::SmallDataReader']]],
-  ['probability_5fof_5fimprovement_1103',['probability_of_improvement',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ae63e732846719c566d4692c9c68ad382',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['probability_5fof_5fimprovement_1103',['probability_of_improvement',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a1aa0dfd83933e615494c055f1119f5df',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['process_5frun_1104',['process_run',['../classrawimagetimetool_1_1RawImageTimeTool.html#a4fdc03a19a37b1a6fff6e42fe3966b0c',1,'rawimagetimetool::RawImageTimeTool']]],
   ['put_5ffile_1105',['put_file',['../classdags_1_1plugins_1_1jid_1_1JIDSlurmOperator.html#ad4977a0ff33b07eee066faea09f55cb5',1,'dags::plugins::jid::JIDSlurmOperator']]]
 ];

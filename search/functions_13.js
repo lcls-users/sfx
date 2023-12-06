@@ -16,5 +16,5 @@ var searchData=
   ['update_5fsummary_1184',['update_summary',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#ab146e8e5baca452c61cd3e6a4c0c885d',1,'btx.interfaces.ielog.eLogInterface.update_summary()'],['../namespacebtx_1_1interfaces_1_1ielog.html#ac5862826d638cce4bd4c1d9e04eca58f',1,'btx.interfaces.ielog.update_summary()']]],
   ['update_5fuglymol_1185',['update_uglymol',['../classbtx_1_1interfaces_1_1ielog_1_1eLogInterface.html#a100913a50f18e9b4e5ed418f97050b21',1,'btx::interfaces::ielog::eLogInterface']]],
   ['update_5fv_1186',['update_V',['../classpipca_1_1PiPCA.html#a0371c36f29f72e4bda7373295a50b16c',1,'pipca::PiPCA']]],
-  ['upper_5fconfidence_5fbound_1187',['upper_confidence_bound',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a08700869a2dde17109265574d365383b',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]]
+  ['upper_5fconfidence_5fbound_1187',['upper_confidence_bound',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a5d7f30a5ff21c885b8b1aa97d6ba562e',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]]
 ];

@@ -6,7 +6,7 @@ var searchData=
   ['s_575',['S',['../classpipca_1_1PiPCA.html#a6707bbd989ec182e1087c0a9bea87e3d',1,'pipca::PiPCA']]],
   ['s_5fprev_576',['S_prev',['../classpipca_1_1PiPCA.html#ad33489ee974d55eb206448cd55ac5f9a',1,'pipca::PiPCA']]],
   ['saturation_5fkev_577',['saturation_keV',['../classbtx_1_1diagnostics_1_1detector_1_1epix10k2M__calibration.html#ab5c443598f894bd549eed8f10df3a3fe',1,'btx::diagnostics::detector::epix10k2M_calibration']]],
-  ['save_5fiteration_578',['save_iteration',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a9eeb432d45dcaa8983b8cee6e95a144f',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['save_5fiteration_578',['save_iteration',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a73dc58cefb0224f91a146a51ea8561b8',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['save_5fmask_579',['save_mask',['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html#af888d16d9dfbdbb9a82ae51abacdcf87',1,'btx::interfaces::imask::MaskInterface']]],
   ['save_5fplots_580',['save_plots',['../classbtx_1_1misc_1_1visuals_1_1VisualizeSample.html#ae2986440d8a53bf291db5af1bc94bd06',1,'btx::misc::visuals::VisualizeSample']]],
   ['save_5fpowders_581',['save_powders',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a26ea5816cedd48c6d15184c46ffb6fc0',1,'btx::diagnostics::run::RunDiagnostics']]],

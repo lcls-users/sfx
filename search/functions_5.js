@@ -7,7 +7,7 @@ var searchData=
   ['enforce_5fsymmetry_978',['enforce_symmetry',['../namespacebtx_1_1misc_1_1xtal.html#aa41029db468a8ea2b10ef933b4d2b3d9',1,'btx::misc::xtal']]],
   ['estimate_5fdistance_979',['estimate_distance',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a59ed8a5f7da3dd07bbf70f896a0b6ecf',1,'btx::interfaces::ipsana::PsanaInterface']]],
   ['execute_980',['execute',['../classdags_1_1plugins_1_1jid_1_1JIDSlurmOperator.html#a135d3a33439c23d9ab09be1bd9a366bf',1,'dags::plugins::jid::JIDSlurmOperator']]],
-  ['expected_5fimprovement_981',['expected_improvement',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a96cccc261de1cf73ac452aed6860b186',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
+  ['expected_5fimprovement_981',['expected_improvement',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#abdaa147db6976e42dfe37069c8dc94ae',1,'btx::diagnostics::bayesian_optimization::BayesianOptimization']]],
   ['extract_5fbetween_982',['extract_between',['../classbtx_1_1interfaces_1_1ielog_1_1HTMLParser.html#aa74a05def542ad1c69a6c4c71bc4f427',1,'btx::interfaces::ielog::HTMLParser']]],
   ['extract_5fholoviews_5fimg_983',['extract_holoviews_img',['../classbtx_1_1interfaces_1_1ielog_1_1HTMLParser.html#a9a3d32c92ad827afb8040df97d03bf58',1,'btx::interfaces::ielog::HTMLParser']]],
   ['extract_5fstats_984',['extract_stats',['../classbtx_1_1diagnostics_1_1geoptimizer_1_1Geoptimizer.html#add2242110a0aed7a061978c817f1063c',1,'btx.diagnostics.geoptimizer.Geoptimizer.extract_stats()'],['../classbtx_1_1misc_1_1visuals_1_1VisualizeSample.html#a7febe5d8f5b5e86d443e703576c6c325',1,'btx.misc.visuals.VisualizeSample.extract_stats()']]]
