@@ -228,10 +228,17 @@ class BayesianOptimization:
                     config_temp[task.task_to_optimize][params_names[j]] = float(param_samples[i,j])
 
                 # Overwrite the tags to change the name of the written files to avoid conflicts
-                for task_name in task.loop_tasks:
+                if hasattr(task, 'loop_tasks'):
+                    loop_tasks = task.loop_tasks
+                else:
+                    # Default loop tasks
+                    loop_tasks = ["find_peaks", "index", "stream_analysis", "merge"]
+
+                for task_name in loop_tasks:
                     if task_name == "index":
                         config_temp[task_name]["tag_cxi"] = config_temp[task_name]["tag_cxi"] + f"_sample_{i+1}"
                     config_temp[task_name]["tag"] = config_temp[task_name]["tag"] + f"_sample_{i+1}"
+
 
                 # Write the config file
                 config_file_name = f"{setup.exp}_sample_{i+1}.yaml"
