@@ -109,7 +109,8 @@ class JIDSlurmOperator( BaseOperator ):
       config_path = context.get('dag_run').conf.get('parameters', {}).get('config_file')
       exp_name = context.get('dag_run').conf.get('experiment')
       new_config_path = __new_config_path__(config_path, exp_name, self.branch_id)
-      context["dag_run"]["parameters"]["config_file"] = new_config_path
+      # Update the config_path directly
+      context.get('dag_run').conf['parameters']['config_file'] = new_config_path
 
     return {
       "_id" : str(uuid.uuid4()),

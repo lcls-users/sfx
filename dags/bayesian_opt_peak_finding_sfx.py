@@ -85,15 +85,15 @@ bo_aggregate_init_samples >> branch_operators[0]
 # Draw all branches
 for i in range(max_iterations):
   # Define the tasks for this iteration
-  find_peaks = JIDSlurmOperator( task_id=f'find_peaks__bo{i:03d}', dag=dag )
+  find_peaks = JIDSlurmOperator( task_id=f'find_peaks__bo{i+1:03d}', dag=dag )
 
-  index = JIDSlurmOperator( task_id=f'index__bo{i:03d}', dag=dag )
+  index = JIDSlurmOperator( task_id=f'index__bo{i+1:03d}', dag=dag )
 
-  stream_analysis = JIDSlurmOperator( task_id=f'stream_analysis__bo{i:03d}', dag=dag )
+  stream_analysis = JIDSlurmOperator( task_id=f'stream_analysis__bo{i+1:03d}', dag=dag )
 
-  merge = JIDSlurmOperator( task_id=f'merge__bo{i:03d}', dag=dag )
+  merge = JIDSlurmOperator( task_id=f'merge__bo{i+1:03d}', dag=dag )
 
-  bayesian_optimization = JIDSlurmOperator( task_id=f'bayesian_optimization__bo{i:03d}', dag=dag )
+  bayesian_optimization = JIDSlurmOperator( task_id=f'bayesian_optimization__bo{i+1:03d}', dag=dag )
 
   # Draw the branch
   branch_operators[i] >> find_peaks >> index >> stream_analysis >> merge >> bayesian_optimization >> branch_operators[i+1]
