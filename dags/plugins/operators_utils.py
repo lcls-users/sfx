@@ -47,7 +47,7 @@ class OperatorsUtils:
         if stop_criterion == False:
             # Run another iteration
             self.iteration += 1
-            return self.first_loop_task
+            return self.first_loop_task + f"__bo{self.iteration:03d}"
         else:
             # Exit the loop
             return self.exit_loop_task
