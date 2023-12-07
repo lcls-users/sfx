@@ -97,9 +97,24 @@ class JIDSlurmOperator( BaseOperator ):
       config_dir, config_file_name = os.path.split(config_path)
       config_name, file_extension = os.path.splitext(config_file_name)
 
-      new_config_name = f"{exp_name}_sample_{self.branch_id}" + file_extension
-      new_config_dir = config_dir.rstrip(os.path.sep + "yamls")
-      new_config_dir = os.path.join(new_config_dir, "bayesian_opt", exp_name + "_init_samples_configs")
+      if self.branch_id is not None:
+        if "yamls" in config_dir:
+          new_config_dir = config_dir.rstrip(os.path.sep + "yamls")
+          new_config_dir = os.path.join(new_config_dir, "bayesian_opt", exp_name + "_init_samples_configs")
+        else:
+          new_config_dir = config_dir
+
+        new_config_name = f"{exp_name}_sample_{self.branch_id}" + file_extension
+
+      else:
+        if "bayesian_opt" in config_dir:
+          new_config_name = f"{exp_name}_bayesian_opt" + file_extension
+          new_config_dir = config_dir.rstrip(os.path.sep + os.path.join("bayesian_opt", exp_name + "_init_samples_configs"))
+          new_config_dir = os.path.join(new_config_dir, "yamls")
+        else:
+          # The config file path does not need to be changed
+          new_config_dir = config_dir
+          new_config_name = config_file_name
 
       return os.path.join(new_config_dir, new_config_name)
     
