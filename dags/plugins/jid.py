@@ -109,7 +109,7 @@ class JIDSlurmOperator( BaseOperator ):
       else:
         if "bayesian_opt" in config_dir:
           new_config_name = f"{exp_name}_bayesian_opt" + file_extension
-          new_config_dir = config_dir.rstrip(os.path.sep + os.path.join("bayesian_opt", exp_name + "_init_samples_configs"))
+          new_config_dir = os.path.dirname(os.path.dirname(config_dir))
           new_config_dir = os.path.join(new_config_dir, "yamls")
         else:
           # The config file path does not need to be changed
