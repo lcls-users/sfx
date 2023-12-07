@@ -6,6 +6,7 @@ import shutil
 import numpy as np
 import itertools
 import h5py
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -511,14 +512,22 @@ def timetool_correct(config):
 
     tt.timetool_correct(run, nominal, model, figs)
 
-import time
+def update_plot(ax, x, y, label):
+    ax.clear()
+    ax.plot(x, y, label=label)
+    ax.legend()
+    ax.set_title('Live Plot')
+    ax.set_xlabel('Run')
+    ax.set_ylabel(label)
 
-def pipca_offline(config):
+def pipca_run(config):
     from btx.processing.pipca import PiPCA
-    from btx.misc.pipca_visuals import compute_compression_loss_random_images
+    from btx.misc.pipca_visuals import compute_compression_loss
+    from btx.processing.pipca import append_to_dataset
+    from btx.processing.pipca import compute_norm_difference
 
     setup = config.setup
-    task = config.pipca_full
+    task = config.pipca_run
     exp = setup.exp
     run = task.run
     det_type = setup.det_type
@@ -533,9 +542,6 @@ def pipca_offline(config):
 
     filename_with_tag = f"{path}{filename}_{tag}.h5"
 
-    if overwrite and os.path.exists(filename_with_tag):
-        os.remove(filename_with_tag)
-
     # Initialize U, S, mu and var matrices
     if os.path.exists(filename_with_tag):
         with h5py.File(filename_with_tag, 'r') as f:
@@ -543,17 +549,17 @@ def pipca_offline(config):
             previous_S = np.asarray(f.get('S'))
             previous_mu_tot = np.asarray(f.get('mu'))
             previous_var_tot = np.asarray(f.get('total_variance'))
+
+    if overwrite and os.path.exists(filename_with_tag):
+        os.remove(filename_with_tag)
+
     else:
         previous_U = None
         previous_S = None
         previous_mu_tot = None
         previous_var_tot = None 
 
-    # Check values
-    print(f"U: {previous_U}, type(U): {type(previous_U)}")
-    print(f"S: {previous_S}, type(S): {type(previous_S)}")
-    print(f"mu: {previous_mu_tot}, type(mu): {type(previous_mu_tot)}")
-    print(f"total_variance: {previous_var_tot}, type(total_variance): {type(previous_var_tot)}")
+    print(previous_U)
 
     # Initialize a list to store the execution times and frobenius norms
     execution_times = []
@@ -567,12 +573,20 @@ def pipca_offline(config):
 
     #Initialize number of runs
 
-    # list_runs = get_runs(tag)
-    max_run = task.max_run
-    start_run = run
+    # list_runs = get_runs(tag) function to code later
+
+    offline = task.offline
+
+    if offline:
+        start_run = run
+        num_run = task.max_run
+        
+    else:
+        start_run = run
+        num_run = 1
 
     # Iterate through runs 
-    for run in range(start_run, start_run + max_run):
+    for run in range(start_run, start_run + num_run):
 
         start_time = time.time()  
         
@@ -602,9 +616,17 @@ def pipca_offline(config):
         mu_tot = pipca.gather_mu()
         var_tot = pipca.gather_var()
 
-        # Compute norms change
-        diff_U, diff_S, diff_mu, diff_var = (U - previous_U, S - previous_S, mu_tot - previous_mu_tot, var_tot - previous_var_tot) if previous_U is not None else (U, S, mu_tot, var_tot)
-        norm_diff_U_list.append(np.linalg.norm(diff_U)); norm_diff_S_list.append(np.linalg.norm(diff_S)); norm_diff_mu_list.append(np.linalg.norm(diff_mu)); norm_diff_var_list.append(np.linalg.norm(diff_var))
+        # Compute differences for each list
+        diff_U = compute_norm_difference(U, previous_U)
+        diff_S = compute_norm_difference(S, previous_S)
+        diff_mu = compute_norm_difference(mu_tot, previous_mu_tot)
+        diff_var = compute_norm_difference(var_tot, previous_var_tot)
+
+        # Append results to respective lists
+        norm_diff_U_list.append(diff_U)
+        norm_diff_S_list.append(diff_S)
+        norm_diff_mu_list.append(diff_mu)
+        norm_diff_var_list.append(diff_var)
 
         # Update U and S for the next run
         previous_U = U
@@ -612,140 +634,26 @@ def pipca_offline(config):
         previous_mu_tot = mu_tot
         previous_var_tot = var_tot
         
-        #Compute compression loss
-        compression_loss = compute_compression_loss_random_images(filename_with_tag, num_components, 3)
-        compression_loss_values.append(compression_loss)
+        # Compute compression losses
+        start_time = time.time()  
+        compression_loss_random = compute_compression_loss(filename_with_tag, num_components, True, 3)[0]
+        end_time = time.time()  
+        time_random = end_time - start_time  
+        print(f"Random: {compression_loss_random}, {time_random}")
+
+        start_time = time.time()  
+        compression_loss_full = compute_compression_loss(filename_with_tag, num_components)[0]
+        end_time = time.time()  
+        time_full = end_time - start_time  
+        print(f"Full: {compression_loss_full}, {time_full}")
+
+        compression_loss_values.append(compression_loss_random)
 
         with h5py.File(filename_with_tag, 'a') as f:
-            # Check if 'execution_times' dataset exists, create if not
-            if 'execution_times' not in f:
-                f.create_dataset('execution_times', data=np.array(execution_times))
-            else:
-                # Append execution time to the existing dataset
-                existing_execution_times = f['execution_times'][:]
-                f['execution_times'].resize((len(existing_execution_times) + 1,))
-                f['execution_times'][-1] = execution_time
-
-            # Check if 'compression_loss_values' dataset exists, create if not
-            if 'compression_loss_values' not in f:
-                f.create_dataset('compression_loss_values', data=np.array(compression_loss_values))
-            else:
-                # Append compression loss to the existing dataset
-                existing_compression_loss_values = f['compression_loss_values'][:]
-                f['compression_loss_values'].resize((len(existing_compression_loss_values) + 1,))
-                f['compression_loss_values'][-1] = compression_loss
-
-            # Check if 'norm_diff_U_list' dataset exists, create if not
-            if 'norm_diff_U_list' not in f:
-                f.create_dataset('norm_diff_U_list', data=np.array(norm_diff_U_list))
-            else:
-                # Append norm_diff_U_list to the existing dataset
-                existing_norm_diff_U_list = f['norm_diff_U_list'][:]
-                f['norm_diff_U_list'].resize((len(existing_norm_diff_U_list) + 1,))
-                f['norm_diff_U_list'][-1] = np.linalg.norm(diff_U)
-
-            # Check if 'norm_diff_S_list' dataset exists, create if not
-            if 'norm_diff_S_list' not in f:
-                f.create_dataset('norm_diff_S_list', data=np.array(norm_diff_S_list))
-            else:
-                # Append norm_diff_S_list to the existing dataset
-                existing_norm_diff_S_list = f['norm_diff_S_list'][:]
-                f['norm_diff_S_list'].resize((len(existing_norm_diff_S_list) + 1,))
-                f['norm_diff_S_list'][-1] = np.linalg.norm(diff_S)
-
-            # Check if 'norm_diff_mu_list' dataset exists, create if not
-            if 'norm_diff_mu_list' not in f:
-                f.create_dataset('norm_diff_mu_list', data=np.array(norm_diff_mu_list))
-            else:
-                # Append norm_diff_mu_list to the existing dataset
-                existing_norm_diff_mu_list = f['norm_diff_mu_list'][:]
-                f['norm_diff_mu_list'].resize((len(existing_norm_diff_mu_list) + 1,))
-                f['norm_diff_mu_list'][-1] = np.linalg.norm(diff_mu)
-
-            # Check if 'norm_diff_var_list' dataset exists, create if not
-            if 'norm_diff_var_list' not in f:
-                f.create_dataset('norm_diff_var_list', data=np.array(norm_diff_var_list))
-            else:
-                # Append norm_diff_var_list to the existing dataset
-                existing_norm_diff_var_list = f['norm_diff_var_list'][:]
-                f['norm_diff_var_list'].resize((len(existing_norm_diff_var_list) + 1,))
-                f['norm_diff_var_list'][-1] = np.linalg.norm(diff_var)
-
-
-def pipca_online(config):
-    from btx.processing.pipca import PiPCA
-    from btx.misc.pipca_visuals import compute_compression_loss_random_images
-
-    setup = config.setup
-    task = config.pipca_full
-    tag = task.tag
-    exp = setup.exp
-    det_type = setup.det_type
-    start_offset = task.start_offset
-    num_images = task.num_images
-    num_components = task.num_components
-    batch_size = task.batch_size
-    tag = task.tag
-    path = task.path
-    filename = task.filename
-
-    filename_with_tag = f"{path}{filename}_{tag}.h5"
-
-    # Get previous matrixes
-    if os.path.exists(filename_with_tag):
-        with h5py.File(filename_with_tag, 'r') as f:
-            previous_U = np.asarray(f.get('U'))
-            previous_S = np.asarray(f.get('S'))
-            previous_mu_tot = np.asarray(f.get('mu'))
-            previous_var_tot = np.asarray(f.get('total_variance'))
-            run = int(np.asarray(f.get('run'))) + 1 # start next run
-    else:
-        previous_U = None
-        previous_S = None
-        previous_mu_tot = None
-        previous_var_tot = None
-        run = task.run # use start run
-    
-    # Create a PiPCA instance for the current run
-    start_time = time.time()  
-
-    pipca = PiPCA(
-        exp=exp,
-        run=run,
-        det_type=det_type,
-        num_images=num_images,
-        num_components=num_components,
-        batch_size=batch_size,
-        priming=False,
-        downsample=False,
-        bin_factor=2,
-        filename = filename
-    )
-
-    # Run iPCA for the current run
-    pipca.run_model_full(previous_U, previous_S, previous_mu_tot, previous_var_tot)
-
-    end_time = time.time()  # Record the end time
-    execution_time = end_time - start_time  # Calculate the execution time
-
-    compression_loss = compute_compression_loss_random_images(filename_with_tag, num_components, 3)
-
-    # Open HDF5 file for saving data
-    with h5py.File(filename_with_tag, 'a') as f:
-        if 'execution_times' not in f:
-            f.create_dataset('execution_times', data=np.array([execution_time]))
-        else:
-            # Append execution time to the existing dataset
-            existing_execution_times = f['execution_times'][:]
-            f['execution_times'].resize((len(existing_execution_times) + 1,))
-            f['execution_times'][-1] = execution_time
-
-        # Check if 'compression_loss_values' dataset exists, create if not
-        if 'compression_loss_values' not in f:
-            f.create_dataset('compression_loss_values', data=np.array([compression_loss]))
-        else:
-            # Append compression loss to the existing dataset
-            existing_compression_loss_values = f['compression_loss_values'][:]
-            f['compression_loss_values'].resize((len(existing_compression_loss_values) + 1,))
-            f['compression_loss_values'][-1] = compression_loss
-            
+            append_to_dataset(f, 'execution_times', execution_times)
+            append_to_dataset(f, 'compression_loss_values', compression_loss_values)
+            append_to_dataset(f, 'norm_diff_U_list', norm_diff_U_list)
+            append_to_dataset(f, 'norm_diff_S_list', norm_diff_S_list)
+            append_to_dataset(f, 'norm_diff_mu_list', norm_diff_mu_list)
+            append_to_dataset(f, 'norm_diff_var_list', norm_diff_var_list)
+        

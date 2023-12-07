@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+import random
 
 from btx.interfaces.ipsana import (
     PsanaInterface,
@@ -279,9 +280,12 @@ def construct_heatmap_data(img, max_pixels):
 
     return hm_data
 
-def compute_compression_loss(filename, num_components):
+import random
+
+def compute_compression_loss(filename, num_components, random_images=False, num_images=10):
     """
-    Compute average frobenius norms
+    Compute the average frobenius norm between images in an experiment run and their reconstruction. 
+    The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA."
 
     Parameters:
     -----------
@@ -289,82 +293,23 @@ def compute_compression_loss(filename, num_components):
         name of the h5 file
     num_components: int
         number of components used
-    
+    random_images: bool, optional
+        whether to choose random images or all images (default is False)
+    num_images: int, optional
+        number of random images to select if random_images is True (default is 10)
+
     Returns:
     --------
     compression loss between initial dataset and pipca projected images
     """
     data = unpack_pipca_model_file(filename)
 
-    exp = data['exp']
-    run = data['run']
-    loadings = data['loadings']
-    det_type = data['det_type']
-    start_img = data['start_img']
-    U = data['U']
-    S = data['S']
-    V = data['V']
-
-    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-    psi.counter = start_img
-
-    # Create PC dictionary and widgets
-    PCs = {f'PC{i}' : v for i, v in enumerate(loadings, start=1)}
-
-    # Create a list to store the Frobenius norms of the differences between images and their reconstructed counterparts
-    image_norms = []
-
-    # Compute the projection matrix outside the loop
-    projection_matrix = U[:, :q] @ np.diag(S[:q])
-
-    # Iterate through all images and compute the Frobenius norms of the differences
-    for img_source in range(len(PCs['PC1'])):
-        counter = psi.counter
-        psi.counter = start_img + img_source
-        img = psi.get_images(1)
-        psi.counter = counter
-        img = img.squeeze()
-
-        p, x, y = psi.det.shape()
-        pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-        q = num_components
-        reconstructed_img = projection_matrix @ np.array([V[img_source][:q]]).T
-        reconstructed_img = reconstructed_img.reshape((p, x, y))
-        reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
-
-        # Compute the Frobenius norm of the difference between the original image and the reconstructed image
-        difference = np.abs(img - reconstructed_img)
-        norm = np.linalg.norm(difference, 'fro')
-        image_norms.append(norm)
-
-    # Calculate the average of the norms
-    average_norm = np.mean(image_norms)
-
-    return average_norm
-
-import random
-
-def compute_compression_loss_random_images(filename, num_components, num_images=10):
-    """
-    Compute average Frobenius norms for a random subset of images.
-
-    Parameters:
-    -----------
-    filename : string
-        name of the h5 file
-    num_components: int
-        number of components used
-    num_images: int, optional
-        number of random images to select (default is 10)
-
-    Returns:
-    --------
-    compression loss between the initial dataset and pipca projected images
-    """
-    data = unpack_pipca_model_file(filename)
-
     exp, run, loadings, det_type, start_img, U, S, V = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V']
 
+    model_rank = S.shape[0]
+    if num_components > model_rank:
+        raise ValueError("Error: num_components cannot be greater than the maximum model rank.")
+    
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     psi.counter = start_img
 
@@ -373,19 +318,18 @@ def compute_compression_loss_random_images(filename, num_components, num_images=
     image_norms = []
     p, x, y = psi.det.shape()
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-    q = num_components
 
     # Compute the projection matrix outside the loop
-    projection_matrix = U[:, :q] @ np.diag(S[:q])
+    projection_matrix = U[:, :num_components] @ np.diag(S[:num_components])
 
-    random_indices = random.sample(range(len(PCs['PC1'])), num_images)
+    image_indices = random.sample(range(len(PCs['PC1'])), num_images) if random_images else range(len(PCs['PC1']))
 
-    for img_source in random_indices:
+    for img_source in image_indices:
         counter = psi.counter
         psi.counter = start_img + img_source
         img = psi.get_images(1).squeeze()
 
-        reconstructed_img = projection_matrix @ np.array([V[img_source][:q]]).T
+        reconstructed_img = projection_matrix @ np.array([V[img_source][:num_components]]).T
         reconstructed_img = reconstructed_img.reshape((p, x, y))
         reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
 
@@ -397,5 +341,10 @@ def compute_compression_loss_random_images(filename, num_components, num_images=
         psi.counter = counter  # Reset counter for the next iteration
 
     average_norm = np.mean(image_norms)
+    min_norm = np.min(image_norms)
+    max_norm = np.max(image_norms)
+    std_dev = np.std(image_norms)
+    percentiles = np.percentile(image_norms, [25, 50, 75])
     
-    return average_norm
+    return average_norm, min_norm, max_norm, std_dev, percentiles
+

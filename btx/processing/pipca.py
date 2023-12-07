@@ -119,63 +119,7 @@ class PiPCA:
 
         return num_images, num_components, batch_size, num_features
 
-    def run_model(self):
-        """
-        Perform iPCA on run subject to initialization parameters.
-        """
-        batch_size = self.batch_size
-        num_images = self.num_images
-
-        # initialize and prime model, if specified
-        if self.priming:
-            img_batch = self.get_formatted_images(
-                self.num_components, 0, self.num_features
-            )
-            self.prime_model(img_batch)
-        else:
-            self.U = np.zeros((self.split_counts[self.rank], self.num_components))
-            self.S = np.ones(self.num_components)
-            self.mu = np.zeros((self.split_counts[self.rank], 1))
-            self.total_variance = np.zeros((self.split_counts[self.rank], 1))
-
-        # divide remaining number of images into batches
-        # will become redundant in a streaming setting, need to change
-        rem_imgs = num_images - self.num_incorporated_images
-        batch_sizes = np.array(
-            [batch_size] * np.floor(rem_imgs / batch_size).astype(int)
-            + ([rem_imgs % batch_size] if rem_imgs % batch_size else [])
-        )
-
-        # define batch indices based on batch sizes
-        self.batch_indices = self.distribute_images_over_batches(batch_sizes)
-        self.batch_number = 0
-
-        # update model with remaining batches
-        for batch_size in batch_sizes:
-            self.fetch_and_update_model(batch_size)
-            
-        self.comm.Barrier()
-        
-        U = self.gather_U()
-        S = self.S
-        V = self.V
-        
-        if self.rank == 0:  
-            print("Model complete")
-        
-            # save model to an hdf5 file
-            with h5py.File(self.filename, 'w') as f:
-                f.create_dataset('exp', data=self.psi.exp)
-                f.create_dataset('run', data=self.psi.run)
-                f.create_dataset('det_type', data=self.psi.det_type)
-                f.create_dataset('start_offset', data=self.start_offset)
-                f.create_dataset('loadings', data=self.pc_data)
-                f.create_dataset('U', data=U)
-                f.create_dataset('S', data=S)
-                f.create_dataset('V', data=V)
-                print(f'Model saved to {self.filename}')
-
-    def run_model_full(self, previous_U, previous_S, previous_mu, previous_var):
+    def run_model_full(self, previous_U = None, previous_S = None, previous_mu = None, previous_var = None):
         """
         Perform iPCA on run subject to initialization parameters.
         """
@@ -200,11 +144,6 @@ class PiPCA:
             self.S = np.ones(self.num_components)
             self.mu = np.zeros((self.split_counts[self.rank], 1))
             self.total_variance = np.zeros((self.split_counts[self.rank], 1))
-
-        print(f"U: {self.U}, type(U): {type(self.U)}")
-        print(f"S: {self.S}, type(S): {type(self.S)}")
-        print(f"mu: {self.mu}, type(mu): {type(self.mu)}")
-        print(f"total_variance: {self.total_variance}, type(total_variance): {type(self.total_variance)}")
 
         # divide remaining number of images into batches
         # will become redundant in a streaming setting, need to change
@@ -989,6 +928,23 @@ def distribute_indices_over_ranks(d, size):
     split_counts = np.array(split_counts)
 
     return split_indices, split_counts
+
+def append_to_dataset(f, dataset_name, data):
+    if dataset_name not in f.keys():
+        f.create_dataset(dataset_name, data=np.array(data))
+        print(f"Created dataset: {dataset_name}")
+    else:
+        existing_data = f[dataset_name][:]
+        f[dataset_name].resize((len(existing_data) + 1,))
+        f[dataset_name][-1] = data
+        print(f"Added to list: {dataset_name}")
+    
+def compute_norm_difference(current, previous=None):
+    if previous is not None:
+        diff = current - previous
+    else:
+        diff = current
+    return np.linalg.norm(diff)
 
 #### for command line use ###
 

@@ -66,5 +66,3 @@ if __name__ == '__main__':
 
     print(status_message)
     exit(retval)
-
-#shdhfhiqskudhfsudfhghsdjf
