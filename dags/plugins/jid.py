@@ -119,13 +119,12 @@ class JIDSlurmOperator( BaseOperator ):
       return os.path.join(new_config_dir, new_config_name)
     
     
-    if self.branch_id is not None:
-      # Overwrite the config file path (add subdir and change file name)
-      config_path = context.get('dag_run').conf.get('parameters', {}).get('config_file')
-      exp_name = context.get('dag_run').conf.get('experiment')
-      new_config_path = __new_config_path__(config_path, exp_name, self.branch_id)
-      # Update the config_path directly
-      context.get('dag_run').conf['parameters']['config_file'] = new_config_path
+    # Overwrite the config file path
+    config_path = context.get('dag_run').conf.get('parameters', {}).get('config_file')
+    exp_name = context.get('dag_run').conf.get('experiment')
+    new_config_path = __new_config_path__(config_path, exp_name, self.branch_id)
+    # Update the config_path directly
+    context.get('dag_run').conf['parameters']['config_file'] = new_config_path
 
     return {
       "_id" : str(uuid.uuid4()),
