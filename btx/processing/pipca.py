@@ -341,7 +341,6 @@ class PiPCA:
             self.num_incorporated_images += m
             self.batch_number += 1
 
-
     def calculate_sample_mean_and_variance(self, imgs):
         """
         Compute the sample mean and variance of a flattened stack of n images.

@@ -571,7 +571,7 @@ def pipca_run(config):
     norm_diff_mu_list = []
     norm_diff_var_list = []
 
-    #Initialize number of runs
+    # Initialize number of runs
 
     # list_runs = get_runs(tag) function to code later
 
@@ -579,7 +579,7 @@ def pipca_run(config):
 
     if offline:
         start_run = run
-        num_run = task.max_run
+        num_run = task.num_run
         
     else:
         start_run = run

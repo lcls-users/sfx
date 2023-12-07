@@ -347,4 +347,3 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     percentiles = np.percentile(image_norms, [25, 50, 75])
     
     return average_norm, min_norm, max_norm, std_dev, percentiles
-
