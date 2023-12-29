@@ -23,15 +23,21 @@ from mpi4py import MPI
 from matplotlib import pyplot as plt
 from matplotlib import colors
 
-# from btx.misc.shortcuts import TaskTimer
-#
-# from btx.interfaces.ipsana import (
-#     PsanaInterface,
-#     bin_data,
-#     bin_pixel_index_map,
-#     retrieve_pixel_index_map,
-#     assemble_image_stack_batch,
-# )
+##########################
+##########################
+#JOHN CHANGE BACK AFTER 12/15/2023
+from btx.misc.shortcuts import TaskTimer
+
+from btx.interfaces.ipsana import (
+    PsanaInterface,
+    bin_data,
+    bin_pixel_index_map,
+    retrieve_pixel_index_map,
+    assemble_image_stack_batch,
+)
+##########################
+##########################
+
 
 from PIL import Image
 from io import BytesIO
@@ -51,11 +57,14 @@ from bokeh.transform import linear_cmap
 from bokeh.util.hex import hexbin
 from bokeh.plotting import figure, show, output_file, save
 from bokeh.models import HoverTool, CategoricalColorMapper, LinearColorMapper, ColumnDataSource, CustomJS, Slider, RangeSlider, Toggle, RadioButtonGroup, Range1d, Label
+from bokeh.models import CustomJS, ColumnDataSource, Span, PreText
 from bokeh.palettes import Viridis256, Cividis256, Turbo256, Category20, Plasma3, Plasma256, Plasma11
 from bokeh.layouts import column, row
 
 import cProfile
 import string
+
+import cv2
 
 class FreqDir(DimRed):
 
@@ -816,6 +825,7 @@ class PrioritySampling:
         self.sketch.push(vec, pi, wi)
 
 
+
 class visualizeFD:
     """
     Visualize FD Dimension Reduction using UMAP and DBSCAN
@@ -842,6 +852,278 @@ class visualizeFD:
         self.optics_xi = optics_xi
         self.optics_min_cluster_size = optics_min_cluster_size
         self.outlierQuantile = outlierQuantile
+
+
+    def retrieveCircularity(self, fullThumbnailData):
+
+        def rotate_image(image, angle, center=None, scale=1.0):
+            (h, w) = image.shape[:2]
+            if center is None:
+                center = (w // 2, h // 2)
+            M = cv2.getRotationMatrix2D(center, angle, scale)
+            rotated = cv2.warpAffine(image, M, (w, h))
+            return rotated
+
+        def compute_properties(M):
+            # Calculate centroid
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+
+            # Calculate orientation
+            mu20 = M["mu20"] / M["m00"]
+            mu02 = M["mu02"] / M["m00"]
+            mu11 = M["mu11"] / M["m00"]
+            theta = 0.5 * np.arctan2(2 * mu11, mu20 - mu02)
+
+            # Calculate eccentricity
+            a = 2 * np.sqrt(mu20 + mu02 + np.sqrt(4 * mu11**2 + (mu20 - mu02)**2))
+            b = 2 * np.sqrt(mu20 + mu02 - np.sqrt(4 * mu11**2 + (mu20 - mu02)**2))
+            eccentricity = np.sqrt(1 - (b / a) ** 2)
+
+            return cx, cy, theta, eccentricity
+
+        def reorientImg(nimg):
+            M = cv2.moments(nimg)
+            cx, cy , theta, eccentricity = compute_properties(M)
+            return rotate_image(nimg, angle=theta*180/math.pi)
+
+
+        def denoiseImg(image):
+            # Threshold the image to get a binary image
+            _, binary_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY)
+
+            # Perform connected component labeling
+            num_labels, labels_im = cv2.connectedComponents(binary_image)
+
+            # Create a mask for components larger than the size threshold
+            mask = np.zeros_like(image, dtype=bool)
+
+            size_threshold = 500
+
+            # Iterate through components and update the mask for large components
+            for label in range(1, num_labels):
+                if np.sum(labels_im == label) > size_threshold:
+                    mask[labels_im == label] = True
+
+            # Apply the mask to the original grayscale image
+            masked_image = np.zeros_like(image)
+            masked_image[mask] = image[mask]
+            return masked_image
+
+        def center_and_crop_beam(image, threshold_value=127, blur_kernel=(5, 5), desired_size=224, min_contour_area=100):
+            """
+            Centers and crops the main intensity pattern in an image.
+
+            Parameters:
+            image (numpy.ndarray): The input image.
+            threshold_value (int): Threshold value for binary thresholding.
+            blur_kernel (tuple): Kernel size for Gaussian blur.
+
+            Returns:
+            numpy.ndarray: The cropped image centered around the intensity pattern.
+            """
+            # Normalize or scale the image
+            if image.dtype != np.uint8:
+                # If the range of your image is known (e.g., 0 to 5), normalize accordingly
+                # image = ((image - image.min()) / (image.max() - image.min())) * 255
+
+                # If the range is not known, scale based on the current min and max
+                image = 255 * (image - image.min()) / (image.max() - image.min())
+                image = image.astype(np.uint8)
+
+        #     print(image[100])
+
+            # Ensure the image is in grayscale
+            if len(image.shape) == 3:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+            # Step 1: Noise Reduction
+            blurred = cv2.GaussianBlur(image, blur_kernel, 0)
+        #     blurred = image
+
+            # Step 2: Thresholding
+        #     _, thresh = cv2.threshold(blurred, threshold_value, 255, cv2.THRESH_BINARY)
+            _, thresh = cv2.threshold(blurred, 100, 255, cv2.THRESH_BINARY)
+
+
+        #     # Step 3: Locate the Beam
+        #     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        #     if not contours:
+        #         return None  # No contours found
+
+        #     # Step 4: Determine the Bounding Box
+        #     beam = max(contours, key=cv2.contourArea)
+        #     x, y, w, h = cv2.boundingRect(beam)
+
+        #     # Step 5: Centering and Cropping
+        #     cropped = image[y:y+h, x:x+w]
+        #     print(x, y, w, h)
+
+            # Locate the Beam
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        #     contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
+            if not contours:
+                return None
+
+            # Determine the Bounding Box
+            beam = max(contours, key=cv2.contourArea)
+            x, y, w, h = cv2.boundingRect(beam)
+
+            # Find the center of the bounding box
+            center_x, center_y = x + w // 2, y + h // 2
+
+            # Define new bounding box dimensions
+            new_x = max(center_x - desired_size // 2, 0)
+            new_y = max(center_y - desired_size // 2, 0)
+
+        #     print("new x: ", x, new_x)
+        #     print("new y: ", y, new_y)
+
+            # Adjust if the new box extends beyond the original image
+            new_x = min(new_x, image.shape[1] - desired_size)
+            new_y = min(new_y, image.shape[0] - desired_size)
+
+        #     print("new x: ", x, new_x)
+        #     print("new y: ", y, new_y)
+
+            # Crop the image to the new bounding box
+            cropped = image[new_y:new_y + desired_size, new_x:new_x + desired_size]
+
+            return cropped
+
+        # threshVal = 100
+
+        nimgs = []
+        nbws = []
+        nbws1 = []
+        contours = []
+        contourImgs = []
+        for j in range(len(fullThumbnailData)):
+        #     currImg = (fullThumbnailData[j]*(255/np.max(fullThumbnailData[j]))).astype('uint8').copy()
+        #     nimg = currImg
+            nimg = center_and_crop_beam(fullThumbnailData[j])
+        #     nimg = reorientImg(nimg)
+            if nimg is None:
+                continue
+            nimg = reorientImg(nimg)
+            nimg = denoiseImg(nimg)
+            nimgs.append(nimg)
+        #     nbws.append(nimg)
+        #     (thresh, im_bw) = cv2.threshold((fullThumbnailData[j]*(255/np.max(fullThumbnailData[j]))).astype('uint8').copy(), 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        #     print(nimg)
+        #     print(j, np.max(nimg))
+        #     np.set_printoptions(threshold=np.inf, linewidth=np.inf)
+        #     print(nimg)
+
+            (thresh, im_bw) = cv2.threshold(nimg, 0, 255, cv2.THRESH_BINARY)
+            nbws.append(im_bw.copy())
+            (thresh1, im_bw1) = cv2.threshold(nimg, 0, 1, cv2.THRESH_BINARY)
+            nbws1.append(im_bw1.copy())
+
+        #     # Assuming 'im' is your grayscale image
+        #     # Apply Gaussian blur to the image
+        #     blurred = cv2.GaussianBlur(im_bw, (5, 5), 0)
+        #     # Apply binary thresholding on the blurred image
+        #     _, binary = cv2.threshold(blurred, 127, 255, cv2.THRESH_BINARY)
+        #     # Find contours
+        #     contourList, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        #     # Find the largest contour based on area
+        #     largest_contour = max(contourList, key=cv2.contourArea)
+        #     contours.append(largest_contour)
+        #     canvas = np.zeros(im_bw.shape, dtype='uint8')
+        #     # Draw the largest contour in white
+        #     cv2.drawContours(canvas, [largest_contour], -1, (255), 1)
+        #     contourImgs.append(canvas)
+
+        # #     nbws.append(cv2.GaussianBlur(nimg, (5, 5), 0))
+        # #     nbws.append(im_bw)
+        # #     nbws.append((fullThumbnailData[j]*(255/np.max(fullThumbnailData[j]))).astype('uint8').copy()
+
+        # # ind = 356
+
+        # # plt.imshow(nimgs[ind])
+        # # plt.show()
+
+        # # print(nbws1[ind][80])
+
+        # # Calculate moments
+        # M = cv2.moments(nbws1[ind])
+        # # Zeroth moment is the area
+        # area = M['m00']
+        # epsilon = 0.01 * cv2.arcLength(contours[ind], True)
+        # approx = cv2.approxPolyDP(contours[ind], epsilon, True)
+        # # Calculate the perimeter
+        # perimeter = cv2.arcLength(approx, True)
+        # # Calculate circularity using moments
+        # circularity = 4 * 3.14159 * area / (perimeter * perimeter)
+        # print(circularity)
+
+        # # Calculate moments
+        # M = cv2.moments(nbws1[ind])
+        # ncirc = (M['m00']**2)/(2*math.pi*(M['mu20'] + M['mu02']))
+        # print(ncirc)
+
+        circs = []
+        ncircs = []
+
+        for ind in range(len(nbws)):
+        #     # Calculate moments
+        #     M = cv2.moments(nbws1[ind])
+        #     # Zeroth moment is the area
+        #     area = M['m00']
+        #     epsilon = 0.01 * cv2.arcLength(contours[ind], True)
+        #     approx = cv2.approxPolyDP(contours[ind], epsilon, True)
+        #     # Calculate the perimeter
+        #     perimeter = cv2.arcLength(approx, True)
+        #     # Calculate circularity using moments
+        #     circularity = 4 * 3.14159 * area / (perimeter * perimeter)
+
+            # Calculate moments
+            M = cv2.moments(nbws[ind])
+            try:
+                ncirc = (M['m00']**2)/(2*math.pi*(M['mu20'] + M['mu02']))
+            except:
+                ncirc = 1
+
+        #     circs.append(circularity)
+            ncircs.append(ncirc)
+
+        sorted_indices = np.argsort(ncircs)
+        sorted_arrays = [nimgs[i] for i in sorted_indices]
+        sorted_full = [fullThumbnailData[i] for i in sorted_indices]
+
+        #     import matplotlib.pyplot as plt
+        #     import numpy as np
+
+        #     # Assuming 'images' is your list of 16 NumPy array images
+        #     # For demonstration, creating 16 random 8x8 grayscale images
+        #     images = [j for j in sorted_arrays[::len(sorted_arrays)//16]]
+
+        #     # Create a 4x4 grid of subplots
+        #     fig, axs = plt.subplots(4, 4, figsize=(10, 10))
+
+        #     # Flatten the array of axes for easy iteration
+        #     axs = axs.ravel()
+
+        #     # Plot each image and add text
+        #     for i in range(16):
+        #         axs[i].imshow(images[i], cmap='jet', vmin=0, vmax=255)  # Assuming grayscale images
+        #         axs[i].text(50, 5, f"Image {i+1}", color='white', ha='center', va='center')
+        #         axs[i].axis('off')  # Turn off axis
+
+        #     plt.tight_layout()  # Adjust subplots to fit into the figure area.
+        #     plt.show()
+
+        # ind=23
+        # nimg = center_and_crop_beam(fullThumbnailData[40])
+        # # plt.imshow(fullThumbnailData[ind])
+        # plt.imshow(nimg)
+        # plt.show()
+
+        bigOrSmall = [1 if j>len(sorted_arrays)*10//16 else 0 for j in sorted_indices]
+#        np.savez(saveDir+'circularityImgs_{}.npz'.format(currRun), **{f'array_{i}': arr for i, arr in enumerate(nimgs)}, labels=bigOrSmall)
+
+        return ncircs
 
 
     def embeddable_image(self, data):
@@ -874,7 +1156,8 @@ class visualizeFD:
             for test_index, test_point in enumerate(lst):
                 if math.isclose(test_point[0],medoid_point[0]) and math.isclose(test_point[1], medoid_point[1]):
                     fin_ind = test_index
-            medoid_lst.append((k, v[fin_ind][0]))
+#            medoid_lst.append((k, v[fin_ind][0]))
+            medoid_lst.append((k, v[fin_ind+1][0]))
         return medoid_lst
 
     def relabel_to_closest_zero(self, labels):
@@ -956,7 +1239,30 @@ class visualizeFD:
     def genLeftRight(self, endClass):
         return [*range(endClass+1)], [*range(1, endClass+2)]
 
+
+    def float_to_int_percentile(self, float_list):
+        # Edge case: If the list is empty, return an empty list
+        if not float_list:
+            return []
+
+        # Calculate the percentiles that define the bin edges
+        percentiles = np.percentile(float_list, [10 * i for i in range(1, 10)])
+
+        # Function to find the bin for a single value
+        def find_bin(value):
+            for i, p in enumerate(percentiles):
+                if value < p:
+                    return i
+            return 9  # For values in the highest bin
+
+        # Convert each float to an integer based on its bin
+        int_list = [find_bin(value) for value in float_list]
+
+        return int_list
+
+
     def genUMAP(self):
+
 
         imgs = None
         projections = None
@@ -971,6 +1277,7 @@ class visualizeFD:
                     imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
                     projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
                     trueIntensities = np.concatenate((trueIntensities, hf["TrueIntensities"][:]), axis=0)
+        print(len(imgs))
 
         for intensMe in trueIntensities:
             print(intensMe)
@@ -998,14 +1305,18 @@ class visualizeFD:
             n_neighbors=self.umap_n_neighbors,
             random_state=self.umap_random_state,
             n_components=2,
-#            min_dist=0.25,
-            min_dist=0.1,
+            min_dist=0,
+#            min_dist=0.1,
         ).fit_transform(self.projections)
 
-        self.labels = self.hdbscan.HDBSCAN(
-            min_samples = self.hdbscan_min_samples,
-            min_cluster_size = self.hdbscan_min_cluster_size
-        ).fit_predict(self.clusterable_embedding)
+#        self.labels = self.hdbscan.HDBSCAN(
+#            min_samples = self.hdbscan_min_samples,
+#            min_cluster_size = self.hdbscan_min_cluster_size
+#        ).fit_predict(self.clusterable_embedding)
+
+        ncircs = self.float_to_int_percentile(self.retrieveCircularity(self.imgs))
+        self.labels = np.array(ncircs)
+
         exclusionList = np.array([])
         self.clustered = np.isin(self.labels, exclusionList, invert=True)
 
@@ -1023,12 +1334,15 @@ class visualizeFD:
         self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
         self.experData_df['imgind'] = np.arange(self.numImgsToUse)*self.skipSize
 
-#        self.experData_df['trueIntensities'] = [str(int(math.abs(x)/max(np.abs(trueIntensities))*19)) for x in trueIntensities]
-        self.experData_df['trueIntensities'] = [5 for x in trueIntensities]
-#        self.experData_df['trueIntensities_backgroundColor'] = [Plasma256[int(math.abs(x)/max(np.abs(trueIntensities))*255)] for x in trueIntensities]
-        self.experData_df['trueIntensities_backgroundColor'] = [5 for x in trueIntensities]
-        print("aowdijaoidjwaoij", len(self.experData_df['trueIntensities']), self.experData_df['trueIntensities'], type(self.experData_df['trueIntensities']))
-        print(trueIntensities)
+#        self.experData_df['trueIntensities'] = [str(int(abs(x)/max(np.abs(trueIntensities))*19)) for x in trueIntensities]
+#        self.experData_df['trueIntensities'] = [5 for x in trueIntensities]
+#        self.experData_df['trueIntensities_backgroundColor'] = [Plasma256[int(abs(x)/max(np.abs(trueIntensities))*255)] for x in trueIntensities]
+#        self.experData_df['trueIntensities_backgroundColor'] = [5 for x in trueIntensities]
+#        print("aowdijaoidjwaoij", len(self.experData_df['trueIntensities']), self.experData_df['trueIntensities'], type(self.experData_df['trueIntensities']))
+#        print(trueIntensities)
+        self.experData_df['trueIntensities'] = [1 for x in self.experData_df['imgind']]
+        self.experData_df['trueIntensities_backgroundColor'] = [1 for x in self.experData_df['imgind']]
+
 
     def genABOD(self):
         if self.includeABOD:
@@ -1103,7 +1417,7 @@ class visualizeFD:
         color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Plasma256[::16])
         plot_figure = figure(
             title='UMAP projection with DBSCAN clustering of the LCLS dataset',
-            tools=('pan, wheel_zoom, reset'),
+            tools=('pan, wheel_zoom, reset, lasso_select'),
             width = 2000, height = 600
         )
         
@@ -1142,6 +1456,8 @@ class visualizeFD:
         plot_figure.legend.location = "bottom_right"
         plot_figure.legend.title = "Clusters"
 
+        density_text = PreText(text='Density_Text')
+
         vals = [x for x in self.newLabels]
         trueSource = ColumnDataSource(data=dict(vals = vals))
         hist, maxCount = self.genHist(vals, max(vals))
@@ -1165,7 +1481,7 @@ class visualizeFD:
                 end=self.numImgsToUse,
                 value=(0, self.numImgsToUse-1),
                 step=1, sizing_mode="stretch_width")
-        callback = CustomJS(args=dict(cols=cols, trueSource = trueSource,
+        callback = CustomJS(args=dict(cols=cols, trueSource = trueSource, density_text=density_text,
                                       histsource = histsource, datasource=datasource, indexCDS=indexCDS), code="""
         function countNumbersAtIndices(numbers, startInd, endInd, smallestVal, largestVal) {
             let counts = new Array(largestVal-smallestVal); for (let i=0; i<largestVal-smallestVal; ++i) counts[i] = 0;
@@ -1326,7 +1642,69 @@ class visualizeFD:
         """)
         radio_button_group.js_on_change("active", radioGroup_js)
 
-        self.viewResults = column(plot_figure, p, imgsPlot, row(cols, toggl, radio_button_group), reachabilityDiag)
+
+        datasource.selected.js_on_change(
+        'indices',
+        CustomJS(args=dict(datasource=datasource, cols=cols, density_text=density_text),code="""
+            function countCommonElementsInWindow(smallArray, largeArray, windowSize) {
+                const smallSet = new Set(smallArray);
+                const counts = {};
+                let count = 0;
+                let result = 0;
+
+                // Initialize the first window
+                for (let i = 0; i < windowSize; i++) {
+                    if (smallSet.has(largeArray[i])) {
+                        counts[largeArray[i]] = (counts[largeArray[i]] || 0) + 1;
+                        if (counts[largeArray[i]] === 1) {
+                            count++;
+                        }
+                    }
+                }
+                result = result + count/(largeArray.length)
+
+                // Slide the window
+                for (let i = windowSize; i < largeArray.length; i++) {
+                    // Remove the element exiting the window
+                    if (smallSet.has(largeArray[i - windowSize])) {
+                        counts[largeArray[i - windowSize]]--;
+                        if (counts[largeArray[i - windowSize]] === 0) {
+                            count--;
+                        }
+                    }
+
+                    // Add the new element entering the window
+                    if (smallSet.has(largeArray[i])) {
+                        counts[largeArray[i]] = (counts[largeArray[i]] || 0) + 1;
+                        if (counts[largeArray[i]] === 1) {
+                            count++;
+                        }
+                    }
+                    result = result + count/(windowSize);
+                }
+
+                return result/(largeArray.length - windowSize);
+            }
+
+            var inds = cb_obj.indices;
+
+            const leftVal = cols.value[0]
+            const rightVal = cols.value[1]
+
+            if (inds.length == 0) {
+                return
+            }
+
+
+            const arrayFrom1ToLength = Array.from({ length: datasource.data["y"].length}, (_, i) => i + 1);
+
+            console.log(rightVal-leftVal)
+            var avg = countCommonElementsInWindow(inds, arrayFrom1ToLength, rightVal-leftVal);
+            density_text.text = avg.toString();
+        """))
+
+
+        self.viewResults = column(row(plot_figure, density_text), p, imgsPlot, row(cols, toggl, radio_button_group), reachabilityDiag)
 
     def genCSV(self):
         self.experData_df.to_csv(self.outputFile[:-4]+"csv")
@@ -1405,7 +1783,7 @@ class WrapperFullFD:
             self.currRun = None
         self.currRun = self.comm.bcast(self.currRun, root=0)
 
-        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar)
+        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=150, roi_h = 150)
         self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 #        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 
@@ -1610,7 +1988,7 @@ class WrapperFullFD:
         self.comm.barrier()
 
 class FD_ImageProcessing:
-    def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile, unitVar):
+    def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile, unitVar, centerImg, roi_w, roi_h):
         self.threshold = threshold
         self.eluThreshold = eluThreshold
         self.eluAlpha = eluAlpha
@@ -1619,12 +1997,23 @@ class FD_ImageProcessing:
         self.minIntensity = minIntensity
         self.thresholdQuantile = thresholdQuantile
         self.unitVar = unitVar
+        self.centerImg = centerImg
+        self.roi_w = roi_w
+        self.roi_h = roi_h
 
-    def processImg(self, nimg, currIntensity):
+    def processImg(self, nimg, ncurrIntensity):
         if self.threshold:
             nimg = self.thresholdFunc(nimg)
         if self.eluThreshold:
             nimg = self.eluThresholdFunc(nimg)
+        if self.centerImg:
+            nimg = self.centerImgFunc(nimg)
+
+        if nimg is not None:
+            currIntensity = abs(np.sum(nimg.flatten(), dtype=np.double))
+        else:
+            currIntensity = 0
+
         if self.noZeroIntensity:
             nimg = self.removeZeroIntensityFunc(nimg, currIntensity)
         if self.normalizeIntensity:
@@ -1664,8 +2053,10 @@ class FD_ImageProcessing:
         if img is None:
             return img
         elif currIntensity<self.minIntensity:
+#            print("LESS", currIntensity, self.minIntensity)
             return np.zeros(img.shape)+1
         else:
+#            print("MORE", np.sum(img.flatten(), dtype=np.double), currIntensity, self.minIntensity)
             return img/np.sum(img.flatten(), dtype=np.double)
 
     def unitVarFunc(self, img, currIntensity):
@@ -1675,17 +2066,25 @@ class FD_ImageProcessing:
             return img/img.std(axis=0)
 #            return (img - img.mean(axis=0)) / img.std(axis=0)
 
-    def centerImgFunc(self, img, roi_w, roi_h):
+    def centerImgFunc(self, img):
         if img is None: 
             return img
         else:
-            nimg = np.pad(img, max(roi_w, roi_h)+1)
-            if  np.sum(img.flatten(), dtype=np.double)<10000:
-                cogx, cogy = (roi_w, roi_h)
-            else:
-                cogx, cogy  = self.calcCenterGrav(nimg)
-#            return nimg[cogy-(roi_h):cogy+(roi_h//2), cogx-(roi_w):cogx+(roi_w//2)]
-            return nimg[cogx-(roi_w//2):cogx+(roi_w//2), cogy-(roi_h//2):cogy+(roi_h//2)]
+            nimg = img
+            rampingFact = 1
+            while rampingFact>=1:
+                curr_roi_w = int(self.roi_w*rampingFact)
+                curr_roi_h = int(self.roi_h*rampingFact)
+                nimg = np.pad(img, max(2*curr_roi_w, 2*curr_roi_h)+1)
+#                print(rampingFact)
+                if  np.sum(img.flatten(), dtype=np.double)<10000:
+                    cogx, cogy = (curr_roi_w, curr_roi_h)
+                else:
+                    cogx, cogy  = self.calcCenterGrav(nimg)
+    #            return nimg[cogy-(roi_h):cogy+(roi_h//2), cogx-(roi_w):cogx+(roi_w//2)]
+                nimg = nimg[cogx-(curr_roi_w//2):cogx+(curr_roi_w//2), cogy-(curr_roi_h//2):cogy+(curr_roi_h//2)]
+                rampingFact -= 0.5
+            return nimg
 
 
     def calcCenterGrav(self, grid):
@@ -1693,6 +2092,7 @@ class FD_ImageProcessing:
         row_indices, col_indices = np.indices(grid.shape)
         X_c = np.sum(row_indices * grid) / M_total
         Y_c = np.sum(col_indices * grid) / M_total
+#        print(M_total, X_c, Y_c, grid)
         return (round(X_c), round(Y_c))
 
 
@@ -1812,9 +2212,9 @@ class DataRetriever:
                 nimg_batch = []
                 nthumbnail_batch = []
                 for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
-                    currIntensity = np.sum(img.flatten(), dtype=np.double)
-                    nimg = self.imageProcessor.processImg(img, currIntensity)
-                    nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
+#                    currIntensity = np.sum(img.flatten(), dtype=np.double)
+                    nimg = self.imageProcessor.processImg(img) #JOHN 011/09/2023
+                    nthumbnail = self.imageProcessor.processImg(thumbnail)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                         nthumbnail_batch.append(nthumbnail)
@@ -1829,9 +2229,9 @@ class DataRetriever:
             else:
                 nimg_batch = []
                 for img in img_batch.T:
-                    currIntensity = np.sum(img.flatten(), dtype=np.double)
+#                    currIntensity = np.sum(img.flatten(), dtype=np.double) #JOHN 011/09/2023
 #                    print("Starting image processing of size {}".format(img_batch.T.shape))
-                    nimg = self.imageProcessor.processImg(img, currIntensity)
+                    nimg = self.imageProcessor.processImg(img)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                 nimg_batch = np.array(nimg_batch).T
@@ -1918,7 +2318,11 @@ class SinglePanelDataRetriever:
             origTrueIntensities = [np.sum(img.flatten(), dtype=np.double) for img in imgs]
             newTrueIntensities = []
             for j in origTrueIntensities:
-                if j>0:
+#                if j>0:
+#                    newTrueIntensities.append(0)
+#                else:
+#                    newTrueIntensities.append(np.log(j))
+                if j<0:
                     newTrueIntensities.append(0)
                 else:
                     newTrueIntensities.append(np.log(j))
@@ -1932,18 +2336,25 @@ class SinglePanelDataRetriever:
             if getThumbnails:
                 saveMe = []
                 for img in imgs:
-                    saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
+#                    saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth)))) #JOHN 011/09/2023
+                    saveMe.append(np.array(img)) #JOHN 011/09/2023
                 thumbnails = np.array(saveMe)
 
-            num_valid_imgs, x, y = imgs.shape
-            img_batch = np.reshape(imgs, (num_valid_imgs, x * y)).T
+            num_valid_imgs, x, y = imgs.shape #JOHN 11/20/2023
+
+#            img_batch = np.reshape(imgs, (num_valid_imgs, x * y)).T #JOHN 011/09/2023
+            img_batch = imgs.T
 #            print("Image values less than 0 setting to 0")
             img_batch[img_batch<0] = 0
+
+#            num_valid_imgs, x, y = img_batch.T.shape #JOHN 11/20/2023
+#            print(num_valid_imgs, x, y)
     
             if getThumbnails:
 #                print("FLattening thumbnails")
                 num_valid_thumbnails, tx, ty = thumbnails.shape
-                thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
+#                thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T #JOHN 011/09/2023
+                thumbnail_batch = thumbnails.T
 
             if getThumbnails:
                 nimg_batch = []
@@ -1951,17 +2362,36 @@ class SinglePanelDataRetriever:
                 ntrueIntensity_batch = []
                 for img, thumbnail, trueIntens in zip(img_batch.T, thumbnail_batch.T, origTrueIntensities):
                     currIntensity = np.sum(img.flatten(), dtype=np.double)
-                    nimg = self.imageProcessor.processImg(img, currIntensity)
-                    nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity)
+                    if self.imageProcessor.centerImg: 
+                        nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
+                    else:
+                        nimg = self.imageProcessor.processImg(img, currIntensity)
+#                    nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity) #JOHN 011/09/2023
+                    if nimg is None:
+                        nthumbnail = None
+                    else:
+                        nthumbnail = nimg.copy()
+#                    print(np.array(nimg).shape)
+#                    print(nthumbnail)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                         nthumbnail_batch.append(nthumbnail)
                         ntrueIntensity_batch.append(trueIntens)
                     else:
+#                        nimg_batch.append(np.zeros((x, y)))
+#                        nthumbnail_batch.append(np.zeros((tx, ty)))
+#                        ntrueIntensity_batch.append(0)
                         num_valid_thumbnails -= 1
                         num_valid_imgs -= 1
-                nimg_batch = np.array(nimg_batch).T
-                nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
+                if self.imageProcessor.centerImg: #JOHN 011/09/2023
+#                    print("a09wupoidkw", np.array(nimg_batch).shape)
+                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
+                    nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, self.imageProcessor.roi_h, self.imageProcessor.roi_w) #JOHN 011/09/2023
+                else: #JOHN 011/09/2023
+#                    print("a09wupoidkw", np.array(nimg_batch).shape)
+#                    print(num_valid_imgs, x, y)
+                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T #JOHN 011/09/2023
+                    nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty) #JOHN 011/09/2023
                 if fullimgs is None:
                     fullimgs = nimg_batch
                     fullthumbnails = nthumbnail_batch
@@ -1974,12 +2404,23 @@ class SinglePanelDataRetriever:
                 for img in img_batch.T:
                     currIntensity = np.sum(img.flatten(), dtype=np.double)
 #                    print("Starting image processing of size {}".format(img_batch.T.shape))
-                    nimg = self.imageProcessor.processImg(img, currIntensity)
+                    nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                     else:
+#                        nimg_batch.append(np.zeros((x, y)))
                         num_valid_imgs -= 1
-                nimg_batch = np.array(nimg_batch).T
+
+#                nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
+
+                #JOHN 11/20/23
+                if self.imageProcessor.centerImg: #JOHN 011/09/2023
+                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
+                else: #JOHN 011/09/2023
+                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T #JOHN 011/09/2023
+
+
+
 #                print(nimg_batch.shape)
 #                print("hstacking")
                 if fullimgs is None:
@@ -2008,7 +2449,8 @@ def main():
                         userGroupings=[],
                         includeABOD=True,
                         skipSize=params.skip_size,
-                        umap_n_neighbors=params.num_imgs_to_use // 4000,
+#                        umap_n_neighbors=params.num_imgs_to_use // 4000,
+                        umap_n_neighbors=params.num_imgs_to_use // 10000,
                         umap_random_state=42,
                         hdbscan_min_samples=int(params.num_imgs_to_use * 0.75 // 40),
                         hdbscan_min_cluster_size=int(params.num_imgs_to_use // 40),
