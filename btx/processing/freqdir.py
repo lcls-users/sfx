@@ -1291,6 +1291,7 @@ class visualizeFD:
 
         if self.numImgsToUse==-1:
             self.numImgsToUse = len(imgs)
+            self.logging_numImgsToUse = len(imgs)
 
         self.imgs = imgs[:self.numImgsToUse:self.skipSize]
         self.projections = projections[:self.numImgsToUse:self.skipSize]
@@ -1299,7 +1300,7 @@ class visualizeFD:
         self.numImgsToUse = int(self.numImgsToUse/self.skipSize)
 
         if len(self.imgs)!= self.numImgsToUse:
-            raise TypeError("NUMBER OF IMAGES REQUESTED ({}) EXCEEDS NUMBER OF DATA POINTS PROVIDED ({})".format(len(self.imgs), self.numImgsToUse))
+            raise TypeError("NUMBER OF IMAGES REQUESTED ({}) EXCEEDS NUMBER OF DATA POINTS PROVIDED ({}). TRUE LEN IS {}.".format(len(self.imgs), self.numImgsToUse, self.logging_numImgsToUse))
 
         self.clusterable_embedding = self.umap.UMAP(
             n_neighbors=self.umap_n_neighbors,
@@ -1783,7 +1784,9 @@ class WrapperFullFD:
             self.currRun = None
         self.currRun = self.comm.bcast(self.currRun, root=0)
 
+#JOHN CHANGE 12/30/2023
         self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=150, roi_h = 150)
+        # self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=300, roi_h = 300)
         self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 #        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 
@@ -1980,12 +1983,14 @@ class WrapperFullFD:
 #        print("Gathering thumbnails")
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
         _,self.fullThumbnailData,_,self.trueIntensitiesData = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
+        # print("FULL THUMBNAIL DATA: ", np.array(self.fullThumbnailData).shape)
         file_name = self.writeToHere+"{}_ProjectedData_{}.h5".format(self.currRun, self.rank)
         f1 = h5py.File(file_name, 'r+')
         f1.create_dataset("SmallImages",  data=self.fullThumbnailData)
         f1.create_dataset("TrueIntensities",  data=np.array(self.trueIntensitiesData))
         f1.close()
         self.comm.barrier()
+        # print("FINISHED AIJOWDAWODIDWJA")
 
 class FD_ImageProcessing:
     def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile, unitVar, centerImg, roi_w, roi_h):
@@ -2336,8 +2341,9 @@ class SinglePanelDataRetriever:
             if getThumbnails:
                 saveMe = []
                 for img in imgs:
-#                    saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth)))) #JOHN 011/09/2023
-                    saveMe.append(np.array(img)) #JOHN 011/09/2023
+                    #JOHN CHANGE 12/30/2023
+                    saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth)))) #JOHN 011/09/2023
+#                    saveMe.append(np.array(img)) #JOHN 011/09/2023
                 thumbnails = np.array(saveMe)
 
             num_valid_imgs, x, y = imgs.shape #JOHN 11/20/2023
@@ -2387,18 +2393,36 @@ class SinglePanelDataRetriever:
 #                    print("a09wupoidkw", np.array(nimg_batch).shape)
                     nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
                     nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, self.imageProcessor.roi_h, self.imageProcessor.roi_w) #JOHN 011/09/2023
+
+                    ##############################
+                    # JOHN 12/30/2023
+                    saveMe = []
+                    for img in nthumbnail_batch:
+                        saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
+                    nthumbnail_batch = np.array(saveMe)
+                    # print("a09wdjaoimd", nimg_batch.shape, nthumbnail_batch.shape)
+                    # print(nthumbnail_batch.shape)
+                    # JOHN 12/30/2023
+
                 else: #JOHN 011/09/2023
-#                    print("a09wupoidkw", np.array(nimg_batch).shape)
+#                    print("a09wupoidkw", np.arrayħnimg_batch).shape)
 #                    print(num_valid_imgs, x, y)
                     nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T #JOHN 011/09/2023
                     nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty) #JOHN 011/09/2023
-                if fullimgs is None:
+                
+                
+                if fullimgs is None and nimg_batch.shape[1]!=0:
                     fullimgs = nimg_batch
                     fullthumbnails = nthumbnail_batch
-                elif len(nimg_batch)!=0:
+                    # print("FULL IMGS IS NONE.", "nimgbatch shape", nimg_batch.shape, "fullthumbnailshape", fullthumbnails.shape, "nthumbnail shape", nthumbnail_batch.shape)
+                    trueIntensities += ntrueIntensity_batch
+                # elif len(nimg_batch)!=0:
+                elif nimg_batch.shape[1]!=0: #JOHN CHANGE 12/31/2023
+                    # print("nimgbatch shape", nimg_batch.shape, "fullthumbnailshape", fullthumbnails.shape, "nthumbnail shape", nthumbnail_batch.shape)
                     fullimgs = np.hstack((fullimgs, nimg_batch))
                     fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
-                trueIntensities += ntrueIntensity_batch
+                    # print("NEW: nimgbatch shape", nimg_batch.shape, "fullthumbnailshape", fullthumbnails.shape, "nthumbnail shape", nthumbnail_batch.shape)
+                    trueIntensities += ntrueIntensity_batch
             else:
                 nimg_batch = []
                 for img in img_batch.T:
@@ -2425,7 +2449,8 @@ class SinglePanelDataRetriever:
 #                print("hstacking")
                 if fullimgs is None:
                     fullimgs = nimg_batch
-                elif len(nimg_batch)!=0:
+                # elif len(nimg_batch)!=0: #JOHN 12/31/2023
+                elif nimg_batch.shape[1]!=0:
 #                    print(fullimgs.shape, nimg_batch.shape, nimg_batch)
                     fullimgs = np.hstack((fullimgs, nimg_batch))
 
@@ -2458,6 +2483,7 @@ def main():
                         outlierQuantile=0.3)
     visMe.fullVisualize()
     visMe.userSave()
+    
 def parse_input():
     """
     Parse command line input.
