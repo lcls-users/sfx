@@ -177,7 +177,7 @@ class BayesianOptimization:
         new_input = input_range[new_idx]
 
         # 5. Overwrite the new set of parameters in the config .yaml file
-        cls.overwrite_params(config, setup, task_to_optimize, params_names, new_input)
+        cls.overwrite_params(config, setup, task, params_names, new_input)
 
     @classmethod
     def init_samples_configs(cls, config, logger):
@@ -420,7 +420,7 @@ class BayesianOptimization:
         return sample_y, sample_inputs
     
     @staticmethod
-    def overwrite_params(config, setup, task_to_optimize, params_names, new_input):
+    def overwrite_params(config, setup, task, params_names, new_input):
         """
         Overwrite the new parameters in the config .yaml file.
 
@@ -436,12 +436,13 @@ class BayesianOptimization:
             The names of the parameters to overwrite.
         new_input:
             The new values of the parameters.
-        """
-        for i, param_name in enumerate(params_names):
-            task_to_optimize[param_name] = float(new_input[i])
-        
+        """    
         config_file_path = os.path.join(setup.root_dir, "yamls", f"{setup.exp}_bayesian_opt.yaml")
         config_dict = {key: dict(value) if value is not None else None for key, value in config.items()}
+        # Overwrite the parameters
+        for i, param_name in enumerate(params_names):
+            config_dict[task.task_to_optimize][param_name] = float(new_input[i])
+        # Overwrite the config file
         with open(config_file_path, 'w') as yaml_file:
             yaml.dump(config_dict, yaml_file, default_flow_style=False)
     
