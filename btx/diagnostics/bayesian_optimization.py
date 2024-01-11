@@ -118,9 +118,11 @@ class BayesianOptimization:
 
         # Get the current parameters
         n_params, params, params_names, params_ranges_keys= cls.get_parameters(task, task_to_optimize)
+        print(params)
 
         # Get the score from the interation that has just been run
         score = cls.get_last_score(setup, task, score_task)
+        print(score)
 
         # Save the current parameters and the associated score
         cls.save_iteration(setup, task, score, params)
@@ -171,10 +173,13 @@ class BayesianOptimization:
             inputs = [input_range, gp_model, best_y]
 
         af_values = af(*inputs)
+        print(af_values)
         
         # 4. Select the next set of parameters based on the Acquisition Function
         new_idx = np.argmax(af_values)
+        print(new_idx)
         new_input = input_range[new_idx]
+        print(new_input)
 
         # 5. Overwrite the new set of parameters in the config .yaml file
         cls.overwrite_params(config, setup, task, params_names, new_input)
@@ -441,7 +446,8 @@ class BayesianOptimization:
         config_dict = {key: dict(value) if value is not None else None for key, value in config.items()}
         # Overwrite the parameters
         for i, param_name in enumerate(params_names):
-            config_dict[task.task_to_optimize][param_name] = float(new_input[i])
+            # config_dict[task.task_to_optimize][param_name] = float(new_input[i])
+            config_dict[task.task_to_optimize][param_name] = 50
         # Overwrite the config file
         with open(config_file_path, 'w') as yaml_file:
             yaml.dump(config_dict, yaml_file, default_flow_style=False)
