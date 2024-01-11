@@ -118,9 +118,11 @@ class BayesianOptimization:
 
         # Get the current parameters
         n_params, params, params_names, params_ranges_keys= cls.get_parameters(task, task_to_optimize)
+        print(params)
 
         # Get the score from the interation that has just been run
         score = cls.get_last_score(setup, task, score_task)
+        print(score)
 
         # Save the current parameters and the associated score
         cls.save_iteration(setup, task, score, params)
