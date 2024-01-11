@@ -171,10 +171,13 @@ class BayesianOptimization:
             inputs = [input_range, gp_model, best_y]
 
         af_values = af(*inputs)
+        print(af_values)
         
         # 4. Select the next set of parameters based on the Acquisition Function
         new_idx = np.argmax(af_values)
+        print(new_idx)
         new_input = input_range[new_idx]
+        print(new_input)
 
         # 5. Overwrite the new set of parameters in the config .yaml file
         cls.overwrite_params(config, setup, task, params_names, new_input)
