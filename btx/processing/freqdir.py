@@ -205,17 +205,22 @@ class FreqDir(DimRed):
         self.imgData = imgData
         self.imgsTracked = imgsTracked
 
+        self.fdTime = 0
+
     def run(self):
         """
         Perform frequent directions matrix sketching
         on run subject to initialization parameters.
         """
         img_batch = self.imgData
-        if self.samplingFactor <1:
+        if self.samplingFactor<1:
+            st = time.process_time() 
             psamp = PrioritySampling(int((img_batch.shape[1])*self.samplingFactor), self.d)
             for row in img_batch.T:
                 psamp.update(row)
             img_batch = np.array(psamp.sketch.get()).T
+            et = time.process_time() 
+            self.fdTime += et - st
         self.update_model(img_batch)
 #        if self.mean is None:
 #            self.mean = np.mean(img_batch, axis=1)
@@ -252,36 +257,42 @@ class FreqDir(DimRed):
         X: ndarray
             data to update matrix sketch with
         """
+
+        rankAdapt_increaseAmount = 50
+
         _, numIncorp  = X.shape
         origNumIncorp = numIncorp
-        with TaskTimer(self.task_durations, "total update"):
-            if self.rank==0 and not self.merger:
-                print(
-                    "Factoring {m} sample{s} into {n} sample, {q} component model...".format(
-                        m=numIncorp, s="s" if numIncorp > 1 else "", n=self.num_incorporated_images, q=self.ell
-                    )
+        # with TaskTimer(self.task_durations, "total update"):
+        if self.rank==0 and not self.merger:
+            print(
+                "Factoring {m} sample{s} into {n} sample, {q} component model...".format(
+                    m=numIncorp, s="s" if numIncorp > 1 else "", n=self.num_incorporated_images, q=self.ell
                 )
-            for row in X.T:
-                canRankAdapt = numIncorp > (self.ell + 15)
-                if self.nextZeroRow >= self.m:
-                    if self.increaseEll and canRankAdapt and self.rankAdapt:
-                        self.ell = self.ell + 10
-                        self.m = 2*self.ell
-                        self.sketch = np.vstack((*self.sketch, np.zeros((20, self.d))))
-                        self.increaseEll = False
-                        print("Increasing rank of process {} to {}".format(self.rank, self.ell))
-                    else:
-                        copyBatch = self.sketch[self.ell:,:].copy()
-                        self.rotate()
-                        if canRankAdapt and self.rankAdapt:
-                            reconError = np.sqrt(self.lowMemoryReconstructionErrorScaled(copyBatch))
-                            print("RANK ADAPT RECON ERROR: ", reconError)
-                            if (reconError > self.rankAdaptMinError):
-                                self.increaseEll = True
-                self.sketch[self.nextZeroRow,:] = row 
-                self.nextZeroRow += 1
-                self.num_incorporated_images += 1
-                numIncorp -= 1
+            )
+        for row in X.T:
+            st = time.process_time() 
+            canRankAdapt = numIncorp > (self.ell + 15)
+            if self.nextZeroRow >= self.m:
+                if self.increaseEll and canRankAdapt and self.rankAdapt:
+                    self.ell = self.ell + rankAdapt_increaseAmount
+                    self.m = 2*self.ell
+                    self.sketch = np.vstack((*self.sketch, np.zeros((2*rankAdapt_increaseAmount, self.d))))
+                    self.increaseEll = False
+                    print("Increasing rank of process {} to {}".format(self.rank, self.ell))
+                else:
+                    copyBatch = self.sketch[self.ell:,:].copy()
+                    self.rotate()
+                    if canRankAdapt and self.rankAdapt:
+                        reconError = np.sqrt(self.lowMemoryReconstructionErrorScaled(copyBatch))
+                        print("RANK ADAPT RECON ERROR: ", reconError)
+                        if (reconError > self.rankAdaptMinError):
+                            self.increaseEll = True
+            self.sketch[self.nextZeroRow,:] = row 
+            self.nextZeroRow += 1
+            self.num_incorporated_images += 1
+            numIncorp -= 1
+            et = time.process_time() 
+            self.fdTime += et - st
     
     def rotate(self):
         """ 
@@ -550,7 +561,7 @@ class MergeTree:
         
         self.divBy = divBy
         
-        time.sleep(10)
+        # time.sleep(10)
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
@@ -572,6 +583,8 @@ class MergeTree:
         self.fullImgsTracked = []
 
         self.currRun = currRun
+
+        self.mergeTime = 0
 
     def merge(self):
         """
@@ -620,6 +633,7 @@ class MergeTree:
 #                                + hf["sketch"].attrs["numImgsIncorp"])
                         self.fullNumIncorp += hf["sketch"].attrs["numImgsIncorp"]
                         self.fullImgsTracked = np.vstack((self.fullImgsTracked,  hf["imgsTracked"][:]))
+            self.mergeTime = self.fd.fdTime
             return self.fd.get()
         else:
             return
@@ -704,7 +718,7 @@ class ApplyCompression:
 #        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile2, os.path.isfile(readFile2)))
 #        while(not os.path.isfile(readFile2)):
 #            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile2, self.rank))
-        time.sleep(10)
+        # time.sleep(10)
         with h5py.File(readFile2, 'r') as hf:
             self.data = hf["sketch"][:]
 #            self.mean = hf["mean"][:]
@@ -718,6 +732,7 @@ class ApplyCompression:
 
         self.imgData = imgData
 
+        self.compTime = 0
 
     def run(self):
         """
@@ -737,10 +752,13 @@ class ApplyCompression:
         X: ndarray
             data to project
         """
+        st = time.process_time() 
         if self.processedData is None:
             self.processedData = np.dot(X.T, self.components.T)
         else:
             self.processedData = np.vstack((self.processedData, np.dot(X.T, self.components.T)))
+        et = time.process_time() 
+        self.compTime += et - st
 
     def write(self):
         """
@@ -1315,8 +1333,9 @@ class visualizeFD:
 #            min_cluster_size = self.hdbscan_min_cluster_size
 #        ).fit_predict(self.clusterable_embedding)
 
-        ncircs = self.float_to_int_percentile(self.retrieveCircularity(self.imgs))
-        self.labels = np.array(ncircs)
+        # ncircs = self.float_to_int_percentile(self.retrieveCircularity(self.imgs))
+        # self.labels = np.array(ncircs)
+        self.labels = np.array(np.zeros(len(self.imgs)))
 
         exclusionList = np.array([])
         self.clustered = np.isin(self.labels, exclusionList, invert=True)
@@ -1784,6 +1803,9 @@ class WrapperFullFD:
             self.currRun = None
         self.currRun = self.comm.bcast(self.currRun, root=0)
 
+        #JOHN CHANGE 01/08/2024
+        self.newBareTime = 0
+
 #JOHN CHANGE 12/30/2023
         self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=150, roi_h = 150)
         # self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=300, roi_h = 300)
@@ -1900,6 +1922,7 @@ class WrapperFullFD:
 #        return (eigVecs @ (D) @ eigVecs.T)
 
     def compDecayingSVD(self, seedMe, a, b):
+        #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
         numFeats = a
         numSamps = b//self.size
         perturbation = np.random.rand(numSamps, numFeats)*0.1
@@ -1913,7 +1936,8 @@ class WrapperFullFD:
         S.sort()
         S = S[::-1]
         for j in range(len(S)): #Modify
-            S[j] = (2**(-16*(j+1)/len(S)))*S[j]
+            # S[j] = (2**(-16*(j+1)/len(S)))*S[j] #SCALING RUN
+            S[j] = (2**(-5*(j+1)/len(S)))*S[j] #PARALLEL RUN: 01/10/2024
         self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
         self.imgsTracked = [(0, numSamps)]
 
@@ -1940,6 +1964,7 @@ class WrapperFullFD:
         print("{} STARTING SKETCHING FOR {}".format(self.rank, self.currRun))
         st1 = time.perf_counter()
         freqDir.run()
+        self.newBareTime += freqDir.fdTime
         localSketchFilename = freqDir.write()
         et1 = time.perf_counter()
         print("Estimated time for frequent directions rank {0}/{1}: {2}".format(self.rank, self.size, et1 - st1))
@@ -1957,6 +1982,7 @@ class WrapperFullFD:
                 output_dir=self.writeToHere, allWriteDirecs=allNames, currRun = self.currRun, psi=self.psi, usePSI=self.usePSI)
         st2 = time.perf_counter()
         mergeTree.merge()
+        self.newBareTime += mergeTree.mergeTime
         mergedSketchFilename = mergeTree.write()
         et2 = time.perf_counter()
         print("Estimated time merge tree for rank {0}/{1}: {2}".format(self.rank, self.size, et2 - st2))
@@ -1966,11 +1992,12 @@ class WrapperFullFD:
         appComp = ApplyCompression(comm=self.comm, rank = self.rank, size=self.size, start_offset=self.start_offset, num_imgs=self.num_imgs, exp=self.exp, run=self.run,det_type=self.det_type, readFile = mergedSketchFilename, output_dir = self.writeToHere, currRun = self.currRun, imgData = self.fullImgData)
         st3 = time.perf_counter()
         self.matSketch = appComp.run()
+        self.newBareTime += appComp.compTime
         appComp.write()
         et3 = time.perf_counter()
         print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et3 - st3))
         print("Estimated full processing time for rank {0}/{1}: {2}, {3}".format(self.rank, self.size, (et1 + et2 + et3 - st1 - st2 - st3), et3 - stfull))
-        self.addThumbnailsToProjectH5()
+        # self.addThumbnailsToProjectH5() #JOHN CHANGE 01/09/2024. Modifying this just because we don't need this to do our testing. 
         return (et1 + et2 + et3 - st1 - st2 - st3)
 
 #        self.comm.barrier()
@@ -2267,6 +2294,8 @@ class SinglePanelDataRetriever:
 
         self.imageProcessor = imageProcessor
 
+        self.excludedImgs = []
+
     def split_range(self, start, end, num_tuples):
         if start==end:
             raise ValueError('Range processing error: start value equals end value, which leads to no images processed.')
@@ -2366,7 +2395,7 @@ class SinglePanelDataRetriever:
                 nimg_batch = []
                 nthumbnail_batch = []
                 ntrueIntensity_batch = []
-                for img, thumbnail, trueIntens in zip(img_batch.T, thumbnail_batch.T, origTrueIntensities):
+                for ind, (img, thumbnail, trueIntens) in enumerate(zip(img_batch.T, thumbnail_batch.T, origTrueIntensities)):
                     currIntensity = np.sum(img.flatten(), dtype=np.double)
                     if self.imageProcessor.centerImg: 
                         nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
@@ -2389,6 +2418,7 @@ class SinglePanelDataRetriever:
 #                        ntrueIntensity_batch.append(0)
                         num_valid_thumbnails -= 1
                         num_valid_imgs -= 1
+                        self.excludedImgs.append(ind)
                 if self.imageProcessor.centerImg: #JOHN 011/09/2023
 #                    print("a09wupoidkw", np.array(nimg_batch).shape)
                     nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
@@ -2425,7 +2455,7 @@ class SinglePanelDataRetriever:
                     trueIntensities += ntrueIntensity_batch
             else:
                 nimg_batch = []
-                for img in img_batch.T:
+                for ind, img in enumerate(img_batch.T):
                     currIntensity = np.sum(img.flatten(), dtype=np.double)
 #                    print("Starting image processing of size {}".format(img_batch.T.shape))
                     nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
@@ -2434,6 +2464,7 @@ class SinglePanelDataRetriever:
                     else:
 #                        nimg_batch.append(np.zeros((x, y)))
                         num_valid_imgs -= 1
+                        self.excludedImgs.append(ind)
 
 #                nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
 
@@ -2453,6 +2484,8 @@ class SinglePanelDataRetriever:
                 elif nimg_batch.shape[1]!=0:
 #                    print(fullimgs.shape, nimg_batch.shape, nimg_batch)
                     fullimgs = np.hstack((fullimgs, nimg_batch))
+
+        print("EXCLUDING IMAGES: ", self.excludedImgs)
 
 #        print("Images tracked:", imgsTracked)
         if getThumbnails:
