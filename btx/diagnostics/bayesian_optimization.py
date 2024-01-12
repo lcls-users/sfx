@@ -446,8 +446,7 @@ class BayesianOptimization:
         config_dict = {key: dict(value) if value is not None else None for key, value in config.items()}
         # Overwrite the parameters
         for i, param_name in enumerate(params_names):
-            # config_dict[task.task_to_optimize][param_name] = float(new_input[i])
-            config_dict[task.task_to_optimize][param_name] = 50
+            config_dict[task.task_to_optimize][param_name] = float(new_input[i])
         # Overwrite the config file
         with open(config_file_path, 'w') as yaml_file:
             yaml.dump(config_dict, yaml_file, default_flow_style=False)
