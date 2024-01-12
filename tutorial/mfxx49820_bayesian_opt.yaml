@@ -78,7 +78,8 @@ bayesian_optimization:
   loop_tasks: ["find_peaks", "index", "stream_analysis", "merge"]
   fom: "Rsplit"
   kernel: "rbf"
-  acquisition_function: "expected_improvement"
+  acquisition_function: "upper_confidence_bound"
+  beta: 2.0
   max_iterations: 10
   n_samples_init: 5
   n_points_per_param: 100

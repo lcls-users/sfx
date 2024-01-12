@@ -93,7 +93,7 @@ class JIDSlurmOperator( BaseOperator ):
         # Return the task_id as is
         return task_id
     
-    def __new_config_path__(config_path, exp_name, branch_id):
+    def __new_config_path__(config_path, exp_name):
       config_dir, config_file_name = os.path.split(config_path)
       config_name, file_extension = os.path.splitext(config_file_name)
 
@@ -114,7 +114,7 @@ class JIDSlurmOperator( BaseOperator ):
         else:
           # The config file path does not need to be changed
           new_config_dir = config_dir
-          new_config_name = config_file_name
+          new_config_name = f"{exp_name}_bayesian_opt" + file_extension
 
       return os.path.join(new_config_dir, new_config_name)
     
@@ -122,7 +122,7 @@ class JIDSlurmOperator( BaseOperator ):
     # Overwrite the config file path
     config_path = context.get('dag_run').conf.get('parameters', {}).get('config_file')
     exp_name = context.get('dag_run').conf.get('experiment')
-    new_config_path = __new_config_path__(config_path, exp_name, self.branch_id)
+    new_config_path = __new_config_path__(config_path, exp_name)
     # Update the config_path directly
     context.get('dag_run').conf['parameters']['config_file'] = new_config_path
 

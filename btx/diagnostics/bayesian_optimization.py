@@ -435,8 +435,8 @@ class BayesianOptimization:
             The current config.
         setup : AttrDict
             The "setup" section of "config".
-        task_to_optimize : AttrDict
-            The section of "config" corresponding to the task to optimize.
+        task : AttrDict
+            The "bayesian_optimization" section of "config".
         params_names: List
             The names of the parameters to overwrite.
         new_input:
