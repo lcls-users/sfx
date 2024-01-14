@@ -129,6 +129,8 @@ class BayesianOptimization:
         
         ##### 2. Get all samples scores and parameters
         sample_y, sample_inputs = cls.read_bo_history(setup, task)
+        print(sample_y)
+        print(sample_inputs)
         
         ##### 3. Determine the next set of parameters to be used
 
@@ -148,7 +150,6 @@ class BayesianOptimization:
             best_idx = np.argmin(sample_y)
         else:
             raise KeyError(f"The optimization type {task.opt_type} does not exist.")
-        best_input = sample_inputs[best_idx]
 
         # 3. Generate the Acquisition Function using the Gaussian Process
         af_name = task.acquisition_function
