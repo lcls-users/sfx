@@ -80,6 +80,8 @@ bayesian_optimization:
   kernel: "rbf"
   acquisition_function: "upper_confidence_bound"
   beta: 2.0
+  first_run: 13
+  last_run: 18
   max_iterations: 10
   n_samples_init: 5
   n_points_per_param: 100
