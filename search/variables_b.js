@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['kwargs_1348',['kwargs',['../namespacepipca.html#af2061340c500fc0ee4d8d2b798792534',1,'pipca']]]
+  ['kwargs_1356',['kwargs',['../namespacepipca.html#af2061340c500fc0ee4d8d2b798792534',1,'pipca']]]
 ];
