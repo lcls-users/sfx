@@ -1,24 +1,53 @@
 import shutil
+import logging
 import os
 
 """ Helper methods for job scheduling. """
 
+logger = logging.getLogger(__name__)
+
 class JobScheduler:
 
     def __init__(self, jobfile, logdir='./', jobname='btx',
-                 queue='ffbh3q', ncores=1, time='0:30:00'):
+                 account='lcls', queue='ffbh3q', ncores=1, time='0:30:00',
+                 reservation=""):
         self.manager = 'SLURM'
         self.jobfile = jobfile
         self.logdir = logdir
         self.jobname = jobname
+        self.account = account
         self.queue = queue
         self.ncores = ncores
         self.time = time
+        self.reservation = reservation
+        self._data_systems_management()
+
+    def _data_systems_management(self):
+        """ List the Data Systems group folder paths. """
+        try:
+            computing_facility = os.environ['FACILITY']
+        except KeyError:
+            print('FACILITY environment variable not defined.')
+
+        if(computing_facility == 'SLAC'):
+            self.ana_conda_dir = '/cds/sw/ds/ana/'
+            self.ana_tools_dir = '/cds/sw/package/'
+        elif(computing_facility == 'SRCF_FFB'):
+            self.ana_conda_dir = '/cds/sw/ds/ana/'
+            self.ana_tools_dir = '/cds/sw/package/'
+        elif(computing_facility == 'S3DF'):
+            self.ana_conda_dir = '/sdf/group/lcls/ds/ana/sw/'
+            self.ana_tools_dir = '/sdf/group/lcls/ds/tools/'
+        else:
+            raise NotImplementedError('Unknown computing facility.')
+
+        self.ana_conda_manage = f'{self.ana_conda_dir}conda1/manage/bin/'
+        self.ana_conda_bin = f'{self.ana_conda_dir}conda1/inst/envs/ana-4.0.47-py3/bin/'
 
     def _find_python_path(self):
         """ Determine the relevant python path. """
         pythonpath=None
-        possible_paths = ["/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.47-py3/bin/python"]
+        possible_paths = [f"{self.ana_conda_bin}python"]
     
         try:
             pythonpath = os.environ['WHICHPYTHON']
@@ -59,21 +88,39 @@ class JobScheduler:
         with open(self.jobfile, 'w') as jfile:
             jfile.write(template.format(**context))
 
+        facility = os.environ['FACILITY']
+        if self.account is not None and facility == 'S3DF':
+            with open(self.jobfile, 'a') as jfile:
+                jfile.write(f"#SBATCH -A {self.account}\n\n")
+
+        if self.reservation and facility == "S3DF":
+            with open(self.jobfile, 'a') as jfile:
+                jfile.write(f"#SBATCH --reservation {self.reservation}\n\n")
+
     def _write_dependencies(self, dependencies):
         """ Source dependencies."""
         dep_paths = ""
         if "psana" in dependencies:
-            dep_paths += "source /reg/g/psdm/etc/psconda.sh -py3\n"
+            dep_paths += f"source {self.ana_conda_manage}psconda.sh \n"
         if "crystfel" in dependencies:
-            dep_paths += "export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH\n"
+            if (os.environ['FACILITY'] == 'S3DF'):
+                dep_paths += f"export PATH={self.ana_tools_dir}crystfel/0.10.2/bin:$PATH\n"
+            else:
+                dep_paths += f"export PATH={self.ana_tools_dir}crystfel/crystfel-dev/bin:$PATH\n"
         if "mosflm" in dependencies:
-            dep_paths += "export PATH=/cds/sw/package/autosfx:$PATH\n"
+            if(os.environ['FACILITY'] == 'S3DF'):
+                dep_paths += f"export PATH={self.ana_tools_dir}:$PATH\n"
+            else:
+                dep_paths += f"export PATH={self.ana_tools_dir}autosfx:$PATH\n"
         if "ccp4" in dependencies:
-            dep_paths += "source /cds/sw/package/ccp4/ccp4-8.0/bin/ccp4.setup-sh\n"
+            if (os.environ['FACILITY'] == 'S3DF'):
+                dep_paths += f"source {self.ana_tools_dir}ccp4-8.0/bin/ccp4.setup-sh\n"
+            else:
+                dep_paths += f"source {self.ana_tools_dir}ccp4/ccp4-8.0/bin/ccp4.setup-sh\n"
         if "phenix" in dependencies:
-            dep_paths += "source /cds/sw/package/phenix-1.13-2998/phenix_env.sh\n"
+            dep_paths += f"source {self.ana_tools_dir}phenix-1.13-2998/phenix_env.sh\n"
         if "xds" in dependencies:
-            dep_paths += "export PATH=/reg/common/package/XDS-INTEL64_Linux_x86_64:$PATH\n"
+            dep_paths += f"export PATH={self.ana_tools_dir}XDS-INTEL64_Linux_x86_64:$PATH\n"
         if "xgandalf" in dependencies:
             dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/:$PATH\n"
             dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/eigen3/Eigen/:$PATH"
@@ -95,8 +142,8 @@ class JobScheduler:
 
     def submit(self):
         """ Submit to queue. """
-        os.system(f"sbatch {self.jobfile}")
-        print(f"sbatch {self.jobfile}")
+        os.system(f"sbatch -W {self.jobfile}")
+        logger.info(f"sbatch -W {self.jobfile}")
 
     def clean_up(self):
         """ Add a line to delete submission file."""

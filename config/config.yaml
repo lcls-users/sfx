@@ -1,0 +1,95 @@
+setup:
+  queue: 'milano'
+  account: ''
+  root_dir: ''
+  exp: ''
+  run: 5
+  det_type: 'Rayonix'
+  cell: ''
+  reservation: ''
+
+elog_display:
+
+fetch_mask:
+  dataset: '/entry_1/data_1/mask' # Rayonix - switch to /data/data for other det
+
+fetch_geom:
+
+build_mask:
+  thresholds: -10 5000
+  n_images: 20
+  n_edge: 1
+  combine: True
+
+run_analysis:
+  max_events: -1
+  ncores: 2
+
+opt_geom:
+  dx: -6 6 5
+  dy: -6 6 5
+  n_iterations: 5
+  n_peaks: 4
+  threshold: 1000000
+
+find_peaks:
+  tag: 'S1'
+  psana_mask: False
+  min_peaks: 10
+  max_peaks: 2048
+  npix_min: 2
+  npix_max: 30
+  amax_thr: 40.
+  atot_thr: 180.
+  son_min: 10.0
+  peak_rank: 3
+  r0: 3.0
+  dr: 2.0
+  nsigm: 10.0
+
+index:
+  time: '1:30:00'
+  ncores: 64
+  tag: 'S1'
+  tag_cxi: 'S1'
+  int_radius: '3,4,5'
+  methods: 'mosflm'
+  tolerance: '5,5,5,1.5'
+  no_revalidate: True
+  multi: True
+  profile: True
+  cell: ''
+
+stream_analysis:
+  tag: 'S1'
+  cell_only: False
+  ncores: 6
+
+merge:
+  tag: 'S1'
+  symmetry: '4/mmm_uac'
+  iterations: 1
+  model: 'unity'
+  foms: 'CCstar Rsplit'
+  nshells: 10
+  highres: 2.5
+
+bayesian_optimization:
+  tag: 'sample2'
+  task_to_optimize: "find_peaks"
+  opt_type: "min"
+  score_task: "merge"
+  loop_tasks: ["find_peaks", "index", "stream_analysis", "merge"]
+  fom: "Rsplit"
+  kernel: "rbf"
+  acquisition_function: "expected_improvement"
+  max_iterations: 10
+  n_samples_init: 5
+  n_points_per_param: 100
+  range_amax_thr: [20, 60]
+  range_atot_thr: [100, 200]
+  range_son_min: [5, 15]
+
+solve:
+  tag: 'S1'
+  pdb: ''

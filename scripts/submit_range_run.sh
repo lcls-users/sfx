@@ -43,6 +43,11 @@ do
       shift
       shift
       ;;
+    -a|--account)
+      SLURM_ACCOUNT="$2"
+      shift
+      shift
+      ;;
     -q|--queue)
       QUEUE="$2"
       shift
@@ -86,8 +91,17 @@ do
 done
 set -- "${POSITIONAL[@]}"
 
-FACILITY=${FACILITY:='SRCF_FFB'}
-QUEUE=${QUEUE:='ffbh3q'}
+if [[ -z ${SLURM_ACCOUNT} ]]; then
+    echo "Account not provided, using lcls."
+fi
+
+if [[ -z ${FACILITY} ]]; then
+    echo "Facility not provided, defaulting to S3DF."
+fi
+
+SLURM_ACCOUNT=${SLURM_ACCOUNT:='lcls'}
+FACILITY=${FACILITY:='S3DF'}
+QUEUE=${QUEUE:='milano'}
 CORES=${CORES:=1}
 EXPERIMENT=${EXPERIMENT:='None'}
 RUN_NUM=${RUN_NUM:='None'}

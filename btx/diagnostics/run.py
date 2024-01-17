@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as colors
 from matplotlib.colors import LogNorm
+import holoviews as hv
+from holoviews import opts
+import pandas as pd
 from btx.interfaces.ipsana import *
 from btx.interfaces.ischeduler import JobScheduler
 
@@ -26,7 +29,8 @@ class RunDiagnostics:
         self.stats = dict()
         self.gain_traj = None
         self.gain_map = None
-        
+        self.gain_mode = ''
+
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size() 
@@ -44,10 +48,11 @@ class RunDiagnostics:
             for key in ['sum', 'sqr', 'max', 'min']:
                 self.powders[key] = img.copy()
         else:
-            self.powders['sum'] += img
-            self.powders['sqr'] += np.square(img)
-            self.powders['max'] = np.maximum(self.powders['max'], img)
-            self.powders['min'] = np.minimum(self.powders['min'], img)
+            if img is not None:
+                self.powders['sum'] += img
+                self.powders['sqr'] += np.square(img)
+                self.powders['max'] = np.maximum(self.powders['max'], img)
+                self.powders['min'] = np.minimum(self.powders['min'], img)
 
     def finalize_powders(self):
         """
@@ -111,6 +116,29 @@ class RunDiagnostics:
             for key in self.stats_final.keys():
                 np.save(os.path.join(outdir, f"r{self.psi.run:04}_trace_{key}{suffix}.npy"), self.stats_final[key])
 
+    def load_traces(self, outdir, raw_img=False):
+        """
+        Load previously saved trajectories of statistics.
+
+        Parameters
+        ----------
+        outdir: str
+            path to directory where traces have been saved
+        raw_img : bool
+            if True, load trace files with _raw nomenclature
+        """
+        self.stats_final = dict()
+        if self.rank == 0:
+            suffix=""
+            if raw_img:
+                suffix = "_raw"
+            for key in ['mean', 'std', 'max', 'min', 'beam_energy_eV', 'photon_energy_eV']:
+                filepath_key = os.path.join(outdir, f"r{self.psi.run:04}_trace_{key}{suffix}.npy")
+                try:
+                    self.stats_final[key] = np.load(filepath_key)
+                except FileNotFoundError as e:
+                    print(f"Error while attempting to read {filepath_key}")
+
     def compute_stats(self, evt, img):
         """
         Compute the following image stats: mean, std deviation, max, min.
@@ -129,32 +157,39 @@ class RunDiagnostics:
         beam_energy_mJ   = self.psi.get_fee_gas_detector_energy_mJ_evt(evt)
         photon_energy_eV = self.psi.get_photon_energy_eV_evt(evt)                
         if beam_energy_mJ is not None and photon_energy_eV is not None:
-            beam_energy_eV = beam_energy_mJ / 1.602e-16 * self.psi.get_beam_transmission()
-            self.stats['beam_energy_eV'][self.n_proc] = beam_energy_eV
+            try:
+                beam_energy_eV = beam_energy_mJ / 1.602e-16 * self.psi.get_beam_transmission()
+                self.stats['beam_energy_eV'][self.n_proc] = beam_energy_eV
+            except NotImplementedError as e:
+                print(f"Beam energy not known for current hutch.\n",
+                      "Speak with a beamline scientist to find the proper PV")
             self.stats['photon_energy_eV'][self.n_proc] = photon_energy_eV
 
-            self.stats['mean'][self.n_proc] = np.mean(img)
-            self.stats['std'][self.n_proc] = np.std(img)
-            self.stats['max'][self.n_proc] = np.max(img)
-            self.stats['min'][self.n_proc] = np.min(img)
+            if img is None:
+                self.stats['mean'][self.n_proc] = np.nan
+                self.stats['std'][self.n_proc] = np.nan
+                self.stats['max'][self.n_proc] = np.nan
+                self.stats['min'][self.n_proc] = np.nan
+            else:
+                self.stats['mean'][self.n_proc] = np.mean(img)
+                self.stats['std'][self.n_proc] = np.std(img)
+                self.stats['max'][self.n_proc] = np.max(img)
+                self.stats['min'][self.n_proc] = np.min(img)
         else:
             self.n_empty += 1
+            self.stats['beam_energy_eV'][self.n_proc] = np.nan
+            self.stats['photon_energy_eV'][self.n_proc] = np.nan
+            self.stats['mean'][self.n_proc] = np.nan
+            self.stats['std'][self.n_proc] = np.nan
+            self.stats['max'][self.n_proc] = np.nan
+            self.stats['min'][self.n_proc] = np.nan
                 
-    def finalize_stats(self, n_empty=0, n_empty_raw=0):
+    def finalize_stats(self):
         """
         Gather stats from various ranks into single arrays in self.stats_final.
-
-        Parameters
-        ----------
-        n_empty : int
-            number of empty images in this rank
-        n_empty_raw : int
-            number of empty raw events in this rank
         """
         self.stats_final = dict()
         for key in self.stats.keys():
-            if n_empty != 0:
-                self.stats[key] = self.stats[key][:-n_empty]
             self.stats_final[key] = self.comm.gather(self.stats[key], root=0)
 
         self.stats_final['fiducials'] = self.comm.gather(np.array(self.psi.fiducials), root=0)
@@ -163,8 +198,6 @@ class RunDiagnostics:
                 self.stats_final[key] = np.hstack(self.stats_final[key])
                 
         if self.gain_traj is not None:
-            if n_empty_raw != 0:
-                self.gain_traj = self.gain_traj[:-n_empty_raw]
             self.stats_final['gain_mode_counts'] = self.comm.gather(self.gain_traj, root=0)
             if self.rank == 0:
                 self.stats_final['gain_mode_counts'] = np.hstack(self.stats_final['gain_mode_counts'])
@@ -239,13 +272,12 @@ class RunDiagnostics:
                 img = self.psi.det.calib(evt=evt)
             if img is None:
                 self.n_empty += 1
-                continue
                 
             if threshold:
                 if np.mean(img) > threshold:
                     print(f"Excluding event {idx} with image mean: {np.mean(img)}")
                     n_excluded += 1
-                    continue
+                    img = None
 
             self.compute_base_powders(img)
             if not powder_only:
@@ -255,21 +287,18 @@ class RunDiagnostics:
                 
             if gain_mode is not None and self.psi.det_type == 'epix10k2M':
                 raw = self.psi.det.raw(evt)
-                if raw is None:
-                    n_empty_raw +=1
-                    continue
                 self.get_gain_statistics(raw, gain_mode)
             else:
                 self.gain_mode = ''
 
             self.n_proc += 1
-            if self.psi.counter + self.n_empty + n_excluded == self.psi.max_events:
+            if self.psi.counter == self.psi.max_events:
                 break
 
         self.comm.Barrier()
         self.finalize_powders()
         if not powder_only:
-            self.finalize_stats(self.n_empty + n_excluded, n_empty_raw)
+            self.finalize_stats()
             print(f"Rank {self.rank}, no. empty images: {self.n_empty}, no. excluded images: {n_excluded}")
 
     def visualize_powder(self, tag='max', vmin=-1e5, vmax=1e5, output=None, figsize=12, dpi=300):
@@ -322,6 +351,15 @@ class RunDiagnostics:
             labels = ['mean(I)', 'max(I)', 'min(I)', 'std dev(I)', 
                       'Beam\nenergy (eV)', 'Photon\nenergy (eV)',
                       f'No. pixels in\n{self.gain_mode} mode']
+
+            # Remove keys which are unavailable
+            for key in keys:
+                if key in self.stats_final.keys():
+                    continue
+                else:
+                    idx = keys.index(key)
+                    keys.pop(idx)
+                    labels.pop(idx)
             
             f, axs = plt.subplots(n_plots, figsize=(n_plots*2.4,12), sharex=True)
             for n in range(n_plots):
@@ -331,7 +369,58 @@ class RunDiagnostics:
             
             if output is not None:
                 f.savefig(output, dpi=300)
-                
+                self.visualize_stats_hv_html(output,
+                                             keys,
+                                             color_by='beam_energy_eV')
+
+    def visualize_stats_hv_html(self, output: str, keys: list, color_by: str):
+        """! Create an \"interactive\" Holoviews plot embedded in HTML.
+
+        Allows for selection of which statistics to display.
+
+        @param output (str) Path to save the output HTML.
+        @param keys (list) List of keys in `stats_final` to plot.
+        @param color_by (str) Key to data to color the scatter plot points by.
+        """
+        import holoviews as hv
+        import pandas as pd
+
+        hv.extension('bokeh')
+        plot_data = dict(self.stats_final)
+
+        def plot_selector(df: pd.DataFrame, y: str, c: str) -> hv.Scatter:
+            """! Create a scatter plot from a DataFrame.
+
+            @param y (str) DataFrame key for y values.
+            @param c (str) DataFrame key for coloring the scatter plot.
+            @return scatter (hv.Scatter) Scatter plot.
+            """
+            scatter = hv.Scatter(df, kdims=['Event Id'], vdims=[y, c])
+            return scatter.opts(tools=['hover'], width=800, color=c, framewise=True)
+
+        def rebuild_dataframe(y: str, c: str):
+            """! Create a new DataFrame from a new set of stats keys.
+
+            Always creates a Series corresponding to the event axis.
+
+            @param y (str) Stats key for the y-axis values in the DataFrame.
+            @param c (str) Stats key for the color-by values in the DataFrame.
+            @return df (pd.DataFrame) New pandas DataFrame.
+            """
+            num_evts: int = len(plot_data[y])
+            df = pd.DataFrame({'Event Id' : np.arange(num_evts),
+                               f'{y}' : plot_data[y],
+                               f'{c}' : plot_data[c]})
+            return df
+
+        c = color_by
+        plots_dict = { y:plot_selector(rebuild_dataframe(y, c), y, c) for y in keys }
+
+        hmap = hv.HoloMap(plots_dict, kdims=['Y Value'])
+        outfile = output[:-3] + 'html'
+        hv.save(hmap, outfile)
+
+    
     def visualize_gain_frequency(self, output=None):
         """
         Plot the distribution of the frequency with which each pixel
@@ -416,6 +505,77 @@ class RunDiagnostics:
             if output is not None:
                 fig.savefig(output, dpi=300, bbox_inches='tight')
     
+    def visualize_stats_interactive(self, y_key='mean', color_by='beam_energy_eV'):
+        """
+        Plot trajectories of run statistics, interactively.
+
+        Parameters
+        ----------
+        y_key : str
+            self.stats_final key to plot
+        color_by : str
+            self.stats_final key used to color
+        """
+        hv.extension('bokeh')
+
+        y = self.stats_final[y_key]
+
+        df = pd.DataFrame({
+            'evt_id' : np.arange(y.shape[0]), 
+            'y' : y, 
+            'color_by' : self.stats_final[color_by]})
+        scatter = hv.Scatter(df, kdims=['evt_id'], vdims=['y', 'color_by'])
+        return scatter.opts(opts.Scatter(tools=['hover'])).opts(width=800, color_index='color_by')
+
+    def display_img_evt(self, event_id, 
+            vmin=1, vmax=1e3, figsize=8, dpi=360, title=None, log=True, mask_negatives=True,
+            method='pyplot'):
+        """
+        Display the detector image corresponding to a given event ID.
+
+        Parameters
+        ----------
+        event_id : int
+            Index of the desired event
+        vmin : float
+            Lowest pixel value
+        figsize : int
+            Figure size
+        dpi : int
+            Figure dots per inch
+        title : str or None
+            Figure title
+        log : bool
+            Whether the detector image is displayed on linear or log scale.
+        mask_negatives: bool
+            Whether negative intensity pixels should be masked.
+        method: str
+            options: 'pyplot' (default) or 'holoviews'
+        """
+        evt = self.psi.runner.event(self.psi.times[event_id])
+        img = self.psi.det.image(evt=evt)
+        if mask_negatives:
+            img = np.ma.masked_where(img<=0,img)
+
+        if method is 'pyplot':
+            fig = plt.figure(figsize=(figsize,figsize),dpi=dpi)
+            if log:
+                plt.imshow(img, norm=LogNorm(vmin=vmin), interpolation='none')
+            else:
+                plt.imshow(img)
+            plt.colorbar()
+            if title is not None:
+                plt.title(title)
+            plt.xlabel('Y')
+            plt.ylabel('X')
+            plt.show()
+        else:
+            hv.extension('bokeh')
+            hvimg = hv.Image(img)
+            return hvimg.opts(width=800, height=800, logz=log, zlim=(vmin,vmax), 
+                    colorbar=True, cmap='inferno', tools=['hover'])
+        
+
     def check_first_evt(self, mask=None, scale_factor=5, n_images=5):
         """
         Check whether the first event of the run should be excluded; it's 
@@ -619,8 +779,11 @@ def main():
         suffix = "_raw"
     rd.visualize_powder(output=os.path.join(params.outdir, f"figs/powder_r{params.run:04}{suffix}.png"))
     rd.visualize_stats(output=os.path.join(params.outdir, f"figs/stats_r{params.run:04}{suffix}.png"))
-    rd.visualize_energy_stats(output=os.path.join(params.outdir, f"figs/stats_energy_r{params.run:04}{suffix}.png"),
-                              outlier_threshold=params.outlier_threshold)
+    try:
+        rd.visualize_energy_stats(output=os.path.join(params.outdir, f"figs/stats_energy_r{params.run:04}{suffix}.png"),
+                                  outlier_threshold=params.outlier_threshold)
+    except KeyError as e:
+        print(f'PV : {e} unavailable. Energy stats not output')
     if params.gain_mode is not None:
         rd.visualize_gain_frequency(output=os.path.join(params.outdir, f"figs/gain_freq_r{params.run:04}{suffix}.png"))
 

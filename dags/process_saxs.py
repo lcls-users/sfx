@@ -5,8 +5,7 @@ import importlib
 jid = importlib.import_module("btx-dev.plugins.jid")
 JIDSlurmOperator = jid.JIDSlurmOperator
 
-# DAG SETUP
-description='BTX setup metrology DAG'
+description='BTX process SAXS DAG'
 dag_name = os.path.splitext(os.path.basename(__file__))[0]
 
 dag = DAG(
@@ -16,15 +15,10 @@ dag = DAG(
     description=description,
   )
 
+task_id='run_analysis'
+run_analysis = JIDSlurmOperator(task_id=task_id, dag=dag)
 
-# Tasks SETUP
+task_id='plot_saxs'
+plot_saxs = JIDSlurmOperator(task_id=task_id, dag=dag)
 
-task_id='fetch_mask'
-fetch_mask = JIDSlurmOperator( task_id=task_id, dag=dag)
-
-task_id='fetch_geom'
-fetch_geom = JIDSlurmOperator( task_id=task_id, dag=dag)
-
-# Draw the DAG
-fetch_mask
-fetch_geom
+run_analysis >> plot_saxs

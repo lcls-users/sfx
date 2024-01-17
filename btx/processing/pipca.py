@@ -1,10 +1,17 @@
-import os, csv, argparse
+import os, csv, h5py, argparse
 
 import numpy as np
 from mpi4py import MPI
 
 from matplotlib import pyplot as plt
 from matplotlib import colors
+
+import holoviews as hv
+hv.extension('bokeh')
+from holoviews.streams import Params
+
+import panel as pn
+import panel.widgets as pnw
 
 from btx.misc.shortcuts import TaskTimer
 
@@ -33,6 +40,7 @@ class PiPCA:
         downsample=False,
         bin_factor=2,
         output_dir="",
+        filename='pipca.model_h5',
     ):
 
         self.comm = MPI.COMM_WORLD
@@ -41,11 +49,13 @@ class PiPCA:
 
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
         self.psi.counter = start_offset
+        self.start_offset = start_offset
 
         self.priming = priming
         self.downsample = downsample
         self.bin_factor = bin_factor
         self.output_dir = output_dir
+        self.filename = filename
 
         (
             self.num_images,
@@ -62,28 +72,6 @@ class PiPCA:
 
         self.num_incorporated_images = 0
         self.outliers, self.pc_data = [], []
-
-    def get_params(self):
-        """
-        Method to retrieve iPCA params.
-
-        Returns
-        -------
-        num_incorporated_images : int
-            number of images used to build model
-        num_components : int
-            number of components maintained in model
-        batch_size : int
-            batch size used in model updates
-        num_features : int
-            dimensionality of incorporated images
-        """
-        return (
-            self.num_incorporated_images,
-            self.num_components,
-            self.batch_size,
-            self.num_features,
-        )
 
     def set_params(self, num_images, num_components, batch_size, bin_factor):
         """
@@ -131,11 +119,11 @@ class PiPCA:
 
         return num_images, num_components, batch_size, num_features
 
-    def run(self):
+    def run_model(self):
         """
         Perform iPCA on run subject to initialization parameters.
         """
-        m = self.batch_size
+        batch_size = self.batch_size
         num_images = self.num_images
 
         # initialize and prime model, if specified
@@ -154,13 +142,38 @@ class PiPCA:
         # will become redundant in a streaming setting, need to change
         rem_imgs = num_images - self.num_incorporated_images
         batch_sizes = np.array(
-            [m] * np.floor(rem_imgs / m).astype(int)
-            + ([rem_imgs % m] if rem_imgs % m else [])
+            [batch_size] * np.floor(rem_imgs / batch_size).astype(int)
+            + ([rem_imgs % batch_size] if rem_imgs % batch_size else [])
         )
+
+        # define batch indices based on batch sizes
+        self.batch_indices = self.distribute_images_over_batches(batch_sizes)
+        self.batch_number = 0
 
         # update model with remaining batches
         for batch_size in batch_sizes:
             self.fetch_and_update_model(batch_size)
+            
+        self.comm.Barrier()
+        
+        U = self.gather_U()
+        S = self.S
+        V = self.V
+        
+        if self.rank == 0:  
+            print("Model complete")
+        
+            # save model to an hdf5 file
+            with h5py.File(self.filename, 'w') as f:
+                f.create_dataset('exp', data=self.psi.exp)
+                f.create_dataset('run', data=self.psi.run)
+                f.create_dataset('det_type', data=self.psi.det_type)
+                f.create_dataset('start_offset', data=self.start_offset)
+                f.create_dataset('loadings', data=self.pc_data)
+                f.create_dataset('U', data=U)
+                f.create_dataset('S', data=S)
+                f.create_dataset('V', data=V)
+                print(f'Model saved to {self.filename}')
 
     def get_formatted_images(self, n, start_index, end_index):
         """
@@ -218,13 +231,15 @@ class PiPCA:
 
         mu_full, total_variance_full = self.calculate_sample_mean_and_variance(X)
 
-        self.mu = mu_full[self.split_indices[self.rank]:self.split_indices[self.rank+1]]
-        self.total_variance = total_variance_full[self.split_indices[self.rank]:self.split_indices[self.rank+1]]
+        start, end = self.split_indices[self.rank], self.split_indices[self.rank+1]
+        self.mu = mu_full[start:end]
+        self.total_variance = total_variance_full[start:end]
         
         centered_data = X - np.tile(mu_full, n)
 
-        U, self.S, _ = np.linalg.svd(centered_data, full_matrices=False)
-        self.U = U[self.split_indices[self.rank]:self.split_indices[self.rank+1], :]
+        U, self.S, V_T = np.linalg.svd(centered_data, full_matrices=False)
+        self.U = U[start:end, :]
+        self.V = V_T.T
 
         self.num_incorporated_images += n
 
@@ -264,36 +279,32 @@ class PiPCA:
         International journal of computer vision. 2008 May;77(1):125-41.
         """
         _, m = X.shape
-        n = self.num_incorporated_images
-        q = self.num_components
+        num_incorporated_images = self.num_incorporated_images
+        num_components = self.num_components
 
         with TaskTimer(self.task_durations, "total update"):
 
             if self.rank == 0:
                 print(
                     "Factoring {m} sample{s} into {n} sample, {q} component model...".format(
-                        m=m, s="s" if m > 1 else "", n=n, q=q
+                        m=m, s="s" if m > 1 else "", n=num_incorporated_images, q=num_components
                     )
                 )
-
-            with TaskTimer(self.task_durations, "record pc data"):
-                if n > 0:
-                    self.record_loadings(X, 5)
 
             with TaskTimer(self.task_durations, "update mean and variance"):
                 mu_n = self.mu
                 mu_m, s_m = self.calculate_sample_mean_and_variance(X)
 
                 self.total_variance = self.update_sample_variance(
-                    self.total_variance, s_m, mu_n, mu_m, n, m
+                    self.total_variance, s_m, mu_n, mu_m, num_incorporated_images, m
                 )
-                self.mu = self.update_sample_mean(mu_n, mu_m, n, m)
+                self.mu = self.update_sample_mean(mu_n, mu_m, num_incorporated_images, m)
 
             with TaskTimer(
                 self.task_durations, "center data and compute augment vector"
             ):
                 X_centered = X - np.tile(mu_m, m)
-                mean_augment_vector = np.sqrt(n * m / (n + m)) * (mu_m - mu_n)
+                mean_augment_vector = np.sqrt(num_incorporated_images * m / (num_incorporated_images + m)) * (mu_m - mu_n)
 
                 X_augmented = np.hstack((X_centered, mean_augment_vector))
 
@@ -307,10 +318,17 @@ class PiPCA:
                 Q_r, U_tilde, S_tilde = self.parallel_qr(A)
 
             with TaskTimer(self.task_durations, "compute local U_prime"):
-                self.U = Q_r @ U_tilde[:, :q]
-                self.S = S_tilde[:q]
+                self.U = Q_r @ U_tilde[:, :num_components]
+                self.S = S_tilde[:num_components]
+                
+            with TaskTimer(self.task_durations, "update V"):
+                self.update_V(X, self.S)
+
+            with TaskTimer(self.task_durations, "record pc data"):
+                self.record_loadings()
 
             self.num_incorporated_images += m
+            self.batch_number += 1
 
 
     def calculate_sample_mean_and_variance(self, imgs):
@@ -376,8 +394,8 @@ class PiPCA:
         Data Analysis and Reduction for Big Scientific Data (DRBSD-7) (pp. 19-25). IEEE.
         """
         _, x = A.shape
-        q = self.num_components
-        m = x - q - 1
+        num_components = self.num_components
+        m = x - num_components - 1
 
         with TaskTimer(self.task_durations, "qr - local qr"):
             Q_r1, R_r = np.linalg.qr(A, mode="reduced")
@@ -386,7 +404,7 @@ class PiPCA:
 
         with TaskTimer(self.task_durations, "qr - r_tot gather"):
             if self.rank == 0:
-                R = np.empty((self.size * (q + m + 1), q + m + 1))
+                R = np.empty((self.size * (num_components + m + 1), num_components + m + 1))
             else:
                 R = None
 
@@ -399,14 +417,14 @@ class PiPCA:
             with TaskTimer(self.task_durations, "qr - global svd"):
                 U_tilde, S_tilde, _ = np.linalg.svd(R_tilde)
         else:
-            U_tilde = np.empty((q + m + 1, q + m + 1))
-            S_tilde = np.empty(q + m + 1)
+            U_tilde = np.empty((num_components + m + 1, num_components + m + 1))
+            S_tilde = np.empty(num_components + m + 1)
             Q_2 = None
 
         self.comm.Barrier()
 
         with TaskTimer(self.task_durations, "qr - scatter q_tot"):
-            Q_r2 = np.empty((q + m + 1, q + m + 1))
+            Q_r2 = np.empty((num_components + m + 1, num_components + m + 1))
             self.comm.Scatter(Q_2, Q_r2, root=0)
 
         with TaskTimer(self.task_durations, "qr - local matrix build"):
@@ -485,27 +503,101 @@ class PiPCA:
 
         return s_nm
 
-    def get_model(self):
+    def update_V(self, X, S):
         """
-        Method to retrieve model parameters.
+        Updates current V with shape (n x q) to shape (n + m, q)
+        based on the previous and updated U and S.
 
-        Returns
-        -------
-        U_tot : ndarray, shape (d x q)
-            iPCA principal axes from model.
-        S_tot : ndarray, shape (1 x q)
-            iPCA singular values from model.
-        mu_tot : ndarray, shape (1 x d)
-            Data mean computed from all input images.
-        var_tot : ndarray, shape (1 x d)
-            Sample data variance computed from all input images.
+        Parameters
+        ----------
+        X : ndarray, shape (_ x m)
+            sliced image batch on self.rank
+        S : ndarray, shape (q,)
+            singular values of the updated model
+        """
+        num_incorporated_images = self.num_incorporated_images
+        batch_number = self.batch_number
+        _, m = X.shape
+        num_components = self.num_components
+
+        #self.comm.Barrier()
+
+        # Gather all X and U across all ranks
+        with TaskTimer(self.task_durations, "V - gather X and U"):
+            X_tot = self.gather_X(X)
+            U_tot = self.gather_U()
+
+        V = np.empty((num_incorporated_images + m, num_components))
+
+        self.comm.Barrier()
+
+        with TaskTimer(self.task_durations, "V - compute updated V"):
+            if num_incorporated_images > 0:
+                # U_prev and S_prev aren't instantiated on the first primed batch
+                if self.priming and batch_number == 0:
+                    self.U_prev = U_tot
+                    self.S_prev = S
+
+                # Update each previous V_i from the previous batches
+                V = self.V
+                B = np.diag(self.S_prev) @ self.U_prev.T @ U_tot @ np.linalg.inv(np.diag(S))
+                for i in range(batch_number):
+                    start, end = self.batch_indices[i], self.batch_indices[i + 1]
+                    V[start:end] = V[start:end] @ B
+
+                # Compute new V_m from the current batch with standard SVD
+                V_m = X_tot.T @ U_tot @ np.linalg.inv(np.diag(S))
+                V = np.concatenate((V, V_m))
+            else:
+                # Instantiate self.V with standard SVD
+                V = X_tot.T @ U_tot @ np.linalg.inv(np.diag(S))
+
+        self.comm.Barrier()
+
+        with TaskTimer(self.task_durations, "V - bcast V"):
+            self.comm.Bcast(V, root=0)
+
+        self.V = V
+        self.U_prev = U_tot
+        self.S_prev = S
+
+    def gather_X(self, X):
+        """
+        Gather and return the X_tot variable.
+        """
+        _, m = X.shape
+        if self.rank == 0:
+            X_tot = np.empty((self.num_features, m))
+        else:
+            X_tot = None
+
+        start_indices = self.split_indices[:-1]
+
+        self.comm.Gatherv(
+            X.flatten(),
+            [
+                X_tot,
+                self.split_counts * m,
+                start_indices * m,
+                MPI.DOUBLE,
+            ],
+            root=0,
+        )
+
+        if self.rank == 0:
+            X_tot = np.reshape(X_tot, (self.num_features, m))
+
+        return X_tot
+    
+    def gather_U(self):
+        """
+        Gather and return the U_tot variable.
         """
         if self.rank == 0:
-            U_tot = np.empty(self.num_features * self.num_components)
-            mu_tot = np.empty((self.num_features, 1))
-            var_tot = np.empty((self.num_features, 1))
+            U_tot = np.empty((self.num_features, self.num_components))
+
         else:
-            U_tot, mu_tot, var_tot = None, None, None
+            U_tot = None
 
         start_indices = self.split_indices[:-1]
 
@@ -523,6 +615,18 @@ class PiPCA:
         if self.rank == 0:
             U_tot = np.reshape(U_tot, (self.num_features, self.num_components))
 
+        return U_tot
+
+    def gather_mu(self):
+        """
+        Gather and return the mu_tot variable.
+        """
+        if self.rank == 0:
+            mu_tot = np.empty((self.num_features, 1))
+        else:
+            mu_tot = None
+
+        start_indices = self.split_indices[:-1]
         self.comm.Gatherv(
             self.mu,
             [
@@ -533,6 +637,18 @@ class PiPCA:
             ],
             root=0,
         )
+        return mu_tot
+
+    def gather_var(self):
+        """
+        Gather and return the var_tot variable.
+        """
+        if self.rank == 0:
+            var_tot = np.empty((self.num_features, 1))
+        else:
+            var_tot = None
+
+        start_indices = self.split_indices[:-1]
         self.comm.Gatherv(
             self.total_variance,
             [
@@ -543,10 +659,7 @@ class PiPCA:
             ],
             root=0,
         )
-
-        S_tot = self.S
-
-        return U_tot, S_tot, mu_tot, var_tot
+        return var_tot
 
     def get_outliers(self):
         """
@@ -556,65 +669,35 @@ class PiPCA:
         if self.rank == 0:
             print(self.outliers)
 
-    def record_loadings(self, X, q_sig):
+    def record_loadings(self):
         """
-        Method to store all loadings, ΣV^T, from present batch using past
-        model iteration.
-
-        Parameters
-        ----------
-        X : ndarray, shape (_ x m)
-            Local subdivision of current image data batch.
-
-        q_sig : int
-            The q_sig components used in generating the loadings for 
+        Method to store current all loadings, ΣV^T,
+        up to the current batch.
         """
-        _, m = X.shape
-        n, d = self.num_incorporated_images, self.num_features
+        U = self.gather_U()
+        S = self.S
+        V = self.V
+        mu = self.gather_mu()
 
-        start_indices = self.split_indices[:-1]
-
-        U, _, mu, _ = self.get_model()
 
         if self.rank == 0:
-            X_tot = np.empty((d, m))
-        else:
-            X_tot = None
+            j = self.batch_number
+            pcs = np.empty((self.num_components, self.batch_indices[j+1]))
+            
+            for i in range(j):
+                start, end = self.batch_indices[i], self.batch_indices[i+1]
+                batch_size = end - start
+                centered_model = U @ np.diag(S) @ V[start:end].T - np.tile(mu, (1, batch_size))
+                pcs[:, start:end] = U.T @ centered_model 
+            
+            self.pc_data = pcs
 
-        self.comm.Gatherv(
-            X.flatten(),
-            [
-                X_tot,
-                self.split_counts * m,
-                start_indices * m,
-                MPI.DOUBLE,
-            ],
-            root=0,
-        )
-
-        if self.rank == 0:
-
-            X_tot = np.reshape(X_tot, (d, m))
-            cb = X_tot - np.tile(mu, (1, m))
-
-            pcs = U.T @ cb
-            self.pc_data = (
-                np.concatenate((self.pc_data, pcs), axis=1)
-                if len(self.pc_data)
-                else pcs
-            )
-
-            pc_dist = np.linalg.norm(pcs[:q_sig], axis=0)
+            pc_dist = np.linalg.norm(pcs[:self.num_components], axis=0)
             std = np.std(pc_dist)
             mu = np.mean(pc_dist)
 
-            batch_outliers = np.where(np.abs(pc_dist - mu) > std)[0] + n - m
-
-            self.outliers = (
-                np.concatenate((self.outliers, batch_outliers), axis=0)
-                if len(self.outliers)
-                else batch_outliers
-            )
+            index_offset = self.start_offset + self.num_incorporated_images
+            self.outliers = np.where(np.abs(pc_dist - mu) > 2 * std)[0] + index_offset
 
     def display_image(self, idx, output_dir="", save_image=False):
         """
@@ -630,7 +713,7 @@ class PiPCA:
             Whether to save image to file, by default False
         """
 
-        U, S, mu, var = self.get_model()
+        mu = self.gather_mu()
 
         if self.rank != 0:
             return
@@ -639,17 +722,17 @@ class PiPCA:
         if self.downsample:
             bin_factor = self.bin_factor
 
-        n, q, m, d = self.get_params()
+        num_features = self.num_features
 
         a, b, c = self.psi.det.shape()
         b = int(b / bin_factor)
         c = int(c / bin_factor)
 
-        fig, ax = plt.subplots(1)
+        _, ax = plt.subplots(1)
 
         counter = self.psi.counter
         self.psi.counter = idx
-        img = self.get_formatted_images(1, 0, d)
+        img = self.get_formatted_images(1, 0, num_features)
         self.psi.counter = counter
 
         img = img - mu
@@ -672,6 +755,106 @@ class PiPCA:
 
         plt.show()
 
+    def display_error_plots(self):
+        """
+        Displays error plots comparing the computed U, S, V versus the true U, S, V.
+        Expected to output a correlation of positive and negative 1 for U and V,
+        and strictly positive one for S.
+        """
+        U = self.gather_U()
+        
+        if self.rank != 0:
+            return
+        
+        # Find true V matrix
+        num_images = self.num_images
+        num_features = self.num_features
+        num_components = self.num_components
+        
+        try:
+            assert num_images * num_features < 4e8, 'image and feature dimensions are too high to test errors'
+            assert num_images == num_components, 'number of images must equal the number of components to compare with np.linalg.svd() output'
+        except AssertionError as e:
+            print(f"Assertion Error: {e}")
+        
+        self.psi.counter = self.start_offset
+        X = self.get_formatted_images(num_images, 0, num_features)
+        
+        mu_full, _ = self.calculate_sample_mean_and_variance(X)
+        
+        centered_data = X - np.tile(mu_full, num_images)
+
+        U_true, S_true, V_true_T = np.linalg.svd(centered_data, full_matrices=False)
+        
+        # Create eigenimage dictionary and widgets
+        eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
+        PC_options = list(eigenimages)
+        
+        split_indices, _ = distribute_indices_over_ranks(num_features, num_features // 10000)
+        batch_options = list(range(1, len(split_indices)))
+        
+        component = pnw.Select(name='Components', value='PC1', options=PC_options)
+        batch_slider = pnw.DiscreteSlider(name='Batch Slider', value=1, options=batch_options)
+        widgets_scatter = pn.WidgetBox(component, batch_slider, width=400)
+        
+        # Create scatter plots
+        @pn.depends(component.param.value, batch_slider.param.value)
+        def create_U_scatter(component, batch_index):
+            component_index = int(component[2:]) - 1
+            start, end = split_indices[batch_index - 1], split_indices[batch_index]
+            scatter_data = dict(true=U_true.T[component_index][start:end], calc=eigenimages[component][start:end], index=np.arange(end-start))
+            
+            opts = dict(width=400, height=300, show_grid=True, toolbar='above',
+                        color='index', colorbar=True, tools=['hover'], shared_axes=False)
+            scatter = hv.Points(scatter_data, kdims=['true', 'calc'], vdims=['index'], label=f"True U vs Computed U").opts(**opts)
+            
+            return scatter
+        
+        def create_S_scatter():
+            scatter_data = dict(true=S_true, calc=self.S, index=np.arange(num_components))
+            
+            opts = dict(width=400, height=300, show_grid=True, toolbar='above',
+                        color='index', colorbar=True, tools=['hover'], shared_axes=False)
+            scatter = hv.Points(scatter_data, kdims=['true', 'calc'], vdims=['index'], label=f"True S vs Computed S").opts(**opts)
+            
+            return scatter
+        
+        def create_V_scatter():
+            scatter_data = dict(true=V_true_T.flatten(), calc=self.V.T.flatten(), index=np.arange(len(V_true_T.flatten())))
+            
+            opts = dict(width=400, height=300, show_grid=True, ylim=(-1,1), toolbar='above',
+                        color='index', colorbar=True, tools=['hover'], shared_axes=False)
+            scatter = hv.Points(scatter_data, kdims=['true', 'calc'], vdims=['index'], label=f"True V vs Computed V").opts(**opts)
+            
+            return scatter
+        
+        return pn.Column(widgets_scatter, pn.Row(create_U_scatter, create_S_scatter, create_V_scatter)).servable('PiPCA Model Error Plots') 
+    
+    def distribute_images_over_batches(self, batch_sizes):
+        """
+        Returns 1D array of batch indices depending on batch sizes
+        and number of incorporated images.
+        
+        Parameters
+        ----------
+        batch_sizes : ndarray, shape (b,)
+            number of images in each batch,
+            where b is the number of batches
+        
+        Returns
+        -------
+        batch_indices : ndarray, shape (b+1,)
+            division indices between batches
+        """
+        
+        total_indices = self.num_incorporated_images
+        batch_indices = [self.num_incorporated_images]
+        
+        for size in batch_sizes:
+            total_indices += size
+            batch_indices.append(total_indices)
+        
+        return np.array(batch_indices)
 
 def distribute_indices_over_ranks(d, size):
     """
@@ -708,7 +891,6 @@ def distribute_indices_over_ranks(d, size):
     split_counts = np.array(split_counts)
 
     return split_indices, split_counts
-
 
 #### for command line use ###
 

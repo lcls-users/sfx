@@ -5,8 +5,10 @@ import glob
 import shutil
 import numpy as np
 import itertools
+import yaml
+import csv
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Fetch the URL to post progress update
@@ -21,12 +23,16 @@ def fetch_mask(config):
     setup = config.setup
     task = config.fetch_mask
     """ Fetch most recent mask for this detector from mrxv. """
+    if 'sdf' in setup.root_dir:
+        mrxv_path = '/sdf/group/lcls/ds/tools/mrxv/masks/'
+    elif 'cds' in setup.root_dir:
+        mrxv_path = '/cds/sw/package/autosfx/mrxv/masks/'
     taskdir = os.path.join(setup.root_dir, 'mask')
     os.makedirs(taskdir, exist_ok=True)
     mi = MaskInterface(exp=setup.exp,
                        run=setup.run,
                        det_type=setup.det_type)
-    mi.retrieve_from_mrxv(dataset=task.dataset)
+    mi.retrieve_from_mrxv(mrxv_path=mrxv_path, dataset=task.dataset)
     logger.info(f'Saving mrxv mask to {taskdir}')
     mi.save_mask(os.path.join(taskdir, f'r0000.npy'))
     logger.debug('Done!')
@@ -37,9 +43,14 @@ def fetch_geom(config):
     task = config.fetch_geom
     """ Fetch latest geometry for this detector from mrxv. """
     taskdir = os.path.join(setup.root_dir, 'geom')
+    if 'sdf' in setup.root_dir:
+        mrxv_path = '/sdf/group/lcls/ds/tools/mrxv/geometries/'
+    elif 'cds' in setup.root_dir:
+        mrxv_path = '/cds/sw/package/autosfx/mrxv/geometries/'
     os.makedirs(taskdir, exist_ok=True)
     logger.info(f'Saving mrxv geom to {taskdir}')
-    retrieve_from_mrxv(det_type=setup.det_type, out_geom=os.path.join(taskdir, f'r0000.geom'))
+    retrieve_from_mrxv(det_type=setup.det_type, out_geom=os.path.join(taskdir, f'r0000.geom'),
+                       mrxv_path=mrxv_path)
     logger.debug('Done!')
 
 def build_mask(config):
@@ -75,7 +86,9 @@ def run_analysis(config):
     mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
     script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/diagnostics/run.py")
     command = f"python {script_path}"
-    command += f" -e {setup.exp} -r {setup.run} -d {setup.det_type} -o {taskdir} -m {mask_file}"
+    command += f" -e {setup.exp} -r {setup.run} -d {setup.det_type} -o {taskdir}"
+    if mask_file:
+        command += f" -m {mask_file}"
     if task.get('mean_threshold') is not None:
         command += f" --mean_threshold={task.mean_threshold}"
     if task.get('gain_mode') is not None:
@@ -88,7 +101,9 @@ def run_analysis(config):
     js = JobScheduler(os.path.join(".", f'ra_{setup.run:04}.sh'), 
                       queue=setup.queue,
                       ncores=task.ncores,
-                      jobname=f'ra_{setup.run:04}')
+                      jobname=f'ra_{setup.run:04}',
+                      account=setup.account,
+                      reservation=setup.reservation)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'])
     js.clean_up()
@@ -148,6 +163,7 @@ def opt_geom(config):
 def find_peaks(config):
     from btx.processing.peak_finder import PeakFinder
     from btx.misc.shortcuts import fetch_latest
+    from btx.interfaces.ielog import update_summary
     setup = config.setup
     task = config.find_peaks
     """ Perform adaptive peak finding on run. """
@@ -160,16 +176,16 @@ def find_peaks(config):
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr,
                     son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm,
                     calibdir=task.get('calibdir'), pv_camera_length=setup.get('pv_camera_length'))
-    logger.debug(f'Performing peak finding for run {setup.run} of {setup.exp}...')
+    logger.info(f'Performing peak finding for run {setup.run} of {setup.exp}...')
     pf.find_peaks()
     pf.curate_cxi()
     pf.summarize()
-    try:
-        pf.report(update_url)
-    except:
-        logger.debug("Could not communicate with the elog update url")
     logger.info(f'Saving CXI files and summary to {taskdir}/r{setup.run:04}')
     logger.debug('Done!')
+
+    if pf.rank == 0:
+        summary_file = f'{setup.root_dir}/summary_r{setup.run:04}.json'
+        update_summary(summary_file, pf.pf_summary)
 
 def index(config):
     from btx.processing.indexer import Indexer
@@ -182,10 +198,63 @@ def index(config):
     indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir,
                           geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate,
                           multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64,
-                          time=task.get('time') if task.get('time') is not None else '1:00:00')
+                          time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False, slurm_account=setup.account,
+                          slurm_reservation=setup.reservation)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.launch()
     logger.info(f'Indexing launched!')
+
+def summarize_idx(config):
+    import subprocess
+    from mpi4py import MPI
+    from btx.interfaces.ielog import update_summary
+
+    # Only run on rank 0
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
+    if rank == 0:
+        # Pull from config yaml
+        setup = config.setup
+        task = config.index
+        tag = task.tag
+        tag_cxi = ''
+        cxi = task.get('tag_cxi')
+        if cxi:
+            tag_cxi = cxi
+        run = setup.run
+
+        # Define paths
+        taskdir = os.path.join(setup.root_dir, 'index')
+        summary_file = f'{setup.root_dir}/summary_r{setup.run:04}.json'
+        stream_file = os.path.join(taskdir, f'r{run:04}_{tag}.stream')
+        pf_summary = os.path.join(taskdir, f'r{run:04}/peakfinding{tag_cxi}.summary')
+
+        command1: list = ["grep", "Cell parameters", f"{stream_file}"]
+        command2: list = ["grep",
+                          "Number of hits found",
+                          f"{pf_summary}"]
+
+        summary_dict: dict = {}
+        try:
+            output: str = subprocess.check_output(command1,
+                                                  universal_newlines=True)
+            n_indexed: int = len(output.split('\n')[:-1])
+
+            output: str = subprocess.check_output(command2,
+                                                  universal_newlines=True)
+            n_total: int = int(output.split(':')[1].split('\n')[0])
+
+            key_strings: list = ['Number of lattices found',
+                                 ('Fractional indexing rate'
+                                  ' (including multiple lattices)')]
+            summary_dict: dict = { key_strings[0] : f'{n_indexed}',
+                                   key_strings[1] : f'{(n_indexed/n_total):.2f}' }
+        except subprocess.CalledProcessError as err:
+            print(err)
+
+        update_summary(summary_file, summary_dict)
+        post_to_elog(config)
 
 def stream_analysis(config):
     from btx.interfaces.istream import launch_stream_analysis
@@ -203,7 +272,9 @@ def stream_analysis(config):
                            ncores=task.get('ncores') if task.get('ncores') is not None else 6,
                            cell_only=task.get('cell_only') if task.get('cell_only') is not None else False,
                            cell_out=os.path.join(setup.root_dir, 'cell', f'{task.tag}.cell'),
-                           cell_ref=task.get('ref_cell'))
+                           cell_ref=task.get('ref_cell'),
+                           slurm_account=setup.account,
+                           slurm_reservation=setup.reservation)
     logger.info(f'Stream analysis launched')
 
 def determine_cell(config):
@@ -242,7 +313,9 @@ def merge(config):
     stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile, queue=setup.get('queue'),
                                 ncores=task.get('ncores') if task.get('ncores') is not None else 16,
                                 mtz_dir=os.path.join(setup.root_dir, "solve", f"{task.tag}"),
-                                anomalous=task.get('anomalous') if task.get('anomalous') is not None else False)
+                                anomalous=task.get('anomalous') if task.get('anomalous') is not None else False,
+                                slurm_account=setup.account,
+                                slurm_reservation=setup.reservation)
     stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model,
                                   min_res=task.get('min_res'), push_res=task.get('push_res'), max_adu=task.get('max_adu'))
     for ns in [1, task.nshells]:
@@ -264,7 +337,9 @@ def solve(config):
                taskdir,
                queue=setup.get('queue'),
                ncores=task.get('ncores') if task.get('ncores') is not None else 16,
-               anomalous=task.get('anomalous') if task.get('anomalous') is not None else False)
+               anomalous=task.get('anomalous') if task.get('anomalous') is not None else False,
+               slurm_account=setup.account,
+               slurm_reservation=setup.reservation)
     logger.info(f'Dimple launched!')
 
 def refine_geometry(config, task=None):
@@ -298,7 +373,10 @@ def refine_geometry(config, task=None):
                         geom_file,
                         task.dx,
                         task.dy,
-                        task.dz)
+                        task.dz,
+                        slurm_account=setup.account,
+                        slurm_reservation=setup.reservation
+    )
     geopt.launch_indexing(setup.exp, setup.det_type, config.index, cell_file)
     geopt.launch_stream_wrangling(config.stream_analysis)
     geopt.launch_merging(config.merge)
@@ -334,8 +412,19 @@ def elog_display(config):
     """ Updates the summary page in the eLog with most recent results. """
     logger.info(f'Updating the reports in the eLog summary tab.')
     eli = eLogInterface(setup)
-    eli.update_summary()
+    eli.update_summary(plot_type='holoviews')
     logger.debug('Done!')
+
+def post_to_elog(config):
+    from btx.interfaces.ielog import elog_report_post
+    setup = config.setup
+    root_dir = setup.root_dir
+    run = setup.run
+
+    summary_file = f'{root_dir}/summary_r{run:04}.json'
+    url = os.environ.get('JID_UPDATE_COUNTERS')
+    if url:
+        elog_report_post(summary_file, url)
 
 def visualize_sample(config):
     from btx.misc.visuals import VisualizeSample
@@ -357,6 +446,38 @@ def clean_up(config):
     if os.path.isdir(taskdir):
         os.system(f"rm -f {taskdir}/r*/*{task.tag}.cxi")
     logger.debug('Done!')
+
+def plot_saxs(config):
+    """! Plot the SAXS profile and associated diagnostic figures."""
+    from btx.processing.saxs import SAXSProfiler
+    setup = config.setup
+    task = config.plot_saxs
+
+    expmt = setup.exp
+    run = setup.run
+    detector_type = setup.det_type
+    rootdir = setup.root_dir
+    method = task.method
+
+    saxs = SAXSProfiler(expmt, run, detector_type, rootdir, method)
+    saxs.plot_all()
+
+def timetool_diagnostics(config):
+    """! Plot timetool diagnostic figures from data in smalldata hdf5 file."""
+    from btx.io.ih5 import SmallDataReader
+    setup = config.setup
+    task = config.timetool_diagnostics
+    savedir = os.path.join(setup.root_dir, 'timetool')
+
+    expmt = setup.exp
+    run = setup.run
+
+    if not task.h5:
+        smdr = SmallDataReader(expmt, run, savedir)
+    else:
+        smdr = SmallDataReader(expmt, run, savedir, task.h5)
+
+    smdr.plot_timetool_diagnostics(output_type = 'png')
 
 def calibrate_timetool(config):
     from btx.processing.rawimagetimetool import RawImageTimeTool
@@ -402,6 +523,23 @@ def timetool_correct(config):
             logger.info('No model found! Will return the nominal delay uncorrected!')
 
     tt.timetool_correct(run, nominal, model, figs)
+
+def bayesian_optimization(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Perform an iteration of the Bayesian optimization. """
+    logger.info('Running an iteration of the Bayesian Optimization.')
+    BayesianOptimization.run_bayesian_opt(config)
+    logger.info('Done!')
+    
+def bo_init_samples_configs(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Generates the config files that will be used to generate the initial samples for the Bayesian optimization. """
+    BayesianOptimization.init_samples_configs(config, logger)
+
+def bo_aggregate_init_samples(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
+    BayesianOptimization.aggregate_init_samples(config, logger)
 
 def scan_geom_index(config):
     setup = config.setup

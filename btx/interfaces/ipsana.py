@@ -1,8 +1,11 @@
 import numpy as np
+import logging
 import psana
 from psana import setOption
 from psana import EventId
 from PSCalib.GeometryAccess import GeometryAccess
+
+logger = logging.getLogger(__name__)
 
 class PsanaInterface:
 
@@ -59,7 +62,7 @@ class PsanaInterface:
         self.calibrate = True
         evt = self.runner.event(self.times[0])
         if (self.det.pedestals(evt) is None) or (self.det.gain(evt) is None):
-            print("Warning: calibration data unavailable, returning uncalibrated data")
+            logger.warning("Warning: calibration data unavailable, returning uncalibrated data")
             self.calibrate = False
 
     def turn_calibration_off(self):
@@ -111,7 +114,7 @@ class PsanaInterface:
             wavelength in Angstrom
         """
         photon_energy = self.get_photon_energy_eV_evt(evt)
-        if np.isinf(photon_energy) or photon_energy is None:
+        if photon_energy is None or np.isinf(photon_energy):
             return self.get_wavelength()
         else:
             lambda_m =  1.23984197386209e-06 / photon_energy # convert to meters using e=hc/lambda
@@ -133,7 +136,7 @@ class PsanaInterface:
         try:
             return psana.Detector('EBeam').get(evt).ebeamPhotonEnergy()
         except AttributeError as e:
-            print("Warning: event does not have an ebeamPhotonEnergy value.")
+            logger.warning("Event lacking an ebeamPhotonEnergy value.")
 
     def get_fee_gas_detector_energy_mJ_evt(self, evt, mode=None):
         """
@@ -203,7 +206,7 @@ class PsanaInterface:
                 pv_camera_length = 'MFX:DET:MMS:04.RBV'
             if self.det_type == 'epix10k2M':
                 pv_camera_length = 'MFX:ROB:CONT:POS:Z'
-            print(f"PV used to retrieve clen parameter: {pv_camera_length}")
+            logger.debug(f"PV used to retrieve clen parameter: {pv_camera_length}")
 
         try:
             return self.ds.env().epicsStore().value(pv_camera_length)
@@ -228,6 +231,8 @@ class PsanaInterface:
         if pv_beam_transmission is None:
             if self.hutch == 'mfx':
                 pv_beam_transmission = "MFX:ATT:COM:R_CUR"
+            elif self.hutch == 'cxi':
+                pv_beam_transmission = "CXI:DIA:ATT:COM:R_CUR"
             else:
                 raise NotImplementedError
 
@@ -410,16 +415,17 @@ def retrieve_pixel_index_map(geom):
 
     Returns
     -------
-    pixel_index_map : numpy.ndarray, 4d
+    pixel_index_map : numpy.ndarray, 4d or 5d
         pixel coordinates, shape (n_panels, fs_panel_shape, ss_panel_shape, 2)
+                           shape (pidx1, pidx2, fs_shape, ss_shape, 2)
     """
     if type(geom) == str:
         geom = GeometryAccess(geom)
 
     temp_index = [np.asarray(t) for t in geom.get_pixel_coord_indexes()]
     pixel_index_map = np.zeros((np.array(temp_index).shape[2:]) + (2,))
-    pixel_index_map[:,:,:,0] = temp_index[0][0]
-    pixel_index_map[:,:,:,1] = temp_index[1][0]
+    pixel_index_map[...,0] = temp_index[0][0]
+    pixel_index_map[...,1] = temp_index[1][0]
     
     return pixel_index_map.astype(np.int64)
 
@@ -443,22 +449,38 @@ def assemble_image_stack_batch(image_stack, pixel_index_map):
         stack of assembled images, shape (n_images, fs_panel_shape, ss_panel_shape)
         of shape (fs_panel_shape, ss_panel_shape) if ony one image provided
     """
+    multiple_panel_dimensions = False
     if len(image_stack.shape) == 3:
         image_stack = np.expand_dims(image_stack, 0)
 
+    if len(pixel_index_map.shape) == 5:
+        multiple_panel_dimensions = True
+        
     # get boundary
-    index_max_x = np.max(pixel_index_map[:, :, :, 0]) + 1
-    index_max_y = np.max(pixel_index_map[:, :, :, 1]) + 1
+    index_max_x = np.max(pixel_index_map[..., 0]) + 1
+    index_max_y = np.max(pixel_index_map[..., 1]) + 1
     # get stack number and panel number
     stack_num = image_stack.shape[0]
-    panel_num = image_stack.shape[1]
 
     # set holder
     images = np.zeros((stack_num, index_max_x, index_max_y))
 
-    # loop through the panels
-    for l in range(panel_num):
-        images[:, pixel_index_map[l, :, :, 0], pixel_index_map[l, :, :, 1]] = image_stack[:, l, :, :]
+    if multiple_panel_dimensions:
+        pdim1 = pixel_index_map.shape[0]
+        pdim2 = pixel_index_map.shape[1]
+        for i in range(pdim1):
+            for j in range(pdim2):
+                x = pixel_index_map[i, j, ..., 0]
+                y = pixel_index_map[i, j, ..., 1]
+                idx = i*pdim2 + j
+                images[:, x, y] = image_stack[:, idx]
+    else:
+        panel_num = image_stack.shape[1]
+        # loop through the panels
+        for l in range(panel_num):
+            x = pixel_index_map[l, ..., 0]
+            y = pixel_index_map[l, ..., 1]
+            images[:, x, y] = image_stack[:, l]
 
     if images.shape[0] == 1:
         images = images[0]
@@ -485,14 +507,29 @@ def disassemble_image_stack_batch(images, pixel_index_map):
         stack of images, shape (n_images, n_panels, fs_panel_shape, ss_panel_shape)
         or (n_panels, fs_panel_shape, ss_panel_shape)
     """
+    multiple_panel_dimensions = False
     if len(images.shape) == 2:
         images = np.expand_dims(images, axis=0)
 
-    image_stack_batch = np.zeros((images.shape[0],) + pixel_index_map.shape[:3])
-    for panel in range(pixel_index_map.shape[0]):
-        idx_map_1 = pixel_index_map[panel, :, :, 0]
-        idx_map_2 = pixel_index_map[panel, :, :, 1]
-        image_stack_batch[:, panel] = images[:, idx_map_1, idx_map_2]
+    if len(pixel_index_map.shape) == 5:
+        multiple_panel_dimensions = True
+
+    if multiple_panel_dimensions:
+        ishape = images.shape[0]
+        (pdim1, pdim2, fs_shape, ss_shape) = pixel_index_map.shape[:-1]
+        image_stack_batch = np.zeros((ishape, pdim1*pdim2, fs_shape, ss_shape))
+        for i in range(pdim1):
+            for j in range(pdim2):
+                x = pixel_index_map[i, j, ..., 0]
+                y = pixel_index_map[i, j, ..., 1]
+                idx = i*pdim2 + j
+                image_stack_batch[:, idx] = images[:, x, y]
+    else:
+        image_stack_batch = np.zeros((images.shape[0],) + pixel_index_map.shape[:3])
+        for panel in range(pixel_index_map.shape[0]):
+            idx_map_1 = pixel_index_map[panel, :, :, 0]
+            idx_map_2 = pixel_index_map[panel, :, :, 1]
+            image_stack_batch[:, panel] = images[:, idx_map_1, idx_map_2]
 
     if image_stack_batch.shape[0] == 1:
         image_stack_batch = image_stack_batch[0]

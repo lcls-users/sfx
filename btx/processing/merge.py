@@ -4,9 +4,11 @@ import argparse
 import os
 import sys
 import requests
+import glob
 from btx.interfaces.ischeduler import *
 from btx.interfaces.istream import read_cell_file
 from btx.interfaces.imtz import *
+from btx.interfaces.ielog import update_summary, elog_report_post
 
 class StreamtoMtz:
     
@@ -17,16 +19,27 @@ class StreamtoMtz:
     input stream file.
     """
     
-    def __init__(self, input_stream, symmetry, taskdir, cell, ncores=16, queue='ffbh3q', tmp_exe=None, mtz_dir=None, anomalous=False):
+    def __init__(self, input_stream, symmetry, taskdir, cell, ncores=16, queue='milano', tmp_exe=None, mtz_dir=None, anomalous=False,
+                 mpi_init=False, slurm_account="lcls", slurm_reservation=""):
         self.stream = input_stream # file of unmerged reflections, str
         self.symmetry = symmetry # point group symmetry, str
         self.taskdir = taskdir # path for storing output, str
         self.cell = cell # pdb or CrystFEL cell file, str
         self.ncores = ncores # int, number of cores for merging
         self.queue = queue # cluster to submit job to
+        self.slurm_account = slurm_account
+        self.slurm_reservation = slurm_reservation
         self.mtz_dir = mtz_dir # directory to which to transfer mtz
         self.anomalous = anomalous # whether to separate Bijovet pairs
         self._set_up(tmp_exe)
+
+        if mpi_init:
+            from mpi4py import MPI
+            self.comm = MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+        else:
+            self.comm = None
+            self.rank = 0
         
     def _set_up(self, tmp_exe):
         """
@@ -50,7 +63,9 @@ class StreamtoMtz:
         # make path to executable
         if tmp_exe is None:
             tmp_exe = os.path.join(self.taskdir ,f'merge.sh')
-        self.js = JobScheduler(tmp_exe, ncores=self.ncores, jobname=f'merge', queue=self.queue, time='3:00:00')
+        self.js = JobScheduler(tmp_exe, ncores=self.ncores, jobname=f'merge',
+                               queue=self.queue, account=self.slurm_account,
+                               reservation=self.slurm_reservation)
         self.js.write_header()
 
         # retrieve paths
@@ -167,7 +182,28 @@ class StreamtoMtz:
         """   
         self.js.clean_up()
         self.js.submit()
-        
+
+    def merge_summary(self,
+                      foms: list = ['CCstar', 'Rsplit'],
+                      nshells: int = 10) -> dict:
+        """! Return a dictionary of key/values to post to the eLog.
+
+        @param (list[str]) foms Figures of merit.
+        @param (int) Number of shells used for figures of merit.
+        @return (dict) summary_dict Key/values parsed by eLog posting function.
+        """
+        summary_dict: dict = {};
+        for fom in foms:
+            for ns in [1, nshells]:
+                shell_file = os.path.join(self.hkl_dir, f"{self.prefix}_{fom}_n{int(ns)}.dat")
+                if ns != 1:
+                    plot_file = os.path.join(self.fig_dir, f"{self.prefix}_{fom}.png")
+                    wrangle_shells_dat(shell_file, plot_file)
+                else:
+                    key, val = wrangle_shells_dat(shell_file)
+                    summary_dict[key] = val
+        return summary_dict
+
     def report(self, foms=['CCstar','Rsplit'], nshells=10, update_url=None):
         """
         Summarize results: plot figures of merit and optionally report to elog.
@@ -207,8 +243,8 @@ class StreamtoMtz:
 
         # transfer mtz to new folder
         if self.mtz_dir is not None:
-            shutil.copy2(os.path.join(self.taskdir, f"{self.prefix}.mtz"), 
-                         os.path.join(self.mtz_dir, f"{self.prefix}.mtz"))
+            shutil.copyfile(os.path.join(self.taskdir, f"{self.prefix}.mtz"), 
+                            os.path.join(self.mtz_dir, f"{self.prefix}.mtz"))
 
 def wrangle_shells_dat(shells_file, outfile=None):
     """
@@ -248,6 +284,7 @@ def wrangle_shells_dat(shells_file, outfile=None):
         ax1.scatter(shells[:,0], shells[:,1], c='black')
 
         ticks = ax1.get_xticks()
+        ax1.set_xticks(ticks) # Only needed to suppress warning
         ax1.set_xticklabels(["{0:0.2f}".format(i) for i in 10/ticks])
         ax1.tick_params(axis='both', which='major', labelsize=12)
         ax1.set_xlabel("Resolution ($\mathrm{\AA}$)", fontsize=14)
@@ -255,6 +292,23 @@ def wrangle_shells_dat(shells_file, outfile=None):
 
         if outfile is not None:
             f.savefig(outfile, dpi=300, bbox_inches='tight')
+
+def get_most_recent_summary(path: str) -> str:
+    """Given a root directory return the path of most recent summary.
+
+    @param path (str) Root BTX operating directory.
+    @return summary (str) Path to most recent summary
+    """
+    summaries = glob.glob(f'{path}/summary_*.json')
+    run: int = 0
+    most_recent = ''
+    for summary in summaries:
+        filename: str = summary.split('/')[-1]
+        current_run = int(filename[-9:-5])
+        if current_run > run:
+            run = current_run
+            most_recent = summary
+    return most_recent
 
 def parse_input():
     """
@@ -291,15 +345,17 @@ def parse_input():
 if __name__ == '__main__':
     
     params = parse_input()
+    stream_path = params.input_stream
     
-    stream_to_mtz = StreamtoMtz(params.input_stream, 
+    stream_to_mtz = StreamtoMtz(stream_path, 
                                 params.symmetry, 
                                 params.taskdir, 
                                 params.cell, 
                                 ncores=params.ncores, 
                                 queue=params.queue, 
                                 mtz_dir=params.mtz_dir, 
-                                anomalous=params.anomalous)
+                                anomalous=params.anomalous,
+                                mpi_init=True)
     if not params.report:
         stream_to_mtz.cmd_partialator(iterations=params.iterations, 
                                       model=params.model, 
@@ -316,4 +372,25 @@ if __name__ == '__main__':
                                      space_group=params.space_group)
         stream_to_mtz.launch()
     else:
-        stream_to_mtz.report(foms=params.foms, nshells=params.nshells, update_url=params.update_url)
+        if stream_to_mtz.rank == 0:
+            indexdir: str = stream_path[:-len(stream_path.split('/')[-1])]
+            rootdir: str = indexdir[:-7]
+            summary_file = get_most_recent_summary(rootdir)
+            summary_dict: dict = stream_to_mtz.merge_summary(
+                foms=params.foms,
+                nshells=params.nshells
+            )
+            update_summary(summary_file, summary_dict)
+            elog_report_post(summary_file)
+
+            if stream_to_mtz.mtz_dir:
+                shutil.copyfile(
+                    os.path.join(
+                        stream_to_mtz.taskdir,
+                        f'{stream_to_mtz.prefix}.mtz'
+                    ),
+                    os.path.join(
+                        stream_to_mtz.mtz_dir,
+                        f'{stream_to_mtz.prefix}.mtz'
+                    )
+                )

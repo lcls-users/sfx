@@ -1,6 +1,7 @@
 import numpy as np
 import os, sys
 import argparse
+import shutil
 from psgeom import camera, sensors
 from btx.interfaces.ipsana import PsanaInterface
 
@@ -24,12 +25,7 @@ def retrieve_from_mrxv(det_type, out_geom, mrxv_path='/cds/sw/package/autosfx/mr
     except:
         sys.exit("Detector type not yet available in mrxv")
 
-    if det_type == 'epix10k2M':
-        geom = camera.CompoundAreaCamera.from_crystfel_file(in_geom, element_type=sensors.Epix10kaSegment)
-    else:
-        geom = camera.CompoundAreaCamera.from_crystfel_file(in_geom)
-
-    geom.to_crystfel_file(out_geom)
+    shutil.copyfile(in_geom, out_geom)
 
 def modify_crystfel_coffset_res(input_file, output_file, coffset, res):
     """
