@@ -129,6 +129,8 @@ class BayesianOptimization:
         
         ##### 2. Get all samples scores and parameters
         sample_y, sample_inputs = cls.read_bo_history(setup, task)
+        print(sample_y)
+        print(sample_inputs)
         
         ##### 3. Determine the next set of parameters to be used
 
@@ -148,7 +150,6 @@ class BayesianOptimization:
             best_idx = np.argmin(sample_y)
         else:
             raise KeyError(f"The optimization type {task.opt_type} does not exist.")
-        best_input = sample_inputs[best_idx]
 
         # 3. Generate the Acquisition Function using the Gaussian Process
         af_name = task.acquisition_function
@@ -435,8 +436,8 @@ class BayesianOptimization:
             The current config.
         setup : AttrDict
             The "setup" section of "config".
-        task_to_optimize : AttrDict
-            The section of "config" corresponding to the task to optimize.
+        task : AttrDict
+            The "bayesian_optimization" section of "config".
         params_names: List
             The names of the parameters to overwrite.
         new_input:
@@ -446,8 +447,7 @@ class BayesianOptimization:
         config_dict = {key: dict(value) if value is not None else None for key, value in config.items()}
         # Overwrite the parameters
         for i, param_name in enumerate(params_names):
-            # config_dict[task.task_to_optimize][param_name] = float(new_input[i])
-            config_dict[task.task_to_optimize][param_name] = 50
+            config_dict[task.task_to_optimize][param_name] = float(new_input[i])
         # Overwrite the config file
         with open(config_file_path, 'w') as yaml_file:
             yaml.dump(config_dict, yaml_file, default_flow_style=False)
