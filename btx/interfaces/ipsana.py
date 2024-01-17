@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class PsanaInterface:
 
-    def __init__(self, exp, run, det_type,
+    def __init__(self, exp, run, det_type, which_light=None,
                  event_receiver=None, event_code=None, event_logic=True,
                  ffb_mode=False, track_timestamps=False, calibdir=None):
         self.exp = exp # experiment name, str
@@ -21,6 +21,7 @@ class PsanaInterface:
         self.event_receiver = event_receiver # 'evr0' or 'evr1', str
         self.event_code = event_code # event code, int
         self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
+        self.which_light = which_light # None (both lights), 1 (light after dark), or 2 (light after light)
         self.set_up(det_type, ffb_mode, calibdir)
         self.counter = 0
 
@@ -46,6 +47,7 @@ class PsanaInterface:
         self.det = psana.Detector(det_type, self.ds.env())
         if self.event_receiver is not None:
             self.evr_det = psana.Detector(self.event_receiver)
+            self.evt_previous = None
         self.runner = next(self.ds.runs())
         self.times = self.runner.times()
         self.max_events = len(self.times)
@@ -85,7 +87,6 @@ class PsanaInterface:
         else:
             pixel_size_um = self.det.pixel_size(self.ds.env())
         return pixel_size_um / 1.0e3
-
     
     def get_wavelength(self):
         """
@@ -256,7 +257,7 @@ class PsanaInterface:
         self.fiducials.append(evtId.fiducials())
         return
 
-    def skip_event(self, evt):
+    def skip_event(self, evt, idx=None):
         """
         We skip an event if:
         - it has a specific event_code and our event_logic is False
@@ -266,6 +267,8 @@ class PsanaInterface:
         ----------
         evt : psana.Event object
             individual psana event
+        idx : int
+            index of event
 
         Returns
         -------
@@ -280,6 +283,26 @@ class PsanaInterface:
                 found_event = True
             if ( found_event != self.event_logic ):
                 skip = True
+    
+            # logic in case of only one light
+            if self.which_light and self.evt_previous==None:
+                skip = True
+            if self.which_light == 1 and self.evt_previous:
+                skip = True
+            if self.which_light == 2 and self.evt_previous==False:
+                skip = True
+            self.evt_previous = found_event
+
+            if idx is not None:
+                if found_event and skip:
+                    print(f"Image {idx}, skipping this light event")
+                if found_event and not skip:
+                    print(f"Image {idx}, taking this light event")
+                if not found_event and skip:
+                    print(f"Image {idx}, skipping this dark event")
+                if not found_event and not skip:
+                    print(f"Image {idx}, taking this dark event")
+
         return skip
 
     def distribute_events(self, rank, total_ranks, max_events=-1):

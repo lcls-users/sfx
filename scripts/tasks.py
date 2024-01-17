@@ -171,7 +171,7 @@ def find_peaks(config):
     os.makedirs(taskdir, exist_ok=True)
     mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
     pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, outdir=os.path.join(taskdir ,f"r{setup.run:04}"),
-                    event_receiver=setup.get('event_receiver'), event_code=setup.get('event_code'), event_logic=setup.get('event_logic'),
+                    event_receiver=setup.get('event_receiver'), event_code=setup.get('event_code'), event_logic=setup.get('event_logic'), which_light=setup.get('which_light'),
                     tag=task.tag, mask=mask_file, psana_mask=task.psana_mask, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr,
                     son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm,
@@ -541,4 +541,73 @@ def bo_aggregate_init_samples(config):
     """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
     BayesianOptimization.aggregate_init_samples(config, logger)
 
+def scan_geom_index(config):
+    setup = config.setup
+    task = config.scan_geom_index
+    task_index = config.index
+    """ Reindex with a different cell file per geom """
+    from btx.processing.indexer import Indexer
+    taskdir = os.path.join(setup.root_dir, 'index')
+    os.makedirs(task.scan_dir, exist_ok=True)
+    task.runs = tuple([int(elem) for elem in task.runs.split()])
+    if len(task.runs) == 2:
+        task.runs = (*task.runs, 1)
+    run_range = range(task.runs[0], task.runs[1]+1, task.runs[2])
+    n_geoms = len(glob.glob(os.path.join(task.scan_dir, "geom/*geom")))
+    for num in range(n_geoms):
+        geom_file = os.path.join(task.scan_dir, "geom", f"shift{num}.geom")
+        cell_file = os.path.join(task.scan_dir, "cell", f"g{num}.cell")
+        for run in run_range:
+            os.makedirs(os.path.join(task.scan_dir, f"r{run:04}"), exist_ok=True)
+            jobname = f"r{run}_g{num}"
+            jobfile = os.path.join(task.scan_dir, f"idx_{jobname}.sh")
+            stream = os.path.join(task.scan_dir, f'r{run:04}/r{run:04}_g{num}.stream')
+            indexer_obj = Indexer(exp=config.setup.exp, run=run, det_type=config.setup.det_type, 
+                                  tag=task_index.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir,
+                                  geom=geom_file, cell=cell_file, int_rad=task_index.int_radius, methods=task_index.methods, 
+                                  tolerance=task_index.tolerance, no_revalidate=task_index.no_revalidate,
+                                  multi=task_index.multi, profile=task_index.profile, queue=setup.get('queue'), 
+                                  ncores=task_index.get('ncores') if task_index.get('ncores') is not None else 64,
+                                  time=task_index.get('time') if task_index.get('time') is not None else '1:00:00')
+            indexer_obj.tmp_exe = jobfile
+            indexer_obj.stream = stream
+            indexer_obj.launch(addl_command=" ", dont_report=True)
+    logger.debug('Done!')
 
+def scan_geom_merge(config):
+    setup = config.setup
+    task = config.scan_geom_merge
+    task_merge = config.merge
+    """ Concatenate streams per geom and merge """
+    from btx.processing.merge import StreamtoMtz
+    merge_dir = os.path.join(task.scan_dir, "merge")
+    os.makedirs(merge_dir, exist_ok=True)
+    n_geoms = len(glob.glob(os.path.join(task.scan_dir, "geom/*geom")))
+    for num in range(n_geoms):
+        # concatenate streams
+        allstream = os.path.join(task.scan_dir, f"r*/r*_g{num}.stream")
+        catstream = os.path.join(task.scan_dir, f'g{num}.stream')
+        os.system(f"cat {allstream} > {catstream}\n")
+        # merge
+        jobfile = os.path.join(task.scan_dir, f"merge_g{num}.sh")
+        cell_file = os.path.join(task.scan_dir, "cell", f"g{num}.cell")
+        stream_to_mtz = StreamtoMtz(catstream, 
+                                    task_merge.symmetry, 
+                                    merge_dir, 
+                                    cell_file, 
+                                    queue=setup.get('queue'),  
+                                    tmp_exe=jobfile,
+                                    ncores=task_merge.get('ncores') if task_merge.get('ncores') is not None else 16)
+        stream_to_mtz.cmd_partialator(iterations=task_merge.iterations,
+                                      model=task_merge.model, 
+                                      min_res=task_merge.get('min_res'), 
+                                      push_res=task_merge.get('push_res'))
+        for ns in [1,10]:
+            stream_to_mtz.cmd_compare_hkl(foms=['CCstar','Rsplit'], 
+                                          nshells=ns, 
+                                          highres=task_merge.get('highres'))
+        stream_to_mtz.cmd_hkl_to_mtz(space_group=task_merge.get('space_group') if task_merge.get('space_group') is not None else 1,
+                                     highres=task_merge.get('highres'), 
+                                     xds_style=False)
+        stream_to_mtz.launch()
+    logger.debug('Done!')
