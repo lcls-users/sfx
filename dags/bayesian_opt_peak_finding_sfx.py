@@ -28,9 +28,9 @@ dag = DAG(
     description=description,
   )
 
-# PARAMETERS (must be the same as in the config .yaml file)
+# PARAMETERS
 
-# Number of initial samples
+# Number of initial samples (must be the same as in the config .yaml file)
 n_samples_init = 5
 # Maximum number of iterations
 max_iterations = 10

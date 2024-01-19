@@ -28,9 +28,9 @@ dag = DAG(
     description=description,
   )
 
-# PARAMETERS (must be the same as in the config .yaml file)
+# PARAMETERS
 
-# Number of initial samples
+# Number of initial samples (must be the same as in the config .yaml file)
 n_samples_init = 5
 # Maximum number of iterations
 max_iterations = 3
@@ -49,9 +49,9 @@ bo_aggregate_init_samples = JIDSlurmOperator( task_id=task_id, dag=dag )
 for branch_id in range(1, n_samples_init + 1):
 
   # Define the tasks of the branch
-  find_peaks = JIDSlurmOperator( task_id=f"find_peaks__sample{branch_id:03d}", branch_id=branch_id, dag=dag)
+  find_peaks = JIDSlurmOperator( task_id=f"find_peaks_multiple_runs__sample{branch_id:03d}", branch_id=branch_id, dag=dag)
 
-  index = JIDSlurmOperator( task_id=f"index__sample{branch_id:03d}", branch_id=branch_id, dag=dag )
+  index = JIDSlurmOperator( task_id=f"index_multiple_runs__sample{branch_id:03d}", branch_id=branch_id, dag=dag )
 
   stream_analysis = JIDSlurmOperator( task_id=f"stream_analysis__sample{branch_id:03d}", branch_id=branch_id, dag=dag )
 
@@ -85,9 +85,9 @@ bo_aggregate_init_samples >> branch_operators[0]
 # Draw all branches
 for i in range(max_iterations):
   # Define the tasks for this iteration
-  find_peaks = JIDSlurmOperator( task_id=f'find_peaks__bo{i+1:03d}', dag=dag )
+  find_peaks = JIDSlurmOperator( task_id=f'find_peaks_multiple_runs__bo{i+1:03d}', dag=dag )
 
-  index = JIDSlurmOperator( task_id=f'index__bo{i+1:03d}', dag=dag )
+  index = JIDSlurmOperator( task_id=f'index_multiple_runs__bo{i+1:03d}', dag=dag )
 
   stream_analysis = JIDSlurmOperator( task_id=f'stream_analysis__bo{i+1:03d}', dag=dag )
 

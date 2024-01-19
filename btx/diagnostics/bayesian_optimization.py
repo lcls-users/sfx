@@ -21,15 +21,8 @@ import shutil
 
 class BayesianOptimization:
 
-    def __init__(self, criterion_name, first_loop_task, exit_loop_task, max_iterations=None):
-        if criterion_name == "max_iterations":
-                self.iteration = 0
-                self.max_iterations = max_iterations
-        else:
-            raise KeyError(f"The stop criterion name {criterion_name} does not exist.")
-        self.criterion_name = criterion_name
-        self.first_loop_task = first_loop_task
-        self.exit_loop_task = exit_loop_task
+    def __init__(self):
+        pass
 
     # Initial samples
 
@@ -114,18 +107,28 @@ class BayesianOptimization:
         # Get the task generating the scores
         score_task = config.get(task.score_task)
 
-        ##### 1. Save the current parameters and the associated score
+        ##### 1. Save the current parameters and the associated score, if any
 
-        # Get the current parameters
-        n_params, params, params_names, params_ranges_keys= cls.get_parameters(task, task_to_optimize)
-        print(params)
+        score_file_name = f"{task.tag}_{task.fom}_n1.dat" 
+        score_file_path = os.path.join(setup.root_dir, task.score_task, score_task.tag, "hkl", score_file_name)
+        if os.path.exists(score_file_path):
+            # Get the current parameters
+            n_params, params, params_names, params_ranges_keys= cls.get_parameters(task, task_to_optimize)
+            print(params)
 
-        # Get the score from the interation that has just been run
-        score = cls.get_last_score(setup, task, score_task)
-        print(score)
+            # Get the score from the interation that has just been run
+            score = cls.get_last_score(setup, task, score_task)
+            print(score)
 
-        # Save the current parameters and the associated score
-        cls.save_iteration(setup, task, score, params)
+            # Save the current parameters and the associated score
+            cls.save_iteration(setup, task, score, params)
+
+            # Remove the entire merge/{tag} subfolder
+            shutil.rmtree(os.path.join(setup.root_dir, task.score_task, score_task.tag))
+            print(f"Subfolder " + os.path.join(setup.root_dir, task.score_task, score_task.tag) + " removed!")
+        else:
+            # Do nothing
+            pass
         
         ##### 2. Get all samples scores and parameters
         sample_y, sample_inputs = cls.read_bo_history(setup, task)
