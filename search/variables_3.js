@@ -17,7 +17,7 @@ var searchData=
   ['config_1269',['config',['../namespacebtx_1_1diagnostics_1_1geoptimizer.html#a1b3dfcc48be228583984da1c3696b34b',1,'btx::diagnostics::geoptimizer']]],
   ['counter_1270',['counter',['../classbtx_1_1interfaces_1_1ipsana_1_1PsanaInterface.html#a67e3a2ef3a6da266f5d6a54d66fbe36b',1,'btx::interfaces::ipsana::PsanaInterface']]],
   ['crds_1271',['crds',['../classbtx_1_1misc_1_1radial_1_1ConcentricCircles.html#a5d0188de803c3ae8a891c5ebeb1dbc0e',1,'btx::misc::radial::ConcentricCircles']]],
-  ['criterion_5fname_1272',['criterion_name',['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#a48ac5e41565460240810795d60289730',1,'btx.diagnostics.bayesian_optimization.BayesianOptimization.criterion_name()'],['../classdags_1_1plugins_1_1operators__utils_1_1OperatorsUtils.html#a1fd14065a4ec6eb429568f5b6751289d',1,'dags.plugins.operators_utils.OperatorsUtils.criterion_name()']]],
+  ['criterion_5fname_1272',['criterion_name',['../classdags_1_1plugins_1_1operators__utils_1_1OperatorsUtils.html#a1fd14065a4ec6eb429568f5b6751289d',1,'dags::plugins::operators_utils::OperatorsUtils']]],
   ['cursor_1273',['cursor',['../classbtx_1_1io_1_1h5terminalapp_1_1H5TerminalApp.html#a9fc4d0e4b446bb67d061a3605f2aa81c',1,'btx::io::h5terminalapp::H5TerminalApp']]],
   ['cx_1274',['cx',['../classbtx_1_1misc_1_1radial_1_1ConcentricCircles.html#a919363f83ab1e36406513428603aaca9',1,'btx::misc::radial::ConcentricCircles']]],
   ['cy_1275',['cy',['../classbtx_1_1misc_1_1radial_1_1ConcentricCircles.html#a0d2e293c26e4b36d38ee6ecb51a42234',1,'btx.misc.radial.ConcentricCircles.cy()'],['../classbtx_1_1misc_1_1radial_1_1OptimizeConcentricCircles.html#a7527f63d27fed067dec7e3e00625b34c',1,'btx.misc.radial.OptimizeConcentricCircles.cy()']]]

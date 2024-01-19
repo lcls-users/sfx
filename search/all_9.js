@@ -8,7 +8,7 @@ var searchData=
   ['imask_2epy_338',['imask.py',['../imask_8py.html',1,'']]],
   ['img_5fshape_339',['img_shape',['../classbtx_1_1diagnostics_1_1geom__opt_1_1GeomOpt.html#a031f86b09eb36ec3bf0187d01850c645',1,'btx::diagnostics::geom_opt::GeomOpt']]],
   ['imtz_2epy_340',['imtz.py',['../imtz_8py.html',1,'']]],
-  ['index_341',['index',['../classbtx_1_1diagnostics_1_1run_1_1PixelTracker.html#ac60c79ef7358ba25ca9aef5ff5c1ef79',1,'btx.diagnostics.run.PixelTracker.index()'],['../namespacedags_1_1bayesian__opt__peak__finding__sfx__short.html#ab3ce56d769875108500d3ba91815d162',1,'dags.bayesian_opt_peak_finding_sfx_short.index()'],['../namespacedags_1_1bayesian__opt__peak__finding__sfx.html#a80dc6c0946de9b376b01ed1b97c54e5b',1,'dags.bayesian_opt_peak_finding_sfx.index()'],['../namespacedags_1_1index__run.html#ab37911e20b018ac28878e70525e6a531',1,'dags.index_run.index()'],['../namespacedags_1_1process__sfx.html#aacf62884181fb5454d8ac8c8d9fba07c',1,'dags.process_sfx.index()'],['../namespacescripts_1_1tasks.html#a7ce55b20f738d141534afd902ff17d0f',1,'scripts.tasks.index(config)']]],
+  ['index_341',['index',['../classbtx_1_1diagnostics_1_1run_1_1PixelTracker.html#ac60c79ef7358ba25ca9aef5ff5c1ef79',1,'btx.diagnostics.run.PixelTracker.index()'],['../namespacedags_1_1index__run.html#ab37911e20b018ac28878e70525e6a531',1,'dags.index_run.index()'],['../namespacedags_1_1bayesian__opt__peak__finding__sfx__short.html#ab3ce56d769875108500d3ba91815d162',1,'dags.bayesian_opt_peak_finding_sfx_short.index()'],['../namespacedags_1_1bayesian__opt__peak__finding__sfx.html#a80dc6c0946de9b376b01ed1b97c54e5b',1,'dags.bayesian_opt_peak_finding_sfx.index()'],['../namespacedags_1_1process__sfx.html#aacf62884181fb5454d8ac8c8d9fba07c',1,'dags.process_sfx.index()'],['../namespacescripts_1_1tasks.html#a7ce55b20f738d141534afd902ff17d0f',1,'scripts.tasks.index(config)']]],
   ['index_5fmultiple_5fruns_342',['index_multiple_runs',['../namespacescripts_1_1tasks.html#a8d10257152e496c2eaee3d98f64f71e5',1,'scripts::tasks']]],
   ['index_5frun_2epy_343',['index_run.py',['../index__run_8py.html',1,'']]],
   ['indexer_344',['indexer',['../namespaceindexer.html',1,'']]],
@@ -30,7 +30,7 @@ var searchData=
   ['ipy_360',['ipy',['../classpeak__finder_1_1PeakFinder.html#a949c14b625cc4eed18c1cf71ea3ddf25',1,'peak_finder::PeakFinder']]],
   ['ischeduler_2epy_361',['ischeduler.py',['../ischeduler_8py.html',1,'']]],
   ['istream_2epy_362',['istream.py',['../istream_8py.html',1,'']]],
-  ['iteration_363',['iteration',['../classdags_1_1plugins_1_1operators__utils_1_1OperatorsUtils.html#ad01e82928bcd76d0484bae03ba8410ae',1,'dags.plugins.operators_utils.OperatorsUtils.iteration()'],['../classbtx_1_1diagnostics_1_1bayesian__optimization_1_1BayesianOptimization.html#ac296f9c16de2bc435bacde4097ed5071',1,'btx.diagnostics.bayesian_optimization.BayesianOptimization.iteration()']]],
+  ['iteration_363',['iteration',['../classdags_1_1plugins_1_1operators__utils_1_1OperatorsUtils.html#ad01e82928bcd76d0484bae03ba8410ae',1,'dags::plugins::operators_utils::OperatorsUtils']]],
   ['iterations_364',['iterations',['../namespacemerge.html#ace6a58f4e62ae85b1ec8214f8b8568dd',1,'merge']]],
   ['ix_365',['iX',['../classpeak__finder_1_1PeakFinder.html#a931bd7ac2f1f7545ddcc4de3746c3a0a',1,'peak_finder::PeakFinder']]],
   ['iy_366',['iY',['../classpeak__finder_1_1PeakFinder.html#adfe7fa0bd7bf39adcc9db45f127a683d',1,'peak_finder::PeakFinder']]]
