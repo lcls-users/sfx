@@ -5,6 +5,8 @@ import glob
 import shutil
 import numpy as np
 import itertools
+import h5py
+import time
 import yaml
 import csv
 
@@ -622,6 +624,151 @@ def timetool_correct(config):
 
     tt.timetool_correct(run, nominal, model, figs)
 
+def update_plot(ax, x, y, label):
+    ax.clear()
+    ax.plot(x, y, label=label)
+    ax.legend()
+    ax.set_title('Live Plot')
+    ax.set_xlabel('Run')
+    ax.set_ylabel(label)
+
+def pipca_run(config):
+    from btx.processing.pipca import PiPCA
+    from btx.misc.pipca_visuals import compute_compression_loss
+    from btx.processing.pipca import append_to_dataset
+    from btx.processing.pipca import compute_norm_difference
+
+    setup = config.setup
+    task = config.pipca_run
+    exp = setup.exp
+    run = task.run
+    det_type = setup.det_type
+    start_offset = task.start_offset
+    num_images = task.num_images
+    num_components = task.num_components
+    batch_size = task.batch_size
+    filename = task.filename
+    tag = task.tag
+    path = task.path
+    overwrite = True
+
+    filename_with_tag = f"{path}{filename}_{tag}.h5"
+
+    # Initialize U, S, mu and var matrices
+    if os.path.exists(filename_with_tag):
+        with h5py.File(filename_with_tag, 'r') as f:
+            previous_U = np.asarray(f.get('U'))
+            previous_S = np.asarray(f.get('S'))
+            previous_mu_tot = np.asarray(f.get('mu'))
+            previous_var_tot = np.asarray(f.get('total_variance'))
+
+    if overwrite and os.path.exists(filename_with_tag):
+        os.remove(filename_with_tag)
+
+    else:
+        previous_U = None
+        previous_S = None
+        previous_mu_tot = None
+        previous_var_tot = None 
+
+    print(previous_U)
+
+    # Initialize a list to store the execution times and frobenius norms
+    execution_times = []
+    compression_loss_values = []
+
+    # Initialize lists to store the L2 norms
+    norm_diff_U_list = []
+    norm_diff_S_list = []
+    norm_diff_mu_list = []
+    norm_diff_var_list = []
+
+    # Initialize number of runs
+
+    # list_runs = get_runs(tag) function to code later
+
+    offline = task.offline
+
+    if offline:
+        start_run = run
+        num_run = task.num_run
+        
+    else:
+        start_run = run
+        num_run = 1
+
+    # Iterate through runs 
+    for run in range(start_run, start_run + num_run):
+
+        start_time = time.time()  
+        
+        # Create a PiPCA instance for the current run
+        pipca = PiPCA(
+            exp=exp,
+            run=run,
+            det_type=det_type,
+            num_images=num_images,
+            num_components=num_components,
+            batch_size=batch_size,
+            priming=False,
+            downsample=False,
+            bin_factor=2,
+            filename = filename_with_tag
+        )
+
+        # Run iPCA for the current run
+        pipca.run_model_full(previous_U, previous_S, previous_mu_tot, previous_var_tot)
+        
+        end_time = time.time()  # Record the end time
+        execution_time = end_time - start_time  # Calculate the execution time
+        execution_times.append(execution_time)  # Append the execution time to the list
+
+        U = pipca.gather_U()
+        S = pipca.S
+        mu_tot = pipca.gather_mu()
+        var_tot = pipca.gather_var()
+
+        # Compute differences for each list
+        diff_U = compute_norm_difference(U, previous_U)
+        diff_S = compute_norm_difference(S, previous_S)
+        diff_mu = compute_norm_difference(mu_tot, previous_mu_tot)
+        diff_var = compute_norm_difference(var_tot, previous_var_tot)
+
+        # Append results to respective lists
+        norm_diff_U_list.append(diff_U)
+        norm_diff_S_list.append(diff_S)
+        norm_diff_mu_list.append(diff_mu)
+        norm_diff_var_list.append(diff_var)
+
+        # Update U and S for the next run
+        previous_U = U
+        previous_S = S
+        previous_mu_tot = mu_tot
+        previous_var_tot = var_tot
+        
+        # Compute compression losses
+        start_time = time.time()  
+        compression_loss_random = compute_compression_loss(filename_with_tag, num_components, True, 3)[0]
+        end_time = time.time()  
+        time_random = end_time - start_time  
+        print(f"Random: {compression_loss_random}, {time_random}")
+
+        start_time = time.time()  
+        compression_loss_full = compute_compression_loss(filename_with_tag, num_components)[0]
+        end_time = time.time()  
+        time_full = end_time - start_time  
+        print(f"Full: {compression_loss_full}, {time_full}")
+
+        compression_loss_values.append(compression_loss_random)
+
+        with h5py.File(filename_with_tag, 'a') as f:
+            append_to_dataset(f, 'execution_times', execution_times)
+            append_to_dataset(f, 'compression_loss_values', compression_loss_values)
+            append_to_dataset(f, 'norm_diff_U_list', norm_diff_U_list)
+            append_to_dataset(f, 'norm_diff_S_list', norm_diff_S_list)
+            append_to_dataset(f, 'norm_diff_mu_list', norm_diff_mu_list)
+            append_to_dataset(f, 'norm_diff_var_list', norm_diff_var_list)
+
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Perform an iteration of the Bayesian optimization. """
@@ -638,5 +785,3 @@ def bo_aggregate_init_samples(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
     BayesianOptimization.aggregate_init_samples(config, logger)
-
-

@@ -27,6 +27,8 @@ $(basename "$0"):
       SLURM reservation (optional).
     -t|--task
       Task name
+    -tl|--time_limit
+      change time limit
 EOF
 }
 
@@ -82,6 +84,11 @@ do
       ;;
     -t|--task)
       TASK="$2"
+      shift
+      shift
+      ;;
+    -tl|--time_limit)
+      TIME_LIMIT="$2"
       shift
       shift
       ;;
@@ -183,7 +190,7 @@ sbatch << EOF
 
 ${SBATCH_CMD_ACCOUNT}
 #SBATCH -p ${QUEUE}
-#SBATCH -t 10:00:00
+#SBATCH -t ${TIME_LIMIT:-10:00:00}  # Default to 10 hours if not provided
 #SBATCH --exclusive
 #SBATCH --job-name ${TASK}
 #SBATCH --ntasks=${CORES}

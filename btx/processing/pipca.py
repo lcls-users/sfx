@@ -119,7 +119,7 @@ class PiPCA:
 
         return num_images, num_components, batch_size, num_features
 
-    def run_model(self):
+    def run_model_full(self, previous_U = None, previous_S = None, previous_mu = None, previous_var = None):
         """
         Perform iPCA on run subject to initialization parameters.
         """
@@ -132,6 +132,13 @@ class PiPCA:
                 self.num_components, 0, self.num_features
             )
             self.prime_model(img_batch)
+
+        elif previous_U is not None:
+            self.U = previous_U
+            self.S = previous_S
+            self.mu = previous_mu
+            self.total_variance = previous_var
+
         else:
             self.U = np.zeros((self.split_counts[self.rank], self.num_components))
             self.S = np.ones(self.num_components)
@@ -173,6 +180,8 @@ class PiPCA:
                 f.create_dataset('U', data=U)
                 f.create_dataset('S', data=S)
                 f.create_dataset('V', data=V)
+                f.create_dataset('mu', data=self.mu)
+                f.create_dataset('total_variance', data=self.total_variance)
                 print(f'Model saved to {self.filename}')
 
     def get_formatted_images(self, n, start_index, end_index):
@@ -304,6 +313,7 @@ class PiPCA:
                 self.task_durations, "center data and compute augment vector"
             ):
                 X_centered = X - np.tile(mu_m, m)
+
                 mean_augment_vector = np.sqrt(num_incorporated_images * m / (num_incorporated_images + m)) * (mu_m - mu_n)
 
                 X_augmented = np.hstack((X_centered, mean_augment_vector))
@@ -329,7 +339,6 @@ class PiPCA:
 
             self.num_incorporated_images += m
             self.batch_number += 1
-
 
     def calculate_sample_mean_and_variance(self, imgs):
         """
@@ -661,6 +670,30 @@ class PiPCA:
         )
         return var_tot
 
+    def get_model(self):
+        """
+        Method to retrieve model parameters.
+
+        Returns
+        -------
+        U_tot : ndarray, shape (d x q)
+            iPCA principal axes from model.
+        S_tot : ndarray, shape (1 x q)
+            iPCA singular values from model.
+        V_tot : ndarray, shape (n x q)
+            iPCA eigenimages from model.
+        mu_tot : ndarray, shape (1 x d)
+            Data mean computed from all input images.
+        var_tot : ndarray, shape (1 x d)
+            Sample data variance computed from all input images.
+        """
+        U_tot = self.gather_U()
+        S_tot = self.S
+        V_tot = self.V
+        mu_tot = self.gather_mu()
+        var_tot = self.gather_var()
+        return U_tot, S_tot, V_tot, mu_tot, var_tot
+
     def get_outliers(self):
         """
         Method to retrieve and print outliers on root process.
@@ -855,6 +888,8 @@ class PiPCA:
             batch_indices.append(total_indices)
         
         return np.array(batch_indices)
+    
+    
 
 def distribute_indices_over_ranks(d, size):
     """
@@ -891,6 +926,23 @@ def distribute_indices_over_ranks(d, size):
     split_counts = np.array(split_counts)
 
     return split_indices, split_counts
+
+def append_to_dataset(f, dataset_name, data):
+    if dataset_name not in f.keys():
+        f.create_dataset(dataset_name, data=np.array(data))
+        print(f"Created dataset: {dataset_name}")
+    else:
+        existing_data = f[dataset_name][:]
+        f[dataset_name].resize((len(existing_data) + 1,))
+        f[dataset_name][-1] = data
+        print(f"Added to list: {dataset_name}")
+    
+def compute_norm_difference(current, previous=None):
+    if previous is not None:
+        diff = current - previous
+    else:
+        diff = current
+    return np.linalg.norm(diff)
 
 #### for command line use ###
 
@@ -970,3 +1022,4 @@ if __name__ == "__main__":
     pipca = PiPCA(**kwargs)
     pipca.run()
     pipca.get_outliers()
+
