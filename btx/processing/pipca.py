@@ -314,7 +314,6 @@ class PiPCA:
             ):
                 X_centered = X - np.tile(mu_m, m)
 
-
                 mean_augment_vector = np.sqrt(num_incorporated_images * m / (num_incorporated_images + m)) * (mu_m - mu_n)
 
                 X_augmented = np.hstack((X_centered, mean_augment_vector))
