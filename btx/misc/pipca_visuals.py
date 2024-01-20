@@ -280,8 +280,6 @@ def construct_heatmap_data(img, max_pixels):
 
     return hm_data
 
-import random
-
 def compute_compression_loss(filename, num_components, random_images=False, num_images=10):
     """
     Compute the average frobenius norm between images in an experiment run and their reconstruction. 
