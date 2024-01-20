@@ -91,6 +91,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a6f738ba8859ee5458015f50f04fb4ad1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1misc_1_1pipca__visuals.html#a6f738ba8859ee5458015f50f04fb4ad1">construct_heatmap_data</a> (img, max_pixels)</td></tr>
 <tr class="memdesc:a6f738ba8859ee5458015f50f04fb4ad1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Formats img to properly be displayed by hv.Heatmap()  <a href="namespacebtx_1_1misc_1_1pipca__visuals.html#a6f738ba8859ee5458015f50f04fb4ad1">More...</a><br /></td></tr>
 <tr class="separator:a6f738ba8859ee5458015f50f04fb4ad1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f65a818084bf9f9950d15e9dc2b0325"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebtx_1_1misc_1_1pipca__visuals.html#a9f65a818084bf9f9950d15e9dc2b0325">compute_compression_loss</a> (filename, num_components, random_images=False, num_images=10)</td></tr>
+<tr class="memdesc:a9f65a818084bf9f9950d15e9dc2b0325"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the average frobenius norm between images in an experiment run and their reconstruction.  <a href="namespacebtx_1_1misc_1_1pipca__visuals.html#a9f65a818084bf9f9950d15e9dc2b0325">More...</a><br /></td></tr>
+<tr class="separator:a9f65a818084bf9f9950d15e9dc2b0325"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -143,6 +146,55 @@ Parameters:</h2>
 <h2><a class="anchor" id="autotoc_md133"></a>
 Returns:</h2>
 <p>img_source: index of the image closest to tap location </p>
+
+</div>
+</div>
+<a id="a9f65a818084bf9f9950d15e9dc2b0325"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f65a818084bf9f9950d15e9dc2b0325">&#9670;&nbsp;</a></span>compute_compression_loss()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.misc.pipca_visuals.compute_compression_loss </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>num_components</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>random_images</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>num_images</em> = <code>10</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compute the average frobenius norm between images in an experiment run and their reconstruction. </p>
+<p>The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA."</p>
+<h2><a class="anchor" id="autotoc_md136"></a>
+Parameters:</h2>
+<p>filename : string name of the h5 file num_components: int number of components used random_images: bool, optional whether to choose random images or all images (default is False) num_images: int, optional number of random images to select if random_images is True (default is 10)</p>
+<h2><a class="anchor" id="autotoc_md137"></a>
+Returns:</h2>
+<p>compression loss between initial dataset and pipca projected images </p>
 
 </div>
 </div>
@@ -272,7 +324,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jan 19 2024 03:01:52 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Sat Jan 20 2024 01:15:34 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

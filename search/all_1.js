@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['account_37',['account',['../classbtx_1_1interfaces_1_1ischeduler_1_1JobScheduler.html#a2e083872730fa6b3f83d61f3d9ef798d',1,'btx.interfaces.ischeduler.JobScheduler.account()'],['../namespacescripts_1_1elog__trigger.html#afe2195304ebbee6ceac310a2ac8a0e98',1,'scripts.elog_trigger.account()']]],
-  ['action_38',['action',['../namespacescripts_1_1setup__btx.html#aefe1eb536fe970e1e5e408665b818a50',1,'scripts.setup_btx.action()'],['../namespacescripts_1_1elog__trigger.html#a842314a4547ca072a23291c984054217',1,'scripts.elog_trigger.action()']]],
+  ['account_37',['account',['../namespacescripts_1_1elog__trigger.html#afe2195304ebbee6ceac310a2ac8a0e98',1,'scripts.elog_trigger.account()'],['../classbtx_1_1interfaces_1_1ischeduler_1_1JobScheduler.html#a2e083872730fa6b3f83d61f3d9ef798d',1,'btx.interfaces.ischeduler.JobScheduler.account()']]],
+  ['action_38',['action',['../namespacescripts_1_1elog__trigger.html#a842314a4547ca072a23291c984054217',1,'scripts.elog_trigger.action()'],['../namespacescripts_1_1setup__btx.html#aefe1eb536fe970e1e5e408665b818a50',1,'scripts.setup_btx.action()']]],
   ['actual_5ftime_5fps_39',['actual_time_ps',['../classrawimagetimetool_1_1RawImageTimeTool.html#a0b3afb0b82a3b6c450631da99df98063',1,'rawimagetimetool::RawImageTimeTool']]],
   ['add_5fvirtual_5fdataset_40',['add_virtual_dataset',['../classpeak__finder_1_1PeakFinder.html#a37a3a0c22441114f351a135dd78b584a',1,'peak_finder::PeakFinder']]],
   ['adu_5fto_5fkev_41',['adu_to_keV',['../classbtx_1_1diagnostics_1_1detector_1_1epix10k2M__calibration.html#aae932fee0797ec01018640663f5c987c',1,'btx::diagnostics::detector::epix10k2M_calibration']]],
@@ -18,12 +18,13 @@ var searchData=
   ['anomalous_52',['anomalous',['../classmerge_1_1StreamtoMtz.html#a318c3295b192c7e2483ceb0368fab263',1,'merge.StreamtoMtz.anomalous()'],['../namespacebtx_1_1interfaces_1_1imtz.html#a2c9df78f7ad0d3ac3d09c38cde4da59e',1,'btx.interfaces.imtz.anomalous()']]],
   ['any_53',['Any',['../namespacescripts_1_1setup__btx.html#a4a31614b227fb7cdac3d02902312338d',1,'scripts::setup_btx']]],
   ['app_54',['app',['../namespacebtx_1_1io_1_1h5terminalapp.html#a8fa9ac7b07ede111bc6e6157e84741a2',1,'btx::io::h5terminalapp']]],
-  ['args_55',['args',['../namespacescripts_1_1setup__btx.html#a7868e2c5ec2752e08713f94c55daa230',1,'scripts.setup_btx.args()'],['../namespacescripts_1_1elog__trigger.html#ad755a39fd8d1f1d784a1d0bcce9c9300',1,'scripts.elog_trigger.args()'],['../namespacescripts_1_1submit__main.html#ac87bced6eef68961e9be74e96a43ccc0',1,'scripts.submit_main.args()']]],
-  ['arr1_56',['arr1',['../classbtx_1_1io_1_1h5terminalapp_1_1H5TerminalApp.html#ad6ed201d2f0f6067e7b06e8821ca9e01',1,'btx::io::h5terminalapp::H5TerminalApp']]],
-  ['arr2_57',['arr2',['../classbtx_1_1io_1_1h5terminalapp_1_1H5TerminalApp.html#a05f9ff10942644d3c2070a492c635a33',1,'btx::io::h5terminalapp::H5TerminalApp']]],
-  ['array_5fto_5ffigure_58',['array_to_figure',['../namespacebtx_1_1io_1_1ih5.html#a2a45c572dfc20caefd32401e05dae4df',1,'btx::io::ih5']]],
-  ['assemble_5fimage_5fstack_5fbatch_59',['assemble_image_stack_batch',['../namespacebtx_1_1interfaces_1_1ipsana.html#a1e991ecff6ee6d375907e070e15a4bfc',1,'btx::interfaces::ipsana']]],
-  ['atot_5fthr_60',['atot_thr',['../classpeak__finder_1_1PeakFinder.html#a6e35664564b7c4ad4608db3695fa10e9',1,'peak_finder::PeakFinder']]],
-  ['attrdict_61',['AttrDict',['../classbtx_1_1misc_1_1shortcuts_1_1AttrDict.html',1,'btx::misc::shortcuts']]],
-  ['auth_5fheader_62',['auth_header',['../namespacescripts_1_1elog__trigger.html#a701e3273dea035a5fcd47b2450a7b7f0',1,'scripts::elog_trigger']]]
+  ['append_5fto_5fdataset_55',['append_to_dataset',['../namespacepipca.html#ad2b9ea1261e9106e92fe373c877b83b5',1,'pipca']]],
+  ['args_56',['args',['../namespacescripts_1_1elog__trigger.html#ad755a39fd8d1f1d784a1d0bcce9c9300',1,'scripts.elog_trigger.args()'],['../namespacescripts_1_1setup__btx.html#a7868e2c5ec2752e08713f94c55daa230',1,'scripts.setup_btx.args()'],['../namespacescripts_1_1submit__main.html#ac87bced6eef68961e9be74e96a43ccc0',1,'scripts.submit_main.args()']]],
+  ['arr1_57',['arr1',['../classbtx_1_1io_1_1h5terminalapp_1_1H5TerminalApp.html#ad6ed201d2f0f6067e7b06e8821ca9e01',1,'btx::io::h5terminalapp::H5TerminalApp']]],
+  ['arr2_58',['arr2',['../classbtx_1_1io_1_1h5terminalapp_1_1H5TerminalApp.html#a05f9ff10942644d3c2070a492c635a33',1,'btx::io::h5terminalapp::H5TerminalApp']]],
+  ['array_5fto_5ffigure_59',['array_to_figure',['../namespacebtx_1_1io_1_1ih5.html#a2a45c572dfc20caefd32401e05dae4df',1,'btx::io::ih5']]],
+  ['assemble_5fimage_5fstack_5fbatch_60',['assemble_image_stack_batch',['../namespacebtx_1_1interfaces_1_1ipsana.html#a1e991ecff6ee6d375907e070e15a4bfc',1,'btx::interfaces::ipsana']]],
+  ['atot_5fthr_61',['atot_thr',['../classpeak__finder_1_1PeakFinder.html#a6e35664564b7c4ad4608db3695fa10e9',1,'peak_finder::PeakFinder']]],
+  ['attrdict_62',['AttrDict',['../classbtx_1_1misc_1_1shortcuts_1_1AttrDict.html',1,'btx::misc::shortcuts']]],
+  ['auth_5fheader_63',['auth_header',['../namespacescripts_1_1elog__trigger.html#a701e3273dea035a5fcd47b2450a7b7f0',1,'scripts::elog_trigger']]]
 ];

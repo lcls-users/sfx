@@ -124,12 +124,12 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Compute each pixel's radius for an array with input shape and center. </p>
-<h2><a class="anchor" id="autotoc_md136"></a>
+<h2><a class="anchor" id="autotoc_md138"></a>
 Parameters</h2>
 <p>shape : tuple, 2d dimensions of array center : 2d tuple or array <br  />
  (cx,cy) detector center in pixels; if None, choose image center <br  />
 </p>
-<h2><a class="anchor" id="autotoc_md137"></a>
+<h2><a class="anchor" id="autotoc_md139"></a>
 Returns</h2>
 <p>r : numpy.ndarray, with input shape map of pixels' radii </p>
 
@@ -174,10 +174,10 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Convert distance from number of pixels from detector center to q-space. </p>
-<h2><a class="anchor" id="autotoc_md140"></a>
+<h2><a class="anchor" id="autotoc_md142"></a>
 Parameters</h2>
 <p>npixels : numpy.ndarray, 1d distance in number of pixels from detector center wavelength : float x-ray wavelength in Angstrom distance : float detector distance in mm pixel_size : float detector pixel size in mm</p>
-<h2><a class="anchor" id="autotoc_md141"></a>
+<h2><a class="anchor" id="autotoc_md143"></a>
 Returns</h2>
 <p>qvals : numpy.ndarray, 1d magnitude of q-vector in per Angstrom </p>
 
@@ -222,10 +222,10 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Convert distance from q-space to number of pixels from detector center. </p>
-<h2><a class="anchor" id="autotoc_md142"></a>
+<h2><a class="anchor" id="autotoc_md144"></a>
 Parameters</h2>
 <p>qvals : numpy.ndarray, 1d magnitude of q-vector in per Angstrom wavelength : float x-ray wavelength in Angstrom distance : float detector distance in mm pixel_size : float detector pixel size in mm</p>
-<h2><a class="anchor" id="autotoc_md143"></a>
+<h2><a class="anchor" id="autotoc_md145"></a>
 Returns</h2>
 <p>npixels : numpy.ndarray, 1d distance in number of pixels from detector center </p>
 
@@ -288,10 +288,10 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Compute the radial intensity profile of an image. </p>
-<h2><a class="anchor" id="autotoc_md138"></a>
+<h2><a class="anchor" id="autotoc_md140"></a>
 Parameters</h2>
 <p>data : numpy.ndarray, shape (n,m) detector image center : 2d tuple or array (cx,cy) detector center in pixels; if None, choose image center mask : numpy.ndarray, shape (n,m) detector mask, with zeros corresponding to pixels to mask filter : bool if True, apply a lowpass Butterworth filter to the radial intensity profile filter_order : int order of the Butterworth filter filter_threshold : float critical frequency for the bandpass Butterworth filter threshold : float below this intensity, set the radial intensity profile to zero</p>
-<h2><a class="anchor" id="autotoc_md139"></a>
+<h2><a class="anchor" id="autotoc_md141"></a>
 Returns</h2>
 <p>radialprofile : numpy.ndarray, 1d radial intensity profile of input image </p>
 
@@ -300,7 +300,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jan 19 2024 03:01:52 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Sat Jan 20 2024 01:15:34 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
