@@ -19,14 +19,16 @@ class StreamtoMtz:
     input stream file.
     """
     
-    def __init__(self, input_stream, symmetry, taskdir, cell, ncores=16, queue='ffbh3q', tmp_exe=None, mtz_dir=None, anomalous=False,
-                 mpi_init=False):
+    def __init__(self, input_stream, symmetry, taskdir, cell, ncores=16, queue='milano', tmp_exe=None, mtz_dir=None, anomalous=False,
+                 mpi_init=False, slurm_account="lcls", slurm_reservation=""):
         self.stream = input_stream # file of unmerged reflections, str
         self.symmetry = symmetry # point group symmetry, str
         self.taskdir = taskdir # path for storing output, str
         self.cell = cell # pdb or CrystFEL cell file, str
         self.ncores = ncores # int, number of cores for merging
         self.queue = queue # cluster to submit job to
+        self.slurm_account = slurm_account
+        self.slurm_reservation = slurm_reservation
         self.mtz_dir = mtz_dir # directory to which to transfer mtz
         self.anomalous = anomalous # whether to separate Bijovet pairs
         self._set_up(tmp_exe)
@@ -61,7 +63,9 @@ class StreamtoMtz:
         # make path to executable
         if tmp_exe is None:
             tmp_exe = os.path.join(self.taskdir ,f'merge.sh')
-        self.js = JobScheduler(tmp_exe, ncores=self.ncores, jobname=f'merge', queue=self.queue)
+        self.js = JobScheduler(tmp_exe, ncores=self.ncores, jobname=f'merge',
+                               queue=self.queue, account=self.slurm_account,
+                               reservation=self.slurm_reservation)
         self.js.write_header()
 
         # retrieve paths
@@ -378,3 +382,15 @@ if __name__ == '__main__':
             )
             update_summary(summary_file, summary_dict)
             elog_report_post(summary_file)
+
+            if stream_to_mtz.mtz_dir:
+                shutil.copyfile(
+                    os.path.join(
+                        stream_to_mtz.taskdir,
+                        f'{stream_to_mtz.prefix}.mtz'
+                    ),
+                    os.path.join(
+                        stream_to_mtz.mtz_dir,
+                        f'{stream_to_mtz.prefix}.mtz'
+                    )
+                )

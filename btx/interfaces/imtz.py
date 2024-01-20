@@ -141,7 +141,8 @@ def f2mtz_command(outmtz):
     
     return command
 
-def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16, anomalous=False):
+def run_dimple(mtz, pdb, outdir, queue='milano', ncores=16, anomalous=False, slurm_account="lcls",
+               slurm_reservation=""):
     """
     Run dimple to solve the structure: 
     http://ccp4.github.io/dimple/.
@@ -156,6 +157,10 @@ def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16, anomalous=False):
         output directory for storing results
     anomalous : bool
         if True, generate an anomalous difference map
+    slurm_account : str
+        SLURM account to use. Default: "lcls"
+    slurm_reservation : str
+        SLURM reservation to use, if one. Default: ""
     """
     os.makedirs(outdir, exist_ok=True)
     command = f"dimple {mtz} {pdb} {outdir}"
@@ -166,7 +171,9 @@ def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16, anomalous=False):
                       logdir=outdir,
                       ncores=ncores, 
                       jobname=f'dimple', 
-                      queue=queue)
+                      queue=queue,
+                      account=slurm_account,
+                      reservation=slurm_reservation)
     js.write_header()
     js.write_main(command + "\n", dependencies=['ccp4'])
     js.clean_up()

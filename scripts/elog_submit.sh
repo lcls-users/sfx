@@ -23,6 +23,8 @@ $(basename "$0"):
       Experiment Name
     -r|--run_number
       Run Number
+    -R|--reservation
+      SLURM reservation (optional).
     -t|--task
       Task name
     -tl|--time_limit
@@ -75,6 +77,11 @@ do
       shift
       shift
       ;;
+    -R|--reservation)
+      RESERVATION="$2"
+      shift
+      shift
+      ;;
     -t|--task)
       TASK="$2"
       shift
@@ -99,6 +106,13 @@ fi
 if [[ -z ${FACILITY} ]]; then
     echo "Facility not provided, defaulting to S3DF."
 fi
+
+if [[ -n ${RESERVATION} ]]; then
+    SBATCH_CMD_RESERVATION="#SBATCH --reservation ${RESERVATION}"
+else
+    SBATCH_CMD_RESERVATION=""
+fi
+
 
 SLURM_ACCOUNT=${SLURM_ACCOUNT:='lcls'}
 FACILITY=${FACILITY:='S3DF'}
@@ -180,6 +194,7 @@ ${SBATCH_CMD_ACCOUNT}
 #SBATCH --exclusive
 #SBATCH --job-name ${TASK}
 #SBATCH --ntasks=${CORES}
+${SBATCH_CMD_RESERVATION}
 
 source "${ANA_CONDA_MANAGE}psconda.sh"
 conda env list | grep '*'

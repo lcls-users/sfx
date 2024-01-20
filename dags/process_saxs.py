@@ -1,7 +1,9 @@
 from datetime import datetime
 import os
 from airflow import DAG
-from plugins.jid import JIDSlurmOperator
+import importlib
+jid = importlib.import_module("btx-dev.plugins.jid")
+JIDSlurmOperator = jid.JIDSlurmOperator
 
 description='BTX process SAXS DAG'
 dag_name = os.path.splitext(os.path.basename(__file__))[0]

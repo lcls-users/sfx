@@ -7,6 +7,8 @@ import numpy as np
 import itertools
 import h5py
 import time
+import yaml
+import csv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -101,7 +103,9 @@ def run_analysis(config):
     js = JobScheduler(os.path.join(".", f'ra_{setup.run:04}.sh'), 
                       queue=setup.queue,
                       ncores=task.ncores,
-                      jobname=f'ra_{setup.run:04}')
+                      jobname=f'ra_{setup.run:04}',
+                      account=setup.account,
+                      reservation=setup.reservation)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'])
     js.clean_up()
@@ -185,6 +189,77 @@ def find_peaks(config):
         summary_file = f'{setup.root_dir}/summary_r{setup.run:04}.json'
         update_summary(summary_file, pf.pf_summary)
 
+def find_peaks_multiple_runs(config):
+    from btx.interfaces.ischeduler import JobScheduler
+    from btx.misc.shortcuts import fetch_latest
+    setup = config.setup
+    task = config.find_peaks
+    bay_opt = config.bayesian_optimization
+    """ Perform adaptive peak finding on multiple runs. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+    os.makedirs(taskdir, exist_ok=True)
+    script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/processing/peak_finder.py")
+    
+    logger.info(f'Launching one slurm job to perform peak finding for each run in interval [{bay_opt.first_run}, {bay_opt.last_run}]') 
+    for iter_run in range(bay_opt.first_run, bay_opt.last_run + 1):
+        # Write the command by specifying all the arguments that can be found in the config
+        command = f"python {script_path}"
+        command += f" -e {setup.exp} -r {iter_run} -d {setup.det_type} -o {taskdir} -t {task.tag}"
+        mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=iter_run)
+        if mask_file:
+            command += f" -m {mask_file}"
+        if task.get('event_receiver') is not None:
+            command += f" --event_receiver={task.event_receiver}"
+        if task.get('event_code') is not None:
+            command += f" --event_code={task.event_code}"
+        if task.get('event_logic') is not None:
+            command += f" --event_logic={task.event_logic}"   
+        if task.get('psana_mask') is not None:
+            command += f" --psana_mask={task.psana_mask}"   
+        if task.get('pv_camera_length') is not None:
+            command += f" --pv_camera_length={task.pv_camera_length}"
+        if task.get('min_peaks') is not None:
+            command += f" --min_peaks={task.min_peaks}"
+        if task.get('max_peaks') is not None:
+            command += f" --max_peaks={task.max_peaks}"
+        if task.get('npix_min') is not None:
+            command += f" --npix_min={task.npix_min}"
+        if task.get('npix_max') is not None:
+            command += f" --npix_max={task.npix_max}"
+        if task.get('amax_thr') is not None:
+            command += f" --amax_thr={task.amax_thr}"
+        if task.get('atot_thr') is not None:
+            command += f" --atot_thr={task.atot_thr}"
+        if task.get('son_min') is not None:
+            command += f" --son_min={task.son_min}"
+        if task.get('peak_rank') is not None:
+            command += f" --peak_rank={task.peak_rank}"
+        if task.get('r0') is not None:
+            command += f" --r0={task.r0}"
+        if task.get('dr') is not None:
+            command += f" --dr={task.dr}"
+        if task.get('nsigm') is not None:
+            command += f" --nsigm={task.nsigm}"
+        if task.get('calibdir') is not None:
+            command += f" --calibdir={task.calibdir}"
+        # Launch the Slurm job to perform "find_peaks" on the current run
+        js = JobScheduler(os.path.join(".", f'fp_{iter_run:04}.sh'), 
+                        queue=setup.queue,
+                        ncores=bay_opt.ncores if bay_opt.get('ncores') is not None else 64,
+                        jobname=f'fp_{iter_run:04}',
+                        account=setup.account,
+                        reservation=setup.reservation)
+        js.write_header()
+        js.write_main(f"{command}\n", dependencies=['psana'])
+        js.clean_up()
+        js.submit()
+        logger.info(f'Launched a slurm job to perform peak finding for run {iter_run} \
+                    in interval [{bay_opt.first_run}, {bay_opt.last_run}] of experiment {setup.exp}...')
+    
+    logger.info('All slurm jobs have been launched!')
+    logger.info('Done!')
+    
+
 def index(config):
     from btx.processing.indexer import Indexer
     from btx.misc.shortcuts import fetch_latest
@@ -196,10 +271,38 @@ def index(config):
     indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir,
                           geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate,
                           multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64,
-                          time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False)
+                          time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False, slurm_account=setup.account,
+                          slurm_reservation=setup.reservation)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.launch()
     logger.info(f'Indexing launched!')
+
+def index_multiple_runs(config):
+    from btx.processing.indexer import Indexer
+    from btx.misc.shortcuts import fetch_latest
+    setup = config.setup
+    task = config.index
+    bay_opt = config.bayesian_optimization
+    """ Index multiple runs using indexamajig. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+
+    logger.info(f'Launching indexing for each run in interval [{bay_opt.first_run}, {bay_opt.last_run}]') 
+    for iter_run in range(bay_opt.first_run, bay_opt.last_run + 1):
+        geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=iter_run)
+        indexer_obj = Indexer(exp=config.setup.exp, run=iter_run, det_type=config.setup.det_type, tag=task.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir,
+                            geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate,
+                            multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64,
+                            time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False, slurm_account=setup.account,
+                            slurm_reservation=setup.reservation)
+        logger.debug(f'Generating indexing executable for run {iter_run} \
+                     in interval [{bay_opt.first_run}, {bay_opt.last_run}] of experiment {setup.exp}...')
+        indexer_obj.launch()
+        logger.info(f'Indexing for run {iter_run} in interval [{bay_opt.first_run}, {bay_opt.last_run}] launched!')
+
+    logger.info('All slurm jobs have been launched!')
+    logger.info('Done!')
+        
+
 
 def summarize_idx(config):
     import subprocess
@@ -269,7 +372,9 @@ def stream_analysis(config):
                            ncores=task.get('ncores') if task.get('ncores') is not None else 6,
                            cell_only=task.get('cell_only') if task.get('cell_only') is not None else False,
                            cell_out=os.path.join(setup.root_dir, 'cell', f'{task.tag}.cell'),
-                           cell_ref=task.get('ref_cell'))
+                           cell_ref=task.get('ref_cell'),
+                           slurm_account=setup.account,
+                           slurm_reservation=setup.reservation)
     logger.info(f'Stream analysis launched')
 
 def determine_cell(config):
@@ -308,7 +413,9 @@ def merge(config):
     stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile, queue=setup.get('queue'),
                                 ncores=task.get('ncores') if task.get('ncores') is not None else 16,
                                 mtz_dir=os.path.join(setup.root_dir, "solve", f"{task.tag}"),
-                                anomalous=task.get('anomalous') if task.get('anomalous') is not None else False)
+                                anomalous=task.get('anomalous') if task.get('anomalous') is not None else False,
+                                slurm_account=setup.account,
+                                slurm_reservation=setup.reservation)
     stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model,
                                   min_res=task.get('min_res'), push_res=task.get('push_res'), max_adu=task.get('max_adu'))
     for ns in [1, task.nshells]:
@@ -330,7 +437,9 @@ def solve(config):
                taskdir,
                queue=setup.get('queue'),
                ncores=task.get('ncores') if task.get('ncores') is not None else 16,
-               anomalous=task.get('anomalous') if task.get('anomalous') is not None else False)
+               anomalous=task.get('anomalous') if task.get('anomalous') is not None else False,
+               slurm_account=setup.account,
+               slurm_reservation=setup.reservation)
     logger.info(f'Dimple launched!')
 
 def refine_geometry(config, task=None):
@@ -364,7 +473,10 @@ def refine_geometry(config, task=None):
                         geom_file,
                         task.dx,
                         task.dy,
-                        task.dz)
+                        task.dz,
+                        slurm_account=setup.account,
+                        slurm_reservation=setup.reservation
+    )
     geopt.launch_indexing(setup.exp, setup.det_type, config.index, cell_file)
     geopt.launch_stream_wrangling(config.stream_analysis)
     geopt.launch_merging(config.merge)
@@ -656,4 +768,20 @@ def pipca_run(config):
             append_to_dataset(f, 'norm_diff_S_list', norm_diff_S_list)
             append_to_dataset(f, 'norm_diff_mu_list', norm_diff_mu_list)
             append_to_dataset(f, 'norm_diff_var_list', norm_diff_var_list)
-        
+
+def bayesian_optimization(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Perform an iteration of the Bayesian optimization. """
+    logger.info('Running an iteration of the Bayesian Optimization.')
+    BayesianOptimization.run_bayesian_opt(config)
+    logger.info('Done!')
+    
+def bo_init_samples_configs(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Generates the config files that will be used to generate the initial samples for the Bayesian optimization. """
+    BayesianOptimization.init_samples_configs(config, logger)
+
+def bo_aggregate_init_samples(config):
+    from btx.diagnostics.bayesian_optimization import BayesianOptimization
+    """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
+    BayesianOptimization.aggregate_init_samples(config, logger)

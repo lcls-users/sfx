@@ -1,0 +1,105 @@
+setup:
+  queue: 'milano'
+  root_dir: '/sdf/data/lcls/ds/mfx/mfxx49820/scratch/pegiaco/'
+  exp: 'mfxx49820'
+  run: 16
+  det_type: 'epix10k2M'
+  account: 'lcls:mfxx49820'
+  reservation: ''
+
+fetch_mask:
+  dataset: '/data/data'
+
+fetch_geom:
+
+build_mask:
+  thresholds: -10 5000
+  n_images: 20
+  n_edge: 1
+  combine: True
+
+run_analysis:
+  max_events: -1
+
+opt_geom:
+  n_iterations: 5
+  n_peaks: 3
+  threshold: 1000000
+  center: 823 833
+
+find_peaks:
+  tag: 'sample2'
+  psana_mask: False
+  min_peaks: 10
+  max_peaks: 2048
+  npix_min: 2
+  npix_max: 30
+  amax_thr: 40.
+  atot_thr: 180.
+  son_min: 10.0
+  peak_rank: 3
+  r0: 3.0
+  dr: 2.0
+  nsigm: 10.0
+
+index:
+  time: '3:00:00'
+  ncores: 64
+  tag: 'sample2'
+  tag_cxi: 'sample2'
+  int_radius: '3,4,5'
+  methods: 'mosflm'
+  tolerance: '5,5,5,1.5'
+  no_revalidate: True
+  multi: True
+  profile: True
+  cell: '/sdf/data/lcls/ds/mfx/mfxx49820/scratch/pegiaco/cell/sample2.cell'
+
+stream_analysis:
+  tag: 'sample2'
+
+determine_cell:
+  tag: 'sample2'
+
+merge:
+  tag: 'sample2'
+  symmetry: '4/mmm_uac'
+  iterations: 1
+  model: 'unity'
+  foms: 'CCstar Rsplit'
+  nshells: 10
+  highres: 1.6
+
+bayesian_optimization:
+  tag: 'sample2'
+  task_to_optimize: "find_peaks"
+  opt_type: "min"
+  score_task: "merge"
+  loop_tasks: ["find_peaks", "index", "stream_analysis", "merge"]
+  fom: "Rsplit"
+  kernel: "rbf"
+  acquisition_function: "upper_confidence_bound"
+  beta: 2.0
+  first_run: 13
+  last_run: 18
+  n_samples_init: 5
+  n_points_per_param: 100
+  range_amax_thr: [20, 60]
+  range_atot_thr: [100, 200]
+  range_son_min: [5, 15]
+
+solve:
+  tag: 'sample2'
+  pdb: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/cell/193l.pdb'
+
+refine_center:
+  runs: 16 33
+  dx: -1 1 3
+  dy: -1 1 3
+ 
+refine_distance:
+  runs: 16 33 1
+  dz: -0.001 0.001 5
+
+elog_display:
+
