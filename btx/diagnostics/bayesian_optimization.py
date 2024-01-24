@@ -109,13 +109,13 @@ class BayesianOptimization:
 
         ##### 1. Save the current parameters and the associated score, if any
 
+        # Get the current parameters
+        n_params, params, params_names, params_ranges_keys= cls.get_parameters(task, task_to_optimize)
+        print(params)
+
         score_file_name = f"{task.tag}_{task.fom}_n1.dat" 
         score_file_path = os.path.join(setup.root_dir, task.score_task, score_task.tag, "hkl", score_file_name)
         if os.path.exists(score_file_path):
-            # Get the current parameters
-            n_params, params, params_names, params_ranges_keys= cls.get_parameters(task, task_to_optimize)
-            print(params)
-
             # Get the score from the interation that has just been run
             score = cls.get_last_score(setup, task, score_task)
             print(score)
@@ -325,6 +325,7 @@ class BayesianOptimization:
             writer.writerow(['score'] + params_names)
             # Write the data
             data_to_write = [(score, *params) for score, params in zip(samples_scores, samples_params)]
+            print(data_to_write)
             writer.writerows(data_to_write)
 
         # Delete the unnecessary cell files

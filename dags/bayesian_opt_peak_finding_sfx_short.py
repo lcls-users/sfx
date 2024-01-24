@@ -60,7 +60,10 @@ for branch_id in range(1, n_samples_init + 1):
   # Draw the branch
   bo_init_samples_configs >> find_peaks >> index >> stream_analysis >> merge >> bo_aggregate_init_samples
   
+# First Bayesian Optimization task to use the samples genereated in the initialization
+bayesian_optimization = JIDSlurmOperator( task_id=f'bayesian_optimization__bo{0:03d}', dag=dag )
 
+bo_aggregate_init_samples >> bayesian_optimization
 
 # Branch Operator
 op_utils = OperatorsUtils(criterion_name="max_iterations",
@@ -79,8 +82,8 @@ for id in range(1, max_iterations + 2):
   )
   branch_operators.append(branch)
 
-# Connect the aggregate task to the first branch operator
-bo_aggregate_init_samples >> branch_operators[0]
+# Connect the first bayesian optimization task to the first branch operator
+bayesian_optimization >> branch_operators[0]
 
 # Draw all branches
 for i in range(max_iterations):
