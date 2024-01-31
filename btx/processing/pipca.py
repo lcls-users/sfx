@@ -1,6 +1,7 @@
 import os, csv, h5py, argparse
 
 import numpy as np
+import time
 from mpi4py import MPI
 
 from matplotlib import pyplot as plt
@@ -14,6 +15,8 @@ import panel as pn
 import panel.widgets as pnw
 
 from btx.misc.shortcuts import TaskTimer
+
+from btx.misc.pipca_visuals import compute_compression_loss
 
 from btx.interfaces.ipsana import (
     PsanaInterface,
@@ -123,9 +126,13 @@ class PiPCA:
         """
         Perform iPCA on run subject to initialization parameters.
         """
+        start_time = time.time()
+
         batch_size = self.batch_size
         num_images = self.num_images
 
+        print("CPU:", self.size)
+        print("rank:", self.rank)
         # initialize and prime model, if specified
         if self.priming:
             img_batch = self.get_formatted_images(
@@ -167,22 +174,33 @@ class PiPCA:
         S = self.S
         V = self.V
         
+        end_time = time.time()
+        
         if self.rank == 0:  
             print("Model complete")
-        
+            
+            execution_time = end_time - start_time  # Calculate the execution time
+
             # save model to an hdf5 file
-            with h5py.File(self.filename, 'w') as f:
-                f.create_dataset('exp', data=self.psi.exp)
-                f.create_dataset('run', data=self.psi.run)
-                f.create_dataset('det_type', data=self.psi.det_type)
-                f.create_dataset('start_offset', data=self.start_offset)
-                f.create_dataset('loadings', data=self.pc_data)
-                f.create_dataset('U', data=U)
-                f.create_dataset('S', data=S)
-                f.create_dataset('V', data=V)
-                f.create_dataset('mu', data=self.mu)
-                f.create_dataset('total_variance', data=self.total_variance)
+            with h5py.File(self.filename, 'a') as f:
+                if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f or 'loadings' not in f:
+                    # Create datasets only if they don't exist
+                    f.create_dataset('exp', data=self.psi.exp)
+                    f.create_dataset('det_type', data=self.psi.det_type)
+                    f.create_dataset('start_offset', data=self.start_offset)
+                    f.create_dataset('loadings', data=self.pc_data)
+
+                create_or_update_dataset(f, 'run', self.psi.run)
+                create_or_update_dataset(f, 'U', U)
+                create_or_update_dataset(f, 'S', S)
+                create_or_update_dataset(f, 'V', V)
+                create_or_update_dataset(f, 'mu', self.mu)
+                create_or_update_dataset(f, 'total_variance', self.total_variance)
+
+                append_to_dataset(f, 'execution_times', data=execution_time)
                 print(f'Model saved to {self.filename}')
+
+            compute_and_save_metrics(self.filename, self.num_components, U, previous_U, S, previous_S, self.mu, previous_mu, self.total_variance, previous_var)
 
     def get_formatted_images(self, n, start_index, end_index):
         """
@@ -529,7 +547,7 @@ class PiPCA:
         _, m = X.shape
         num_components = self.num_components
 
-        #self.comm.Barrier()
+        self.comm.Barrier()
 
         # Gather all X and U across all ranks
         with TaskTimer(self.task_durations, "V - gather X and U"):
@@ -537,7 +555,7 @@ class PiPCA:
             U_tot = self.gather_U()
 
         V = np.empty((num_incorporated_images + m, num_components))
-
+        
         self.comm.Barrier()
 
         with TaskTimer(self.task_durations, "V - compute updated V"):
@@ -578,7 +596,7 @@ class PiPCA:
         if self.rank == 0:
             X_tot = np.empty((self.num_features, m))
         else:
-            X_tot = None
+            X_tot = np.empty((self.num_features, m))
 
         start_indices = self.split_indices[:-1]
 
@@ -596,7 +614,7 @@ class PiPCA:
         if self.rank == 0:
             X_tot = np.reshape(X_tot, (self.num_features, m))
 
-        return X_tot
+        return X_tot 
     
     def gather_U(self):
         """
@@ -604,9 +622,8 @@ class PiPCA:
         """
         if self.rank == 0:
             U_tot = np.empty((self.num_features, self.num_components))
-
         else:
-            U_tot = None
+            U_tot = np.empty((self.num_features, self.num_components))
 
         start_indices = self.split_indices[:-1]
 
@@ -624,7 +641,7 @@ class PiPCA:
         if self.rank == 0:
             U_tot = np.reshape(U_tot, (self.num_features, self.num_components))
 
-        return U_tot
+        return U_tot 
 
     def gather_mu(self):
         """
@@ -633,7 +650,7 @@ class PiPCA:
         if self.rank == 0:
             mu_tot = np.empty((self.num_features, 1))
         else:
-            mu_tot = None
+            mu_tot = np.empty((self.num_features, 1))
 
         start_indices = self.split_indices[:-1]
         self.comm.Gatherv(
@@ -646,7 +663,7 @@ class PiPCA:
             ],
             root=0,
         )
-        return mu_tot
+        return mu_tot 
 
     def gather_var(self):
         """
@@ -655,7 +672,7 @@ class PiPCA:
         if self.rank == 0:
             var_tot = np.empty((self.num_features, 1))
         else:
-            var_tot = None
+            var_tot = np.empty((self.num_features, 1))
 
         start_indices = self.split_indices[:-1]
         self.comm.Gatherv(
@@ -668,7 +685,7 @@ class PiPCA:
             ],
             root=0,
         )
-        return var_tot
+        return var_tot 
 
     def get_model(self):
         """
@@ -928,21 +945,69 @@ def distribute_indices_over_ranks(d, size):
     return split_indices, split_counts
 
 def append_to_dataset(f, dataset_name, data):
-    if dataset_name not in f.keys():
+    if dataset_name not in f:
         f.create_dataset(dataset_name, data=np.array(data))
         print(f"Created dataset: {dataset_name}")
     else:
-        existing_data = f[dataset_name][:]
-        f[dataset_name].resize((len(existing_data) + 1,))
-        f[dataset_name][-1] = data
-        print(f"Added to list: {dataset_name}")
-    
+        if isinstance(f[dataset_name], h5py.Dataset) and f[dataset_name].shape == ():
+            # Scalar dataset, convert to array
+            existing_data = np.atleast_1d(f[dataset_name][()])
+        else:
+            # Non-scalar dataset, use slicing
+            existing_data = f[dataset_name][:]
+
+        new_data = np.atleast_1d(np.array(data))
+        data_combined = np.concatenate([existing_data, new_data])
+        del f[dataset_name]
+        f.create_dataset(dataset_name, data=data_combined)
+        print(f"Completed dataset: {dataset_name}")
+
 def compute_norm_difference(current, previous=None):
     if previous is not None:
         diff = current - previous
     else:
         diff = current
     return np.linalg.norm(diff)
+
+def create_or_update_dataset(f, name, data):
+    if name not in f:
+        f.create_dataset(name, data=data)
+    else:
+        del f[name]
+        f.create_dataset(name, data=data)
+        print(f"Replaced dataset: {name}")
+
+
+def compute_and_save_metrics(filename, num_components, U, previous_U, S, previous_S, mu, previous_mu, total_variance, previous_var):
+
+    # Compute differences for each list
+    diff_U = compute_norm_difference(U, previous_U)
+    diff_S = compute_norm_difference(S, previous_S)
+    diff_mu = compute_norm_difference(mu, previous_mu)
+    diff_var = compute_norm_difference(total_variance, previous_var)
+
+    # Compute compression losses
+    start_time = time.time()
+    compression_loss_random = compute_compression_loss(filename, num_components, True, 3)[0]
+    end_time = time.time()
+    time_random = end_time- start_time
+    print(f"Random: {compression_loss_random}, {time_random}")
+
+    start_time = time.time()
+    compression_loss_full = compute_compression_loss(filename, num_components)[0]
+    end_time = time.time()
+    time_full = end_time- start_time
+    print(f"Full: {compression_loss_full}, {time_full}")
+
+    with h5py.File(filename, 'a') as f:
+        append_to_dataset(f, 'compression_loss_random_values', data=compression_loss_random)
+        append_to_dataset(f, 'compression_loss_full_values', data=compression_loss_full)
+        append_to_dataset(f, 'norm_diff_U_list', data=diff_U)
+        append_to_dataset(f, 'norm_diff_S_list', data=diff_S)
+        append_to_dataset(f, 'norm_diff_mu_list', data=diff_mu)
+        append_to_dataset(f, 'norm_diff_var_list', data=diff_var)
+
+    print("Metrics saved to HDF5 file.")
 
 #### for command line use ###
 
