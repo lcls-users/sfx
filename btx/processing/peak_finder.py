@@ -616,7 +616,7 @@ def parse_input():
     parser.add_argument('-t', '--tag', help='Tag to append to cxi file names', required=False, type=str, default='')
     parser.add_argument('-m', '--mask', help='Binary mask', required=False, type=str)
     parser.add_argument('--event_receiver', help='Event Receiver to be used: evr0 or evr1', required=False, type=str, default='None')
-    parser.add_argument('--event_code', help='Event code', required=False, type=int, default='None')
+    parser.add_argument('--event_code', help='Event code', required=False, type=int, default=None)
     parser.add_argument('--event_logic', help='True if only the event code is processed. False if it is ignored.', type=bool, default=True)
     parser.add_argument('--psana_mask', help='If True, apply mask from psana Detector object', required=False, type=bool, default=True)
     parser.add_argument('--pv_camera_length', help='PV associated with camera length', required=False, type=str)

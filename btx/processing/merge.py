@@ -176,12 +176,12 @@ class StreamtoMtz:
                 command += f" --highres={highres}"
             self.js.write_main(f"{command}\n")        
 
-    def launch(self):
+    def launch(self, wait=True):
         """
         Write an indexing executable for submission to slurm.
         """   
         self.js.clean_up()
-        self.js.submit()
+        self.js.submit(wait=wait)
 
     def merge_summary(self,
                       foms: list = ['CCstar', 'Rsplit'],

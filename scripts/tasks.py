@@ -256,7 +256,6 @@ def find_peaks_multiple_runs(config):
     
     logger.info('All slurm jobs have been launched!')
     logger.info('Done!')
-    
 
 def index(config):
     from btx.processing.indexer import Indexer
@@ -299,8 +298,6 @@ def index_multiple_runs(config):
 
     logger.info('All slurm jobs have been launched!')
     logger.info('Done!')
-        
-
 
 def summarize_idx(config):
     import subprocess
@@ -622,6 +619,9 @@ def timetool_correct(config):
 
     tt.timetool_correct(run, nominal, model, figs)
 
+
+### Bayesian Optimization
+
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Perform an iteration of the Bayesian optimization. """
@@ -639,4 +639,213 @@ def bo_aggregate_init_samples(config):
     """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
     BayesianOptimization.aggregate_init_samples(config, logger)
 
+### BO Benchmark
+    
+def find_peaks_bo_benchmark(config):
+    from btx.interfaces.ischeduler import JobScheduler
+    from btx.misc.shortcuts import fetch_latest
+    setup = config.setup
+    task = config.find_peaks
+    bay_opt = config.bayesian_optimization
+    """ Perform adaptive peak finding on run. A grid of parameters is used to benchmark the Bayesian Optimization applied to peak finding. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+    os.makedirs(taskdir, exist_ok=True)
+    script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/processing/peak_finder.py")
+    cell_dir_path = os.path.join(setup.root_dir, "cell")
 
+    atot_thr_MIN = 100
+    atot_thr_MAX = 200
+    atot_thr_step = 5
+
+    son_min_MIN = 5
+    son_min_MAX = 15
+    son_min_step = 0.5
+    
+    logger.info(f'Launching slurm jobs to perform peak finding with parameters atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
+                                                                    and son_min in range({son_min_MIN}, {son_min_MAX} + {son_min_step}, {son_min_step})') 
+    for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
+        for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
+            new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
+            # Write the command by specifying all the arguments that can be found in the config
+            command = f"python {script_path}"
+            command += f" -e {setup.exp} -r {setup.run} -d {setup.det_type} -o {os.path.join(taskdir ,f'r{setup.run:04}')} -t {new_tag}"
+            mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
+            if mask_file:
+                command += f" -m {mask_file}"
+            if task.get('event_receiver') is not None:
+                command += f" --event_receiver={task.event_receiver}"
+            if task.get('event_code') is not None:
+                command += f" --event_code={task.event_code}"
+            if task.get('event_logic') is not None:
+                command += f" --event_logic={task.event_logic}"   
+            if task.get('psana_mask') is not None:
+                command += f" --psana_mask={task.psana_mask}"   
+            if task.get('pv_camera_length') is not None:
+                command += f" --pv_camera_length={task.pv_camera_length}"
+            if task.get('min_peaks') is not None:
+                command += f" --min_peaks={task.min_peaks}"
+            if task.get('max_peaks') is not None:
+                command += f" --max_peaks={task.max_peaks}"
+            if task.get('npix_min') is not None:
+                command += f" --npix_min={task.npix_min}"
+            if task.get('npix_max') is not None:
+                command += f" --npix_max={task.npix_max}"
+            if task.get('amax_thr') is not None:
+                command += f" --amax_thr={task.amax_thr}"
+            if task.get('atot_thr') is not None:
+                command += f" --atot_thr={atot_thr}"
+            if task.get('son_min') is not None:
+                command += f" --son_min={son_min}"
+            if task.get('peak_rank') is not None:
+                command += f" --peak_rank={task.peak_rank}"
+            if task.get('r0') is not None:
+                command += f" --r0={task.r0}"
+            if task.get('dr') is not None:
+                command += f" --dr={task.dr}"
+            if task.get('nsigm') is not None:
+                command += f" --nsigm={task.nsigm}"
+            if task.get('calibdir') is not None:
+                command += f" --calibdir={task.calibdir}"
+            # Create the cell file
+            shutil.copy(os.path.join(cell_dir_path, f"{task.tag}.cell"), os.path.join(cell_dir_path, f"{new_tag}.cell"))
+            logger.info(f'[LOOP] Cell file copied.')
+            # Launch the Slurm job to perform "find_peaks" on the current run
+            js = JobScheduler(os.path.join(".", f'fp_{new_tag}.sh'), 
+                            queue=setup.queue,
+                            ncores=bay_opt.ncores if bay_opt.get('ncores') is not None else 120,
+                            jobname=f'fp_{new_tag}',
+                            account=setup.account,
+                            reservation=setup.reservation)
+            js.write_header()
+            js.write_main(f"{command}\n", dependencies=['psana'])
+            js.clean_up()
+            js.submit(wait=False)
+            logger.info(f'[LOOP] Launched a slurm job to perform peak finding for run {setup.run} of experiment {setup.exp} \
+                            with parameters atot_thr = {atot_thr} and son_min = {son_min}...')
+    
+    # Delete the cell files
+    for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
+        for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
+            new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
+            os.remove(os.path.join(cell_dir_path, f"{new_tag}.cell"))
+    logger.info(f'Cell files deleted.')
+    
+    logger.info('All slurm jobs have been launched!')
+    logger.info('Done!')
+    
+def index_bo_benchmark(config):
+    from btx.processing.indexer import Indexer
+    from btx.misc.shortcuts import fetch_latest
+    setup = config.setup
+    task = config.index
+    bay_opt = config.bayesian_optimization
+    """ Index run using indexamajig. A grid of parameters is used to benchmark the Bayesian Optimization applied to peak finding. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+
+    atot_thr_MIN = 100
+    atot_thr_MAX = 200
+    atot_thr_step = 5
+
+    son_min_MIN = 5
+    son_min_MAX = 15
+    son_min_step = 0.5
+
+    logger.info(f'Launching indexing for run {setup.run} with parameters atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
+                                                                    and son_min in range({son_min_MIN}, {son_min_MAX} + {son_min_step}, {son_min_step})') 
+    for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
+        for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
+            new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
+            geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
+            indexer_obj = Indexer(exp=config.setup.exp, run=setup.run, det_type=config.setup.det_type, tag=new_tag, tag_cxi=new_tag, taskdir=taskdir,
+                                geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate,
+                                multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 120,
+                                time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False, slurm_account=setup.account,
+                                slurm_reservation=setup.reservation)
+            indexer_obj.launch(wait=False)
+            logger.info(f'[LOOP] Launched a slurm job to perform indexing for run {setup.run} of experiment {setup.exp} \
+                            with parameters atot_thr = {atot_thr} and son_min = {son_min}...')
+
+    logger.info('All slurm jobs have been launched!')
+    logger.info('Done!')
+
+def stream_analysis_bo_benchmark(config):
+    from btx.interfaces.istream import launch_stream_analysis
+    setup = config.setup
+    task = config.stream_analysis
+    """ Plot cell distribution and peakogram, write new cell file, and concatenate streams. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+    os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
+    os.makedirs(os.path.join(setup.root_dir, 'cell'), exist_ok=True)
+
+    atot_thr_MIN = 100
+    atot_thr_MAX = 200
+    atot_thr_step = 5
+
+    son_min_MIN = 5
+    son_min_MAX = 15
+    son_min_step = 0.5
+
+    logger.info(f'Launching stream analysis for run {setup.run} with parameters atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
+                                                                    and son_min in range({son_min_MIN}, {son_min_MAX} + {son_min_step}, {son_min_step})') 
+    for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
+        for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
+            new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
+            launch_stream_analysis(os.path.join(taskdir, f"r*{new_tag}.stream"),
+                                    os.path.join(taskdir, f"{new_tag}.stream"),
+                                    os.path.join(taskdir, 'figs'),
+                                    os.path.join(taskdir, "stream_analysis.sh"),
+                                    setup.queue,
+                                    ncores=task.get('ncores') if task.get('ncores') is not None else 12,
+                                    cell_only=task.get('cell_only') if task.get('cell_only') is not None else False,
+                                    cell_out=os.path.join(setup.root_dir, 'cell', f'{new_tag}.cell'),
+                                    cell_ref=task.get('ref_cell'),
+                                    slurm_account=setup.account,
+                                    slurm_reservation=setup.reservation,
+                                    wait=False)
+            logger.info(f'[LOOP] Launched a slurm job to perform stream analysis for run {setup.run} of experiment {setup.exp} \
+                            with parameters atot_thr = {atot_thr} and son_min = {son_min}...')
+    logger.info(f'All stream analysis have been launched')
+    logger.info(f'Done!')
+
+def merge_bo_benchmark(config):
+    from btx.processing.merge import StreamtoMtz
+    setup = config.setup
+    task = config.merge
+    """ Merge reflections from stream file and convert to mtz. """
+
+    atot_thr_MIN = 100
+    atot_thr_MAX = 200
+    atot_thr_step = 5
+
+    son_min_MIN = 5
+    son_min_MAX = 15
+    son_min_step = 0.5
+
+    logger.info(f'Launching merge for run {setup.run} with parameters atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
+                                                                    and son_min in range({son_min_MIN}, {son_min_MAX} + {son_min_step}, {son_min_step})') 
+    for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
+        for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
+            new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
+
+            taskdir = os.path.join(setup.root_dir, 'merge', f'{new_tag}')
+            input_stream = os.path.join(setup.root_dir, f"index/{new_tag}.stream")
+            cellfile = os.path.join(setup.root_dir, f"cell/{new_tag}.cell")
+            foms = task.foms.split(" ")
+            stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile, queue=setup.get('queue'),
+                                        ncores=task.get('ncores') if task.get('ncores') is not None else 32,
+                                        mtz_dir=os.path.join(setup.root_dir, "solve", f"{new_tag}"),
+                                        anomalous=task.get('anomalous') if task.get('anomalous') is not None else False,
+                                        slurm_account=setup.account,
+                                        slurm_reservation=setup.reservation)
+            stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model,
+                                        min_res=task.get('min_res'), push_res=task.get('push_res'), max_adu=task.get('max_adu'))
+            for ns in [1, task.nshells]:
+                stream_to_mtz.cmd_compare_hkl(foms=foms, nshells=ns, highres=task.get('highres'))
+            stream_to_mtz.cmd_hkl_to_mtz(highres=task.get('highres'),
+                                        space_group=task.get('space_group') if task.get('space_group') is not None else 1)
+            stream_to_mtz.cmd_report(foms=foms, nshells=task.nshells)
+            stream_to_mtz.launch(wait=False)
+            logger.info(f'[LOOP] Launched a slurm job to perform merge for run {setup.run} of experiment {setup.exp} \
+                            with parameters atot_thr = {atot_thr} and son_min = {son_min}...')
+    logger.info(f'All merge tasks have been launched')
+    logger.info(f'Done!')

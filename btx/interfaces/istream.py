@@ -594,7 +594,7 @@ def cluster_cell_params(cell, out_clusters, out_cell, in_cell=None, eps=5, min_s
 
 def launch_stream_analysis(in_stream, out_stream, fig_dir, tmp_exe, queue, ncores, 
                            cell_only=False, cell_out=None, cell_ref=None, addl_command=None,
-                           slurm_account="lcls", slurm_reservation=""):
+                           slurm_account="lcls", slurm_reservation="", wait=True):
                            
     """
     Launch stream analysis task using iScheduler.
@@ -648,7 +648,7 @@ def launch_stream_analysis(in_stream, out_stream, fig_dir, tmp_exe, queue, ncore
     if addl_command is not None:
         js.write_main(f"{addl_command}\n")
     js.clean_up()
-    js.submit()
+    js.submit(wait=wait)
 
 def get_most_recent_run(streams: list) -> int:
     """ From a list of stream files, get the most recent run.

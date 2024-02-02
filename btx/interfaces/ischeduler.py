@@ -140,10 +140,14 @@ class JobScheduler:
         with open(self.jobfile, 'a') as jfile:
             jfile.write(application.replace("python", pythonpath))
 
-    def submit(self):
+    def submit(self, wait=True):
         """ Submit to queue. """
-        os.system(f"sbatch -W {self.jobfile}")
-        logger.info(f"sbatch -W {self.jobfile}")
+        if wait:
+            os.system(f"sbatch -W {self.jobfile}")
+            logger.info(f"sbatch -W {self.jobfile}")
+        else:
+            os.system(f"sbatch {self.jobfile}")
+            logger.info(f"sbatch {self.jobfile}")
 
     def clean_up(self):
         """ Add a line to delete submission file."""

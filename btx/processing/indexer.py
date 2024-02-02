@@ -76,7 +76,7 @@ class Indexer:
         self.indexing_summary = os.path.join(self.taskdir ,f'r{self.run:04}/indexing_{self.tag}.summary')
         self.script_path = os.path.abspath(__file__)
 
-    def launch(self, addl_command=None, dont_report=False):
+    def launch(self, addl_command=None, dont_report=False, wait=True):
         """
         Write an indexing executable for submission to slurm.
 
@@ -107,7 +107,7 @@ class Indexer:
         js.write_header()
         js.write_main(command, dependencies=['crystfel'] + self.methods.split(','))
         js.clean_up()
-        js.submit()
+        js.submit(wait=wait)
         logger.info(f"Indexing executable submitted: {self.tmp_exe}")
 
     @property
@@ -128,6 +128,8 @@ class Indexer:
         output,error  = subprocess.Popen(
             command, universal_newlines=True,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        print(output)
+        print(int(output.split(":")[1].split("\n")[0]))
         n_total = int(output.split(":")[1].split("\n")[0])
 
         key_strings: list = ['Number of lattices found',
