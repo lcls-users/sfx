@@ -23,20 +23,21 @@ from mpi4py import MPI
 from matplotlib import pyplot as plt
 from matplotlib import colors
 
-##########################
-##########################
-#JOHN CHANGE BACK AFTER 12/15/2023
-from btx.misc.shortcuts import TaskTimer
+#JOHN: COMMENTED OUT AFTER 03/11/2024
+# ##########################
+# ##########################
+# #JOHN CHANGE BACK AFTER 12/15/2023
+# from btx.misc.shortcuts import TaskTimer
 
-from btx.interfaces.ipsana import (
-    PsanaInterface,
-    bin_data,
-    bin_pixel_index_map,
-    retrieve_pixel_index_map,
-    assemble_image_stack_batch,
-)
-##########################
-##########################
+# from btx.interfaces.ipsana import (
+#     PsanaInterface,
+#     bin_data,
+#     bin_pixel_index_map,
+#     retrieve_pixel_index_map,
+#     assemble_image_stack_batch,
+# )
+# ##########################
+# ##########################
 
 
 from PIL import Image
@@ -637,6 +638,39 @@ class MergeTree:
             return self.fd.get()
         else:
             return
+        
+    def serialMerge(self):
+        """
+        Merge Frequent Direction Components in a serial fashion. 
+        Returns
+        -------
+        finalSketch : ndarray
+            Merged matrix sketch of cumulative data
+        """
+
+        if self.rank==0:
+            for currWorkingCore in range(1, self.size):
+                bufferMe = np.empty(self.buffSizes[currWorkingCore] * self.data.shape[1], dtype=np.double)
+                self.comm.Recv(bufferMe, source=currWorkingCore, tag=currWorkingCore)
+                bufferMe = np.reshape(bufferMe, (self.buffSizes[currWorkingCore], self.data.shape[1]))
+                self.fd.update_model(np.hstack((bufferMe.T, np.zeros((bufferMe.shape[1],1)))))
+        else:
+            bufferMe = self.fd.get().copy().flatten()
+            self.comm.Send(bufferMe, dest=0, tag=self.rank)
+
+        if self.rank==0:
+            for readMe in self.allWriteDirecs:
+                with h5py.File(readMe, 'r') as hf:
+                    if self.fullNumIncorp==0:
+                        self.fullNumIncorp = hf["sketch"].attrs["numImgsIncorp"]
+                        self.fullImgsTracked = hf["imgsTracked"][:]
+                    else:
+                        self.fullNumIncorp += hf["sketch"].attrs["numImgsIncorp"]
+                        self.fullImgsTracked = np.vstack((self.fullImgsTracked,  hf["imgsTracked"][:]))
+            self.mergeTime = self.fd.fdTime
+            return self.fd.get()
+        else:
+            return
 
     def write(self):
         """
@@ -907,23 +941,13 @@ class visualizeFD:
 
 
         def denoiseImg(image):
-            # Threshold the image to get a binary image
             _, binary_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY)
-
-            # Perform connected component labeling
             num_labels, labels_im = cv2.connectedComponents(binary_image)
-
-            # Create a mask for components larger than the size threshold
             mask = np.zeros_like(image, dtype=bool)
-
             size_threshold = 500
-
-            # Iterate through components and update the mask for large components
             for label in range(1, num_labels):
                 if np.sum(labels_im == label) > size_threshold:
                     mask[labels_im == label] = True
-
-            # Apply the mask to the original grayscale image
             masked_image = np.zeros_like(image)
             masked_image[mask] = image[mask]
             return masked_image
@@ -940,76 +964,44 @@ class visualizeFD:
             Returns:
             numpy.ndarray: The cropped image centered around the intensity pattern.
             """
-            # Normalize or scale the image
             if image.dtype != np.uint8:
-                # If the range of your image is known (e.g., 0 to 5), normalize accordingly
-                # image = ((image - image.min()) / (image.max() - image.min())) * 255
-
-                # If the range is not known, scale based on the current min and max
                 image = 255 * (image - image.min()) / (image.max() - image.min())
                 image = image.astype(np.uint8)
-
-        #     print(image[100])
-
-            # Ensure the image is in grayscale
             if len(image.shape) == 3:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-            # Step 1: Noise Reduction
             blurred = cv2.GaussianBlur(image, blur_kernel, 0)
         #     blurred = image
 
-            # Step 2: Thresholding
         #     _, thresh = cv2.threshold(blurred, threshold_value, 255, cv2.THRESH_BINARY)
             _, thresh = cv2.threshold(blurred, 100, 255, cv2.THRESH_BINARY)
 
 
-        #     # Step 3: Locate the Beam
         #     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         #     if not contours:
         #         return None  # No contours found
 
-        #     # Step 4: Determine the Bounding Box
         #     beam = max(contours, key=cv2.contourArea)
         #     x, y, w, h = cv2.boundingRect(beam)
 
-        #     # Step 5: Centering and Cropping
         #     cropped = image[y:y+h, x:x+w]
         #     print(x, y, w, h)
 
-            # Locate the Beam
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         #     contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
             if not contours:
                 return None
 
-            # Determine the Bounding Box
             beam = max(contours, key=cv2.contourArea)
             x, y, w, h = cv2.boundingRect(beam)
-
-            # Find the center of the bounding box
             center_x, center_y = x + w // 2, y + h // 2
-
-            # Define new bounding box dimensions
             new_x = max(center_x - desired_size // 2, 0)
             new_y = max(center_y - desired_size // 2, 0)
-
-        #     print("new x: ", x, new_x)
-        #     print("new y: ", y, new_y)
-
-            # Adjust if the new box extends beyond the original image
             new_x = min(new_x, image.shape[1] - desired_size)
             new_y = min(new_y, image.shape[0] - desired_size)
-
-        #     print("new x: ", x, new_x)
-        #     print("new y: ", y, new_y)
-
-            # Crop the image to the new bounding box
             cropped = image[new_y:new_y + desired_size, new_x:new_x + desired_size]
 
             return cropped
-
-        # threshVal = 100
 
         nimgs = []
         nbws = []
@@ -1807,7 +1799,7 @@ class WrapperFullFD:
         self.newBareTime = 0
 
 #JOHN CHANGE 12/30/2023
-        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=150, roi_h = 150)
+        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=200, roi_h = 200)
         # self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=300, roi_h = 300)
         self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 #        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
@@ -1921,25 +1913,75 @@ class WrapperFullFD:
 #        D = np.diag(diag_entries) + np.eye(matrixSize)
 #        return (eigVecs @ (D) @ eigVecs.T)
 
+    def modified_gram_schmidt(self, A, num_vecs):
+        m, n = A.shape
+        Q = np.zeros((m, num_vecs))
+        for j in range(num_vecs):
+            v = A[:, j]
+            for i in range(j):
+                rij = Q[:, i].dot(A[:, j])
+                v = v - rij * Q[:, i]
+            rjj = np.linalg.norm(v, 2)
+            Q[:, j] = v / rjj
+            print(f"COMPUTED VECTOR {j}/{num_vecs}")
+        return Q
+    
     def compDecayingSVD(self, seedMe, a, b):
-        #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
         numFeats = a
         numSamps = b//self.size
-        perturbation = np.random.rand(numSamps, numFeats)*0.1
-        np.random.seed(seedMe)
-        A1 = np.random.rand(numSamps, numFeats) 
-        Q1, R1 = np.linalg.qr(A1)
-        Q1 = Q1 + perturbation
-        A2 = np.random.rand(numFeats, numFeats) #Modify
-        Q2, R2 = np.linalg.qr(A2)
-        S = list(np.random.rand(numFeats)) #Modify
-        S.sort()
-        S = S[::-1]
-        for j in range(len(S)): #Modify
-            # S[j] = (2**(-16*(j+1)/len(S)))*S[j] #SCALING RUN
-            S[j] = (2**(-5*(j+1)/len(S)))*S[j] #PARALLEL RUN: 01/10/2024
-        self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
+        self.fullImgData = np.random.randn(numFeats, numSamps)
         self.imgsTracked = [(0, numSamps)]
+
+    # def compDecayingSVD(self, seedMe, a, b):
+    #     #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
+    #     print(1)
+    #     np.random.seed(seedMe + self.rank)
+    #     numFeats = a
+    #     numSamps = b//self.size
+    #     # perturbation = np.random.rand(numSamps, numFeats)*0.1
+    #     # print(2)
+    #     A1 = np.random.rand(numSamps, numFeats) 
+    #     print(3)
+    #     Q1 = self.modified_gram_schmidt(A1, numFeats)
+    #     print(5)
+    #     A2 = np.random.rand(numFeats, numFeats) #Modify
+    #     print(6)
+    #     Q2, R2 = np.linalg.qr(A2)
+    #     print(7)
+    #     S = list(np.random.rand(numFeats)) #Modify
+    #     print(8)
+    #     S.sort()
+    #     print(9)
+    #     S = S[::-1]
+    #     print(10)
+    #     for j in range(len(S)): #Modify
+    #         # S[j] = (2**(-16*(j+1)/len(S)))*S[j] #SCALING RUN
+    #         S[j] = (2**(-5*(j+1)/len(S)))*S[j] #PARALLEL RUN: 01/10/2024
+    #     print(11)
+    #     self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
+    #     print(12)
+    #     self.imgsTracked = [(0, numSamps)]
+    #     print(13)
+
+    # def compDecayingSVD(self, seedMe, a, b):
+    #     #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
+    #     numFeats = a
+    #     numSamps = b//self.size
+    #     perturbation = np.random.rand(numSamps, numFeats)*0.1
+    #     np.random.seed(seedMe)
+    #     A1 = np.random.rand(numSamps, numFeats) 
+    #     Q1, R1 = np.linalg.qr(A1)
+    #     Q1 = Q1 + perturbation
+    #     A2 = np.random.rand(numFeats, numFeats) #Modify
+    #     Q2, R2 = np.linalg.qr(A2)
+    #     S = list(np.random.rand(numFeats)) #Modify
+    #     S.sort()
+    #     S = S[::-1]
+    #     for j in range(len(S)): #Modify
+    #         # S[j] = (2**(-16*(j+1)/len(S)))*S[j] #SCALING RUN
+    #         S[j] = (2**(-5*(j+1)/len(S)))*S[j] #PARALLEL RUN: 01/10/2024
+    #     self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
+    #     self.imgsTracked = [(0, numSamps)]
 
     def runMe(self):
 
@@ -1982,6 +2024,7 @@ class WrapperFullFD:
                 output_dir=self.writeToHere, allWriteDirecs=allNames, currRun = self.currRun, psi=self.psi, usePSI=self.usePSI)
         st2 = time.perf_counter()
         mergeTree.merge()
+        # mergeTree.serialMerge()
         self.newBareTime += mergeTree.mergeTime
         mergedSketchFilename = mergeTree.write()
         et2 = time.perf_counter()
@@ -1997,7 +2040,7 @@ class WrapperFullFD:
         et3 = time.perf_counter()
         print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et3 - st3))
         print("Estimated full processing time for rank {0}/{1}: {2}, {3}".format(self.rank, self.size, (et1 + et2 + et3 - st1 - st2 - st3), et3 - stfull))
-        # self.addThumbnailsToProjectH5() #JOHN CHANGE 01/09/2024. Modifying this just because we don't need this to do our testing. 
+        self.addThumbnailsToProjectH5() #JOHN CHANGE 01/09/2024. Modifying this just because we don't need this to do our testing. 
         return (et1 + et2 + et3 - st1 - st2 - st3)
 
 #        self.comm.barrier()
