@@ -1714,7 +1714,6 @@ class WrapperFullFD:
     def retrieveImages(self):
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
         self.fullImgData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=False)
-        np.save('/sdf/home/w/winnicki/john_20240312.npy', self.fullImgData)
 
     def genSynthData(self):
         self.fullImgData = np.random.rand(70000, 100000//self.size)
