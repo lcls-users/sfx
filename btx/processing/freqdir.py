@@ -23,31 +23,12 @@ from mpi4py import MPI
 from matplotlib import pyplot as plt
 from matplotlib import colors
 
-#JOHN: COMMENTED OUT AFTER 03/11/2024
-# ##########################
-# ##########################
-# #JOHN CHANGE BACK AFTER 12/15/2023
-# from btx.misc.shortcuts import TaskTimer
-
-# from btx.interfaces.ipsana import (
-#     PsanaInterface,
-#     bin_data,
-#     bin_pixel_index_map,
-#     retrieve_pixel_index_map,
-#     assemble_image_stack_batch,
-# )
-# ##########################
-# ##########################
-
-
 from PIL import Image
 from io import BytesIO
 import base64
 
 from datetime import datetime
 
-#import umap
-#import hdbscan
 from sklearn.cluster import OPTICS, cluster_optics_dbscan
 
 from matplotlib import colors
@@ -66,6 +47,12 @@ import cProfile
 import string
 
 import cv2
+
+try:
+    import umap
+    import hdbscan
+except: 
+    print("UMAP NOT AVAILABLE")
 
 class FreqDir(DimRed):
 
@@ -370,33 +357,33 @@ class FreqDir(DimRed):
         	matrixCenteredT - G @ G.T @ matrixCenteredT, 'fro')**2)/(
                 (np.linalg.norm(matrixCenteredT - Ak, 'fro'))**2) 
 
-#    def lowMemoryReconstructionErrorScaled(self, matrixCentered):
-#        """ 
-#        Compute the low memory reconstruction error of the matrix sketch
-#        against given data. This is the same as reconstructionError,
-#        but estimates the norm computation and does not scale by the 
-#        minimum projection matrix, but rather by the matrix norm itself. 
-#
-#        Parameters
-#        ----------
-#        matrixCentered: ndarray
-#           Data to compare matrix sketch to 
-#
-#        Returns
-#        -------
-#        float,
-#            Data subtracted by data projected onto sketched space, scaled by matrix elements
-#       """
-#        matSketch = self.sketch[:self.ell, :]
-#        print("RANK ADAPTIVE SHAPE:",matrixCentered.shape, matSketch.shape)
-##        k = 10
-#        matrixCenteredT = matrixCentered.T
-#        matSketchT = matSketch.T
-#        U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
-##        G = U[:,:k]
-#        G = U
-#        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 50)/
-#                np.linalg.norm(matrixCenteredT, 'fro')**2)
+    def oldLowMemoryReconstructionErrorScaled(self, matrixCentered):
+        """ 
+        Compute the low memory reconstruction error of the matrix sketch
+        against given data. This is the same as reconstructionError,
+        but estimates the norm computation and does not scale by the 
+        minimum projection matrix, but rather by the matrix norm itself. 
+
+        Parameters
+        ----------
+        matrixCentered: ndarray
+            Data to compare matrix sketch to 
+
+        Returns
+        -------
+        float,
+            Data subtracted by data projected onto sketched space, scaled by matrix elements
+        """
+        matSketch = self.sketch[:self.ell, :]
+        print("RANK ADAPTIVE SHAPE:",matrixCentered.shape, matSketch.shape)
+        #        k = 10
+        matrixCenteredT = matrixCentered.T
+        matSketchT = matSketch.T
+        U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
+        #        G = U[:,:k]
+        G = U
+        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 50)/
+                np.linalg.norm(matrixCenteredT, 'fro')**2)
 
     def lowMemoryReconstructionErrorScaled(self, matrixCentered):
         matSketch = self.sketch[:self.ell, :]
@@ -416,50 +403,50 @@ class FreqDir(DimRed):
         sumMe += math.sqrt(1/k) * np.linalg.norm(randMat - minusMe, 'fro')
         return sumMe
 
-#    def estimFrobNormSquared(self, addMe, arrs, its):
-#        """ 
-#        Estimate the Frobenius Norm of product of arrs matrices 
-#        plus addME matrix using its iterations. 
-#
-#        Parameters
-#        ----------
-#        arrs: list of ndarray
-#           Matrices to multiply together
-#
-#        addMe: ndarray
-#            Matrix to add to others
-#
-#        its: int
-#            Number of iterations to average over
-#
-#        Returns
-#        -------
-#        sumMe/its*no_rows : float
-#            Estimate of frobenius norm of product
-#            of arrs matrices plus addMe matrix
-#
-#        Notes
-#        -----
-#        Frobenius estimation is the expected value of matrix
-#        multiplied by random vector from multivariate normal distribution
-#        based on [1]. 
-#
-#        [1] Norm and Trace Estimation with Random Rank-one Vectors 
-#        Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
-#        Analysis and Applications 2021 42:1, 202-223
-#       """
-#        no_rows = arrs[-1].shape[1]
-#        v = np.random.normal(size=no_rows)
-#        v_hat = v / np.linalg.norm(v)
-#        sumMe = 0
-#        for j in range(its):
-#            v = np.random.normal(size=no_rows)
-#            v_hat = v / np.linalg.norm(v)
-#            v_addMe = addMe @ v_hat
-#            for arr in arrs[::-1]:
-#                v_hat = arr @ v_hat
-#            sumMe = sumMe + (np.linalg.norm(v_addMe - v_hat))**2
-#        return sumMe/its*no_rows
+    def oldEstimFrobNormSquared(self, addMe, arrs, its):
+        """ 
+        Estimate the Frobenius Norm of product of arrs matrices 
+        plus addME matrix using its iterations. 
+
+        Parameters
+        ----------
+        arrs: list of ndarray
+            Matrices to multiply together
+
+        addMe: ndarray
+            Matrix to add to others
+
+        its: int
+            Number of iterations to average over
+
+        Returns
+        -------
+        sumMe/its*no_rows : float
+            Estimate of frobenius norm of product
+            of arrs matrices plus addMe matrix
+
+        Notes
+        -----
+        Frobenius estimation is the expected value of matrix
+        multiplied by random vector from multivariate normal distribution
+        based on [1]. 
+
+        [1] Norm and Trace Estimation with Random Rank-one Vectors 
+        Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
+        Analysis and Applications 2021 42:1, 202-223
+        """
+        no_rows = arrs[-1].shape[1]
+        v = np.random.normal(size=no_rows)
+        v_hat = v / np.linalg.norm(v)
+        sumMe = 0
+        for j in range(its):
+            v = np.random.normal(size=no_rows)
+            v_hat = v / np.linalg.norm(v)
+            v_addMe = addMe @ v_hat
+            for arr in arrs[::-1]:
+                v_hat = arr @ v_hat
+            sumMe = sumMe + (np.linalg.norm(v_addMe - v_hat))**2
+        return sumMe/its*no_rows
 
 
     def gatherFreqDirsSerial(self):
@@ -518,8 +505,7 @@ class FreqDir(DimRed):
         filename : string
             Name of h5 file where sketch, mean of data, and indices of data processed is written
         """
-#        self.comm.barrier()
-        filename = self.output_dir + '{}_sketch_{}.h5'.format(self.currRun, self.rank)
+        filename = self.output_dir + f'{self.currRun:04}_sketch_{self.rank}.h5'
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("sketch",  data=self.sketch[:self.ell, :])
 #            hf.create_dataset("mean", data=self.mean)
@@ -562,7 +548,6 @@ class MergeTree:
         
         self.divBy = divBy
         
-        # time.sleep(10)
         with h5py.File(readFile, 'r') as hf:
             self.data = hf["sketch"][:]
 
@@ -570,7 +555,6 @@ class MergeTree:
 
         sendbuf = self.data.shape[0]
         self.buffSizes = np.array(self.comm.allgather(sendbuf))
-#        print(self.buffSizes)
 
         self.fd.update_model(self.data.T)
 
@@ -676,7 +660,7 @@ class MergeTree:
         """
         Write merged matrix sketch to h5 file
         """
-        filename = self.output_dir + '{}_merge.h5'.format(self.currRun)
+        filename = self.output_dir + f'{self.currRun:04}_merge.h5'
 
         if self.rank==0:
             for ind in range(self.size):
@@ -749,10 +733,6 @@ class ApplyCompression:
 
         readFile2 = readFile[:-3] + "_"+str(self.rank)+".h5"
 
-#        print("FOR RANK {}, READFILE: {} HAS THE CURRENT EXISTENCE STATUS {}".format(self.rank, readFile2, os.path.isfile(readFile2)))
-#        while(not os.path.isfile(readFile2)):
-#            print("{} DOES NOT CURRENTLY EXIST FOR {}".format(readFile2, self.rank))
-        # time.sleep(10)
         with h5py.File(readFile2, 'r') as hf:
             self.data = hf["sketch"][:]
 #            self.mean = hf["mean"][:]
@@ -798,10 +778,9 @@ class ApplyCompression:
         """
         Write projected data and downsampled data to h5 file
         """
-        filename = self.output_dir + '{}_ProjectedData_{}.h5'.format(self.currRun, self.rank)
+        filename = self.output_dir + f'{self.currRun:04}_ProjectedData_{self.rank}.h5'
         with h5py.File(filename, 'w') as hf:
             hf.create_dataset("ProjectedData",  data=self.processedData)
-#        print("CREATED FILE: ", filename)
         self.comm.barrier()
         return filename
 
@@ -836,7 +815,6 @@ class CustomPriorityQueue:
         ret = []
         while self.queue:
             curr = heapq.heappop(self.queue)[-1]
-            #ret.append(curr[0]*max(curr[1], curr[2])/curr[2])
             ret.append(curr[0])
         return ret
 
@@ -877,13 +855,10 @@ class PrioritySampling:
         self.sketch.push(vec, pi, wi)
 
 
-
 class visualizeFD:
     """
     Visualize FD Dimension Reduction using UMAP and DBSCAN
     """
-    umap = __import__('umap')
-    hdbscan = __import__('hdbscan')
     def __init__(self, inputFile, outputFile, numImgsToUse, nprocs, includeABOD, userGroupings, 
             skipSize, umap_n_neighbors, umap_random_state, hdbscan_min_samples, hdbscan_min_cluster_size,
             optics_min_samples, optics_xi, optics_min_cluster_size, outlierQuantile):
@@ -971,24 +946,9 @@ class visualizeFD:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
             blurred = cv2.GaussianBlur(image, blur_kernel, 0)
-        #     blurred = image
-
-        #     _, thresh = cv2.threshold(blurred, threshold_value, 255, cv2.THRESH_BINARY)
             _, thresh = cv2.threshold(blurred, 100, 255, cv2.THRESH_BINARY)
 
-
-        #     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        #     if not contours:
-        #         return None  # No contours found
-
-        #     beam = max(contours, key=cv2.contourArea)
-        #     x, y, w, h = cv2.boundingRect(beam)
-
-        #     cropped = image[y:y+h, x:x+w]
-        #     print(x, y, w, h)
-
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        #     contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
             if not contours:
                 return None
 
@@ -1009,136 +969,34 @@ class visualizeFD:
         contours = []
         contourImgs = []
         for j in range(len(fullThumbnailData)):
-        #     currImg = (fullThumbnailData[j]*(255/np.max(fullThumbnailData[j]))).astype('uint8').copy()
-        #     nimg = currImg
             nimg = center_and_crop_beam(fullThumbnailData[j])
-        #     nimg = reorientImg(nimg)
             if nimg is None:
                 continue
             nimg = reorientImg(nimg)
             nimg = denoiseImg(nimg)
             nimgs.append(nimg)
-        #     nbws.append(nimg)
-        #     (thresh, im_bw) = cv2.threshold((fullThumbnailData[j]*(255/np.max(fullThumbnailData[j]))).astype('uint8').copy(), 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-        #     print(nimg)
-        #     print(j, np.max(nimg))
-        #     np.set_printoptions(threshold=np.inf, linewidth=np.inf)
-        #     print(nimg)
-
             (thresh, im_bw) = cv2.threshold(nimg, 0, 255, cv2.THRESH_BINARY)
             nbws.append(im_bw.copy())
             (thresh1, im_bw1) = cv2.threshold(nimg, 0, 1, cv2.THRESH_BINARY)
             nbws1.append(im_bw1.copy())
-
-        #     # Assuming 'im' is your grayscale image
-        #     # Apply Gaussian blur to the image
-        #     blurred = cv2.GaussianBlur(im_bw, (5, 5), 0)
-        #     # Apply binary thresholding on the blurred image
-        #     _, binary = cv2.threshold(blurred, 127, 255, cv2.THRESH_BINARY)
-        #     # Find contours
-        #     contourList, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        #     # Find the largest contour based on area
-        #     largest_contour = max(contourList, key=cv2.contourArea)
-        #     contours.append(largest_contour)
-        #     canvas = np.zeros(im_bw.shape, dtype='uint8')
-        #     # Draw the largest contour in white
-        #     cv2.drawContours(canvas, [largest_contour], -1, (255), 1)
-        #     contourImgs.append(canvas)
-
-        # #     nbws.append(cv2.GaussianBlur(nimg, (5, 5), 0))
-        # #     nbws.append(im_bw)
-        # #     nbws.append((fullThumbnailData[j]*(255/np.max(fullThumbnailData[j]))).astype('uint8').copy()
-
-        # # ind = 356
-
-        # # plt.imshow(nimgs[ind])
-        # # plt.show()
-
-        # # print(nbws1[ind][80])
-
-        # # Calculate moments
-        # M = cv2.moments(nbws1[ind])
-        # # Zeroth moment is the area
-        # area = M['m00']
-        # epsilon = 0.01 * cv2.arcLength(contours[ind], True)
-        # approx = cv2.approxPolyDP(contours[ind], epsilon, True)
-        # # Calculate the perimeter
-        # perimeter = cv2.arcLength(approx, True)
-        # # Calculate circularity using moments
-        # circularity = 4 * 3.14159 * area / (perimeter * perimeter)
-        # print(circularity)
-
-        # # Calculate moments
-        # M = cv2.moments(nbws1[ind])
-        # ncirc = (M['m00']**2)/(2*math.pi*(M['mu20'] + M['mu02']))
-        # print(ncirc)
-
         circs = []
         ncircs = []
-
         for ind in range(len(nbws)):
-        #     # Calculate moments
-        #     M = cv2.moments(nbws1[ind])
-        #     # Zeroth moment is the area
-        #     area = M['m00']
-        #     epsilon = 0.01 * cv2.arcLength(contours[ind], True)
-        #     approx = cv2.approxPolyDP(contours[ind], epsilon, True)
-        #     # Calculate the perimeter
-        #     perimeter = cv2.arcLength(approx, True)
-        #     # Calculate circularity using moments
-        #     circularity = 4 * 3.14159 * area / (perimeter * perimeter)
-
-            # Calculate moments
             M = cv2.moments(nbws[ind])
             try:
                 ncirc = (M['m00']**2)/(2*math.pi*(M['mu20'] + M['mu02']))
             except:
                 ncirc = 1
-
-        #     circs.append(circularity)
             ncircs.append(ncirc)
-
         sorted_indices = np.argsort(ncircs)
         sorted_arrays = [nimgs[i] for i in sorted_indices]
         sorted_full = [fullThumbnailData[i] for i in sorted_indices]
-
-        #     import matplotlib.pyplot as plt
-        #     import numpy as np
-
-        #     # Assuming 'images' is your list of 16 NumPy array images
-        #     # For demonstration, creating 16 random 8x8 grayscale images
-        #     images = [j for j in sorted_arrays[::len(sorted_arrays)//16]]
-
-        #     # Create a 4x4 grid of subplots
-        #     fig, axs = plt.subplots(4, 4, figsize=(10, 10))
-
-        #     # Flatten the array of axes for easy iteration
-        #     axs = axs.ravel()
-
-        #     # Plot each image and add text
-        #     for i in range(16):
-        #         axs[i].imshow(images[i], cmap='jet', vmin=0, vmax=255)  # Assuming grayscale images
-        #         axs[i].text(50, 5, f"Image {i+1}", color='white', ha='center', va='center')
-        #         axs[i].axis('off')  # Turn off axis
-
-        #     plt.tight_layout()  # Adjust subplots to fit into the figure area.
-        #     plt.show()
-
-        # ind=23
-        # nimg = center_and_crop_beam(fullThumbnailData[40])
-        # # plt.imshow(fullThumbnailData[ind])
-        # plt.imshow(nimg)
-        # plt.show()
-
         bigOrSmall = [1 if j>len(sorted_arrays)*10//16 else 0 for j in sorted_indices]
-#        np.savez(saveDir+'circularityImgs_{}.npz'.format(currRun), **{f'array_{i}': arr for i, arr in enumerate(nimgs)}, labels=bigOrSmall)
-
         return ncircs
 
 
     def embeddable_image(self, data):
         img_data = np.uint8(cm.jet(data/max(data.flatten()))*255)
-#        image = Image.fromarray(img_data, mode='RGBA').resize((75, 75), Image.Resampling.BICUBIC)
         image = Image.fromarray(img_data, mode='RGBA')
         buffer = BytesIO()
         image.save(buffer, format='png')
@@ -1166,8 +1024,8 @@ class visualizeFD:
             for test_index, test_point in enumerate(lst):
                 if math.isclose(test_point[0],medoid_point[0]) and math.isclose(test_point[1], medoid_point[1]):
                     fin_ind = test_index
-#            medoid_lst.append((k, v[fin_ind][0]))
-            medoid_lst.append((k, v[fin_ind+1][0]))
+            # medoid_lst.append((k, v[fin_ind+1][0]))
+            medoid_lst.append((k, v[fin_ind][0]))
         return medoid_lst
 
     def relabel_to_closest_zero(self, labels):
@@ -1209,10 +1067,8 @@ class visualizeFD:
                 ac = cpt - apt
                 if math.isclose(np.linalg.norm(ab), 0.0) or math.isclose(np.linalg.norm(ac), 0.0):
                     count += 1
-#                    print("TOO CLOSE")
                     continue
                 outlier_factors.append(np.dot(ab, ac)/((np.linalg.norm(ab)**2) * (np.linalg.norm(ac))))
-#            print("CURRENT POINT: ", pts[a], test_list, outlier_factors, np.var(np.array(outlier_factors)))
             if(len(outlier_factors)==0):
                 abofs.append(np.inf)
             else:
@@ -1220,12 +1076,7 @@ class visualizeFD:
         return abofs
 
     def getOutliers(self, lst):
-#        lstCopy = lst.copy()
-#        lstCopy.sort()
-#        quart10 = lstCopy[len(lstCopy)//divBy]
-
         lstQuant = np.quantile(np.array(lst), self.outlierQuantile)
-#        print("AIDJWOIJDAOWIDJWAOIDJAWOIDWJA", lstQuant, lst)
         outlierInds = []
         notOutlierInds = []
         for j in range(len(lst)):
@@ -1233,8 +1084,6 @@ class visualizeFD:
                 outlierInds.append(j)
             else:
                 notOutlierInds.append(j)
-#        print("OUTLIER INDS: ", outlierInds)
-#        print("NOT OUTLIER INDS: ", notOutlierInds)
         return np.array(outlierInds), np.array(notOutlierInds)
 
     def genHist(self, vals, endClass):
@@ -1251,23 +1100,15 @@ class visualizeFD:
 
 
     def float_to_int_percentile(self, float_list):
-        # Edge case: If the list is empty, return an empty list
         if not float_list:
             return []
-
-        # Calculate the percentiles that define the bin edges
         percentiles = np.percentile(float_list, [10 * i for i in range(1, 10)])
-
-        # Function to find the bin for a single value
         def find_bin(value):
             for i, p in enumerate(percentiles):
                 if value < p:
                     return i
-            return 9  # For values in the highest bin
-
-        # Convert each float to an integer based on its bin
+            return 9 
         int_list = [find_bin(value) for value in float_list]
-
         return int_list
 
 
@@ -1312,48 +1153,31 @@ class visualizeFD:
         if len(self.imgs)!= self.numImgsToUse:
             raise TypeError("NUMBER OF IMAGES REQUESTED ({}) EXCEEDS NUMBER OF DATA POINTS PROVIDED ({}). TRUE LEN IS {}.".format(len(self.imgs), self.numImgsToUse, self.logging_numImgsToUse))
 
-        self.clusterable_embedding = self.umap.UMAP(
+        self.clusterable_embedding = umap.UMAP(
             n_neighbors=self.umap_n_neighbors,
             random_state=self.umap_random_state,
             n_components=2,
             min_dist=0,
-#            min_dist=0.1,
         ).fit_transform(self.projections)
 
-#        self.labels = self.hdbscan.HDBSCAN(
-#            min_samples = self.hdbscan_min_samples,
-#            min_cluster_size = self.hdbscan_min_cluster_size
-#        ).fit_predict(self.clusterable_embedding)
-
-        # ncircs = self.float_to_int_percentile(self.retrieveCircularity(self.imgs))
-        # self.labels = np.array(ncircs)
-        self.labels = np.array(np.zeros(len(self.imgs)))
+        self.labels = hdbscan.HDBSCAN(
+            min_samples = self.hdbscan_min_samples,
+            min_cluster_size = self.hdbscan_min_cluster_size
+        ).fit_predict(self.clusterable_embedding)
 
         exclusionList = np.array([])
         self.clustered = np.isin(self.labels, exclusionList, invert=True)
 
         self.opticsClust = OPTICS(min_samples=self.optics_min_samples, xi=self.optics_xi, min_cluster_size=self.optics_min_cluster_size)
         self.opticsClust.fit(self.clusterable_embedding)
-#        self.opticsLabels = cluster_optics_dbscan(
-#            reachability=self.opticsClust.reachability_,
-#            core_distances=self.opticsClust.core_distances_,
-#            ordering=self.opticsClust.ordering_,
-#            eps=2.5,
-#        )
         self.opticsLabels = self.opticsClust.labels_
 
         self.experData_df = pd.DataFrame({'x':self.clusterable_embedding[self.clustered, 0],'y':self.clusterable_embedding[self.clustered, 1]})
         self.experData_df['image'] = list(map(self.embeddable_image, self.imgs[self.clustered]))
         self.experData_df['imgind'] = np.arange(self.numImgsToUse)*self.skipSize
 
-#        self.experData_df['trueIntensities'] = [str(int(abs(x)/max(np.abs(trueIntensities))*19)) for x in trueIntensities]
-#        self.experData_df['trueIntensities'] = [5 for x in trueIntensities]
-#        self.experData_df['trueIntensities_backgroundColor'] = [Plasma256[int(abs(x)/max(np.abs(trueIntensities))*255)] for x in trueIntensities]
-#        self.experData_df['trueIntensities_backgroundColor'] = [5 for x in trueIntensities]
-#        print("aowdijaoidjwaoij", len(self.experData_df['trueIntensities']), self.experData_df['trueIntensities'], type(self.experData_df['trueIntensities']))
-#        print(trueIntensities)
-        self.experData_df['trueIntensities'] = [1 for x in self.experData_df['imgind']]
-        self.experData_df['trueIntensities_backgroundColor'] = [1 for x in self.experData_df['imgind']]
+        self.experData_df['trueIntensities'] = [str(int(abs(x)/max(np.abs(trueIntensities))*19)) for x in trueIntensities]
+        self.experData_df['trueIntensities_backgroundColor'] = [Plasma256[int(abs(x)/max(np.abs(trueIntensities))*255)] for x in trueIntensities]
 
 
     def genABOD(self):
@@ -1371,8 +1195,6 @@ class visualizeFD:
                 outlierLabels.append(str(0))
         self.experData_df['anomDet'] = outlierLabels
         self.experData_df['anom_backgroundColor'] = [Category20[20][int(x)] for x in outlierLabels]
-
-        print("2adwjiaomd", len(self.experData_df['anomDet']), self.experData_df['anomDet'], type(self.experData_df['anomDet']))
 
     def setUserGroupings(self, userGroupings):
         """
@@ -1419,14 +1241,13 @@ class visualizeFD:
                 opticsNewLabels.append(j)
         opticsNewLabels = list(np.array(opticsNewLabels) + 1)
         self.opticsNewLabels = np.array(self.relabel_to_closest_zero(opticsNewLabels))
-#        self.experData_df['optics_backgroundColor'] = [Category20[20][x] for x in self.opticsNewLabels[self.opticsClust.ordering_]]
         self.experData_df['optics_backgroundColor'] = [Category20[20][x] for x in self.opticsNewLabels]
 
     def genHTML(self):
         datasource = ColumnDataSource(self.experData_df)
         #JOHN CHANGE 20231020
-#        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Category20[20])
-        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Plasma256[::16])
+        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Category20[20])
+        # color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Plasma256[::16])
         plot_figure = figure(
             title='UMAP projection with DBSCAN clustering of the LCLS dataset',
             tools=('pan, wheel_zoom, reset, lasso_select'),
@@ -1745,6 +1566,7 @@ class visualizeFD:
         output_notebook()
         show(self.viewResults)
 
+
 class WrapperFullFD:
     """
     Frequent Directions Data Processing Wrapper Class.
@@ -1790,90 +1612,87 @@ class WrapperFullFD:
             self.psi = None
 
         if self.rank==0:
-            self.currRun = run #datetime.now().strftime("%y%m%d%H%M%S")
+            self.currRun = run
         else:
             self.currRun = None
         self.currRun = self.comm.bcast(self.currRun, root=0)
 
-        #JOHN CHANGE 01/08/2024
         self.newBareTime = 0
 
-#JOHN CHANGE 12/30/2023
         self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=200, roi_h = 200)
-        # self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=300, roi_h = 300)
+        # self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = False, roi_w=500, roi_h = 500)
         self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
-#        self.imgRetriever = DataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
 
-#    def lowMemoryReconstructionErrorScaled(self, matrixCentered, matSketch):
-#        """ 
-#        Compute the low memory reconstruction error of the matrix sketch
-#        against given data. This is the same as reconstructionError,
-#        but estimates the norm computation and does not scale by the 
-#        minimum projection matrix, but rather by the matrix norm itself. 
-#
-#        Parameters
-#        ----------
-#        matrixCentered: ndarray
-#           Data to compare matrix sketch to 
-#
-#        Returns
-#        -------
-#        float,
-#            Data subtracted by data projected onto sketched space, scaled by matrix elements
-#       """
-##        k = 10
-#        matrixCenteredT = matrixCentered.T
-#        matSketchT = matSketch.T
-#        U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
-##        G = U[:,:k]
-#        G = U
-#        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 50)/
-#                np.linalg.norm(matrixCenteredT, 'fro')**2)
-#
-#    def estimFrobNormSquared(self, addMe, arrs, its):
-#        """ 
-#        Estimate the Frobenius Norm of product of arrs matrices 
-#        plus addME matrix using its iterations. 
-#
-#        Parameters
-#        ----------
-#        arrs: list of ndarray
-#           Matrices to multiply together
-#
-#        addMe: ndarray
-#            Matrix to add to others
-##
-#        its: int
-#            Number of iterations to average over
-#
-#        Returns
-#        -------
-#        sumMe/its*no_rows : float
-#            Estimate of frobenius norm of product
-#            of arrs matrices plus addMe matrix
-#
-#        Notes
-#        -----
-#        Frobenius estimation is the expected value of matrix
-#        multiplied by random vector from multivariate normal distribution
-#        based on [1]. 
-#
-#        [1] Norm and Trace Estimation with Random Rank-one Vectors 
-#        Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
-#        Analysis and Applications 2021 42:1, 202-223
-#       """
-#        no_rows = arrs[-1].shape[1]
-#        v = np.random.normal(size=no_rows)
-#        v_hat = v / np.linalg.norm(v)
-#        sumMe = 0
-#        for j in range(its):
-#            v = np.random.normal(size=no_rows)
-#            v_hat = v / np.linalg.norm(v)
-#            v_addMe = addMe @ v_hat
-#            for arr in arrs[::-1]:
-#                v_hat = arr @ v_hat
-#            sumMe = sumMe + (np.linalg.norm(v_addMe - v_hat))**2
-#        return sumMe/its*no_rows
+    def oldLowMemoryReconstructionErrorScaled1(self, matrixCentered, matSketch):
+        """ 
+        Compute the low memory reconstruction error of the matrix sketch
+        against given data. This is the same as reconstructionError,
+        but estimates the norm computation and does not scale by the 
+        minimum projection matrix, but rather by the matrix norm itself. 
+
+        Parameters
+        ----------
+        matrixCentered: ndarray
+            Data to compare matrix sketch to 
+
+        Returns
+        -------
+        float,
+            Data subtracted by data projected onto sketched space, scaled by matrix elements
+        """
+        #        k = 10
+        matrixCenteredT = matrixCentered.T
+        matSketchT = matSketch.T
+        U, S, Vt = np.linalg.svd(matSketchT, full_matrices=False)
+        #        G = U[:,:k]
+        G = U
+        return (self.estimFrobNormSquared(matrixCenteredT, [G,G.T,matrixCenteredT], 50)/
+                np.linalg.norm(matrixCenteredT, 'fro')**2)
+
+    def oldEstimFrobNormSquared1(self, addMe, arrs, its):
+        """ 
+        Estimate the Frobenius Norm of product of arrs matrices 
+        plus addME matrix using its iterations. 
+
+        Parameters
+        ----------
+        arrs: list of ndarray
+            Matrices to multiply together
+
+        addMe: ndarray
+            Matrix to add to others
+        #
+        its: int
+            Number of iterations to average over
+
+        Returns
+        -------
+        sumMe/its*no_rows : float
+            Estimate of frobenius norm of product
+            of arrs matrices plus addMe matrix
+
+        Notes
+        -----
+        Frobenius estimation is the expected value of matrix
+        multiplied by random vector from multivariate normal distribution
+        based on [1]. 
+
+        [1] Norm and Trace Estimation with Random Rank-one Vectors 
+        Zvonimir Bujanovic and Daniel Kressner SIAM Journal on Matrix 
+        Analysis and Applications 2021 42:1, 202-223
+        """
+        no_rows = arrs[-1].shape[1]
+        v = np.random.normal(size=no_rows)
+        v_hat = v / np.linalg.norm(v)
+        sumMe = 0
+        for j in range(its):
+            v = np.random.normal(size=no_rows)
+            v_hat = v / np.linalg.norm(v)
+            v_addMe = addMe @ v_hat
+            for arr in arrs[::-1]:
+                v_hat = arr @ v_hat
+            sumMe = sumMe + (np.linalg.norm(v_addMe - v_hat))**2
+        return sumMe/its*no_rows
 
     def lowMemoryReconstructionErrorScaled(self, matrixCentered, matSketch):
         matrixCenteredT = matrixCentered.T
@@ -1895,12 +1714,13 @@ class WrapperFullFD:
     def retrieveImages(self):
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
         self.fullImgData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=False)
+        np.save('/sdf/home/w/winnicki/john_20240312.npy', self.fullImgData)
 
     def genSynthData(self):
         self.fullImgData = np.random.rand(70000, 100000//self.size)
         self.imgsTracked = [(0, self.rank)]
 
-#    def genDecayingSVD(self):
+#    def oldGenDecayingSVD3(self):
 #        numFeats = 70000
 #        numSamps = 100000//self.size
 #        A = np.random.rand(matrixSize, matrixSize)
@@ -1932,56 +1752,44 @@ class WrapperFullFD:
         self.fullImgData = np.random.randn(numFeats, numSamps)
         self.imgsTracked = [(0, numSamps)]
 
-    # def compDecayingSVD(self, seedMe, a, b):
-    #     #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
-    #     print(1)
-    #     np.random.seed(seedMe + self.rank)
-    #     numFeats = a
-    #     numSamps = b//self.size
-    #     # perturbation = np.random.rand(numSamps, numFeats)*0.1
-    #     # print(2)
-    #     A1 = np.random.rand(numSamps, numFeats) 
-    #     print(3)
-    #     Q1 = self.modified_gram_schmidt(A1, numFeats)
-    #     print(5)
-    #     A2 = np.random.rand(numFeats, numFeats) #Modify
-    #     print(6)
-    #     Q2, R2 = np.linalg.qr(A2)
-    #     print(7)
-    #     S = list(np.random.rand(numFeats)) #Modify
-    #     print(8)
-    #     S.sort()
-    #     print(9)
-    #     S = S[::-1]
-    #     print(10)
-    #     for j in range(len(S)): #Modify
-    #         # S[j] = (2**(-16*(j+1)/len(S)))*S[j] #SCALING RUN
-    #         S[j] = (2**(-5*(j+1)/len(S)))*S[j] #PARALLEL RUN: 01/10/2024
-    #     print(11)
-    #     self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
-    #     print(12)
-    #     self.imgsTracked = [(0, numSamps)]
-    #     print(13)
+    def oldCompDecayingSVD1(self, seedMe, a, b):
+        #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
+        np.random.seed(seedMe + self.rank)
+        numFeats = a
+        numSamps = b//self.size
+        # perturbation = np.random.rand(numSamps, numFeats)*0.1
+        A1 = np.random.rand(numSamps, numFeats) 
+        Q1 = self.modified_gram_schmidt(A1, numFeats)
+        A2 = np.random.rand(numFeats, numFeats) #Modify
+        Q2, R2 = np.linalg.qr(A2)
+        S = list(np.random.rand(numFeats)) #Modify
+        S.sort()
+        S = S[::-1]
+        for j in range(len(S)): #Modify
+            # S[j] = (2**(-16*(j+1)/len(S)))*S[j] #SCALING RUN
+            S[j] = (2**(-5*(j+1)/len(S)))*S[j] #PARALLEL RUN: 01/10/2024
+        self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
+        self.imgsTracked = [(0, numSamps)]
 
-    # def compDecayingSVD(self, seedMe, a, b):
-    #     #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
-    #     numFeats = a
-    #     numSamps = b//self.size
-    #     perturbation = np.random.rand(numSamps, numFeats)*0.1
-    #     np.random.seed(seedMe)
-    #     A1 = np.random.rand(numSamps, numFeats) 
-    #     Q1, R1 = np.linalg.qr(A1)
-    #     Q1 = Q1 + perturbation
-    #     A2 = np.random.rand(numFeats, numFeats) #Modify
-    #     Q2, R2 = np.linalg.qr(A2)
-    #     S = list(np.random.rand(numFeats)) #Modify
-    #     S.sort()
-    #     S = S[::-1]
-    #     for j in range(len(S)): #Modify
-    #         # S[j] = (2**(-16*(j+1)/len(S)))*S[j] #SCALING RUN
-    #         S[j] = (2**(-5*(j+1)/len(S)))*S[j] #PARALLEL RUN: 01/10/2024
-    #     self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
-    #     self.imgsTracked = [(0, numSamps)]
+    def oldCompDecayingSVD2(self, seedMe, a, b):
+        #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
+        numFeats = a
+        numSamps = b//self.size
+        perturbation = np.random.rand(numSamps, numFeats)*0.1
+        np.random.seed(seedMe)
+        A1 = np.random.rand(numSamps, numFeats) 
+        Q1, R1 = np.linalg.qr(A1)
+        Q1 = Q1 + perturbation
+        A2 = np.random.rand(numFeats, numFeats) #Modify
+        Q2, R2 = np.linalg.qr(A2)
+        S = list(np.random.rand(numFeats)) #Modify
+        S.sort()
+        S = S[::-1]
+        for j in range(len(S)): #Modify
+            # S[j] = (2**(-16*(j+1)/len(S)))*S[j] #SCALING RUN
+            S[j] = (2**(-5*(j+1)/len(S)))*S[j] #PARALLEL RUN: 01/10/2024
+        self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
+        self.imgsTracked = [(0, numSamps)]
 
     def runMe(self):
 
@@ -2040,27 +1848,18 @@ class WrapperFullFD:
         et3 = time.perf_counter()
         print("Estimated time projection for rank {0}/{1}: {2}".format(self.rank, self.size, et3 - st3))
         print("Estimated full processing time for rank {0}/{1}: {2}, {3}".format(self.rank, self.size, (et1 + et2 + et3 - st1 - st2 - st3), et3 - stfull))
-        self.addThumbnailsToProjectH5() #JOHN CHANGE 01/09/2024. Modifying this just because we don't need this to do our testing. 
+        self.addThumbnailsToProjectH5() 
         return (et1 + et2 + et3 - st1 - st2 - st3)
 
-#        self.comm.barrier()
-#        self.comm.Barrier()
-#        filenameTest3 = random.randint(0, 10)
-#        filenameTest3 = self.comm.allgather(filenameTest3)
-#        print("TEST 3: ", self.rank, filenameTest3)
-
     def addThumbnailsToProjectH5(self):
-#        print("Gathering thumbnails")
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
         _,self.fullThumbnailData,_,self.trueIntensitiesData = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
-        # print("FULL THUMBNAIL DATA: ", np.array(self.fullThumbnailData).shape)
-        file_name = self.writeToHere+"{}_ProjectedData_{}.h5".format(self.currRun, self.rank)
+        file_name = self.writeToHere+f"{self.currRun:04}_ProjectedData_{self.rank}.h5"
         f1 = h5py.File(file_name, 'r+')
         f1.create_dataset("SmallImages",  data=self.fullThumbnailData)
         f1.create_dataset("TrueIntensities",  data=np.array(self.trueIntensitiesData))
         f1.close()
         self.comm.barrier()
-        # print("FINISHED AIJOWDAWODIDWJA")
 
 class FD_ImageProcessing:
     def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile, unitVar, centerImg, roi_w, roi_h):
@@ -2128,10 +1927,8 @@ class FD_ImageProcessing:
         if img is None:
             return img
         elif currIntensity<self.minIntensity:
-#            print("LESS", currIntensity, self.minIntensity)
             return np.zeros(img.shape)+1
         else:
-#            print("MORE", np.sum(img.flatten(), dtype=np.double), currIntensity, self.minIntensity)
             return img/np.sum(img.flatten(), dtype=np.double)
 
     def unitVarFunc(self, img, currIntensity):
@@ -2139,7 +1936,6 @@ class FD_ImageProcessing:
             return img
         else:
             return img/img.std(axis=0)
-#            return (img - img.mean(axis=0)) / img.std(axis=0)
 
     def centerImgFunc(self, img):
         if img is None: 
@@ -2151,16 +1947,13 @@ class FD_ImageProcessing:
                 curr_roi_w = int(self.roi_w*rampingFact)
                 curr_roi_h = int(self.roi_h*rampingFact)
                 nimg = np.pad(img, max(2*curr_roi_w, 2*curr_roi_h)+1)
-#                print(rampingFact)
                 if  np.sum(img.flatten(), dtype=np.double)<10000:
                     cogx, cogy = (curr_roi_w, curr_roi_h)
                 else:
                     cogx, cogy  = self.calcCenterGrav(nimg)
-    #            return nimg[cogy-(roi_h):cogy+(roi_h//2), cogx-(roi_w):cogx+(roi_w//2)]
                 nimg = nimg[cogx-(curr_roi_w//2):cogx+(curr_roi_w//2), cogy-(curr_roi_h//2):cogy+(curr_roi_h//2)]
                 rampingFact -= 0.5
             return nimg
-
 
     def calcCenterGrav(self, grid):
         M_total = np.sum(grid)
@@ -2172,15 +1965,8 @@ class FD_ImageProcessing:
 
 
 
-
 class DataRetriever:
     btx = __import__('btx')
-#    from btx.interfaces.ipsana import (
-#        PsanaInterface,
-#        bin_data,
-#        retrieve_pixel_index_map,
-#        assemble_image_stack_batch,
-#    )
     def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
         self.exp = exp
         self.det_type = det_type
@@ -2190,7 +1976,6 @@ class DataRetriever:
         self.thumbnailHeight = thumbnailHeight
         self.thumbnailWidth = thumbnailWidth
 
-#        self.psi = self.PsanaInterface(exp=exp, run=run, det_type=det_type, no_cmod=True)
         self.psi = self.btx.interfaces.ipsana.PsanaInterface(exp=exp, run=run, det_type=det_type)
 
         self.imageProcessor = imageProcessor
@@ -2251,35 +2036,27 @@ class DataRetriever:
         fullthumbnails = None
         imgsTracked = []
         runs = self.split_range(startInd, startInd+n, num_steps)
-        print(runs) 
+        print(f"PROCESS RETRIEVING: {runs}") 
         for runStart, runEnd in runs:
-#            print("RETRIEVING: [", runStart, ":", runEnd,"]")
             self.psi.counter = runStart
             imgsTracked.append((runStart, runEnd))
 
-#            print("getting images")
             imgs = self.psi.get_images(runEnd-runStart, assemble=False)
 
-#            print("Removing nan images")
             imgs = imgs[
                 [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
             ]
 
             if getThumbnails:
-#                print("Assembling thumbnails")
                 thumbnails = self.assembleImgsToSave(imgs)
 
             if self.downsample:
-#                print("Downsampling images")
                 imgs = self.btx.interfaces.ipsana.bin_data(imgs, self.bin_factor)
-#            print("Flattening images")
             num_valid_imgs, p, x, y = imgs.shape
             img_batch = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
-#            print("Image values less than 0 setting to 0")
             img_batch[img_batch<0] = 0
     
             if getThumbnails:
-#                print("FLattening thumbnails")
                 num_valid_thumbnails, tx, ty = thumbnails.shape
                 thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T
 
@@ -2287,8 +2064,7 @@ class DataRetriever:
                 nimg_batch = []
                 nthumbnail_batch = []
                 for img, thumbnail in zip(img_batch.T, thumbnail_batch.T):
-#                    currIntensity = np.sum(img.flatten(), dtype=np.double)
-                    nimg = self.imageProcessor.processImg(img) #JOHN 011/09/2023
+                    nimg = self.imageProcessor.processImg(img)
                     nthumbnail = self.imageProcessor.processImg(thumbnail)
                     if nimg is not None:
                         nimg_batch.append(nimg)
@@ -2304,19 +2080,15 @@ class DataRetriever:
             else:
                 nimg_batch = []
                 for img in img_batch.T:
-#                    currIntensity = np.sum(img.flatten(), dtype=np.double) #JOHN 011/09/2023
-#                    print("Starting image processing of size {}".format(img_batch.T.shape))
                     nimg = self.imageProcessor.processImg(img)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                 nimg_batch = np.array(nimg_batch).T
-#                print("hstacking")
                 if fullimgs is None:
                     fullimgs = nimg_batch
                 else:
                     fullimgs = np.hstack((fullimgs, nimg_batch))
 
-#        print("Images tracked:", imgsTracked)
         if getThumbnails:
             return (fullimgs, fullthumbnails, imgsTracked)
         else:
@@ -2324,7 +2096,6 @@ class DataRetriever:
 
 
 class SinglePanelDataRetriever:
-#    from btx.interfaces.ipsana import PsanaInterface
     btx = __import__('btx')
     def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
         self.exp = exp
@@ -2380,14 +2151,11 @@ class SinglePanelDataRetriever:
         print(runs)
         trueIntensities = []
         for runStart, runEnd in runs:
-#            print("RETRIEVING: [", runStart, ":", runEnd,"]")
             self.psi.counter = runStart
             imgsTracked.append((runStart, runEnd))
 
-#            print("getting images")
             imgs = self.psi.get_images(runEnd-runStart, assemble=False)
 
-#            print("Removing nan images")
             imgs = imgs[
                 [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
             ]
@@ -2395,43 +2163,25 @@ class SinglePanelDataRetriever:
             origTrueIntensities = [np.sum(img.flatten(), dtype=np.double) for img in imgs]
             newTrueIntensities = []
             for j in origTrueIntensities:
-#                if j>0:
-#                    newTrueIntensities.append(0)
-#                else:
-#                    newTrueIntensities.append(np.log(j))
                 if j<0:
                     newTrueIntensities.append(0)
                 else:
                     newTrueIntensities.append(np.log(j))
             origTrueIntensities = newTrueIntensities
 
-#            jimgs = []
-#            for img in imgs:
-#                jimgs.append(self.imageProcessor.centerImgFunc(self.imageProcessor.thresholdFunc(img),100,100))
-#            imgs = np.array(jimgs)
-
             if getThumbnails:
                 saveMe = []
                 for img in imgs:
-                    #JOHN CHANGE 12/30/2023
-                    saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth)))) #JOHN 011/09/2023
-#                    saveMe.append(np.array(img)) #JOHN 011/09/2023
+                    saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
                 thumbnails = np.array(saveMe)
 
-            num_valid_imgs, x, y = imgs.shape #JOHN 11/20/2023
+            num_valid_imgs, x, y = imgs.shape
 
-#            img_batch = np.reshape(imgs, (num_valid_imgs, x * y)).T #JOHN 011/09/2023
             img_batch = imgs.T
-#            print("Image values less than 0 setting to 0")
             img_batch[img_batch<0] = 0
-
-#            num_valid_imgs, x, y = img_batch.T.shape #JOHN 11/20/2023
-#            print(num_valid_imgs, x, y)
     
             if getThumbnails:
-#                print("FLattening thumbnails")
                 num_valid_thumbnails, tx, ty = thumbnails.shape
-#                thumbnail_batch = np.reshape(thumbnails, (num_valid_thumbnails, tx*ty)).T #JOHN 011/09/2023
                 thumbnail_batch = thumbnails.T
 
             if getThumbnails:
@@ -2444,93 +2194,63 @@ class SinglePanelDataRetriever:
                         nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
                     else:
                         nimg = self.imageProcessor.processImg(img, currIntensity)
-#                    nthumbnail = self.imageProcessor.processImg(thumbnail, currIntensity) #JOHN 011/09/2023
                     if nimg is None:
                         nthumbnail = None
                     else:
                         nthumbnail = nimg.copy()
-#                    print(np.array(nimg).shape)
-#                    print(nthumbnail)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                         nthumbnail_batch.append(nthumbnail)
                         ntrueIntensity_batch.append(trueIntens)
                     else:
-#                        nimg_batch.append(np.zeros((x, y)))
-#                        nthumbnail_batch.append(np.zeros((tx, ty)))
-#                        ntrueIntensity_batch.append(0)
                         num_valid_thumbnails -= 1
                         num_valid_imgs -= 1
                         self.excludedImgs.append(ind)
-                if self.imageProcessor.centerImg: #JOHN 011/09/2023
-#                    print("a09wupoidkw", np.array(nimg_batch).shape)
-                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
-                    nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, self.imageProcessor.roi_h, self.imageProcessor.roi_w) #JOHN 011/09/2023
+                if self.imageProcessor.centerImg:
+                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T
+                    nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, self.imageProcessor.roi_h, self.imageProcessor.roi_w)
 
-                    ##############################
-                    # JOHN 12/30/2023
                     saveMe = []
                     for img in nthumbnail_batch:
                         saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
                     nthumbnail_batch = np.array(saveMe)
-                    # print("a09wdjaoimd", nimg_batch.shape, nthumbnail_batch.shape)
-                    # print(nthumbnail_batch.shape)
-                    # JOHN 12/30/2023
 
-                else: #JOHN 011/09/2023
-#                    print("a09wupoidkw", np.arrayħnimg_batch).shape)
-#                    print(num_valid_imgs, x, y)
-                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T #JOHN 011/09/2023
-                    nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty) #JOHN 011/09/2023
+                else:
+                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T 
+                    nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
                 
                 
                 if fullimgs is None and nimg_batch.shape[1]!=0:
                     fullimgs = nimg_batch
                     fullthumbnails = nthumbnail_batch
-                    # print("FULL IMGS IS NONE.", "nimgbatch shape", nimg_batch.shape, "fullthumbnailshape", fullthumbnails.shape, "nthumbnail shape", nthumbnail_batch.shape)
                     trueIntensities += ntrueIntensity_batch
-                # elif len(nimg_batch)!=0:
-                elif nimg_batch.shape[1]!=0: #JOHN CHANGE 12/31/2023
-                    # print("nimgbatch shape", nimg_batch.shape, "fullthumbnailshape", fullthumbnails.shape, "nthumbnail shape", nthumbnail_batch.shape)
+                elif nimg_batch.shape[1]!=0: 
                     fullimgs = np.hstack((fullimgs, nimg_batch))
                     fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
-                    # print("NEW: nimgbatch shape", nimg_batch.shape, "fullthumbnailshape", fullthumbnails.shape, "nthumbnail shape", nthumbnail_batch.shape)
                     trueIntensities += ntrueIntensity_batch
             else:
                 nimg_batch = []
                 for ind, img in enumerate(img_batch.T):
                     currIntensity = np.sum(img.flatten(), dtype=np.double)
-#                    print("Starting image processing of size {}".format(img_batch.T.shape))
                     nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
                     if nimg is not None:
                         nimg_batch.append(nimg)
                     else:
-#                        nimg_batch.append(np.zeros((x, y)))
                         num_valid_imgs -= 1
                         self.excludedImgs.append(ind)
 
-#                nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
+                if self.imageProcessor.centerImg:
+                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T 
+                else: 
+                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T 
 
-                #JOHN 11/20/23
-                if self.imageProcessor.centerImg: #JOHN 011/09/2023
-                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T #JOHN 011/09/2023
-                else: #JOHN 011/09/2023
-                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T #JOHN 011/09/2023
-
-
-
-#                print(nimg_batch.shape)
-#                print("hstacking")
                 if fullimgs is None:
                     fullimgs = nimg_batch
-                # elif len(nimg_batch)!=0: #JOHN 12/31/2023
                 elif nimg_batch.shape[1]!=0:
-#                    print(fullimgs.shape, nimg_batch.shape, nimg_batch)
                     fullimgs = np.hstack((fullimgs, nimg_batch))
 
         print("EXCLUDING IMAGES: ", self.excludedImgs)
 
-#        print("Images tracked:", imgsTracked)
         if getThumbnails:
             print(fullimgs.shape, fullthumbnails.shape, imgsTracked)
             return (fullimgs, fullthumbnails, imgsTracked, trueIntensities)
@@ -2542,16 +2262,15 @@ def main():
     Perform Frequent Direction Visualization.
     """
     params = parse_input()
-    os.makedirs(os.path.join(params.outdir, "figs"), exist_ok=True)
     visMe = visualizeFD(inputFile=params.outdir + f"/{params.run:04}_ProjectedData",
-                        outputFile=params.outdir + f"figs/UMAPVis_{params.run:04}.html",
+                        outputFile=params.outdir + f"/UMAPVis_{params.run:04}.html",
                         numImgsToUse=params.num_imgs,
                         nprocs=params.nprocs,
                         userGroupings=[],
                         includeABOD=True,
                         skipSize=params.skip_size,
 #                        umap_n_neighbors=params.num_imgs_to_use // 4000,
-                        umap_n_neighbors=params.num_imgs_to_use // 10000,
+                        umap_n_neighbors= 15,
                         umap_random_state=42,
                         hdbscan_min_samples=int(params.num_imgs_to_use * 0.75 // 40),
                         hdbscan_min_cluster_size=int(params.num_imgs_to_use // 40),
