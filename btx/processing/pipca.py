@@ -1,4 +1,5 @@
 import os, csv, h5py, argparse
+import math
 
 import numpy as np
 import time
@@ -6,6 +7,7 @@ from mpi4py import MPI
 
 from matplotlib import pyplot as plt
 from matplotlib import colors
+from scipy.linalg import qr
 
 import holoviews as hv
 hv.extension('bokeh')
@@ -13,6 +15,7 @@ from holoviews.streams import Params
 
 import panel as pn
 import panel.widgets as pnw
+import statistics
 
 from btx.misc.shortcuts import TaskTimer
 
@@ -45,7 +48,6 @@ class PiPCA:
         output_dir="",
         filename='pipca.model_h5',
     ):
-
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
@@ -53,6 +55,7 @@ class PiPCA:
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
         self.psi.counter = start_offset
         self.start_offset = start_offset
+        #self.psi.turn_calibration_off()
 
         self.priming = priming
         self.downsample = downsample
@@ -131,8 +134,6 @@ class PiPCA:
         batch_size = self.batch_size
         num_images = self.num_images
 
-        print("CPU:", self.size)
-        print("rank:", self.rank)
         # initialize and prime model, if specified
         if self.priming:
             img_batch = self.get_formatted_images(
@@ -140,18 +141,20 @@ class PiPCA:
             )
             self.prime_model(img_batch)
 
-        elif previous_U is not None:
-            self.U = previous_U
-            self.S = previous_S
-            self.mu = previous_mu
-            self.total_variance = previous_var
+        with TaskTimer(self.task_durations, "Initialize matrices"):
+            if previous_U is not None:
 
-        else:
-            self.U = np.zeros((self.split_counts[self.rank], self.num_components))
-            self.S = np.ones(self.num_components)
-            self.mu = np.zeros((self.split_counts[self.rank], 1))
-            self.total_variance = np.zeros((self.split_counts[self.rank], 1))
+                self.U = previous_U[self.split_indices[self.rank]:self.split_indices[self.rank +1]]
+                self.S = previous_S
+                self.mu = previous_mu[self.split_indices[self.rank]:self.split_indices[self.rank +1]]
+                self.total_variance = previous_var[self.split_indices[self.rank]:self.split_indices[self.rank +1]]
 
+            else:
+                self.U = np.zeros((self.split_counts[self.rank], self.num_components))
+                self.S = np.ones(self.num_components)
+                self.mu = np.zeros((self.split_counts[self.rank], 1))
+                self.total_variance = np.zeros((self.split_counts[self.rank], 1))
+        
         # divide remaining number of images into batches
         # will become redundant in a streaming setting, need to change
         rem_imgs = num_images - self.num_incorporated_images
@@ -161,46 +164,66 @@ class PiPCA:
         )
 
         # define batch indices based on batch sizes
-        self.batch_indices = self.distribute_images_over_batches(batch_sizes)
-        self.batch_number = 0
+        with TaskTimer(self.task_durations, "distribute images over batches"):
+            self.batch_indices = self.distribute_images_over_batches(batch_sizes)
+            self.batch_number = 0
 
         # update model with remaining batches
-        for batch_size in batch_sizes:
-            self.fetch_and_update_model(batch_size)
+        with TaskTimer(self.task_durations, "fetch and update model"):
+            for batch_size in batch_sizes:
+                self.fetch_and_update_model(batch_size)
             
         self.comm.Barrier()
         
-        U = self.gather_U()
-        S = self.S
-        V = self.V
+        with TaskTimer(self.task_durations, "gather matrices end"):
+            U = self.gather_U()
+            S = self.S
+            V = self.V
+            mu_tot = self.gather_mu()
+            var_tot = self.gather_var()
         
         end_time = time.time()
         
         if self.rank == 0:  
             print("Model complete")
-            
             execution_time = end_time - start_time  # Calculate the execution time
+            frequency = self.num_incorporated_images/execution_time
 
             # save model to an hdf5 file
-            with h5py.File(self.filename, 'a') as f:
-                if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f or 'loadings' not in f:
-                    # Create datasets only if they don't exist
-                    f.create_dataset('exp', data=self.psi.exp)
-                    f.create_dataset('det_type', data=self.psi.det_type)
-                    f.create_dataset('start_offset', data=self.start_offset)
-                    f.create_dataset('loadings', data=self.pc_data)
+            with TaskTimer(self.task_durations, "save inputs file h5"):
+                with h5py.File(self.filename, 'a') as f:
+                    if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
+                        # Create datasets only if they don't exist
+                        f.create_dataset('exp', data=self.psi.exp)
+                        f.create_dataset('det_type', data=self.psi.det_type)
+                        f.create_dataset('start_offset', data=self.start_offset)
 
-                create_or_update_dataset(f, 'run', self.psi.run)
-                create_or_update_dataset(f, 'U', U)
-                create_or_update_dataset(f, 'S', S)
-                create_or_update_dataset(f, 'V', V)
-                create_or_update_dataset(f, 'mu', self.mu)
-                create_or_update_dataset(f, 'total_variance', self.total_variance)
+                    create_or_update_dataset(f,'loadings', data=self.pc_data)
+                    create_or_update_dataset(f, 'run', self.psi.run)
+                    create_or_update_dataset(f, 'U', U)
+                    create_or_update_dataset(f, 'S', S)
+                    create_or_update_dataset(f, 'V', V)
+                    create_or_update_dataset(f, 'mu', mu_tot)
+                    create_or_update_dataset(f, 'total_variance', var_tot)
 
-                append_to_dataset(f, 'execution_times', data=execution_time)
-                print(f'Model saved to {self.filename}')
+                    append_to_dataset(f, 'frequency', data=frequency)
+                    append_to_dataset(f, 'execution_times', data=execution_time)
+                    print(f'Model saved to {self.filename}')
 
-            compute_and_save_metrics(self.filename, self.num_components, U, previous_U, S, previous_S, self.mu, previous_mu, self.total_variance, previous_var)
+            # Print the mean duration and standard deviation for each task
+            for task, durations in self.task_durations.items():
+                durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
+                if len(durations) == 1:
+                    print(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
+                else:
+                    mean_duration = sum(durations) / len(durations)
+                    std_deviation = statistics.stdev(durations)
+                    print(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
+
+
+            #compute_and_save_metrics(self.filename, self.num_components, S, previous_S, self.mu, previous_mu, self.total_variance, previous_var, False)
+
+        self.comm.Barrier()
 
     def get_formatted_images(self, n, start_index, end_index):
         """
@@ -226,7 +249,8 @@ class PiPCA:
 
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
-        imgs = self.psi.get_images(n, assemble=False)
+        with TaskTimer(self.task_durations, 'get images'):
+            imgs = self.psi.get_images(n, assemble=False)
 
         if downsample:
             imgs = bin_data(imgs, bin_factor)
@@ -283,7 +307,8 @@ class PiPCA:
         rank = self.rank
         start_index, end_index = self.split_indices[rank], self.split_indices[rank + 1]
 
-        img_batch = self.get_formatted_images(n, start_index, end_index)
+        with TaskTimer(self.task_durations, "get formatted images"):
+            img_batch = self.get_formatted_images(n, start_index, end_index)
 
         self.update_model(img_batch)
 
@@ -321,7 +346,6 @@ class PiPCA:
             with TaskTimer(self.task_durations, "update mean and variance"):
                 mu_n = self.mu
                 mu_m, s_m = self.calculate_sample_mean_and_variance(X)
-
                 self.total_variance = self.update_sample_variance(
                     self.total_variance, s_m, mu_n, mu_m, num_incorporated_images, m
                 )
@@ -352,11 +376,12 @@ class PiPCA:
             with TaskTimer(self.task_durations, "update V"):
                 self.update_V(X, self.S)
 
-            with TaskTimer(self.task_durations, "record pc data"):
-                self.record_loadings()
-
             self.num_incorporated_images += m
             self.batch_number += 1
+
+            with TaskTimer(self.task_durations, "record pc data"):
+                self.record_loadings()
+                
 
     def calculate_sample_mean_and_variance(self, imgs):
         """
@@ -425,6 +450,7 @@ class PiPCA:
         m = x - num_components - 1
 
         with TaskTimer(self.task_durations, "qr - local qr"):
+            # Principal computational time bottleneck
             Q_r1, R_r = np.linalg.qr(A, mode="reduced")
 
         self.comm.Barrier()
@@ -550,9 +576,8 @@ class PiPCA:
         self.comm.Barrier()
 
         # Gather all X and U across all ranks
-        with TaskTimer(self.task_durations, "V - gather X and U"):
-            X_tot = self.gather_X(X)
-            U_tot = self.gather_U()
+        X_tot = self.gather_X(X)
+        U_tot = self.gather_U()
 
         V = np.empty((num_incorporated_images + m, num_components))
         
@@ -581,8 +606,7 @@ class PiPCA:
 
         self.comm.Barrier()
 
-        with TaskTimer(self.task_durations, "V - bcast V"):
-            self.comm.Bcast(V, root=0)
+        self.comm.Bcast(V, root=0)
 
         self.V = V
         self.U_prev = U_tot
@@ -724,11 +748,37 @@ class PiPCA:
         Method to store current all loadings, ΣV^T,
         up to the current batch.
         """
+        if self.num_images == self.num_incorporated_images:
+
+            U = self.gather_U()
+            S = self.S
+            V = self.V
+            mu = self.gather_mu()
+
+            self.comm.Barrier()
+
+            if self.rank == 0:
+                with TaskTimer(self.task_durations, 'Record Loadings'):
+                    pcs = np.diag(S) @ V.T - np.tile((mu.T @ U).T, (1, self.num_images))
+
+                self.pc_data = pcs
+
+                pc_dist = np.linalg.norm(self.pc_data[:self.num_components], axis=0)
+                std = np.std(pc_dist)
+                mu = np.mean(pc_dist)
+
+                index_offset = self.start_offset + self.num_incorporated_images
+                self.outliers = np.where(np.abs(pc_dist - mu) > 2 * std)[0] + index_offset
+            
+    def record_loadings_per_batch(self):
+        """
+        Method to store current all loadings, ΣV^T,
+        up to the current batch.
+        """
         U = self.gather_U()
         S = self.S
         V = self.V
         mu = self.gather_mu()
-
 
         if self.rank == 0:
             j = self.batch_number
@@ -738,8 +788,8 @@ class PiPCA:
                 start, end = self.batch_indices[i], self.batch_indices[i+1]
                 batch_size = end - start
                 centered_model = U @ np.diag(S) @ V[start:end].T - np.tile(mu, (1, batch_size))
-                pcs[:, start:end] = U.T @ centered_model 
-            
+                pcs[:, start:end] = U.T @ centered_model
+      
             self.pc_data = pcs
 
             pc_dist = np.linalg.norm(pcs[:self.num_components], axis=0)
@@ -947,7 +997,6 @@ def distribute_indices_over_ranks(d, size):
 def append_to_dataset(f, dataset_name, data):
     if dataset_name not in f:
         f.create_dataset(dataset_name, data=np.array(data))
-        print(f"Created dataset: {dataset_name}")
     else:
         if isinstance(f[dataset_name], h5py.Dataset) and f[dataset_name].shape == ():
             # Scalar dataset, convert to array
@@ -960,7 +1009,6 @@ def append_to_dataset(f, dataset_name, data):
         data_combined = np.concatenate([existing_data, new_data])
         del f[dataset_name]
         f.create_dataset(dataset_name, data=data_combined)
-        print(f"Completed dataset: {dataset_name}")
 
 def compute_norm_difference(current, previous=None):
     if previous is not None:
@@ -975,13 +1023,10 @@ def create_or_update_dataset(f, name, data):
     else:
         del f[name]
         f.create_dataset(name, data=data)
-        print(f"Replaced dataset: {name}")
 
-
-def compute_and_save_metrics(filename, num_components, U, previous_U, S, previous_S, mu, previous_mu, total_variance, previous_var):
+def compute_and_save_metrics(filename, num_components, S, previous_S, mu, previous_mu, total_variance, previous_var, complete_compression):
 
     # Compute differences for each list
-    diff_U = compute_norm_difference(U, previous_U)
     diff_S = compute_norm_difference(S, previous_S)
     diff_mu = compute_norm_difference(mu, previous_mu)
     diff_var = compute_norm_difference(total_variance, previous_var)
@@ -993,21 +1038,67 @@ def compute_and_save_metrics(filename, num_components, U, previous_U, S, previou
     time_random = end_time- start_time
     print(f"Random: {compression_loss_random}, {time_random}")
 
-    start_time = time.time()
-    compression_loss_full = compute_compression_loss(filename, num_components)[0]
-    end_time = time.time()
-    time_full = end_time- start_time
-    print(f"Full: {compression_loss_full}, {time_full}")
+    if complete_compression:
+        start_time = time.time()
+        compression_loss_full = compute_compression_loss(filename, num_components)[0]
+        end_time = time.time()
+        time_full = end_time- start_time
+        print(f"Full: {compression_loss_full}, {time_full}")
 
     with h5py.File(filename, 'a') as f:
         append_to_dataset(f, 'compression_loss_random_values', data=compression_loss_random)
-        append_to_dataset(f, 'compression_loss_full_values', data=compression_loss_full)
-        append_to_dataset(f, 'norm_diff_U_list', data=diff_U)
+        if complete_compression:
+            append_to_dataset(f, 'compression_loss_full_values', data=compression_loss_full)
         append_to_dataset(f, 'norm_diff_S_list', data=diff_S)
         append_to_dataset(f, 'norm_diff_mu_list', data=diff_mu)
         append_to_dataset(f, 'norm_diff_var_list', data=diff_var)
 
     print("Metrics saved to HDF5 file.")
+
+def remove_file_with_timeout(filename_with_tag, overwrite=True, timeout=10):
+    """
+    Remove the file specified by filename_with_tag if it exists.
+    
+    Parameters:
+        filename_with_tag (str): The name of the file to remove.
+        overwrite (bool): Whether to attempt removal if the file exists (default is True).
+        timeout (int): Maximum time allowed for attempting removal (default is 10 seconds).
+    """
+    start_time = time.time()  # Record the start time
+
+    while overwrite and os.path.exists(filename_with_tag):
+        # Check if the loop has been running for more than the timeout period
+        if time.time() - start_time > timeout:
+            break  # Exit the loop
+            
+        try:
+            os.remove(filename_with_tag)
+        except FileNotFoundError:
+            break  # Exit the loop
+
+def initialize_matrices(filename_with_tag):
+    """
+    Initialize matrices U, S, mu, and var based on whether the file exists.
+
+    Parameters:
+        filename_with_tag (str): The name of the file to check for existence.
+
+    Returns:
+        Tuple: Tuple containing U, S, mu, and var matrices.
+    """
+    if os.path.exists(filename_with_tag):
+        with h5py.File(filename_with_tag, 'r') as f:
+            previous_U = np.asarray(f.get('U'))
+            previous_S = np.asarray(f.get('S'))
+            previous_mu_tot = np.asarray(f.get('mu'))
+            previous_var_tot = np.asarray(f.get('total_variance'))
+    else:
+        previous_U = None
+        previous_S = None
+        previous_mu_tot = None
+        previous_var_tot = None 
+
+    return previous_U, previous_S, previous_mu_tot, previous_var_tot
 
 #### for command line use ###
 

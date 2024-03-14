@@ -9,6 +9,7 @@ import h5py
 import time
 import yaml
 import csv
+from mpi4py import MPI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -637,7 +638,11 @@ def pipca_run(config):
     from btx.misc.pipca_visuals import compute_compression_loss
     from btx.processing.pipca import append_to_dataset
     from btx.processing.pipca import compute_norm_difference
+    from btx.processing.pipca import remove_file_with_timeout
+    from btx.processing.pipca import initialize_matrices
 
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
     setup = config.setup
     task = config.pipca_run
     exp = setup.exp
@@ -648,34 +653,19 @@ def pipca_run(config):
     num_components = task.num_components
     batch_size = task.batch_size
     filename = task.filename
-    tag = task.tag
     path = task.path
+    offline = task.offline
+
     overwrite = True
+  
+    filename_with_tag = f"{path}{filename}_{num_components}_{num_images}_{batch_size}_n{size}.h5"
+ 
+    remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
 
-    filename_with_tag = f"{path}{filename}_{tag}.h5"
-
-    # Initialize U, S, mu and var matrices
-    if overwrite and os.path.exists(filename_with_tag):
-        os.remove(filename_with_tag)
-
-    if os.path.exists(filename_with_tag):
-        with h5py.File(filename_with_tag, 'r') as f:
-            previous_U = np.asarray(f.get('U'))
-            previous_S = np.asarray(f.get('S'))
-            previous_mu_tot = np.asarray(f.get('mu'))
-            previous_var_tot = np.asarray(f.get('total_variance'))
-
-    else:
-        previous_U = None
-        previous_S = None
-        previous_mu_tot = None
-        previous_var_tot = None 
+    previous_U, previous_S, previous_mu_tot, previous_var_tot = initialize_matrices(filename_with_tag)
 
     # Initialize number of runs
-
     # list_runs = get_runs(tag) function to code later
-
-    offline = task.offline
 
     if offline:
         start_run = run
