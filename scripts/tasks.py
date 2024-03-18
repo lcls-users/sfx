@@ -8,6 +8,7 @@ import itertools
 import yaml
 import csv
 import time
+import pickle
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -101,7 +102,7 @@ def run_analysis(config):
         command += f" --outlier_threshold={task.outlier_threshold}" 
     js = JobScheduler(os.path.join(".", f'ra_{setup.run:04}.sh'), 
                       queue=setup.queue,
-                      ncores=task.ncores,
+                      ncores=task.ncores if task.get('ncores') is not None else 120,
                       jobname=f'ra_{setup.run:04}',
                       account=setup.account,
                       reservation=setup.reservation)
@@ -114,52 +115,135 @@ def run_analysis(config):
 def opt_geom(config):
     from btx.diagnostics.geom_opt import GeomOpt
     from btx.misc.shortcuts import fetch_latest
+    from btx.misc.shortcuts import TaskTimer
     setup = config.setup
     task = config.opt_geom
+    task_durations = dict({})
     """ Optimize and deploy the detector geometry from a silver behenate run. """
-    taskdir = os.path.join(setup.root_dir, 'geom')
-    os.makedirs(taskdir, exist_ok=True)
-    os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
-    mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
-    task.dx = tuple([float(elem) for elem in task.dx.split()])
-    task.dx = np.linspace(task.dx[0], task.dx[1], int(task.dx[2]))
-    task.dy = tuple([float(elem) for elem in task.dy.split()])
-    task.dy = np.linspace(task.dy[0], task.dy[1], int(task.dy[2]))
-    centers = list(itertools.product(task.dx, task.dy))
-    if type(task.n_peaks) == int:
-        task.n_peaks = [int(task.n_peaks)]
-    else:
-        task.n_peaks = [int(elem) for elem in task.n_peaks.split()]
-    if task.get('distance') is None:
-        task.distance = None
-    elif type(task.distance) == float or type(task.distance) == int:
-        task.distance = [float(task.distance)]
-    else:
-        task.distance = [float(elem) for elem in task.distance.split()]
-    geom_opt = GeomOpt(exp=setup.exp,
-                       run=setup.run,
-                       det_type=setup.det_type)
-    geom_opt.opt_geom(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
-                      mask=mask_file,
-                      distance=task.distance,
-                      center=centers,
-                      n_iterations=task.get('n_iterations'),
-                      n_peaks=task.n_peaks,
-                      threshold=task.get('threshold'),
-                      deltas=True,
-                      plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'),
-                      plot_final_only=True)
-    if geom_opt.rank == 0:
-        try:
-            geom_opt.report(update_url)
-        except:
-            logger.debug("Could not communicate with the elog update url")
-        logger.info(f'Refined detector distance in mm: {geom_opt.distance}')
-        logger.info(f'Refined detector center in pixels: {geom_opt.center}')
-        logger.info(f'Detector edge resolution in Angstroms: {geom_opt.edge_resolution}')    
-        geom_opt.deploy_geometry(taskdir, pv_camera_length=setup.get('pv_camera_length'))
-        logger.info(f'Updated geometry files saved to: {taskdir}')
+    with TaskTimer(task_durations, "total duration"):
+        taskdir = os.path.join(setup.root_dir, 'geom')
+        os.makedirs(taskdir, exist_ok=True)
+        os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
+        mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
+        task.dx = tuple([float(elem) for elem in task.dx.split()])
+        task.dx = np.linspace(task.dx[0], task.dx[1], int(task.dx[2]))
+        task.dy = tuple([float(elem) for elem in task.dy.split()])
+        task.dy = np.linspace(task.dy[0], task.dy[1], int(task.dy[2]))
+        centers = list(itertools.product(task.dx, task.dy))
+        if type(task.n_peaks) == int:
+            task.n_peaks = [int(task.n_peaks)]
+        else:
+            task.n_peaks = [int(elem) for elem in task.n_peaks.split()]
+        if task.get('distance') is None:
+            task.distance = None
+        elif type(task.distance) == float or type(task.distance) == int:
+            task.distance = [float(task.distance)]
+        else:
+            task.distance = [float(elem) for elem in task.distance.split()]
+        geom_opt = GeomOpt(exp=setup.exp,
+                        run=setup.run,
+                        det_type=setup.det_type)
+        geom_opt.opt_geom(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
+                        mask=mask_file,
+                        distance=task.distance,
+                        center=centers,
+                        n_iterations=task.get('n_iterations'),
+                        n_peaks=task.n_peaks,
+                        threshold=task.get('threshold'),
+                        deltas=True,
+                        plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'),
+                        plot_final_only=True)
+        if geom_opt.rank == 0:
+            try:
+                geom_opt.report(update_url)
+            except:
+                logger.debug("Could not communicate with the elog update url")
+            logger.info(f'Refined detector distance in mm: {geom_opt.distance}')
+            logger.info(f'Refined detector center in pixels: {geom_opt.center}')
+            logger.info(f'Detector edge resolution in Angstroms: {geom_opt.edge_resolution}')    
+            geom_opt.deploy_geometry(taskdir, pv_camera_length=setup.get('pv_camera_length'))
+            logger.info(f'Updated geometry files saved to: {taskdir}')
+            logger.debug('Done!')
+            
+    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
+
+def grid_search_geom(config):
+    from btx.misc.shortcuts import fetch_latest
+    from btx.diagnostics.run import RunDiagnostics
+    from btx.diagnostics.ag_behenate import AgBehenate
+    from btx.interfaces.ipsana import assemble_image_stack_batch
+    from btx.misc.radial import radial_profile, pix2q, q2pix
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    from sklearn.gaussian_process.kernels import RBF
+    from btx.misc.shortcuts import TaskTimer
+    import scipy as scp
+    from scipy.stats import norm
+    setup = config.setup
+    task_durations = dict({})
+    """ Grid for geometry. """
+    with TaskTimer(task_durations, "total duration"):
+        taskdir = os.path.join(setup.root_dir, 'geom')
+        os.makedirs(taskdir, exist_ok=True)
+        os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
+        powder_file = os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy")
+        powder_img = np.load(powder_file)
+
+        diagnostics = RunDiagnostics(exp=setup.exp,
+                                    run=setup.run,
+                                    det_type=setup.det_type)
+        pixel_size = diagnostics.psi.get_pixel_size()
+        wavelength = diagnostics.psi.get_wavelength()
+
+        mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
+        mask_img = np.load(mask_file)
+        if diagnostics.psi.det_type != 'Rayonix':
+            mask_img = assemble_image_stack_batch(mask_img, diagnostics.pixel_index_map)
+
+        ag_behenate = AgBehenate(powder=powder_img,
+                                mask=mask_img,
+                                pixel_size=pixel_size,
+                                wavelength=wavelength)
+        
+        height, width = powder_img.shape[:2]
+        # Initial guess for the distance
+        distance_i = diagnostics.psi.estimate_distance()
+
+        length_fraction = 128
+        x_MIN = width//2 - width//length_fraction
+        x_MAX = width//2 + width//length_fraction
+        y_MIN = height//2 - height//length_fraction
+        y_MAX = height//2 + height//length_fraction
+
+        resolution = 0.5 # pixels
+
+        output_file_path = os.path.join(setup.root_dir, f'grid_geom_{length_fraction//2}th_length_square_res_{resolution}.csv')
+
+        # Create/Empty the .csv file
+        with open(output_file_path, 'w', newline='') as file:
+            writer = csv.writer(file, delimiter=',')
+            # Write a header row with column names
+            writer.writerow(['cx', 'cy', 'score'])
+        
+        with open(output_file_path, 'a', newline='') as file:
+            writer = csv.writer(file, delimiter=',')
+
+            for cx in np.arange(x_MIN, x_MAX+resolution, resolution):
+                for cy in np.arange(y_MIN, y_MAX+resolution, resolution):
+
+                    iprofile = radial_profile(data=powder_img, center=(cx, cy), mask=mask_img)
+                    peaks_observed, properties = scp.signal.find_peaks(iprofile, prominence=1, distance=10)
+                    qprofile = pix2q(np.arange(iprofile.shape[0]), wavelength, distance_i, pixel_size)
+                    
+                    # optimize the detector distance based on inter-peak distances
+                    rings, scores = ag_behenate.ideal_rings(qprofile[peaks_observed])
+                    peaks_predicted = q2pix(rings, wavelength, distance_i, pixel_size)
+
+                    # Write the data
+                    data_to_write = [cx, cy, float(np.min(scores))]
+                    writer.writerow(data_to_write)
+
         logger.debug('Done!')
+    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
 def find_peaks(config):
     from btx.processing.peak_finder import PeakFinder
@@ -642,7 +726,7 @@ def bo_aggregate_init_samples(config):
 
 ### BO Benchmark
 
-def check_status(statusfile, jobnames):
+def check_status(statusfile, jobnames, frequency=None):
         """
         Check whether all launched jobs have completed.
         
@@ -655,8 +739,9 @@ def check_status(statusfile, jobnames):
         """
         done = False
         start_time = time.time()
-        timeout = 64800 # number of seconds to allow sbatch'ed jobs to run before exiting, float
-        frequency = 5 # frequency in seconds to check on job completion, float
+        timeout = 1200 # number of seconds to allow sbatch'ed jobs to run before exiting, float
+        if frequency is None:
+            frequency = 5 # frequency in seconds to check on job completion, float
         
         while time.time() - start_time < timeout:
             if os.path.exists(statusfile) and not done:
@@ -675,7 +760,7 @@ def check_status(statusfile, jobnames):
     
 
 atot_thr_MIN = 100
-atot_thr_MAX = 200
+atot_thr_MAX = 150
 atot_thr_step = 10
 
 son_min_MIN = 5
@@ -683,7 +768,7 @@ son_min_MAX = 15
 son_min_step = 1
 
 run_MIN = 16
-run_MAX = 33
+run_MAX = 25
 
 def fp_idx_bo_benchmark(config):
     from btx.interfaces.ischeduler import JobScheduler
@@ -697,6 +782,11 @@ def fp_idx_bo_benchmark(config):
     os.makedirs(taskdir, exist_ok=True)
     script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/processing/peak_finder.py")
     cell_dir_path = os.path.join(setup.root_dir, "cell")
+
+    statusfile = os.path.join(setup.root_dir,"status.sh")
+    # Empty the status file
+    with open(statusfile, "w") as file:
+        pass
     
     logger.info(f'Launching slurm jobs to perform peak finding then indexing with parameters \
                 atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
@@ -704,8 +794,8 @@ def fp_idx_bo_benchmark(config):
     
     for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
         for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
-            
-            statusfile = os.path.join(setup.root_dir,"status.sh")
+    # for atot_thr in [100]:
+        # for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
 
             new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
 
@@ -795,7 +885,7 @@ def fp_idx_bo_benchmark(config):
                                         time=task.get('time') if task.get('time') is not None else '1:00:00', mpi_init = False, slurm_account=setup.account,
                                         slurm_reservation=setup.reservation)
                     indexer_obj.launch(addl_command=f"echo {jobname} | tee -a {statusfile}\n",
-                                       dont_report=True, wait=False)
+                                    dont_report=True, wait=False)
                     jobnames.append(jobname)
                     logger.info(f'[LOOP] Launched a slurm job to perform indexing for run {iter_run} of experiment {setup.exp} \
                                     with parameters atot_thr = {atot_thr} and son_min = {son_min}...')
@@ -815,13 +905,6 @@ def fp_idx_bo_benchmark(config):
                 logger.info(f'[LOOP] All .cxi files have been removed for run {iter_run} of experiment {setup.exp} \
                                     with parameters atot_thr = {atot_thr} and son_min = {son_min}...')
     
-    # Delete the cell files
-    for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
-        for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
-            new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
-            os.remove(os.path.join(cell_dir_path, f"{new_tag}.cell"))
-    logger.info(f'Cell files deleted.')
-    
     logger.info('All slurm jobs have been launched!')
     logger.info('Done!')
 
@@ -834,7 +917,7 @@ def stream_analysis_bo_benchmark(config):
     os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
     os.makedirs(os.path.join(setup.root_dir, 'cell'), exist_ok=True)
 
-    logger.info(f'Launching stream analysis for run {setup.run} with parameters atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
+    logger.info(f'Launching stream analysis for find_peaks with parameters atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
                                                                     and son_min in range({son_min_MIN}, {son_min_MAX} + {son_min_step}, {son_min_step})') 
     for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
         for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
@@ -861,9 +944,16 @@ def merge_bo_benchmark(config):
     setup = config.setup
     task = config.merge
     """ Merge reflections from stream file and convert to mtz. """
+    cell_dir_path = os.path.join(setup.root_dir, "cell")
 
-    logger.info(f'Launching merge for run {setup.run} with parameters atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
-                                                                    and son_min in range({son_min_MIN}, {son_min_MAX} + {son_min_step}, {son_min_step})') 
+    statusfile = os.path.join(setup.root_dir,"status.sh")
+    # Empty the status file
+    with open(statusfile, "w") as file:
+        pass
+
+    logger.info(f'Launching merge for find_peaks with parameters atot_thr in range({atot_thr_MIN}, {atot_thr_MAX} + {atot_thr_step}, {atot_thr_step})\n \
+                                                                    and son_min in range({son_min_MIN}, {son_min_MAX} + {son_min_step}, {son_min_step})')
+    
     for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
         for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
             new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
@@ -888,5 +978,100 @@ def merge_bo_benchmark(config):
             stream_to_mtz.launch(wait=False)
             logger.info(f'[LOOP] Launched a slurm job to perform merge for run {setup.run} of experiment {setup.exp} \
                             with parameters atot_thr = {atot_thr} and son_min = {son_min}...')
+            
+    # # Delete the cell files
+    # for atot_thr in np.arange(atot_thr_MIN, atot_thr_MAX + atot_thr_step, atot_thr_step):
+    #     for son_min in np.arange(son_min_MIN, son_min_MAX + son_min_step, son_min_step):
+    #         new_tag = f"{task.tag}_atot_thr_{atot_thr:04}_son_min_{son_min:04}"
+    #         os.remove(os.path.join(cell_dir_path, f"{new_tag}.cell"))
+    # logger.info(f'Cell files deleted.')
+
     logger.info(f'All merge tasks have been launched')
     logger.info(f'Done!')
+
+
+
+def bay_opt_geom(config):
+    from btx.misc.shortcuts import TaskTimer
+    from btx.interfaces.ischeduler import JobScheduler
+    setup = config.setup
+    script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/diagnostics/bay_opt_geom.py")
+    outdir = os.path.join(setup.root_dir, "bay_opt_geom")
+    os.makedirs(outdir, exist_ok=True)
+    statusfile = os.path.join(setup.root_dir,"status.sh")
+    task_durations = dict({})
+    """ Optimize and deploy the detector geometry from a silver behenate run using Bayesian Optimization. """
+
+    # Main parameters
+    length_fraction = 64
+    resolution = 0.5 # pixels
+    n_samples = 5
+    num_iterations = 30
+
+    num_jobs = 5
+
+    with TaskTimer(task_durations, "total duration"):
+
+        # Empty the status file
+        with open(statusfile, "w") as file:
+            pass
+
+        jobnames = []
+
+        for job_index in range(num_jobs):
+
+            jobname = f"bay_opt_geom_job_{job_index}"
+            
+            # Write the command
+            command = f"python {script_path}"
+            command += f" --job_index {job_index}"
+            command += f" --root_dir {setup.root_dir} -o {outdir} -r {setup.run} -e {setup.exp} -d {setup.det_type}"
+            command += f" --length_fraction {length_fraction} --resolution {resolution}"
+            command += f" --n_samples {n_samples} --num_iterations {num_iterations}"
+
+            # Add the jobname in the statusfile
+            addl_command=f"echo {jobname} | tee -a {statusfile}\n"
+            command += f"\n{addl_command}"
+
+            # Launch the Slurm job
+            js = JobScheduler(os.path.join(".", f'{jobname}.sh'), 
+                            queue=setup.queue,
+                            ncores=1,
+                            jobname=jobname,
+                            account=setup.account,
+                            reservation=setup.reservation)
+            js.write_header()
+            js.write_main(f"{command}\n", dependencies=['psana'])
+            js.clean_up()
+            js.submit(wait=False)
+            jobnames.append(jobname)
+            logger.info(f'[LOOP] Launched job number {job_index}')
+            
+        # Check that all peak finding slurm jobs have finished
+        jobs_finished = check_status(statusfile, jobnames, frequency=1)
+        
+        results_dict = {"scores": [], "cx_min": [], "cy_min": [], "opt_distances": []}
+        for job_index in range(num_jobs):
+            with open(os.path.join(outdir, f'bay_opt_geom_{length_fraction//2}th_length_{n_samples}_points_{num_iterations}_iter_job_{job_index}_results.yaml'), 'r') as yaml_file:
+                results = yaml.load(yaml_file, Loader=yaml.Loader)
+                results_dict["scores"].append(results["best_score"])
+                results_dict["cx_min"].append(results["cx_min"])
+                results_dict["cy_min"].append(results["cy_min"])
+                results_dict["opt_distances"].append(results["opt_distance"])
+        
+        best_index = np.argmax(np.array(results_dict["scores"]))
+        best_score = -results_dict["scores"][best_index]
+        cx_min = results_dict["cx_min"][best_index]
+        cy_min = results_dict["cy_min"][best_index]
+        opt_distance = results_dict["opt_distances"][best_index]
+        print('best_score:', best_score)
+        print('cx_min:', cx_min)
+        print('cy_min:', cy_min)
+        print('opt_distance:', opt_distance)
+
+        # TODO: Generate the .geom file
+
+        logger.debug('Done!')
+        
+    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
+
