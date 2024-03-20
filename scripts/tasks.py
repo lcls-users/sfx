@@ -785,3 +785,30 @@ def bo_aggregate_init_samples(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
     BayesianOptimization.aggregate_init_samples(config, logger)
+
+def make_histogram(config):
+    from ...
+    setup = config.setup
+    task = config.make_histogram
+    """  """
+    taskdir = os.path.join(setup.root_dir, 'mask')
+    os.makedirs(taskdir, exist_ok=True)
+    ...
+
+def measure_emd(config):
+    from ...
+    setup = config.setup
+    task = config.measure_emd
+    """  """
+    taskdir = os.path.join(setup.root_dir, 'mask')
+    os.makedirs(taskdir, exist_ok=True)
+    ...
+
+def build_pump_probe_mask(config):
+    from ...
+    setup = config.setup
+    task = config.build_pump_probe_mask
+    """  """
+    taskdir = os.path.join(setup.root_dir, 'mask')
+    os.makedirs(taskdir, exist_ok=True)
+    ...

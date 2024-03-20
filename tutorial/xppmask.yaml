@@ -1,0 +1,15 @@
+setup:
+  queue: 'milano'
+  root_dir: '/sdf/data/lcls/ds/xpp/xppXXXXX'
+  exp: 'xppXXXXX'
+  run: 15
+  det_type: 'XXXX'
+
+make_histogram:
+
+measure_emd:
+  roi:
+  ...
+
+build_pump_probe_mask:
+  threshold:
