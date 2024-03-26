@@ -1,12 +1,13 @@
-import numpy as np
+from analysis_tasks import calculate_p_values, generate_signal_mask, generate_background_mask
+from histogram_analysis import calculate_histograms
+from histogram_analysis import get_average_roi_histogram, wasserstein_distance
+from pvalues import calculate_emd_values
 import h5py
+import logging
+import numpy as np
 import os
 import requests
-import logging
-from histogram_analysis import calculate_histograms
-from analysis_tasks import calculate_p_values, generate_signal_mask, generate_background_mask
 # need to import these functions
-from pvalues import calculate_emd_values
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +50,6 @@ class MakeHistogram:
 
         if data.ndim != 3:
             raise ValueError(f"Expected 3D data, got {data.ndim}D")
-
-        if self.det_type == 'XXXX':
-            data = data.reshape((-1, 16))
-        elif self.det_type == 'YYYY':
-            data = data.astype(np.float32)
 
         self.data = data
 
@@ -118,9 +114,6 @@ class MakeHistogram:
             "Mean": f"{self.histograms.mean():.2f}",
         }
 
-import numpy as np
-from pvalues import calculate_emd_values
-from histogram_analysis import get_average_roi_histogram, wasserstein_distance
 
 class MeasureEMD:
     def __init__(self, config):
