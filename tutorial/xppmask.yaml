@@ -6,10 +6,25 @@ setup:
   det_type: 'XXXX'
 
 make_histogram:
+  input_file: 'data.h5'
+  dataset: '/entry_1/data_1/data'
+  output_dir: 'histograms'
 
 measure_emd:
-  roi:
-  ...
+  histograms_path: 'histograms'
+  output_path: 'emd_results'
+  roi_coords: [10, 20, 10, 20]
+  num_permutations: 1000
 
-build_pump_probe_mask:
-  threshold:
+calculate_p_values:
+  emd_path: 'emd_results'
+  null_dist_path: 'emd_results'
+  output_path: 'p_values'
+
+build_pump_probe_masks:
+  p_values_path: 'p_values'
+  output_dir: 'masks'
+  roi_coords: [10, 20, 10, 20]
+  threshold: 0.5
+  bg_mask_mult: 2.0
+  bg_mask_thickness: 5
