@@ -161,10 +161,15 @@ class MeasureEMD:
 
     def calculate_emd(self):
         roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.roi_coords
+        
+        if not (0 <= roi_x_start < roi_x_end <= self.histograms.shape[1] and 
+                0 <= roi_y_start < roi_y_end <= self.histograms.shape[2]):
+            raise ValueError(f"Invalid ROI coordinates for histogram of shape {self.histograms.shape}")
+        
         self.avg_hist = get_average_roi_histogram(self.histograms, roi_x_start, roi_x_end, roi_y_start, roi_y_end)
         
         self.emd_values = calculate_emd_values(self.histograms, self.avg_hist)
-        
+
     def generate_null_distribution(self):
         roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.roi_coords
         roi_histograms = self.histograms[:, roi_x_start:roi_x_end, roi_y_start:roi_y_end]
@@ -207,7 +212,7 @@ class MeasureEMD:
 
 
 class CalculatePValues:
-    def __init__(self, config):
+    def __init__(self, config, null_distribution):
         required_keys = ['pvalues', 'setup']
         for key in required_keys:
             if key not in config:
@@ -219,33 +224,29 @@ class CalculatePValues:
         
         self.exp = config['setup']['exp']
         self.run = config['setup']['run']
+
+        self.null_distribution = null_distribution  # Add this line
+
         
     def load_data(self):
-        emd_values_path = os.path.join(self.emd_path, f"emd_values_{self.exp}_{self.run}.npy")
-        self.emd_values = np.load(emd_values_path)
+        self.emd_values = np.load(self.emd_path)
         if self.emd_values.ndim != 2:
             raise ValueError(f"Expected 2D EMD values array, got {self.emd_values.ndim}D")
             
-
-        null_dist_path = os.path.join(self.null_dist_path, f"null_distribution_{self.exp}_{self.run}.npy")
-        self.null_dist = np.load(null_dist_path)
-        if self.null_dist.ndim != 1:
-            raise ValueError(f"Expected 1D null distribution array, got {self.null_dist.ndim}D")
-            
     def calculate_p_values(self):
-        self.p_values = calculate_p_values(self.emd_values, self.null_dist)
+        self.p_values = calculate_p_values(self.emd_values, self.null_distribution)  # Use self.null_distribution
         
     def summarize(self):
         summary = (f"P-value calculation for {self.exp} run {self.run}:\n"
                    f"  EMD values shape: {self.emd_values.shape}\n"  
-                   f"  Null distribution length: {len(self.null_dist)}\n"
+                   f"  Null distribution length: {len(self.null_distribution)}\n"  # Use self.null_distribution
                    f"  P-values shape: {self.p_values.shape}\n")
         
         with open(f"{self.output_path}_summary.txt", 'w') as f:
             f.write(summary)
             
         self.summary = summary
-        
+
     def report(self, report_path):
         with open(report_path, 'a') as f:
             f.write(self.summary)

@@ -41,106 +41,120 @@ def test_make_histogram(data_stack, output_dir, det_type='GENERIC'):
     # Return the path to the histogram file and the summary
     return histogram_file, make_histogram.histogram_summary
 
-
-def test_measure_emd(histogram_file):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config = {
-            'emd': {
-                'histograms_path': histogram_file,
-                'output_dir': temp_dir,
-                'roi_coords': [40, 60, 40, 60],
-                'num_permutations': 100,  # Reduced permutations for faster testing
-            },
-            'setup': {
-                'exp': 'test_exp',
-                'run': 'test_run',
-            }
+def test_measure_emd(histogram_file, output_dir):
+    config = {
+        'emd': {
+            'histograms_path': histogram_file,
+            'output_dir': output_dir,
+            'roi_coords': [50, 100, 0, 200],
+            'num_permutations': 100,  # Reduced permutations for faster testing
+        },
+        'setup': {
+            'exp': 'test_exp',
+            'run': 'test_run',
         }
+    }
 
-        emd_task = MeasureEMD(config)
-        emd_task.load_histograms()
+    emd_task = MeasureEMD(config)
+    emd_task.load_histograms()
+    
+    try:
         emd_task.calculate_emd()
-        emd_task.generate_null_distribution()  # Add this line
-        emd_task.summarize()
-        
-        report_path = os.path.join(temp_dir, 'report.txt')
-        emd_task.report(report_path)
+    except Exception as e:
+        print(f"Error in calculate_emd: {e}")
+        raise
+
+    try:
+        emd_task.generate_null_distribution()
+    except Exception as e:
+        print(f"Error in generate_null_distribution: {e}")
+        raise
+
+    emd_task.summarize()
+    
+    report_path = os.path.join(output_dir, 'report.txt')
+    emd_task.report(report_path)
+    
+    try:
         emd_task.save_emd_values()
+    except Exception as e:
+        print(f"Error in save_emd_values: {e}")
+        raise
+
+    try:
         emd_task.save_null_distribution()
+    except Exception as e:
+        print(f"Error in save_null_distribution: {e}")
+        raise
 
-        assert os.path.exists(report_path)
-        assert os.path.exists(os.path.join(temp_dir, "emd_values_test_exp_test_run.npy"))
-        assert os.path.exists(os.path.join(temp_dir, "emd_null_dist_test_exp_test_run.npy"))
+    assert os.path.exists(report_path)
+    assert os.path.exists(os.path.join(output_dir, "emd_values.npy"))
+    assert os.path.exists(os.path.join(output_dir, "emd_null_dist.npy"))
 
-def test_calculate_p_values():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        emd_values = np.random.rand(100, 100)
-        emd_path = os.path.join(temp_dir, 'emd_values.npy')
-        np.save(emd_path, emd_values)
+    return os.path.join(output_dir, "emd_values.npy"), os.path.join(output_dir, "emd_null_dist.npy")
 
-        null_dist = np.random.rand(1000)
-        null_dist_path = os.path.join(temp_dir, 'null_dist.npy')
-        np.save(null_dist_path, null_dist)
-
-        config = {
-            'pvalues': {
-                'emd_path': emd_path,
-                'null_dist_path': null_dist_path,
-                'output_path': os.path.join(temp_dir, 'p_values.npy'),
-            },
-            'setup': {
-                'exp': 'test_exp',
-                'run': 'test_run',
-            }
+def test_calculate_p_values(emd_file, null_dist_file, output_dir):
+    config = {
+        'pvalues': {
+            'emd_path': emd_file,
+            'null_dist_path': null_dist_file,
+            'output_path': os.path.join(output_dir, 'p_values.npy'),
+        },
+        'setup': {
+            'exp': 'test_exp',
+            'run': 'test_run',
         }
+    }
 
-        pval_task = CalculatePValues(config)
-        pval_task.load_data()
-        pval_task.calculate_p_values()
-        pval_task.summarize()
-        report_path = os.path.join(temp_dir, 'report.txt')
-        pval_task.report(report_path)
-        pval_task.save_p_values()
+    null_distribution = np.load(null_dist_file)  # Load the null_distribution from file
 
-        assert os.path.exists(report_path)
-        assert os.path.exists(config['pvalues']['output_path'])
+    pval_task = CalculatePValues(config, null_distribution)  # Pass null_distribution to CalculatePValues
+    pval_task.load_data()
+    pval_task.calculate_p_values()
+    pval_task.summarize()
+    report_path = os.path.join(output_dir, 'pvalues_report.txt')
+    pval_task.report(report_path)
+    pval_task.save_p_values()
 
-def test_build_pump_probe_masks():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        p_values = np.random.rand(100, 100)
-        p_values_path = os.path.join(temp_dir, 'p_values.npy')
-        np.save(p_values_path, p_values)
+    assert os.path.exists(report_path)
+    assert os.path.exists(config['pvalues']['output_path'])
 
-        config = {
-            'masks': {
-                'p_values_path': p_values_path,
-                'output_dir': temp_dir,
-                'roi_coords': [40, 60, 40, 60],
-                'threshold': 0.1,
-                'bg_mask_mult': 2.0,
-                'bg_mask_thickness': 5,
-            },
-            'setup': {
-                'exp': 'test_exp',
-                'run': 'test_run',
-            }
+    return config['pvalues']['output_path']
+
+def test_build_pump_probe_masks(p_values_file, output_dir):
+    config = {
+        'masks': {
+            'p_values_path': p_values_file,
+            'output_dir': output_dir,
+            'roi_coords': [50, 100,  0, 200],
+            'threshold': 0.1,
+            'bg_mask_mult': 2.0,
+            'bg_mask_thickness': 5,
+        },
+        'setup': {
+            'exp': 'test_exp',
+            'run': 'test_run',
         }
+    }
 
-        mask_task = BuildPumpProbeMasks(config)
-        mask_task.load_p_values()
-        mask_task.generate_masks()
-        mask_task.summarize()
-        report_path = os.path.join(temp_dir, 'report.txt')
-        mask_task.report(report_path)
-        mask_task.save_masks()
+    mask_task = BuildPumpProbeMasks(config)
+    mask_task.load_p_values()
+    mask_task.generate_masks()
+    mask_task.summarize()
+    report_path = os.path.join(output_dir, 'masks_report.txt')
+    mask_task.report(report_path)
+    mask_task.save_masks()
 
-        assert os.path.exists(report_path)
-        assert os.path.exists(os.path.join(temp_dir, 'signal_mask.npy'))
-        assert os.path.exists(os.path.join(temp_dir, 'bg_mask.npy'))
+    assert os.path.exists(report_path)
+    assert os.path.exists(os.path.join(output_dir, 'signal_mask_test_exp_test_run.npy'))
+    assert os.path.exists(os.path.join(output_dir, 'bg_mask_test_exp_test_run.npy'))
 
 if __name__ == '__main__':
     data = np.load('/home/ollie/data.npz')['arr_0']
-    hfile, summary = test_make_histogram(data, '.')
+    output_dir = '.'
+    hfile, summary = test_make_histogram(data, output_dir)
     print(summary)
-    test_measure_emd(hfile)
+    emd_file, null_dist_file = test_measure_emd(hfile, output_dir)
+    p_values_file = test_calculate_p_values(emd_file, null_dist_file, output_dir)
+    test_build_pump_probe_masks(p_values_file, output_dir)
 
