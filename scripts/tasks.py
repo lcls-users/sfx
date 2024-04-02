@@ -641,8 +641,6 @@ def pipca_run(config):
     from btx.processing.pipca import remove_file_with_timeout
     from btx.processing.pipca import initialize_matrices
 
-    comm = MPI.COMM_WORLD
-    size = comm.Get_size()
     setup = config.setup
     task = config.pipca_run
     exp = setup.exp
@@ -652,14 +650,14 @@ def pipca_run(config):
     num_images = task.num_images
     num_components = task.num_components
     batch_size = task.batch_size
-    filename = task.filename
+    tag = task.tag
     path = task.path
     offline = task.offline
 
     overwrite = True
-  
-    filename_with_tag = f"{path}{filename}_{num_components}_{num_images}_{batch_size}_n{size}.h5"
- 
+
+    filename_with_tag = f"{path}pipca_model_{tag}.h5"
+    
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
 
     previous_U, previous_S, previous_mu_tot, previous_var_tot = initialize_matrices(filename_with_tag)

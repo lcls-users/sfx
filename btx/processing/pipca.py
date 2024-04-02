@@ -1,6 +1,6 @@
 import os, csv, h5py, argparse
 import math
-
+import logging
 import numpy as np
 import time
 from mpi4py import MPI
@@ -183,9 +183,10 @@ class PiPCA:
             var_tot = self.gather_var()
         
         end_time = time.time()
-        
+        logging.basicConfig(level=logging.INFO)
+
         if self.rank == 0:  
-            print("Model complete")
+            logging.info("Model complete")
             execution_time = end_time - start_time  # Calculate the execution time
             frequency = self.num_incorporated_images/execution_time
 
@@ -208,20 +209,17 @@ class PiPCA:
 
                     append_to_dataset(f, 'frequency', data=frequency)
                     append_to_dataset(f, 'execution_times', data=execution_time)
-                    print(f'Model saved to {self.filename}')
+                    logging.info(f'Model saved to {self.filename}')
 
             # Print the mean duration and standard deviation for each task
             for task, durations in self.task_durations.items():
                 durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
                 if len(durations) == 1:
-                    print(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
+                    logging.info(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
                 else:
-                    mean_duration = sum(durations) / len(durations)
+                    mean_duration = np.mean(durations)
                     std_deviation = statistics.stdev(durations)
-                    print(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
-
-
-            #compute_and_save_metrics(self.filename, self.num_components, S, previous_S, self.mu, previous_mu, self.total_variance, previous_var, False)
+                    logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
 
         self.comm.Barrier()
 
@@ -1018,11 +1016,9 @@ def compute_norm_difference(current, previous=None):
     return np.linalg.norm(diff)
 
 def create_or_update_dataset(f, name, data):
-    if name not in f:
-        f.create_dataset(name, data=data)
-    else:
+    if name in f:
         del f[name]
-        f.create_dataset(name, data=data)
+    f.create_dataset(name, data=data)
 
 def compute_and_save_metrics(filename, num_components, S, previous_S, mu, previous_mu, total_variance, previous_var, complete_compression):
 
