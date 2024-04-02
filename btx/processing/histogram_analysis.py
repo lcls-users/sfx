@@ -137,3 +137,16 @@ def calculate_histograms(data, bin_boundaries=np.arange(5, 30, 0.2), hist_start_
 
 calculate_histograms = jit(nopython=True)(calculate_histograms)
 calculate_histograms = memoize_subsampled(calculate_histograms)
+
+def get_average_roi_histogram(histograms, roi_x_start, roi_x_end, roi_y_start, roi_y_end):
+    """Calculate the average histogram for the ROI."""
+    roi_histograms = histograms[:, roi_x_start:roi_x_end, roi_y_start:roi_y_end]
+    average_roi_histogram = np.mean(roi_histograms, axis=(1, 2))
+    return average_roi_histogram / np.sum(average_roi_histogram)
+
+@jit(nopython=True)
+def wasserstein_distance(u, v):
+    cdf_u = np.cumsum(u)
+    cdf_v = np.cumsum(v)
+    return np.sum(np.abs(cdf_u - cdf_v))
+

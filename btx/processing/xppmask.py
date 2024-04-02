@@ -28,13 +28,13 @@ class MakeHistogram:
             if key not in config:
                 raise ValueError(f"Missing required configuration key: {key}")
 
-        self.hdf5_path = os.path.join(config['setup']['root_dir'], config['make_histogram']['dataset'])
-        self.exp = config['setup']['exp'] 
+        self.hdf5_path = config['make_histogram']['input_file']
+        self.dataset_path = config['make_histogram']['dataset']
+        self.exp = config['setup']['exp']
         self.run = config['setup']['run']
         self.det_type = config['setup']['det_type']
+        self.output_dir = config['make_histogram']['output_dir']  # Add this line
         
-        self.output_dir = config['make_histogram']['output_dir']
-
         self.logger = logging.getLogger(__name__)
 
     def load_data(self):
@@ -43,13 +43,18 @@ class MakeHistogram:
         """
         try:
             with h5py.File(self.hdf5_path, 'r') as hdf5_file:
-                data = hdf5_file[self.hdf5_path][:]
+                data = hdf5_file[self.dataset_path][:]  # Update this line
         except (OSError, KeyError) as e:
-            self.logger.error(f"Error loading data from {self.hdf5_path}: {e}")
+            self.logger.error(f"Error loading data from {self.dataset_path}: {e}")  # Update this line
             raise
 
         if data.ndim != 3:
             raise ValueError(f"Expected 3D data, got {data.ndim}D")
+
+        if self.det_type == 'XXXX':
+            data = data.reshape((-1, 16))
+        elif self.det_type == 'YYYY':
+            data = data.astype(np.float32)
 
         self.data = data
 
@@ -62,14 +67,16 @@ class MakeHistogram:
 
     def summarize(self):
         """
-        Generate a summary string and write it to a file.
+        Generate a summary string.
         """
         summary_str = f"Histogram summary for {self.exp} run {self.run}:\n"
         summary_str += f"  Shape: {self.histograms.shape}\n"
         summary_str += f"  Min: {self.histograms.min():.2f}, Max: {self.histograms.max():.2f}\n" 
         summary_str += f"  Mean: {self.histograms.mean():.2f}\n"
         
-        summary_path = os.path.join(self.output_dir, f"make_histogram_{self.exp}_{self.run}.summary")
+        self.summary_str = summary_str
+        
+        summary_path = os.path.join(self.output_dir, f"histogram_summary_{self.exp}_{self.run}.txt")  # Update this line
         with open(summary_path, 'w') as summary_file:
             summary_file.write(summary_str)
         
@@ -123,26 +130,35 @@ class MeasureEMD:
                 raise ValueError(f"Missing required configuration key: {key}")
         
         self.histograms_path = config['emd']['histograms_path']
-        self.output_path = config['emd']['output_path']
+        self.output_dir = config['emd']['output_dir']
         self.roi_coords = config['emd']['roi_coords']
         self.num_permutations = config['emd'].get('num_permutations', 1000)
-        
+
         self.exp = config['setup']['exp']
         self.run = config['setup']['run']
-        
-    def load_histograms(self):
-        histograms_path = os.path.join(self.histograms_path, f"histograms_{self.exp}_{self.run}.npy")
-        self.histograms = np.load(histograms_path)
 
-        
+    def load_histograms(self):
+        if not os.path.exists(self.histograms_path):
+            raise FileNotFoundError(f"Histogram file {self.histograms_path} does not exist")
+
+        self.histograms = np.load(self.histograms_path)
+
         if self.histograms.ndim != 3:
             raise ValueError(f"Expected 3D histograms array, got {self.histograms.ndim}D")
-            
+
         roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.roi_coords
         if not (0 <= roi_x_start < roi_x_end <= self.histograms.shape[1] and 
                 0 <= roi_y_start < roi_y_end <= self.histograms.shape[2]):
             raise ValueError(f"Invalid ROI coordinates for histogram of shape {self.histograms.shape}")
+
+    def save_emd_values(self):
+        output_file = os.path.join(self.output_dir, "emd_values.npy")
+        np.save(output_file, self.emd_values)
         
+    def save_null_distribution(self):
+        output_file = os.path.join(self.output_dir, "emd_null_dist.npy")
+        np.save(output_file, self.null_distribution)
+
     def calculate_emd(self):
         roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.roi_coords
         self.avg_hist = get_average_roi_histogram(self.histograms, roi_x_start, roi_x_end, roi_y_start, roi_y_end)
@@ -178,7 +194,7 @@ class MeasureEMD:
                    f"  Null distribution shape: {self.null_distribution.shape}\n"
                    f"  Null distribution min: {np.min(self.null_distribution):.3f}, max: {np.max(self.null_distribution):.3f}\n")
         
-        with open(f"{self.output_path}_summary.txt", 'w') as f:
+        with open(f"{self.output_dir}_summary.txt", 'w') as f:
             f.write(summary)
             
         self.summary = summary
@@ -187,13 +203,7 @@ class MeasureEMD:
         with open(report_path, 'a') as f:
             f.write(self.summary)
             
-    def save_emd_values(self):
-        emd_values_path = os.path.join(self.output_path, f"emd_values_{self.exp}_{self.run}.npy")
-        np.save(emd_values_path, self.emd_values)
         
-    def save_null_distribution(self):
-        null_dist_path = os.path.join(self.output_path, f"null_distribution_{self.exp}_{self.run}.npy")
-        np.save(null_dist_path, self.null_distribution)
 
 
 class CalculatePValues:
