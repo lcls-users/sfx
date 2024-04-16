@@ -802,7 +802,7 @@ def make_histogram(config):
     
     hist_maker.save_histograms()
 
-def measure_emd(config):
+def calculate_emd(config):
     from btx.processing.xppmask import MeasureEMD
     setup = config.setup
     task = config.measure_emd
@@ -810,7 +810,7 @@ def measure_emd(config):
     emd_calculator = MeasureEMD(config)
     emd_calculator.load_histograms()
     emd_calculator.calculate_emd()
-    emd_calculator.generate_null_distribution()
+    #emd_calculator.generate_null_distribution()
     emd_calculator.summarize()
     emd_calculator.report(setup.get('elog_report'))
 
@@ -820,7 +820,7 @@ def measure_emd(config):
     emd_calculator.save_emd_values()
     emd_calculator.save_null_distribution()
 
-def build_pump_probe_mask(config):
+def generate_masks(config):
     from btx.processing.xppmask import BuildPumpProbeMasks
     setup = config.setup
     task = config.build_pump_probe_mask

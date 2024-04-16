@@ -5,12 +5,12 @@ setup:
   run: 15
   det_type: 'XXXX'
 
-make_histogram:
+generate_histograms:
   input_file: 'data.h5'
   dataset: '/entry_1/data_1/data'
   output_dir: 'histograms'
 
-measure_emd:
+calculate_emd:
   histograms_path: 'histograms'
   output_path: 'emd_results'
   roi_coords: [50, 100, 0, 200]
@@ -21,7 +21,7 @@ calculate_p_values:
   null_dist_path: 'emd_results'
   output_path: 'p_values'
 
-build_pump_probe_masks:
+generate_masks:
   histograms_path: 'histograms'
   p_values_path: 'p_values'
   output_dir: 'masks'
@@ -30,3 +30,14 @@ build_pump_probe_masks:
   bg_mask_mult: 2.0
   bg_mask_thickness: 5
 
+# not tested / working
+pump_probe_analysis:
+  signal_mask_path: 'masks/signal_mask.npy'
+  bg_mask_path: 'masks/bg_mask.npy'
+  i0_threshold: 1000
+  ipm_pos_filter: [0.1, 0.1]
+  time_bin: 0.1
+  time_tool: [1, 1000]
+  energy_filter: [1.0, 0.1]
+  min_count: 200
+  output_dir: 'pump_probe'
