@@ -13,7 +13,7 @@ make_histogram:
 measure_emd:
   histograms_path: 'histograms'
   output_path: 'emd_results'
-  roi_coords: [10, 20, 10, 20]
+  roi_coords: [50, 100, 0, 200]
   num_permutations: 1000
 
 calculate_p_values:
@@ -22,9 +22,11 @@ calculate_p_values:
   output_path: 'p_values'
 
 build_pump_probe_masks:
+  histograms_path: 'histograms'
   p_values_path: 'p_values'
   output_dir: 'masks'
-  roi_coords: [10, 20, 10, 20]
+  roi_coords: [50, 100, 0, 200]
   threshold: 0.5
   bg_mask_mult: 2.0
   bg_mask_thickness: 5
+
