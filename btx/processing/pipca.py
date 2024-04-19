@@ -259,7 +259,7 @@ class PiPCA:
                 imgs = self.psi.get_images(n,assemble=False)
 
             with TaskTimer(self.task_durations, 'broadcasting images'):
-                self.comm.bcast(imgs,root=0)
+                imgs = self.comm.bcast(imgs,root=0)
                     
         else :
             with TaskTimer(self.task_durations,'receiving images'):
