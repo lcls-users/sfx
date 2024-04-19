@@ -185,6 +185,7 @@ class PiPCA:
         end_time = time.time()
         logging.basicConfig(level=logging.INFO)
 
+        logging.info(f"Rank used : {self.rank}")
         if self.rank == 0:  
             logging.info("Model complete")
             execution_time = end_time - start_time  # Calculate the execution time
@@ -247,6 +248,7 @@ class PiPCA:
 
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
+
         if self.rank ==0:
             with TaskTimer(self.task_durations, 'get images rank 0'):
                 imgs = self.psi.get_images(n,assemble=False)
