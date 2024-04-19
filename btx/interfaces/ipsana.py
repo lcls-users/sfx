@@ -351,9 +351,6 @@ class PsanaInterface:
             images = np.zeros((num_images, 230, 1024))
             assemble = False
 
-        if self.calibrate and self.calib_data is None:
-            self.calib_data = self.det.calib(evt=self.runner.event(self.times[0]))
-            
         # retrieve next batch of images
         counter_batch = 0
         while counter_batch < num_images:
