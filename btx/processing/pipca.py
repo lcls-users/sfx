@@ -185,7 +185,6 @@ class PiPCA:
         end_time = time.time()
         logging.basicConfig(level=logging.INFO)
 
-        logging.info(f"Rank used : {self.rank}")
         if self.rank == 0:  
             logging.info("Model complete")
             execution_time = end_time - start_time  # Calculate the execution time
@@ -259,13 +258,13 @@ class PiPCA:
             with TaskTimer(self.task_durations, 'get images rank 0'):
                 imgs = self.psi.get_images(n,assemble=False)
 
-            with TaskTimer(self.task_durations, 'sending images'):
+            with TaskTimer(self.task_durations, 'broadcasting images'):
                 for i in range(1, self.size):
-                    self.comm.send(imgs,dest=i,tag=0)
+                    self.comm.bcast(imgs,root=0)
                     
-        else:
+        else :
             with TaskTimer(self.task_durations,'receiving images'):
-                imgs = self.comm.recv(source=0,tag=0)
+                imgs = self.comm.bcast(None,root=0)
 
         if downsample:
             imgs = bin_data(imgs, bin_factor)
