@@ -226,7 +226,7 @@ class PiPCA:
             for task, durations in self.task_durations.items():
                 if task == 'receiving images':
                     mean_duration = np.mean(durations)
-                    std_deviation = stastistics.stdev(durations)
+                    std_deviation = statistics.stdev(durations)
                     logging.info(f"Task :{task}, Mean Duration {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
         self.comm.Barrier()
 
