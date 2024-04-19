@@ -8,21 +8,26 @@ from PSCalib.GeometryAccess import GeometryAccess
 logger = logging.getLogger(__name__)
 
 class PsanaInterface:
+    instance=None
 
     def __init__(self, exp, run, det_type,
                  event_receiver=None, event_code=None, event_logic=True,
                  ffb_mode=False, track_timestamps=False, calibdir=None):
-        self.exp = exp # experiment name, str
-        self.hutch = exp[:3] # hutch name, str
-        self.run = run # run number, int
-        self.det_type = det_type # detector name, str
-        self.track_timestamps = track_timestamps # bool, keep event info
-        self.seconds, self.nanoseconds, self.fiducials = [], [], []
-        self.event_receiver = event_receiver # 'evr0' or 'evr1', str
-        self.event_code = event_code # event code, int
-        self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
-        self.set_up(det_type, ffb_mode, calibdir)
-        self.counter = 0
+        if not PsanaInterface.instance:
+            PsanaInterface.instance = self
+            self.exp = exp # experiment name, str
+            self.hutch = exp[:3] # hutch name, str
+            self.run = run # run number, int
+            self.det_type = det_type # detector name, str
+            self.track_timestamps = track_timestamps # bool, keep event info
+            self.seconds, self.nanoseconds, self.fiducials = [], [], []
+            self.event_receiver = event_receiver # 'evr0' or 'evr1', str
+            self.event_code = event_code # event code, int
+            self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
+            self.set_up(det_type, ffb_mode, calibdir)
+            self.counter = 0
+        else:
+            self.__dict__ = PsanaInterface.instance.__dict__
 
     def set_up(self, det_type, ffb_mode, calibdir=None):
         """
@@ -67,7 +72,7 @@ class PsanaInterface:
         """
         Do not apply calibration to images.
         """
-        self.calibrate = False
+        self.calibrate = False   
 
     def get_pixel_size(self):
         """
@@ -332,6 +337,8 @@ class PsanaInterface:
         images : numpy.ndarray, shape ((num_images,) + det_shape)
             images retrieved sequentially from run, optionally assembled
         """
+        self = PsanaInterface.instance
+
         # set up storage array
         if 'opal' not in self.det_type.lower():
             if assemble:
@@ -344,6 +351,9 @@ class PsanaInterface:
             images = np.zeros((num_images, 230, 1024))
             assemble = False
 
+        if self.calibrate and self.calib_data is None:
+            self.calib_data = self.det.calib(evt=self.runner.event(self.times[0]))
+            
         # retrieve next batch of images
         counter_batch = 0
         while counter_batch < num_images:

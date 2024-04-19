@@ -248,7 +248,14 @@ class PiPCA:
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
         with TaskTimer(self.task_durations, 'get images'):
-            imgs = self.psi.get_images(n, assemble=False)
+            if self.rank ==0:
+                imgs = self.psi.get_images(n,assemble=False)
+
+                for i in range(1, self.size):
+                    self.comm.send(imgs,dest=i,tag=0)
+                    
+            else:
+                imgs = self.comm.recv(source=0,tag=0)
 
         if downsample:
             imgs = bin_data(imgs, bin_factor)
