@@ -63,7 +63,7 @@ class PiPCA:
         self.output_dir = output_dir
         self.filename = filename
         self.data_loaded = None
-
+        
         (
             self.num_images,
             self.num_components,
@@ -260,8 +260,10 @@ class PiPCA:
                 imgs = self.psi.get_images(n,assemble=False)
 
                 self.data_loaded = imgs
-        
-        else:
+
+        self.comm.Barrier()
+
+        if self.rank !=0:
             with TaskTimer(self.task_durations, 'get images other ranks'):
                 imgs = self.data_loaded
 
