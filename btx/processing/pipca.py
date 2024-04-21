@@ -62,6 +62,7 @@ class PiPCA:
         self.bin_factor = bin_factor
         self.output_dir = output_dir
         self.filename = filename
+        self.data_loaded = None
 
         (
             self.num_images,
@@ -258,12 +259,17 @@ class PiPCA:
             with TaskTimer(self.task_durations, 'get images rank 0'):
                 imgs = self.psi.get_images(n,assemble=False)
 
-            with TaskTimer(self.task_durations, 'broadcasting images'):
+                self.data_loaded = imgs
+        
+        else:
+            imgs = self.data_loaded
+
+"""            with TaskTimer(self.task_durations, 'broadcasting images'):
                 imgs = self.comm.bcast(imgs,root=0)
                     
         else :
             with TaskTimer(self.task_durations,'receiving images'):
-                imgs = self.comm.bcast(None, root=0)
+                imgs = self.comm.bcast(None, root=0)"""
 
         if downsample:
             imgs = bin_data(imgs, bin_factor)
