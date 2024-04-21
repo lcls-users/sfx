@@ -262,7 +262,8 @@ class PiPCA:
                 self.data_loaded = imgs
         
         else:
-            imgs = self.data_loaded
+            with TaskTimer(self.task_durations, 'get images other ranks'):
+                imgs = self.data_loaded
 
 """            with TaskTimer(self.task_durations, 'broadcasting images'):
                 imgs = self.comm.bcast(imgs,root=0)
