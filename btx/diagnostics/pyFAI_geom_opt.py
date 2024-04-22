@@ -105,7 +105,7 @@ class pyFAI_Geometry_Optimization:
         params = [guessed_geom.dist, guessed_geom.poni1, guessed_geom.poni2]
         r = 0
         print(
-            f"Starting optimization with initial guess: dist={params[0]:.3f}, poni1={params[1]:.3f}, poni2={params[2]:.3f}"
+            f"Starting optimization with initial guess: dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
         )
         pixel_size = min(self.detector.pixel1, self.detector.pixel2)
         while True:
@@ -117,7 +117,7 @@ class pyFAI_Geometry_Optimization:
                 geometry=guessed_geom,
             )
             sg.extract_cp(max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=Imin)
-            sg.geometry_refinement.refine3(fix=["rot1", "rot2", "rot3", "wavelength"])
+            sg.geometry_refinement.refine2(fix=["rot1", "rot2", "rot3", "wavelength"])
             new_params = [
                 sg.geometry_refinement.param[0],
                 sg.geometry_refinement.param[1],
@@ -137,5 +137,5 @@ class pyFAI_Geometry_Optimization:
                 )
                 r += 1
                 print(
-                    f"Step {r}: dist={params[0]:.3f}, poni1={params[1]:.3f}, poni2={params[2]:.3f}"
+                    f"Step {r}: dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
                 )
