@@ -176,7 +176,7 @@ class PiPCA:
                     self.fetch_and_update_model(batch_size)
 
                 self.comm.Barrier()
-
+                logging.info(f"Barrière passée par le rank : {self.rank}, Data loaded : {self.data_loaded is not None}")
                 if self.rank !=0:
                     self.fetch_and_update_model(batch_size)
     
@@ -251,8 +251,6 @@ class PiPCA:
 
         bin_factor = self.bin_factor
         downsample = self.downsample
-
-        logging.info(f"Rank : {self.rank}, Data loaded : {self.data_loaded is not None}")
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
         if self.data_loaded is None :
