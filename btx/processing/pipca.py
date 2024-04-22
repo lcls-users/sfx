@@ -184,6 +184,7 @@ class PiPCA:
                 
                 else:
                     logging.info(f"On lance bien le reste, rank : {self.rank}")
+                    logging.info(f"La data est toujours loadée : {self.data_loaded is not None}")
                     self.fetch_and_update_model(batch_size)
 
         self.comm.Barrier()
@@ -245,7 +246,7 @@ class PiPCA:
                     std_deviation = statistics.stdev(durations)
                     logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
             logging.info("END RANK 1 ===========================")
-            
+
         self.comm.Barrier()
 
     def get_formatted_images(self, n, start_index, end_index):
