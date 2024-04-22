@@ -91,8 +91,8 @@ class pyFAI_Geometry_Optimization:
         # 2. Define Guessed Geometry
         dist = self.psi.estimate_distance() * 1e-3
         p1, p2, p3 = self.detector.calc_cartesian_positions()
-        poni1 = np.mean(p1)
-        poni2 = np.mean(p2)
+        poni1 = -np.mean(p1)
+        poni2 = -np.mean(p2)
         guessed_geom = Geometry(
             dist=dist,
             poni1=poni1,
@@ -106,7 +106,7 @@ class pyFAI_Geometry_Optimization:
         r = 0
         pixel_size = min(self.detector.pixel1, self.detector.pixel2)
         print(
-            f"Starting optimization with initial guess: dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
+            f"Starting optimization with initial guess: dist={params[0]:.3f}m, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
         )
         while True:
             sg = SingleGeometry(
