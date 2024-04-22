@@ -132,7 +132,7 @@ class RunDiagnostics:
             suffix=""
             if raw_img:
                 suffix = "_raw"
-            for key in ['mean', 'std', 'max', 'min', 'beam_energy_eV', 'photon_energy_eV']:
+            for key in ['sum', 'mean', 'std', 'max', 'min', 'beam_energy_eV', 'photon_energy_eV']:
                 filepath_key = os.path.join(outdir, f"r{self.psi.run:04}_trace_{key}{suffix}.npy")
                 try:
                     self.stats_final[key] = np.load(filepath_key)
@@ -141,7 +141,7 @@ class RunDiagnostics:
 
     def compute_stats(self, evt, img):
         """
-        Compute the following image stats: mean, std deviation, max, min.
+        Compute the following image stats: sum, mean, std deviation, max, and min
 
         Parameters
         ----------
@@ -151,7 +151,7 @@ class RunDiagnostics:
             unassembled, calibrated images of shape (n_panels, n_x, n_y)
         """
         if not self.stats:
-            for key in ['mean', 'std', 'max', 'min', 'beam_energy_eV', 'photon_energy_eV']:
+            for key in ['sum', 'mean', 'std', 'max', 'min', 'beam_energy_eV', 'photon_energy_eV']:
                 self.stats[key] = np.zeros(self.psi.max_events - self.psi.counter)
         
         beam_energy_mJ   = self.psi.get_fee_gas_detector_energy_mJ_evt(evt)
@@ -166,11 +166,13 @@ class RunDiagnostics:
             self.stats['photon_energy_eV'][self.n_proc] = photon_energy_eV
 
             if img is None:
+                self.stats['sum'][self.n_proc] = np.nan
                 self.stats['mean'][self.n_proc] = np.nan
                 self.stats['std'][self.n_proc] = np.nan
                 self.stats['max'][self.n_proc] = np.nan
                 self.stats['min'][self.n_proc] = np.nan
             else:
+                self.stats['sum'][self.n_proc] = np.sum(img)
                 self.stats['mean'][self.n_proc] = np.mean(img)
                 self.stats['std'][self.n_proc] = np.std(img)
                 self.stats['max'][self.n_proc] = np.max(img)
@@ -179,6 +181,7 @@ class RunDiagnostics:
             self.n_empty += 1
             self.stats['beam_energy_eV'][self.n_proc] = np.nan
             self.stats['photon_energy_eV'][self.n_proc] = np.nan
+            self.stats['sum'][self.n_proc] = np.nan
             self.stats['mean'][self.n_proc] = np.nan
             self.stats['std'][self.n_proc] = np.nan
             self.stats['max'][self.n_proc] = np.nan
@@ -347,8 +350,8 @@ class RunDiagnostics:
         """
         if self.rank == 0:
             n_plots = len(self.stats_final.keys())-1
-            keys = ['mean', 'max', 'min', 'std', 'beam_energy_eV', 'photon_energy_eV', 'gain_mode_counts']
-            labels = ['mean(I)', 'max(I)', 'min(I)', 'std dev(I)', 
+            keys = ['sum', 'mean', 'max', 'min', 'std', 'beam_energy_eV', 'photon_energy_eV', 'gain_mode_counts']
+            labels = ['sum(I)', 'mean(I)', 'max(I)', 'min(I)', 'std dev(I)', 
                       'Beam\nenergy (eV)', 'Photon\nenergy (eV)',
                       f'No. pixels in\n{self.gain_mode} mode']
 
@@ -779,6 +782,7 @@ def main():
         suffix = "_raw"
     rd.visualize_powder(output=os.path.join(params.outdir, f"figs/powder_r{params.run:04}{suffix}.png"))
     rd.visualize_stats(output=os.path.join(params.outdir, f"figs/stats_r{params.run:04}{suffix}.png"))
+    rd.save_stats(output=os.path.join(params.outdir, f""))
     try:
         rd.visualize_energy_stats(output=os.path.join(params.outdir, f"figs/stats_energy_r{params.run:04}{suffix}.png"),
                                   outlier_threshold=params.outlier_threshold)
