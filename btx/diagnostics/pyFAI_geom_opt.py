@@ -25,7 +25,9 @@ class pyFAI_Geometry_Optimization:
         Geometry file in CrystFEL format
     """
 
-    def __init__(self, exp, run, detector, geom):
+    def __init__(
+        self, exp, run, detector, geom, n_images=100, max_rings=5, pts_per_deg=1, Imin=0
+    ):
         self.exp = exp
         self.run = run
         self.det_type = detector
