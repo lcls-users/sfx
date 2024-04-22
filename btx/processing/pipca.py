@@ -174,25 +174,20 @@ class PiPCA:
                 if self.rank==0:
                     img_batch = []
                     with TaskTimer(self.task_durations, "get formatted images rank 0"):
-                        logging.info('Checkpoint 1')
                         imgs = self.psi.get_images(batch_size,assemble=False)
-                        for i in range(0,self.comm.Get_size()):
-                            logging.info('Checkpoint 2')
-                            img_batch.append(self.get_formatted_images(imgs,self.split_indices[i], self.split_indices[i + 1]))
-                            logging.info('Checkpoint 3')
+                        with TaskTimer(self.task_durations, "distribute pixels"):
+                            for i in range(0,self.comm.Get_size()):
+                                img_batch.append(self.get_formatted_images(imgs,self.split_indices[i], self.split_indices[i + 1]))
                 else :
                     img_batch = None
                 
                 self.comm.Barrier()
 
                 with TaskTimer(self.task_durations, "scattering data to all ranks"):
-                    logging.info('Checkpoint 4')
                     formatted_imgs = self.comm.scatter(img_batch,root=0) 
-                    logging.info(f'Checkpoint 5, data_loaded : {formatted_imgs is not None}, Rank : {self.rank}')
                 
                 with TaskTimer(self.task_durations, "update model"):
                     self.update_model(formatted_imgs)
-                    logging.info('Checkpoint 6')
 
         self.comm.Barrier()
         
