@@ -171,12 +171,16 @@ class PiPCA:
         # update model with remaining batches
         with TaskTimer(self.task_durations, "fetch and update model"):
             for batch_size in batch_sizes:
-                if self.rank==0:
-                    self.data_loaded = None
+                self.data_loaded = None
+
+                self.comm.Barrier()
+
+                if self.rank ==0:
                     self.fetch_and_update_model(batch_size)
-                    self.comm.Barrier()
-                else:
-                    self.comm.Barrier()
+                
+                self.comm.Barrier()
+
+                if self.rank !=0:
                     logging.info(f"Barrière passée par le rank : {self.rank}, Data loaded : {self.data_loaded is not None}")
                     self.fetch_and_update_model(batch_size)
 
