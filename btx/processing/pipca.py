@@ -62,7 +62,6 @@ class PiPCA:
         self.bin_factor = bin_factor
         self.output_dir = output_dir
         self.filename = filename
-        self.data_loaded = None
 
         (
             self.num_images,
@@ -172,8 +171,15 @@ class PiPCA:
         # update model with remaining batches
         with TaskTimer(self.task_durations, "fetch and update model"):
             for batch_size in batch_sizes:
-                self.fetch_and_update_model(batch_size)
-            
+                self.data_loaded = None
+                if self.rank==0:
+                    self.fetch_and_update_model(batch_size)
+
+                self.comm.Barrier()
+
+                if self.rank !=0:
+                    self.fetch_and_update_model(batch_size)
+    
         self.comm.Barrier()
         
         with TaskTimer(self.task_durations, "gather matrices end"):
@@ -246,6 +252,7 @@ class PiPCA:
         bin_factor = self.bin_factor
         downsample = self.downsample
 
+        logging.info(f"Rank : {self.rank}, Data loaded : {self.data_loaded is not None}")
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
         if self.data_loaded is None :
