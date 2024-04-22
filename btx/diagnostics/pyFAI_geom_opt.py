@@ -123,7 +123,7 @@ class pyFAI_Geometry_Optimization:
                 sg.geometry_refinement.param[1],
                 sg.geometry_refinement.param[2],
             ]
-            if np.allclose(params, new_params, rtol=pixel_size):
+            if np.allclose(params[1:], new_params[1:], rtol=pixel_size * 10):
                 print(f"Converged after {r} iterations")
                 print(
                     f"Final parameters: dist={new_params[0]:.3f}m, poni1={new_params[1]/pixel_size:.3f}pix, poni2={new_params[2]/pixel_size:.3f}pix"
