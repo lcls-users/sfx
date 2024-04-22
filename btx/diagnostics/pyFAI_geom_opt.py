@@ -117,7 +117,7 @@ class pyFAI_Geometry_Optimization:
                 geometry=guessed_geom,
             )
             sg.extract_cp(max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=Imin)
-            sg.geometry_refinement.refine2(fix=["rot1", "rot2", "rot3", "wavelength"])
+            sg.geometry_refinement.refine3(fix=["rot1", "rot2", "rot3", "wavelength"])
             new_params = [
                 sg.geometry_refinement.param[0],
                 sg.geometry_refinement.param[1],
