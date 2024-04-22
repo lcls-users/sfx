@@ -89,7 +89,7 @@ class pyFAI_Geometry_Optimization:
         behenate.wavelength = wavelength
 
         # 2. Define Guessed Geometry
-        dist = self.psi.estimate_distance()
+        dist = self.psi.estimate_distance() * 1e-3
         p1, p2, p3 = self.detector.calc_cartesian_positions()
         poni1 = np.mean(p1)
         poni2 = np.mean(p2)
