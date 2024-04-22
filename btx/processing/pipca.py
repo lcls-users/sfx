@@ -171,21 +171,22 @@ class PiPCA:
         # update model with remaining batches
         with TaskTimer(self.task_durations, "formatting and update model"):
             for batch_size in batch_sizes:
-                if self.rank==0:
-                    img_batch = []
-                    with TaskTimer(self.task_durations, "get formatted images rank 0"):
-                        imgs = self.psi.get_images(batch_size,assemble=False)
-                        with TaskTimer(self.task_durations, "distribute pixels"):
-                            for i in range(0,self.comm.Get_size()):
-                                img_batch.append(self.get_formatted_images(imgs,self.split_indices[i], self.split_indices[i + 1]))
-                else :
-                    img_batch = None
-                
-                self.comm.Barrier()
+                with TaskTimer(self.task_durations, "get images on each rank - equiv to old get_formatted_img"):
+                    if self.rank==0:
+                        img_batch = []
+                        with TaskTimer(self.task_durations, "get formatted images rank 0"):
+                            imgs = self.psi.get_images(batch_size,assemble=False)
+                            with TaskTimer(self.task_durations, "distribute pixels"):
+                                for i in range(0,self.comm.Get_size()):
+                                    img_batch.append(self.get_formatted_images(imgs,self.split_indices[i], self.split_indices[i + 1]))
+                    else :
+                        img_batch = None
+                    
+                    self.comm.Barrier()
 
-                with TaskTimer(self.task_durations, "scattering data to all ranks"):
-                    formatted_imgs = self.comm.scatter(img_batch,root=0) 
-                
+                    with TaskTimer(self.task_durations, "scattering data to all ranks"):
+                        formatted_imgs = self.comm.scatter(img_batch,root=0) 
+                    
                 with TaskTimer(self.task_durations, "update model"):
                     self.update_model(formatted_imgs)
 
