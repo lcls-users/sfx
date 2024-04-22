@@ -172,8 +172,17 @@ class PiPCA:
         with TaskTimer(self.task_durations, "fetch and update model"):
             for batch_size in batch_sizes:
                 self.data_loaded = None
+                if self.rank==0:
+                    formatted_imgs = self.get_formatted_images(bath_size,self.split_indices[0],self.split_indices[1])
+                    logging.info(f"Data_loaded : {self.data_loaded is not None}")
+                
+                self.comm.Barrier()
 
-                self.fetch_and_update_model(batch_size)
+                if self.rank==0:
+                    self.update_model(formatted_imgs)
+                
+                else:
+                    self.fetch_and_update_model(batch_size)
 
         self.comm.Barrier()
         
