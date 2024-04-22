@@ -173,7 +173,12 @@ class PiPCA:
             for batch_size in batch_sizes:
                 if self.rank==0:
                     self.data_loaded = None
-                self.fetch_and_update_model(batch_size)
+                    self.fetch_and_update_model(batch_size)
+                    self.comm.Barrier()
+                else:
+                    self.comm.Barrier()
+                    logging.info(f"Barrière passée par le rank : {self.rank}, Data loaded : {self.data_loaded is not None}")
+                    self.fetch_and_update_model(batch_size)
 
         self.comm.Barrier()
         
