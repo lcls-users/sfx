@@ -177,11 +177,13 @@ class PiPCA:
                     logging.info(f"Data_loaded : {self.data_loaded is not None}")
                 
                 self.comm.Barrier()
-
+                logging.info("Barrière passée")
                 if self.rank==0:
+                    logging.info("Le rank 0 va bien update")
                     self.update_model(formatted_imgs)
                 
                 else:
+                    logging.info(f"On lance bien le reste, rank : {self.rank}")
                     self.fetch_and_update_model(batch_size)
 
         self.comm.Barrier()
@@ -222,7 +224,6 @@ class PiPCA:
                     append_to_dataset(f, 'execution_times', data=execution_time)
                     logging.info(f'Model saved to {self.filename}')
 
-        if self.rank==1:
             # Print the mean duration and standard deviation for each task
             for task, durations in self.task_durations.items():
                 durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
@@ -233,6 +234,18 @@ class PiPCA:
                     std_deviation = statistics.stdev(durations)
                     logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
 
+        if self.rank==1:
+            logging.info("RANK 1 ============================")
+            for task, durations in self.task_durations.items():
+                durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
+                if len(durations) == 1:
+                    logging.info(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
+                else:
+                    mean_duration = np.mean(durations)
+                    std_deviation = statistics.stdev(durations)
+                    logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
+            logging.info("END RANK 1 ===========================")
+            
         self.comm.Barrier()
 
     def get_formatted_images(self, n, start_index, end_index):
