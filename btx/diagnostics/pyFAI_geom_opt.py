@@ -5,8 +5,8 @@ from pyFAI.goniometer import SingleGeometry
 from pyFAI.geometry import Geometry
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI.gui import jupyter
-from btx.btx.interfaces.ipsana import *
-from converter import CrystFEL_to_PyFAI
+from btx.interfaces.ipsana import *
+from btx.diagnostics.converter import CrystFEL_to_PyFAI
 
 
 class pyFAI_Geometry_Optimization:
