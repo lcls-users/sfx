@@ -174,20 +174,15 @@ class PiPCA:
                 self.data_loaded = None
                 if self.rank==0:
                     formatted_imgs = self.get_formatted_images(batch_size,self.split_indices[0],self.split_indices[1])
-                    logging.info(f"Data_loaded : {self.data_loaded is not None}")
+                    self.comm.bcast(self.data_loaded, root=0)
                 
                 self.comm.Barrier()
-                logging.info("Barrière passée")
                 if self.rank==0:
-                    logging.info("Le rank 0 va bien update")
                     self.update_model(formatted_imgs)
-                
-                self.data_loaded = self.comm.bcast(self.data_loaded, root=0)
 
-                self.comm.Barrier()
-                
-                else:
+                if self.rank !=0:
                     logging.info(f"On lance bien le reste, rank : {self.rank}")
+                    self.data_loaded = self.comm.bcast(None,root=0)
                     logging.info(f"La data est toujours loadée : {self.data_loaded is not None}")
                     self.fetch_and_update_model(batch_size)
 
