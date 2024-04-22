@@ -173,7 +173,7 @@ class PiPCA:
             for batch_size in batch_sizes:
                 self.data_loaded = None
                 if self.rank==0:
-                    formatted_imgs = self.get_formatted_images(bath_size,self.split_indices[0],self.split_indices[1])
+                    formatted_imgs = self.get_formatted_images(batch_size,self.split_indices[0],self.split_indices[1])
                     logging.info(f"Data_loaded : {self.data_loaded is not None}")
                 
                 self.comm.Barrier()
