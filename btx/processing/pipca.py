@@ -222,12 +222,6 @@ class PiPCA:
                     std_deviation = statistics.stdev(durations)
                     logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
 
-        if self.rank==1:
-            for task, durations in self.task_durations.items():
-                if task == 'receiving images':
-                    mean_duration = np.mean(durations)
-                    std_deviation = statistics.stdev(durations)
-                    logging.info(f"Task :{task}, Mean Duration {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
         self.comm.Barrier()
 
     def get_formatted_images(self, n, start_index, end_index):
@@ -254,23 +248,15 @@ class PiPCA:
 
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
-        if not self.data_loaded :
+        if self.data_loaded is None :
             with TaskTimer(self.task_durations, 'get images first rank'):
                 imgs = self.psi.get_images(n,assemble=False)
                 self.data_loaded = imgs
 
         else:
-            imgs = self.data_loaded
+            with TaskTimer(self.task_durations, 'get images other ranks'):
+                imgs = self.data_loaded
             
-"""            with TaskTimer(self.task_durations, 'broadcasting images'):
-                imgs = self.comm.bcast(imgs,root=0)
-                    
-        else :
-            logging.info("Receiving other ranks")
-            with TaskTimer(self.task_durations,'receiving images'):
-                imgs = self.comm.recv(source=0)
-            logging.info("Received other ranks")
-"""
         if downsample:
             imgs = bin_data(imgs, bin_factor)
 
