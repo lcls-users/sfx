@@ -174,7 +174,9 @@ class PiPCA:
                 self.data_loaded = None
                 if self.rank==0:
                     formatted_imgs = self.get_formatted_images(batch_size,self.split_indices[0],self.split_indices[1])
+                    logging.info("Checkpoint 1")
                     self.comm.bcast(self.data_loaded, root=0)
+                    logging.info("Checkpoint 2")
                 
                 self.comm.Barrier()
                 if self.rank==0:
