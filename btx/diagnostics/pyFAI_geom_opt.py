@@ -104,10 +104,10 @@ class pyFAI_Geometry_Optimization:
         # 3. Optimization Loop
         params = [guessed_geom.dist, guessed_geom.poni1, guessed_geom.poni2]
         r = 0
+        pixel_size = min(self.detector.pixel1, self.detector.pixel2)
         print(
             f"Starting optimization with initial guess: dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
         )
-        pixel_size = min(self.detector.pixel1, self.detector.pixel2)
         while True:
             sg = SingleGeometry(
                 label=f"step_{r+1}",
