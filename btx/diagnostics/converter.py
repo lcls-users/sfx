@@ -3,6 +3,10 @@ from pyFAI.detectors import Detector
 
 
 class CrystFEL_to_PyFAI:
+    """
+    Convert a CrystFEL geometry file to a PyFAI-friendly geometry format.
+    """
+
     def __init__(self, geom_file):
         self.geom_file = geom_file
         self.geom = self.from_CrystFEL(geom_file)
@@ -12,9 +16,9 @@ class CrystFEL_to_PyFAI:
 
     @staticmethod
     def from_CrystFEL(fname: str):
-        """Parse a CrystFEL geometry file.
-
-        Read a text ".geom" file and return the dictionary of geometry components.
+        """
+        Parse a CrystFEL geometry file
+        Read a text ".geom" file and return the dictionary of geometry components
         """
         detector = {
             "panels": {},
@@ -125,7 +129,9 @@ class CrystFEL_to_PyFAI:
 
     @staticmethod
     def get_pixel_coordinates(panels):
-        """From a CrystFEL geometry file, calculate Epix10k2M pixel coordinates."""
+        """
+        From a CrystFEL geometry file, calculate Epix10k2M pixel coordinates
+        """
         # 176 ss pixels, 192 fs pixels per asic
         # pixel size is 0.0001
         # asics are aranged 2x2 into quads (modules)
@@ -162,7 +168,9 @@ class CrystFEL_to_PyFAI:
 
     @staticmethod
     def get_corner_array(pix_pos, panels):
-        """Convert to the corner array needed by PyFAI"""
+        """
+        Convert to the corner array needed by PyFAI
+        """
         nmods = 16  # 16 panels
         nasics = 4  # asics per panel
         pixcorner = pix_pos.reshape(nmods * 176 * 2, 192 * 2, 3)
@@ -200,8 +208,18 @@ class CrystFEL_to_PyFAI:
 
 
 class Epix10k2M(Detector):
-    """PyFAI Detector instance for the Epix10k2M"""
+    """
+    PyFAI Detector instance for the Epix10k2M
+    """
 
-    def __init__(self, pixel1=0.0001, pixel2=0.0001, n_modules=16, **kwargs):
+    def __init__(
+        self,
+        pixel1=0.0001,
+        pixel2=0.0001,
+        n_modules=16,
+        ss_size=192,
+        fs_size=176,
+        **kwargs,
+    ):
         super().__init__(pixel1, pixel2, **kwargs)
-        self.shape = (16 * 2 * 176, 2 * 192)
+        self.shape = (n_modules * 2 * fs_size, 2 * ss_size)
