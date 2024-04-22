@@ -63,7 +63,7 @@ class PiPCA:
         self.output_dir = output_dir
         self.filename = filename
         self.data_loaded = None
-        
+
         (
             self.num_images,
             self.num_components,
@@ -254,26 +254,23 @@ class PiPCA:
 
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
-
-        if self.rank ==0:
-            with TaskTimer(self.task_durations, 'get images rank 0'):
+        if not self.data_loaded :
+            with TaskTimer(self.task_durations, 'get images first rank'):
                 imgs = self.psi.get_images(n,assemble=False)
-
                 self.data_loaded = imgs
 
-        self.comm.Barrier()
-
-        if self.rank !=0:
-            with TaskTimer(self.task_durations, 'get images other ranks'):
-                imgs = self.data_loaded
-
+        else:
+            imgs = self.data_loaded
+            
 """            with TaskTimer(self.task_durations, 'broadcasting images'):
                 imgs = self.comm.bcast(imgs,root=0)
                     
         else :
+            logging.info("Receiving other ranks")
             with TaskTimer(self.task_durations,'receiving images'):
-                imgs = self.comm.bcast(None, root=0)"""
-
+                imgs = self.comm.recv(source=0)
+            logging.info("Received other ranks")
+"""
         if downsample:
             imgs = bin_data(imgs, bin_factor)
 
