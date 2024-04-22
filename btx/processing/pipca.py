@@ -169,24 +169,19 @@ class PiPCA:
             self.batch_number = 0
 
         # update model with remaining batches
-        with TaskTimer(self.task_durations, "fetch and update model"):
+        with TaskTimer(self.task_durations, "formatting and update model"):
             for batch_size in batch_sizes:
-                self.data_loaded = None
                 if self.rank==0:
-                    formatted_imgs = self.get_formatted_images(batch_size,self.split_indices[0],self.split_indices[1])
-                    logging.info("Checkpoint 1")
-                    self.comm.bcast(self.data_loaded, root=0)
-                    logging.info("Checkpoint 2")
-                
-                self.comm.Barrier()
-                if self.rank==0:
-                    self.update_model(formatted_imgs)
+                    img_batch = []
+                    imgs = self.psi.get_images(batch_size,assemble=False)
+                    for i in range(0,self.comm.Get_size()):
+                        img_batch.append(get_formatted_images(imgs,self.split_indices[i], self.split_indices[i + 1]))
 
-                if self.rank !=0:
-                    logging.info(f"On lance bien le reste, rank : {self.rank}")
-                    self.data_loaded = self.comm.bcast(None,root=0)
-                    logging.info(f"La data est toujours loadée : {self.data_loaded is not None}")
-                    self.fetch_and_update_model(batch_size)
+                else :
+                    img_batch = None
+                
+                formatted_imgs = self.comm.scatter(img_batch,root=0) 
+                self.update_model(formatted_imgs)
 
         self.comm.Barrier()
         
@@ -236,21 +231,9 @@ class PiPCA:
                     std_deviation = statistics.stdev(durations)
                     logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
 
-        if self.rank==1:
-            logging.info("RANK 1 ============================")
-            for task, durations in self.task_durations.items():
-                durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
-                if len(durations) == 1:
-                    logging.info(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
-                else:
-                    mean_duration = np.mean(durations)
-                    std_deviation = statistics.stdev(durations)
-                    logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
-            logging.info("END RANK 1 ===========================")
-
         self.comm.Barrier()
 
-    def get_formatted_images(self, n, start_index, end_index):
+    def get_formatted_images(self, imgs, start_index, end_index):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
 
@@ -273,15 +256,6 @@ class PiPCA:
         downsample = self.downsample
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
-        if self.data_loaded is None :
-            with TaskTimer(self.task_durations, 'get images first rank'):
-                imgs = self.psi.get_images(n,assemble=False)
-                self.data_loaded = imgs
-
-        else:
-            with TaskTimer(self.task_durations, 'get images other ranks'):
-                imgs = self.data_loaded
-            
         if downsample:
             imgs = bin_data(imgs, bin_factor)
 
