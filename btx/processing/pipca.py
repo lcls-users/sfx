@@ -222,6 +222,7 @@ class PiPCA:
                     append_to_dataset(f, 'execution_times', data=execution_time)
                     logging.info(f'Model saved to {self.filename}')
 
+        if self.rank==1:
             # Print the mean duration and standard deviation for each task
             for task, durations in self.task_durations.items():
                 durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
