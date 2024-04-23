@@ -173,12 +173,10 @@ class PiPCA:
             for batch_size in batch_sizes:
                 with TaskTimer(self.task_durations, "get images on each rank - equiv to old get_formatted_img"):
                     if self.rank==0:
-                        img_batch = []
                         with TaskTimer(self.task_durations, "get formatted images rank 0"):
                             imgs = self.psi.get_images(batch_size,assemble=False)
                             with TaskTimer(self.task_durations, "distribute pixels"):
-                                for i in range(0,self.comm.Get_size()):
-                                    img_batch.append(self.get_formatted_images(imgs,self.split_indices[i], self.split_indices[i + 1]))
+                                img_batch = self.get_formatted_images(imgs)
                     else :
                         img_batch = None
                     
@@ -240,7 +238,7 @@ class PiPCA:
 
         self.comm.Barrier()
 
-    def get_formatted_images(self, imgs, start_index, end_index):
+    def get_formatted_images(self, imgs):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
 
@@ -273,7 +271,12 @@ class PiPCA:
         num_valid_imgs, p, x, y = imgs.shape
         formatted_imgs = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
 
-        return formatted_imgs[start_index:end_index, :]
+        formatted_imgs_to_scatter = []
+
+        for i in range(0,self.comm.Get_size()):
+            formatted_imgs_to_scatter.append(formatted_imgs[self.split_indices[i]:self.split_indices[i + 1],:])
+
+        return formatted_imgs_to_scatter
 
     def prime_model(self, X):
         """
