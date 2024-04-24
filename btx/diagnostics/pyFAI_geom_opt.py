@@ -26,14 +26,14 @@ class pyFAI_Geometry_Optimization:
     """
 
     def __init__(
-        self, exp, run, detector, geom, n_images=100, max_rings=5, pts_per_deg=1, Imin=0
+        self, exp, run, detector, geom, n_images=100, max_rings=5, pts_per_deg=1, I=0
     ):
         self.exp = exp
         self.run = run
         self.det_type = detector
         self.detector = self.load_geometry(geom)
         self.powder = self.load_powder_data()
-        self.geometry = self.pyFAI_optimization()
+        self.geometry = self.pyFAI_optimization(max_rings, pts_per_deg, I)
 
     def load_geometry(self, geom):
         """
@@ -66,11 +66,11 @@ class pyFAI_Geometry_Optimization:
         psi.calibrate = True
         self.psi = psi
         unassembled_images = psi.get_images(n_images, assemble=False)
-        calib_avg = np.mean(unassembled_images, axis=0)
-        calib_avg_flat = np.reshape(calib_avg, (16 * 2 * 176, 2 * 192))
-        return calib_avg_flat
+        calib_max = np.max(unassembled_images, axis=0)
+        calib_max_flat = np.reshape(calib_max, (16 * 2 * 176, 2 * 192))
+        return calib_max_flat
 
-    def pyFAI_optimization(self, max_rings=5, pts_per_deg=1, Imin=0):
+    def pyFAI_optimization(self, max_rings=5, pts_per_deg=1, I=0):
         """
         From guessed initial geometry, optimize the geometry using pyFAI package
 
@@ -86,6 +86,7 @@ class pyFAI_Geometry_Optimization:
         # 1. Define Calibrant
         behenate = CALIBRANT_FACTORY("AgBh")
         wavelength = self.psi.get_wavelength() * 1e-10
+        photon_energy = 1.23984197386209e-09 / wavelength
         behenate.wavelength = wavelength
 
         # 2. Define Guessed Geometry
@@ -104,6 +105,7 @@ class pyFAI_Geometry_Optimization:
         # 3. Optimization Loop
         params = [guessed_geom.dist, guessed_geom.poni1, guessed_geom.poni2]
         r = 0
+        best_score = np.inf()
         pixel_size = min(self.detector.pixel1, self.detector.pixel2)
         print(
             f"Starting optimization with initial guess: dist={params[0]:.3f}m, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
@@ -116,28 +118,19 @@ class pyFAI_Geometry_Optimization:
                 detector=self.detector,
                 geometry=guessed_geom,
             )
-            sg.extract_cp(max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=Imin)
-            sg.geometry_refinement.refine3(fix=["rot1", "rot2", "rot3", "wavelength"])
+            sg.extract_cp(
+                max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=I * photon_energy
+            )
+            score = sg.geometry_refinement.refine3(
+                fix=["rot1", "rot2", "rot3", "wavelength"]
+            )
             new_params = [
                 sg.geometry_refinement.param[0],
                 sg.geometry_refinement.param[1],
                 sg.geometry_refinement.param[2],
             ]
-            if np.allclose(params[1:], new_params[1:], rtol=0.03):
-                print(f"Converged after {r} iterations")
-                print(
-                    f"Final parameters: dist={new_params[0]:.3f}m, poni1={new_params[1]/pixel_size:.3f}pix, poni2={new_params[2]/pixel_size:.3f}pix"
-                )
-                closest_y = (
-                    round(new_params[1] / pixel_size) * pixel_size + pixel_size / 2
-                )
-                closest_x = (
-                    round(new_params[2] / pixel_size) * pixel_size + pixel_size / 2
-                )
-                print(
-                    f"Closest pixel coordinates: poni1={closest_y/pixel_size:.3f}pix, poni2={closest_x/pixel_size:.3f}pix"
-                )
-                return new_params
+            if score > best_score:
+                return new_params, score
             else:
                 params = new_params
                 guessed_geom = Geometry(
@@ -147,6 +140,7 @@ class pyFAI_Geometry_Optimization:
                     detector=self.detector,
                     wavelength=wavelength,
                 )
+                best_score = score
                 r += 1
                 print(
                     f"Step {r}: dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
