@@ -135,15 +135,16 @@ class pyFAI_Geometry_Optimization:
                 )
                 return new_params, score
             else:
-                params = new_params
-                guessed_geom = Geometry(
-                    dist=new_params[0],
-                    poni1=new_params[1],
-                    poni2=new_params[2],
-                    detector=self.detector,
-                    wavelength=wavelength,
-                )
-                best_score = score
+                if score < best_score:
+                    params = new_params
+                    guessed_geom = Geometry(
+                        dist=new_params[0],
+                        poni1=new_params[1],
+                        poni2=new_params[2],
+                        detector=self.detector,
+                        wavelength=wavelength,
+                    )
+                    best_score = score
                 r += 1
                 print(
                     f"Step {r}: dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
