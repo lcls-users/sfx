@@ -130,6 +130,9 @@ class pyFAI_Geometry_Optimization:
                 sg.geometry_refinement.param[2],
             ]
             if score > best_score:
+                print(
+                    f"Optimization converged after {r} steps with dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
+                )
                 return new_params, score
             else:
                 params = new_params
