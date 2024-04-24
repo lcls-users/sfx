@@ -24,6 +24,7 @@ build_mask:
 run_analysis:
   max_events: -1
   ncores: 2
+  total_intensity: True
 
 opt_geom:
   dx: -6 6 5

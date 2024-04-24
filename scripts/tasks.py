@@ -93,6 +93,8 @@ def run_analysis(config):
         command += f" -m {mask_file}"
     if task.get('mean_threshold') is not None:
         command += f" --mean_threshold={task.mean_threshold}"
+    if task.get('total_intensity') is not None:
+        command += f" --compute_total_intensity={task.total_intensity}"
     if task.get('gain_mode') is not None:
         command += f" --gain_mode={task.gain_mode}"
     if task.get('raw_img') is not None:

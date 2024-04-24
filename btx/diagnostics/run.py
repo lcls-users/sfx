@@ -229,7 +229,7 @@ class RunDiagnostics:
         evt_map = map_pixel_gain_mode_for_raw(self.psi.det, raw)
         self.gain_map[evt_map==[self.modes[gain_mode]]] += 1
             
-    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, gain_mode=None, raw_img=False):
+    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, compute_total_intensity=False, gain_mode=None, raw_img=False):
         """
         Compute powders and per-image statistics. If a mask is provided, it is 
         only applied to the stats trajectories, not in computing the powder.
@@ -244,6 +244,8 @@ class RunDiagnostics:
             if True, only compute the powder pattern
         threshold : float
             if supplied, exclude events whose mean is above this value
+        compute_total_intensity : bool
+            if True, compute the total intensity
         gain_mode : str
             gain mode to retrieve statistics for, e.g. 'AML-L' 
         raw_img : bool
@@ -302,6 +304,7 @@ class RunDiagnostics:
         self.finalize_powders()
         if not powder_only:
             self.finalize_stats()
+            self.stats['total_intensity'] = np.sum(self.stats_final['sum'])
             print(f"Rank {self.rank}, no. empty images: {self.n_empty}, no. excluded images: {n_excluded}")
 
     def visualize_powder(self, tag='max', vmin=-1e5, vmax=1e5, output=None, figsize=12, dpi=300):
@@ -773,6 +776,7 @@ def main():
     rd.compute_run_stats(max_events=params.max_events, 
                          mask=params.mask, 
                          threshold=params.mean_threshold,
+                         total_intensity=params.total_intensity,
                          gain_mode=params.gain_mode,
                          raw_img=params.raw_img)
     rd.save_powders(params.outdir, raw_img=params.raw_img)
@@ -803,6 +807,7 @@ def parse_input():
     parser.add_argument('-m', '--mask', help='Binary mask for computing trajectories', required=False, type=str)
     parser.add_argument('--max_events', help='Number of images to process, -1 for full run', required=False, default=-1, type=int)
     parser.add_argument('--mean_threshold', help='Exclude images with a mean above this threshold', required=False, type=float)
+    parser.add_argument('--total_intensity', help='Compute total intensity of images', action='store_true')
     parser.add_argument('--gain_mode', help='Gain mode to track, e.g. AML-L for epix10k2M autoranging low gain', required=False, type=str)
     parser.add_argument('--raw_img', help="Analyze raw rather than calibrated images", action='store_true')
     parser.add_argument('--outlier_threshold', help='Consider images with a mean below this threshold outliers for energy stats plot',
