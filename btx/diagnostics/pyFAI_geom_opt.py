@@ -90,8 +90,8 @@ class pyFAI_Geometry_Optimization:
         behenate.wavelength = wavelength
 
         # 2. Define Guessed Geometry
-        dist = self.psi.estimate_distance() * 1e-3
         p1, p2, p3 = self.detector.calc_cartesian_positions()
+        dist = self.psi.estimate_distance() * 1e-3 - np.mean(p3)
         poni1 = -np.mean(p1)
         poni2 = -np.mean(p2)
         guessed_geom = Geometry(
@@ -122,18 +122,20 @@ class pyFAI_Geometry_Optimization:
                 max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=I * photon_energy
             )
             score = sg.geometry_refinement.refine3(
-                fix=["dist", "rot1", "rot2", "rot3", "wavelength"]
+                fix=["rot1", "rot2", "rot3", "wavelength"]
             )
             new_params = [
+                sg.geometry_refinement.param[0],
                 sg.geometry_refinement.param[1],
                 sg.geometry_refinement.param[2],
             ]
             if score < best_score:
                 best_params = new_params
                 best_score = score
-                sg.geometry_refinement.poni1 = best_params[0]
-                sg.geometry_refinement.poni2 = best_params[1]
+                sg.geometry_refinement.dist = best_params[0]
+                sg.geometry_refinement.poni1 = best_params[1]
+                sg.geometry_refinement.poni2 = best_params[2]
             print(
-                f"Step {r}: best poni1={params[1]/pixel_size:.3f}pix, best poni2={params[2]/pixel_size:.3f}pix"
+                f"Step {r}: best dist ={best_params[0]:.3f}mm, best poni1={best_params[1]/pixel_size:.3f}pix, best poni2={best_params[2]/pixel_size:.3f}pix"
             )
         return best_params, best_score
