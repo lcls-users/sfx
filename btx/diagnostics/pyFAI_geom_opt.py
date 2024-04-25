@@ -70,7 +70,7 @@ class pyFAI_Geometry_Optimization:
         calib_max_flat = np.reshape(calib_max, (16 * 2 * 176, 2 * 192))
         return calib_max_flat
 
-    def pyFAI_optimization(self, max_rings=5, pts_per_deg=1, I=0):
+    def pyFAI_optimization(self, max_rings=5, pts_per_deg=1, I=0, max_iter=10):
         """
         From guessed initial geometry, optimize the geometry using pyFAI package
 
@@ -110,42 +110,28 @@ class pyFAI_Geometry_Optimization:
         print(
             f"Starting optimization with initial guess: dist={params[0]:.3f}m, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
         )
-        while True:
-            sg = SingleGeometry(
-                label=f"step_{r+1}",
-                image=self.powder,
-                calibrant=behenate,
-                detector=self.detector,
-                geometry=guessed_geom,
-            )
+        sg = SingleGeometry(
+            label="AgBh",
+            image=self.powder,
+            calibrant=behenate,
+            detector=self.detector,
+            geometry=guessed_geom,
+        )
+        for r in range(max_iter):
             sg.extract_cp(
                 max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=I * photon_energy
             )
             score = sg.geometry_refinement.refine3(
-                fix=["rot1", "rot2", "rot3", "wavelength"]
+                fix=["dist", "rot1", "rot2", "rot3", "wavelength"]
             )
             new_params = [
                 sg.geometry_refinement.param[0],
                 sg.geometry_refinement.param[1],
-                sg.geometry_refinement.param[2],
             ]
-            if abs(1 - best_score / score) < 0.001:
-                print(
-                    f"Optimization converged after {r} steps with dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
-                )
-                return new_params, score
-            else:
-                params = new_params
-                guessed_geom = Geometry(
-                    dist=new_params[0],
-                    poni1=new_params[1],
-                    poni2=new_params[2],
-                    detector=self.detector,
-                    wavelength=wavelength,
-                )
-                if score < best_score:
-                    best_score = score
-                r += 1
-                print(
-                    f"Step {r}: dist={params[0]:.3f}mm, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
-                )
+            if score < best_score:
+                best_params = new_params
+                best_score = score
+            print(
+                f"Step {r}: best poni1={params[1]/pixel_size:.3f}pix, best poni2={params[2]/pixel_size:.3f}pix"
+            )
+        return best_params, best_score
