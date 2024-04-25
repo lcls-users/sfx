@@ -126,10 +126,10 @@ class pyFAI_Geometry_Optimization:
             detector=self.detector,
             geometry=guessed_geom,
         )
+        sg.extract_cp(
+            max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=I * photon_energy
+        )
         for r in range(max_iter):
-            sg.extract_cp(
-                max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=I * photon_energy
-            )
             score = sg.geometry_refinement.refine3(
                 fix=["rot1", "rot2", "rot3", "wavelength"]
             )
