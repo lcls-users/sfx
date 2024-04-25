@@ -26,14 +26,23 @@ class pyFAI_Geometry_Optimization:
     """
 
     def __init__(
-        self, exp, run, detector, geom, n_images=100, max_rings=5, pts_per_deg=1, I=0
+        self,
+        exp,
+        run,
+        detector,
+        geom,
+        n_images=100,
+        max_iter=20,
+        max_rings=5,
+        pts_per_deg=1,
+        I=0,
     ):
         self.exp = exp
         self.run = run
         self.det_type = detector
         self.detector = self.load_geometry(geom)
         self.powder = self.load_powder_data()
-        self.geometry = self.pyFAI_optimization(max_rings, pts_per_deg, I)
+        self.geometry = self.pyFAI_optimization(max_iter, max_rings, pts_per_deg, I)
 
     def load_geometry(self, geom):
         """
@@ -70,7 +79,7 @@ class pyFAI_Geometry_Optimization:
         calib_max_flat = np.reshape(calib_max, (16 * 2 * 176, 2 * 192))
         return calib_max_flat
 
-    def pyFAI_optimization(self, max_rings=5, pts_per_deg=1, I=0, max_iter=10):
+    def pyFAI_optimization(self, max_iter=10, max_rings=5, pts_per_deg=1, I=0):
         """
         From guessed initial geometry, optimize the geometry using pyFAI package
 
@@ -132,7 +141,5 @@ class pyFAI_Geometry_Optimization:
             if score < best_score:
                 best_params = new_params
                 best_score = score
-            print(
-                f"Step {r}: best dist ={best_params[0]:.3f}mm, best poni1={best_params[1]/pixel_size:.3f}pix, best poni2={best_params[2]/pixel_size:.3f}pix"
-            )
+            print(f"score={score:e}")
         return best_params, best_score
