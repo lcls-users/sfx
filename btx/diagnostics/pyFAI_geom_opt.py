@@ -125,12 +125,14 @@ class pyFAI_Geometry_Optimization:
                 fix=["dist", "rot1", "rot2", "rot3", "wavelength"]
             )
             new_params = [
-                sg.geometry_refinement.param[0],
                 sg.geometry_refinement.param[1],
+                sg.geometry_refinement.param[2],
             ]
             if score < best_score:
                 best_params = new_params
                 best_score = score
+                sg.geometry_refinement.poni1 = best_params[0]
+                sg.geometry_refinement.poni2 = best_params[1]
             print(
                 f"Step {r}: best poni1={params[1]/pixel_size:.3f}pix, best poni2={params[2]/pixel_size:.3f}pix"
             )
