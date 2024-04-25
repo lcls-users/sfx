@@ -132,9 +132,6 @@ class pyFAI_Geometry_Optimization:
             if score < best_score:
                 best_params = new_params
                 best_score = score
-                sg.geometry_refinement.dist = best_params[0]
-                sg.geometry_refinement.poni1 = best_params[1]
-                sg.geometry_refinement.poni2 = best_params[2]
             print(
                 f"Step {r}: best dist ={best_params[0]:.3f}mm, best poni1={best_params[1]/pixel_size:.3f}pix, best poni2={best_params[2]/pixel_size:.3f}pix"
             )
