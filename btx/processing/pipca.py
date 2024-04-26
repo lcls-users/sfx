@@ -188,7 +188,7 @@ class PiPCA:
                 with TaskTimer(self.task_durations, "update model"):
                     self.update_model(formatted_imgs)
 
-        self.comm.Barrier()
+        #self.comm.Barrier()
         
         with TaskTimer(self.task_durations, "gather matrices end"):
             U = self.gather_U()
@@ -237,9 +237,7 @@ class PiPCA:
                     logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
 
         self.comm.Barrier()
-        end_time=time.time()
-        logging.info(f"Total execution time : {end_time-start_time}")
-        
+
     def get_formatted_images(self, imgs):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
