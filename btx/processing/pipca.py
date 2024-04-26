@@ -188,7 +188,7 @@ class PiPCA:
                 with TaskTimer(self.task_durations, "update model"):
                     self.update_model(formatted_imgs)
 
-        #self.comm.Barrier()
+        self.comm.Barrier()
         
         with TaskTimer(self.task_durations, "gather matrices end"):
             U = self.gather_U()
