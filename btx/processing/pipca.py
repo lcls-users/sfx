@@ -273,6 +273,8 @@ class PiPCA:
 
         formatted_imgs_to_scatter = []
 
+        logging.info(self.split_indices)
+        
         for i in range(0,self.comm.Get_size()):
             formatted_imgs_to_scatter.append(formatted_imgs[self.split_indices[i]:self.split_indices[i + 1],:])
 
@@ -307,24 +309,6 @@ class PiPCA:
         self.V = V_T.T
 
         self.num_incorporated_images += n
-
-    def fetch_and_update_model(self, n):
-        """
-        Fetch images and update model.
-
-        Parameters
-        ----------
-        n : int
-            number of images to incorporate
-        """
-
-        rank = self.rank
-        start_index, end_index = self.split_indices[rank], self.split_indices[rank + 1]
-
-        with TaskTimer(self.task_durations, "get formatted images"):
-            img_batch = self.get_formatted_images(n, start_index, end_index)
-
-        self.update_model(img_batch)
 
     def update_model(self, X):
         """
