@@ -272,10 +272,6 @@ class PiPCA:
         formatted_imgs = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
 
         formatted_imgs_to_scatter = np.split(formatted_imgs, self.split_indices[1:-1])
-        logging.info(formatted_imgs_to_scatter[0])
-
-        #for i in range(0,self.comm.Get_size()):
-        #    formatted_imgs_to_scatter.append(formatted_imgs[self.split_indices[i]:self.split_indices[i + 1],:])
 
         return formatted_imgs_to_scatter
 
