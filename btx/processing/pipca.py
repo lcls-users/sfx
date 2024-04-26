@@ -133,7 +133,7 @@ class PiPCA:
 
         batch_size = self.batch_size
         num_images = self.num_images
-
+        
         # initialize and prime model, if specified
         if self.priming:
             img_batch = self.get_formatted_images(
@@ -1187,7 +1187,11 @@ if __name__ == "__main__":
     params = parse_input()
     kwargs = {k: v for k, v in vars(params).items() if v is not None}
 
-    pipca = PiPCA(**kwargs)
-    pipca.run()
-    pipca.get_outliers()
+    overall_execution_timer = tasktime.Timer('Overall execution time')
 
+    with overall_execution_timer:
+        pipca = PiPCA(**kwargs)
+        pipca.run()
+        pipca.get_outliers()
+
+    logging.info(f"Total execution time : {overall_execution_timer}")
