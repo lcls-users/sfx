@@ -171,22 +171,29 @@ class PiPCA:
         # update model with remaining batches
         with TaskTimer(self.task_durations, "formatting and update model"):
             for batch_size in batch_sizes:
-                with TaskTimer(self.task_durations, "get images on each rank - equiv to old get_formatted_img"):
-                    if self.rank==0:
-                        with TaskTimer(self.task_durations, "get formatted images rank 0"):
-                            imgs = self.psi.get_images(batch_size,assemble=False)
-                            with TaskTimer(self.task_durations, "distribute pixels"):
-                                img_batch = self.get_formatted_images(imgs)
-                    else :
-                        img_batch = None
-                    
-                    self.comm.Barrier()
+                if self.size ==1:
+                    imgs = self.psi.get_images(batch_size,assemble=False)
+                    img_batch = self.get_formatted_images(imgs)[0]
 
-                    with TaskTimer(self.task_durations, "scattering data to all ranks"):
-                        formatted_imgs = self.comm.scatter(img_batch,root=0) 
+                    self.update_model(img_batch)
                     
-                with TaskTimer(self.task_durations, "update model"):
-                    self.update_model(formatted_imgs)
+                else:
+                    with TaskTimer(self.task_durations, "get images on each rank - equiv to old get_formatted_img"):
+                        if self.rank==0:
+                            with TaskTimer(self.task_durations, "get formatted images rank 0"):
+                                imgs = self.psi.get_images(batch_size,assemble=False)
+                                with TaskTimer(self.task_durations, "distribute pixels"):
+                                    img_batch = self.get_formatted_images(imgs)
+                        else :
+                            img_batch = None
+                        
+                        self.comm.Barrier()
+
+                        with TaskTimer(self.task_durations, "scattering data to all ranks"):
+                            formatted_imgs = self.comm.scatter(img_batch,root=0) 
+                        
+                    with TaskTimer(self.task_durations, "update model"):
+                        self.update_model(formatted_imgs)
 
         self.comm.Barrier()
         
