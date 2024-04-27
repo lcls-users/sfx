@@ -80,9 +80,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a613d3f2f3693fa236ad67937da520fa3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a613d3f2f3693fa236ad67937da520fa3">__init__</a> (self, exp, run, det_type, <a class="el" href="classpipca_1_1PiPCA.html#abca4baaf9fe5eb798d05d0c6fe87e487">start_offset</a>=0, num_images=10, num_components=10, batch_size=10, <a class="el" href="classpipca_1_1PiPCA.html#a0b4580c5a09d27ea580f498dcf8756af">priming</a>=False, <a class="el" href="classpipca_1_1PiPCA.html#a931b7f9339f6aadd328fa55028f1ed81">downsample</a>=False, <a class="el" href="classpipca_1_1PiPCA.html#a64686906a97d9c286ba23fe06687c464">bin_factor</a>=2, <a class="el" href="classpipca_1_1PiPCA.html#a88ec3c500f3e1b1a688cf40dd8244cc5">output_dir</a>=&quot;&quot;, <a class="el" href="classpipca_1_1PiPCA.html#a3f454b4f22be72ffb53d3832fc5a6d39">filename</a>='pipca.model_h5')</td></tr>
+<tr class="memitem:a613d3f2f3693fa236ad67937da520fa3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a613d3f2f3693fa236ad67937da520fa3">__init__</a> (self, exp, run, det_type, <a class="el" href="classpipca_1_1PiPCA.html#abca4baaf9fe5eb798d05d0c6fe87e487">start_offset</a>=0, <a class="el" href="classpipca_1_1PiPCA.html#a836e7ed58972055877686ae9ef40e463">num_images</a>=10, num_components=10, batch_size=10, <a class="el" href="classpipca_1_1PiPCA.html#a0b4580c5a09d27ea580f498dcf8756af">priming</a>=False, <a class="el" href="classpipca_1_1PiPCA.html#a931b7f9339f6aadd328fa55028f1ed81">downsample</a>=False, <a class="el" href="classpipca_1_1PiPCA.html#a64686906a97d9c286ba23fe06687c464">bin_factor</a>=2, <a class="el" href="classpipca_1_1PiPCA.html#a88ec3c500f3e1b1a688cf40dd8244cc5">output_dir</a>=&quot;&quot;, <a class="el" href="classpipca_1_1PiPCA.html#a3f454b4f22be72ffb53d3832fc5a6d39">filename</a>='pipca.model_h5')</td></tr>
 <tr class="separator:a613d3f2f3693fa236ad67937da520fa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac832f8f55f86c349eea9eb6aeebcc05c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#ac832f8f55f86c349eea9eb6aeebcc05c">set_params</a> (self, num_images, num_components, batch_size, <a class="el" href="classpipca_1_1PiPCA.html#a64686906a97d9c286ba23fe06687c464">bin_factor</a>)</td></tr>
+<tr class="memitem:ac832f8f55f86c349eea9eb6aeebcc05c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#ac832f8f55f86c349eea9eb6aeebcc05c">set_params</a> (self, <a class="el" href="classpipca_1_1PiPCA.html#a836e7ed58972055877686ae9ef40e463">num_images</a>, num_components, batch_size, <a class="el" href="classpipca_1_1PiPCA.html#a64686906a97d9c286ba23fe06687c464">bin_factor</a>)</td></tr>
 <tr class="memdesc:ac832f8f55f86c349eea9eb6aeebcc05c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method to initialize iPCA parameters.  <a href="classpipca_1_1PiPCA.html#ac832f8f55f86c349eea9eb6aeebcc05c">More...</a><br /></td></tr>
 <tr class="separator:ac832f8f55f86c349eea9eb6aeebcc05c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad788cc83c558d0c3eaecfcd5bfa47ab6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#ad788cc83c558d0c3eaecfcd5bfa47ab6">run_model_full</a> (self, previous_U=None, previous_S=None, previous_mu=None, previous_var=None)</td></tr>
@@ -136,6 +136,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5836b272ac07d1a93fba26619327692e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a5836b272ac07d1a93fba26619327692e">record_loadings</a> (self)</td></tr>
 <tr class="memdesc:a5836b272ac07d1a93fba26619327692e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method to store current all loadings, ΣV^T, up to the current batch.  <a href="classpipca_1_1PiPCA.html#a5836b272ac07d1a93fba26619327692e">More...</a><br /></td></tr>
 <tr class="separator:a5836b272ac07d1a93fba26619327692e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5941fd579d1bc321112ac1950cc3e679"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a5941fd579d1bc321112ac1950cc3e679">record_loadings_per_batch</a> (self)</td></tr>
+<tr class="memdesc:a5941fd579d1bc321112ac1950cc3e679"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method to store current all loadings, ΣV^T, up to the current batch.  <a href="classpipca_1_1PiPCA.html#a5941fd579d1bc321112ac1950cc3e679">More...</a><br /></td></tr>
+<tr class="separator:a5941fd579d1bc321112ac1950cc3e679"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b53b2b2ef0d685e92bfb610a5e6bfd4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a3b53b2b2ef0d685e92bfb610a5e6bfd4">display_image</a> (self, idx, <a class="el" href="classpipca_1_1PiPCA.html#a88ec3c500f3e1b1a688cf40dd8244cc5">output_dir</a>=&quot;&quot;, save_image=False)</td></tr>
 <tr class="memdesc:a3b53b2b2ef0d685e92bfb610a5e6bfd4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method to retrieve single image from run subject to model binning constraints.  <a href="classpipca_1_1PiPCA.html#a3b53b2b2ef0d685e92bfb610a5e6bfd4">More...</a><br /></td></tr>
 <tr class="separator:a3b53b2b2ef0d685e92bfb610a5e6bfd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -194,6 +197,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a4b95defb458a6d263c5e4482dce0ed1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad33489ee974d55eb206448cd55ac5f9a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#ad33489ee974d55eb206448cd55ac5f9a">S_prev</a></td></tr>
 <tr class="separator:ad33489ee974d55eb206448cd55ac5f9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a836e7ed58972055877686ae9ef40e463"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a836e7ed58972055877686ae9ef40e463">num_images</a></td></tr>
+<tr class="separator:a836e7ed58972055877686ae9ef40e463"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1095ee115bc097e5511aa49ee2ac633f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpipca_1_1PiPCA.html#a1095ee115bc097e5511aa49ee2ac633f">outliers</a></td></tr>
 <tr class="separator:a1095ee115bc097e5511aa49ee2ac633f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -744,6 +749,26 @@ Parameters</h2>
 
 </div>
 </div>
+<a id="a5941fd579d1bc321112ac1950cc3e679"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5941fd579d1bc321112ac1950cc3e679">&#9670;&nbsp;</a></span>record_loadings_per_batch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pipca.PiPCA.record_loadings_per_batch </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Method to store current all loadings, ΣV^T, up to the current batch. </p>
+
+</div>
+</div>
 <a id="ad788cc83c558d0c3eaecfcd5bfa47ab6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad788cc83c558d0c3eaecfcd5bfa47ab6">&#9670;&nbsp;</a></span>run_model_full()</h2>
 
@@ -1143,6 +1168,20 @@ Parameters</h2>
 
 </div>
 </div>
+<a id="a836e7ed58972055877686ae9ef40e463"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a836e7ed58972055877686ae9ef40e463">&#9670;&nbsp;</a></span>num_images</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">pipca.PiPCA.num_images</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a0d6106c5eb4933264d9e675690cd59a0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0d6106c5eb4933264d9e675690cd59a0">&#9670;&nbsp;</a></span>num_incorporated_images</h2>
 
@@ -1387,7 +1426,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 24 2024 04:40:50 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Sat Apr 27 2024 00:45:37 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

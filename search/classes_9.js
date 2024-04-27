@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['maskinterface_772',['MaskInterface',['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html',1,'btx::interfaces::imask']]]
+  ['maskinterface_778',['MaskInterface',['../classbtx_1_1interfaces_1_1imask_1_1MaskInterface.html',1,'btx::interfaces::imask']]]
 ];

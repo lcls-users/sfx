@@ -85,6 +85,16 @@ Functions</h2></td></tr>
 <tr class="separator:ad2b9ea1261e9106e92fe373c877b83b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a11c5467957e50ab9d244945d6b0373"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepipca.html#a5a11c5467957e50ab9d244945d6b0373">compute_norm_difference</a> (current, previous=None)</td></tr>
 <tr class="separator:a5a11c5467957e50ab9d244945d6b0373"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f0ad8520091df04e608911bb5ecefb4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepipca.html#a2f0ad8520091df04e608911bb5ecefb4">create_or_update_dataset</a> (f, name, data)</td></tr>
+<tr class="separator:a2f0ad8520091df04e608911bb5ecefb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac707b238a396875b588cef5a9660749e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepipca.html#ac707b238a396875b588cef5a9660749e">compute_and_save_metrics</a> (filename, num_components, S, previous_S, mu, previous_mu, total_variance, previous_var, complete_compression)</td></tr>
+<tr class="separator:ac707b238a396875b588cef5a9660749e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04bee08af6f013c54887b9004aa5dbb3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepipca.html#a04bee08af6f013c54887b9004aa5dbb3">remove_file_with_timeout</a> (filename_with_tag, overwrite=True, timeout=10)</td></tr>
+<tr class="memdesc:a04bee08af6f013c54887b9004aa5dbb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the file specified by filename_with_tag if it exists.  <a href="namespacepipca.html#a04bee08af6f013c54887b9004aa5dbb3">More...</a><br /></td></tr>
+<tr class="separator:a04bee08af6f013c54887b9004aa5dbb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af96908a6a1c84c2bfe9bcda08702e5a7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepipca.html#af96908a6a1c84c2bfe9bcda08702e5a7">initialize_matrices</a> (filename_with_tag)</td></tr>
+<tr class="memdesc:af96908a6a1c84c2bfe9bcda08702e5a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize matrices U, S, mu, and var based on whether the file exists.  <a href="namespacepipca.html#af96908a6a1c84c2bfe9bcda08702e5a7">More...</a><br /></td></tr>
+<tr class="separator:af96908a6a1c84c2bfe9bcda08702e5a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a3ef7fb3108417158f05070faaa9133"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepipca.html#a4a3ef7fb3108417158f05070faaa9133">parse_input</a> ()</td></tr>
 <tr class="memdesc:a4a3ef7fb3108417158f05070faaa9133"><td class="mdescLeft">&#160;</td><td class="mdescRight">for command line use ###  <a href="namespacepipca.html#a4a3ef7fb3108417158f05070faaa9133">More...</a><br /></td></tr>
 <tr class="separator:a4a3ef7fb3108417158f05070faaa9133"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -133,6 +143,76 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="ac707b238a396875b588cef5a9660749e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac707b238a396875b588cef5a9660749e">&#9670;&nbsp;</a></span>compute_and_save_metrics()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pipca.compute_and_save_metrics </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>num_components</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>S</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>previous_S</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mu</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>previous_mu</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>total_variance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>previous_var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>complete_compression</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a5a11c5467957e50ab9d244945d6b0373"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5a11c5467957e50ab9d244945d6b0373">&#9670;&nbsp;</a></span>compute_norm_difference()</h2>
 
@@ -150,6 +230,40 @@ Variables</h2></td></tr>
           <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>previous</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2f0ad8520091df04e608911bb5ecefb4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f0ad8520091df04e608911bb5ecefb4">&#9670;&nbsp;</a></span>create_or_update_dataset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pipca.create_or_update_dataset </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -202,6 +316,28 @@ split_counts : ndarray, shape (size x 1)
 </pre> 
 </div>
 </div>
+<a id="af96908a6a1c84c2bfe9bcda08702e5a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af96908a6a1c84c2bfe9bcda08702e5a7">&#9670;&nbsp;</a></span>initialize_matrices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pipca.initialize_matrices </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>filename_with_tag</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize matrices U, S, mu, and var based on whether the file exists. </p>
+<p>Parameters: filename_with_tag (str): The name of the file to check for existence.</p>
+<p>Returns: Tuple: Tuple containing U, S, mu, and var matrices. </p>
+
+</div>
+</div>
 <a id="a4a3ef7fb3108417158f05070faaa9133"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4a3ef7fb3108417158f05070faaa9133">&#9670;&nbsp;</a></span>parse_input()</h2>
 
@@ -219,6 +355,43 @@ split_counts : ndarray, shape (size x 1)
 
 <p>for command line use ### </p>
 <p>Parse command line input. </p>
+
+</div>
+</div>
+<a id="a04bee08af6f013c54887b9004aa5dbb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04bee08af6f013c54887b9004aa5dbb3">&#9670;&nbsp;</a></span>remove_file_with_timeout()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pipca.remove_file_with_timeout </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>filename_with_tag</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>overwrite</em> = <code>True</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>timeout</em> = <code>10</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Remove the file specified by filename_with_tag if it exists. </p>
+<p>Parameters: filename_with_tag (str): The name of the file to remove. overwrite (bool): Whether to attempt removal if the file exists (default is True). timeout (int): Maximum time allowed for attempting removal (default is 10 seconds). </p>
 
 </div>
 </div>
@@ -268,7 +441,7 @@ split_counts : ndarray, shape (size x 1)
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 24 2024 04:40:50 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Sat Apr 27 2024 00:45:37 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
