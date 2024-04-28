@@ -74,7 +74,7 @@ def display_dashboard(filename):
     @pn.depends(PC_scree.param.value)
     def create_scree(PC_scree):
         q = int(PC_scree[2:])
-        components = np.arange(1, q + 1)
+        components = np.arange(q, len(PCs)) #CHANGED HERE
         singular_values = S[q:] #CHANGED HERE
         bars_data = np.stack((components, singular_values)).T
 
