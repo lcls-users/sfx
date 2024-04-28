@@ -75,7 +75,7 @@ def display_dashboard(filename):
     def create_scree(PC_scree):
         q = int(PC_scree[2:])
         components = np.arange(1,q+1)
-        singular_values = S[:q]
+        singular_values = S[-q:]
         bars_data = np.stack((components, singular_values)).T
 
         opts = dict(width=400, height=300, show_grid=True, show_legend=False,
@@ -114,7 +114,7 @@ def display_dashboard(filename):
         pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
         q = int(pcscree[2:])
-        img = U[:, :q] @ np.diag(S[:q]) @ np.array([V[img_source][:q]]).T
+        img = U[:, -q:] @ np.diag(S[-q:]) @ np.array([V[img_source][-q:]]).T
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
