@@ -142,4 +142,7 @@ class pyFAI_Geometry_Optimization:
                 best_params = new_params
                 best_score = score
             print(f"score={score:e}")
+            print(
+                f"dist={new_params[0]:.3f}m, poni1={new_params[1]/pixel_size:.3f}pix, poni2={new_params[2]/pixel_size:.3f}pix"
+            )
         return best_params, best_score
