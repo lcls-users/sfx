@@ -346,7 +346,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         original_norm = np.linalg.norm(img, 'fro')
 
         # Normalize the norm by the original norm
-        norm /= original_norm
+        norm = norm / original_norm * 100
 
         image_norms.append(norm)
 
