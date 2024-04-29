@@ -204,7 +204,7 @@ class PiPCA:
         logging.basicConfig(level=logging.INFO)
 
         if self.rank == 0:  
-            logging.info("Model complete")
+            logging.debug("Model complete")
             execution_time = end_time - start_time  # Calculate the execution time
             frequency = self.num_incorporated_images/execution_time
 
@@ -227,18 +227,21 @@ class PiPCA:
 
                     append_to_dataset(f, 'frequency', data=frequency)
                     append_to_dataset(f, 'execution_times', data=execution_time)
-                    logging.info(f'Model saved to {self.filename}')
+                    logging.debug(f'Model saved to {self.filename}')
 
             # Print the mean duration and standard deviation for each task
             for task, durations in self.task_durations.items():
                 durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
                 if len(durations) == 1:
-                    logging.info(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
+                    logging.debug(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
                 else:
                     mean_duration = np.mean(durations)
                     std_deviation = statistics.stdev(durations)
-                    logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
+                    logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
 
+        end_time = time.time()
+        logging.info(f"Model complete in {end_time - start_time} seconds")
+        
         self.comm.Barrier()
 
     def get_formatted_images(self, imgs):
