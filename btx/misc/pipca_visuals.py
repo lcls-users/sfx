@@ -51,10 +51,8 @@ def display_dashboard(filename):
     widgets_scatter = pn.WidgetBox(PCx, PCy, width=150)
 
     PC_scree = pnw.Select(name='First Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
-    widgets_scree = pn.WidgetBox(PC_scree, width=150)
-
     PC_scree2 = pnw.Select(name='Last Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
-    widgets_scree = pn.WidgetBox(PC_scree2, width=150)
+    widgets_scree = pn.WidgetBox(PC_scree,PC_scree2, width=150)
 
     tap_source = None
     posxy = hv.streams.Tap(source=tap_source, x=0, y=0)
