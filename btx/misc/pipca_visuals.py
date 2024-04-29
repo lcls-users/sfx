@@ -92,7 +92,7 @@ def display_dashboard(filename):
         return scree
         
     # Define function to compute heatmap based on tap location
-    def tap_heatmap(x, y, pcx, pcy, pcscree):
+    def tap_heatmap(x, y, pcx, pcy, pcscree, pcscree2):
         # Finds the index of image closest to the tap location
         img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
 
