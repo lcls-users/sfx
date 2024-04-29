@@ -123,7 +123,7 @@ def display_dashboard(filename):
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
 
-        img = U[:, first_compo:last_compo] @ np.diag(S[first_compo:last_compo]) @ np.array([V[img_source][first_compo:last_compo]]).T
+        img = U[:, first_compo-1:last_compo] @ np.diag(S[first_compo-1:last_compo]) @ np.array([V[img_source][first_compo-1:last_compo]]).T
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
