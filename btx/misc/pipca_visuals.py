@@ -50,8 +50,11 @@ def display_dashboard(filename):
     PCy = pnw.Select(name='Y-Axis', value='PC2', options=PC_options)
     widgets_scatter = pn.WidgetBox(PCx, PCy, width=150)
 
-    PC_scree = pnw.Select(name='Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
+    PC_scree = pnw.Select(name='First Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
     widgets_scree = pn.WidgetBox(PC_scree, width=150)
+
+    PC_scree2 = pnw.Select(name='Last Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
+    widgets_scree = pn.WidgetBox(PC_scree2, width=150)
 
     tap_source = None
     posxy = hv.streams.Tap(source=tap_source, x=0, y=0)
@@ -71,11 +74,14 @@ def display_dashboard(filename):
         return scatter
         
     # Create scree plot
-    @pn.depends(PC_scree.param.value)
+    @pn.depends(PC_scree.param.value, PC_scree2.param.value)
     def create_scree(PC_scree):
-        q = int(PC_scree[2:])
-        components = np.arange(1,q+1)
-        singular_values = S[:q]
+        first_compo = int(PC_scree[2:])
+        last_compo = int(PC_scree2[2:])
+
+        components = np.arange(first_compo,last_compo+1)
+        singular_values = S[first_compo:last_compo]
+
         bars_data = np.stack((components, singular_values)).T
 
         opts = dict(width=400, height=300, show_grid=True, show_legend=False,
@@ -113,8 +119,10 @@ def display_dashboard(filename):
         p, x, y = psi.det.shape()
         pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
-        q = int(pcscree[2:])
-        img = U[:, :q] @ np.diag(S[:q]) @ np.array([V[img_source][:q]]).T
+        first_compo = int(pcscree[2:])
+        last_compo = int(pcscree2[2:])
+
+        img = U[:, first_compo:last_compo] @ np.diag(S[first_compo:last_compo]) @ np.array([V[img_source][first_compo:last_compo]]).T
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
@@ -128,7 +136,7 @@ def display_dashboard(filename):
         
     # Connect the Tap stream to the heatmap callbacks
     stream1 = [posxy]
-    stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value, 'pcscree': PC_scree.param.value})
+    stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value, 'pcscree': PC_scree.param.value, 'pcscree2': PC_scree2.param.value})
     tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
     tap_dmap_reconstruct = hv.DynamicMap(tap_heatmap_reconstruct, streams=stream1+stream2)
         
