@@ -50,7 +50,7 @@ def display_dashboard(filename):
     PCy = pnw.Select(name='Y-Axis', value='PC2', options=PC_options)
     widgets_scatter = pn.WidgetBox(PCx, PCy, width=150)
 
-    PC_scree = pnw.Select(name='First Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
+    PC_scree = pnw.Select(name='First Component Cut-off', value=f'PC{1}', options=PC_options)
     PC_scree2 = pnw.Select(name='Last Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
     widgets_scree = pn.WidgetBox(PC_scree,PC_scree2, width=150)
 
@@ -79,9 +79,6 @@ def display_dashboard(filename):
 
         if first_compo >= last_compo:
             raise ValueError("Error: First component cut-off cannot be greater than last component cut-off.")
-        
-        if last_compo >= len(PCs):
-            last_compo = len(PCs) - 1
 
         components = np.arange(first_compo,last_compo+1)
         singular_values = S[first_compo:last_compo]
