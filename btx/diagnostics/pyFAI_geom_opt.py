@@ -32,7 +32,7 @@ class pyFAI_Geometry_Optimization:
         detector,
         geom,
         n_images=100,
-        max_iter=20,
+        max_iter=10,
         max_rings=5,
         pts_per_deg=1,
         I=0,
@@ -75,9 +75,9 @@ class pyFAI_Geometry_Optimization:
         psi.calibrate = True
         self.psi = psi
         unassembled_images = psi.get_images(n_images, assemble=False)
-        calib_max = np.max(unassembled_images, axis=0)
-        calib_max_flat = np.reshape(calib_max, (16 * 2 * 176, 2 * 192))
-        return calib_max_flat
+        calib_avg = np.max(unassembled_images, axis=0)
+        calib_avg_flat = np.reshape(calib_avg, (16 * 2 * 176, 2 * 192))
+        return calib_avg_flat
 
     def pyFAI_optimization(self, max_iter=10, max_rings=5, pts_per_deg=1, I=0):
         """
@@ -100,7 +100,7 @@ class pyFAI_Geometry_Optimization:
 
         # 2. Define Guessed Geometry
         p1, p2, p3 = self.detector.calc_cartesian_positions()
-        dist = self.psi.estimate_distance() * 1e-3 - np.mean(p3)
+        dist = self.psi.estimate_distance() * 1e-3
         poni1 = -np.mean(p1)
         poni2 = -np.mean(p2)
         guessed_geom = Geometry(
