@@ -239,9 +239,9 @@ class PiPCA:
                     std_deviation = statistics.stdev(durations)
                     logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
 
-        end_time = time.time()
-        logging.info(f"Model complete in {end_time - start_time} seconds")
-        
+            end_time = time.time()
+            logging.info(f"Model complete in {end_time - start_time} seconds")
+
         self.comm.Barrier()
 
     def get_formatted_images(self, imgs):
