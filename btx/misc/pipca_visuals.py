@@ -75,7 +75,7 @@ def display_dashboard(filename):
         
     # Create scree plot
     @pn.depends(PC_scree.param.value, PC_scree2.param.value)
-    def create_scree(PC_scree):
+    def create_scree(PC_scree, PC_scree2):
         first_compo = int(PC_scree[2:])
         last_compo = int(PC_scree2[2:])
 
