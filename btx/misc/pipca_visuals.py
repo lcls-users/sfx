@@ -334,6 +334,11 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         # Compute the Frobenius norm of the difference between the original image and the reconstructed image
         difference = np.abs(img - reconstructed_img)
         norm = np.linalg.norm(difference, 'fro')
+        original_norm = np.linalg.norm(img, 'fro')
+
+        # Normalize the norm by the original norm
+        norm /= original_norm
+
         image_norms.append(norm)
 
         psi.counter = counter  # Reset counter for the next iteration
