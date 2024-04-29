@@ -77,11 +77,11 @@ def display_dashboard(filename):
         first_compo = int(PC_scree[2:])
         last_compo = int(PC_scree2[2:])
 
-        if first_compo >= last_compo:
+        if first_compo > last_compo:
             raise ValueError("Error: First component cut-off cannot be greater than last component cut-off.")
 
         components = np.arange(first_compo,last_compo+1)
-        singular_values = S[first_compo:last_compo]
+        singular_values = S[first_compo-1:last_compo]
 
         bars_data = np.stack((components, singular_values)).T
 
