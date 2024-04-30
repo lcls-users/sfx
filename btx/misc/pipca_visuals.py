@@ -359,4 +359,4 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     std_dev = np.std(image_norms)
     percentiles = np.percentile(image_norms, [25, 50, 75])
     
-    return average_loss,average_rec_norm, min_norm, max_norm, std_dev, percentiles
+    return image_norms, average_loss,average_rec_norm, min_norm, max_norm, std_dev, percentiles
