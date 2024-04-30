@@ -376,8 +376,8 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
 
     PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
 
-    image_norms = []
-    original_norms = []
+    compression_losses = []
+
     p, x, y = psi.det.shape()
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
@@ -400,17 +400,11 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         norm = np.linalg.norm(difference, 'fro')
         original_norm = np.linalg.norm(img, 'fro')
 
-        image_norms.append(norm)
-        original_norms.append(original_norm)
+        compression_loss = norm / original_norm * 100
+        compression_losses.append(compression_loss)
 
         psi.counter = counter  # Reset counter for the next iteration
 
-    average_rec_norm = np.mean(image_norms)
-    average_orig_norm = np.mean(original_norms)
-    average_loss = average_rec_norm / average_orig_norm
-    min_norm = np.min(image_norms)
-    max_norm = np.max(image_norms)
-    std_dev = np.std(image_norms)
-    percentiles = np.percentile(image_norms, [25, 50, 75])
+    average_loss = np.mean(compression_losses)
     
-    return image_norms, average_loss,average_rec_norm, min_norm, max_norm, std_dev, percentiles
+    return average_loss, compression_losses, run
