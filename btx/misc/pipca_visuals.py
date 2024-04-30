@@ -138,6 +138,9 @@ def display_dashboard(filename):
         return heatmap_reconstruct
     
     def tap_image(x, y, pcx, pcy, pcscree, pcscree2):
+        
+        pcscree=int(pcscree[2:])
+        pcscree2=int(pcscree2[2:])
         # Finds the index of image closest to the tap location
         img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
 
