@@ -7,7 +7,7 @@ class CrystFEL_to_PyFAI:
     Convert a CrystFEL geometry file to a PyFAI-friendly geometry format.
     """
 
-    def __init__(self, geom_file):
+    def __init__(self, geom_file, detector_name=None):
         self.geom_file = geom_file
         self.geom = self.from_CrystFEL(geom_file)
         self.pix_pos = self.get_pixel_coordinates(self.geom)
