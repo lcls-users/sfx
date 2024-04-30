@@ -13,6 +13,7 @@ hv.extension('bokeh')
 from holoviews.streams import Params
 import datashader as ds
 import datashader.transfer_functions as tf
+from holoviews.streams import RangeXY
 
 import panel as pn
 pn.extension(template='fast')
@@ -168,7 +169,7 @@ def display_dashboard(filename):
 
         # Apply the LOD rendering and dynamic range adjustment
         dynamic_image = hv.DynamicMap(update_resolution, streams=[RangeXY()]) * initial_view
-        dynamic_image = datashade(dynamic_image, normalization='linear', cmap='gray') * dynspread(dynamic_image, **dynspread_opts)
+        dynamic_image = tf.dynspread(ds.datashade(dynamic_image, normalization='linear', cmap='gray'), **dynspread_opts)
 
         return dynamic_image
 
