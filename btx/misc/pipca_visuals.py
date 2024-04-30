@@ -11,8 +11,8 @@ from btx.interfaces.ipsana import (
 import holoviews as hv
 hv.extension('bokeh')
 from holoviews.streams import Params
-from holoviews.operation.datashader import datashade, dynspread
-from holoviews.streams import RangeXY
+import datashader as ds
+import datashader.transfer_functions as tf
 
 import panel as pn
 pn.extension(template='fast')
