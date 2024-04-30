@@ -169,7 +169,7 @@ def display_dashboard(filename):
 
         # Apply the LOD rendering and dynamic range adjustment
         dynamic_image = hv.DynamicMap(update_resolution, streams=[RangeXY()]) * initial_view
-        dynamic_image = tf.dynspread(ds.datashade(dynamic_image, normalization='linear', cmap='gray'), **dynspread_opts)
+        dynamic_image = tf.dynspread(tf.datashade(dynamic_image, normalization='linear', cmap='gray'), **dynspread_opts)
 
         return dynamic_image
 
