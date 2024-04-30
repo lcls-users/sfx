@@ -393,18 +393,17 @@ class PsanaInterface:
 
         return images
 
+    def get_mask(self):
+        """
+        Retrieve one mask for the detector. If the mask is not available, return None.
 
-def get_mask(self):
-    """
-    Retrieve one mask for the detector. If the mask is not available, return None.
-
-    Returns
-    -------
-    mask : numpy.ndarray
-        mask for detector, shape (det_shape)
-    """
-    mask = self.det.mask_v2(self.ds.env())
-    return mask
+        Returns
+        -------
+        mask : numpy.ndarray
+            mask for detector, shape (det_shape)
+        """
+        mask = self.det.mask_v2(self.ds.env())
+        return mask
 
 
 #### Miscellaneous functions ####
