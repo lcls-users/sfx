@@ -138,9 +138,32 @@ def display_dashboard(filename):
 
         return heatmap_reconstruct
     
+    def update_resolution(x_range, y_range):
+        zoom_level = max((x_range[1] - x_range[0]), (y_range[1] - y_range[0])) / 2
+        resolution_level = int(np.clip(np.log2(zoom_level), 0, np.log2(len(tiles)-1)))
+        return hv.Image(tiles[resolution_level], bounds=(-pcscree2, -pcscree, pcscree2, pcscree), label="Source Image %s" % (start_img+img_source)).opts(**opts)
+
     def tap_image(x, y, pcx, pcy, pcscree, pcscree2):
+        pcscree=int(pcscree[2:])
+        pcscree2=int(pcscree2[2:])
+        # Finds the index of image closest to the tap location
+        img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
+
+        counter = psi.counter
+        psi.counter = start_img + img_source
+        img = psi.get_images(1)
+        psi.counter = counter
+        img = img.squeeze()
+
+        # Construct image tiles for LOD rendering
+        tiles = construct_image_tiles(img)
+
         # Define the initial view
         opts = dict(width=400, height=300, cmap='gray', xaxis=None, yaxis=None, bgcolor='black', toolbar='above')
+        initial_view = hv.Image(tiles[0], bounds=(-pcscree2, -pcscree, pcscree2, pcscree), label="Source Image %s" % (start_img+img_source)).opts(**opts)
+
+        # Define the dynamic range adjustment
+        dynspread_opts = dict(threshold=0.5, max_px=8)
 
         # Apply the LOD rendering and dynamic range adjustment
         dynamic_image = hv.DynamicMap(update_resolution, streams=[hv.streams.RangeXY()]).opts(opts)
