@@ -393,7 +393,7 @@ class PsanaInterface:
 
         return images
 
-    def get_mask(self):
+    def get_mask(self, central=False, edges=False):
         """
         Retrieve one mask for the detector. If the mask is not available, return None.
 
@@ -402,7 +402,8 @@ class PsanaInterface:
         mask : numpy.ndarray
             mask for detector, shape (det_shape)
         """
-        mask = self.det.mask_v2(self.ds.env())
+        evt = self.runner.event(self.times[self.counter])
+        mask = self.det.mask_v2(evt=evt, central=central, edges=edges)
         return mask
 
 
