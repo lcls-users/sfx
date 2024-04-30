@@ -403,7 +403,8 @@ class PsanaInterface:
             mask for detector, shape (det_shape)
         """
         evt = self.runner.event(self.times[self.counter])
-        mask = self.det.mask_v2(evt=evt, central=central, edges=edges)
+        runnum = evt.run()
+        mask = self.det.mask_v2(par=runnum, central=central, edges=edges)
         return mask
 
 
