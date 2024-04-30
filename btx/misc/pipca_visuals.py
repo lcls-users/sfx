@@ -168,9 +168,9 @@ def display_dashboard(filename):
             return hv.Image(tiles[resolution_level], bounds=(-pcscree2, -pcscree, pcscree2, pcscree), label="Source Image %s" % (start_img+img_source)).opts(**opts)
 
         # Apply the LOD rendering and dynamic range adjustment
-        dynamic_image = hv.DynamicMap(update_resolution, streams=[RangeXY()]) * initial_view
-        dynamic_image = tf.dynspread(tf.shade(dynamic_image, cmap='gray'), **dynspread_opts)
-
+        dynamic_image = hv.DynamicMap(update_resolution, streams=[RangeXY()]).opts(opts, hv.opts.Image(dynspread=True, **dynspread_opts))
+        dynamic_image = tf.shade(dynamic_image, cmap=['black', 'white'], how='linear').opts(opts)
+        
         return dynamic_image
 
     def construct_image_tiles(img, max_tile_size=100):
