@@ -7,28 +7,38 @@ from PSCalib.GeometryAccess import GeometryAccess
 
 logger = logging.getLogger(__name__)
 
+
 class PsanaInterface:
 
-    def __init__(self, exp, run, det_type,
-                 event_receiver=None, event_code=None, event_logic=True,
-                 ffb_mode=False, track_timestamps=False, calibdir=None):
-        self.exp = exp # experiment name, str
-        self.hutch = exp[:3] # hutch name, str
-        self.run = run # run number, int
-        self.det_type = det_type # detector name, str
-        self.track_timestamps = track_timestamps # bool, keep event info
+    def __init__(
+        self,
+        exp,
+        run,
+        det_type,
+        event_receiver=None,
+        event_code=None,
+        event_logic=True,
+        ffb_mode=False,
+        track_timestamps=False,
+        calibdir=None,
+    ):
+        self.exp = exp  # experiment name, str
+        self.hutch = exp[:3]  # hutch name, str
+        self.run = run  # run number, int
+        self.det_type = det_type  # detector name, str
+        self.track_timestamps = track_timestamps  # bool, keep event info
         self.seconds, self.nanoseconds, self.fiducials = [], [], []
-        self.event_receiver = event_receiver # 'evr0' or 'evr1', str
-        self.event_code = event_code # event code, int
-        self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
+        self.event_receiver = event_receiver  # 'evr0' or 'evr1', str
+        self.event_code = event_code  # event code, int
+        self.event_logic = event_logic  # bool, if True, retain events with event_code; if False, keep all other events
         self.set_up(det_type, ffb_mode, calibdir)
         self.counter = 0
 
     def set_up(self, det_type, ffb_mode, calibdir=None):
         """
-        Instantiate DataSource and Detector objects; use the run 
+        Instantiate DataSource and Detector objects; use the run
         functionality to retrieve all psana.EventTimes.
-        
+
         Parameters
         ----------
         det_type : str
@@ -38,11 +48,11 @@ class PsanaInterface:
         calibdir: str
             directory to alternative calibration files
         """
-        ds_args=f'exp={self.exp}:run={self.run}:idx'
+        ds_args = f"exp={self.exp}:run={self.run}:idx"
         if ffb_mode:
-            ds_args += f':dir=/cds/data/drpsrcf/{self.exp[:3]}/{self.exp}/xtc'
-        
-        self.ds = psana.DataSource(ds_args)   
+            ds_args += f":dir=/cds/data/drpsrcf/{self.exp[:3]}/{self.exp}/xtc"
+
+        self.ds = psana.DataSource(ds_args)
         self.det = psana.Detector(det_type, self.ds.env())
         if self.event_receiver is not None:
             self.evr_det = psana.Detector(self.event_receiver)
@@ -50,7 +60,7 @@ class PsanaInterface:
         self.times = self.runner.times()
         self.max_events = len(self.times)
         if calibdir is not None:
-            setOption('psana.calib_dir', calibdir)
+            setOption("psana.calib_dir", calibdir)
         self._calib_data_available()
 
     def _calib_data_available(self):
@@ -60,7 +70,9 @@ class PsanaInterface:
         self.calibrate = True
         evt = self.runner.event(self.times[0])
         if (self.det.pedestals(evt) is None) or (self.det.gain(evt) is None):
-            logger.warning("Warning: calibration data unavailable, returning uncalibrated data")
+            logger.warning(
+                "Warning: calibration data unavailable, returning uncalibrated data"
+            )
             self.calibrate = False
 
     def turn_calibration_off(self):
@@ -78,7 +90,7 @@ class PsanaInterface:
         pixel_size : float
             detector pixel size in mm
         """
-        if self.det_type.lower() == 'rayonix':
+        if self.det_type.lower() == "rayonix":
             env = self.ds.env()
             cfg = env.configStore()
             pixel_size_um = cfg.get(psana.Rayonix.ConfigV2).pixelWidth()
@@ -86,7 +98,6 @@ class PsanaInterface:
             pixel_size_um = self.det.pixel_size(self.ds.env())
         return pixel_size_um / 1.0e3
 
-    
     def get_wavelength(self):
         """
         Retrieve the detector's wavelength in Angstrom.
@@ -96,8 +107,8 @@ class PsanaInterface:
         wavelength : float
             wavelength in Angstrom
         """
-        return self.ds.env().epicsStore().value('SIOC:SYS0:ML00:AO192') * 10.
-    
+        return self.ds.env().epicsStore().value("SIOC:SYS0:ML00:AO192") * 10.0
+
     def get_wavelength_evt(self, evt):
         """
         Retrieve the detector's wavelength for a specific event.
@@ -116,7 +127,9 @@ class PsanaInterface:
         if photon_energy is None or np.isinf(photon_energy):
             return self.get_wavelength()
         else:
-            lambda_m =  1.23984197386209e-06 / photon_energy # convert to meters using e=hc/lambda
+            lambda_m = (
+                1.23984197386209e-06 / photon_energy
+            )  # convert to meters using e=hc/lambda
             return lambda_m * 1e10
 
     def get_photon_energy_eV_evt(self, evt):
@@ -133,7 +146,7 @@ class PsanaInterface:
             photon energy in eV
         """
         try:
-            return psana.Detector('EBeam').get(evt).ebeamPhotonEnergy()
+            return psana.Detector("EBeam").get(evt).ebeamPhotonEnergy()
         except AttributeError as e:
             logger.warning("Event lacking an ebeamPhotonEnergy value.")
 
@@ -164,10 +177,10 @@ class PsanaInterface:
         gdet = evt.get(psana.Bld.BldDataFEEGasDetEnergyV1, psana.Source())
         if gdet is not None:
             gdet_before_attenuation = 0.5 * (gdet.f_11_ENRC() + gdet.f_12_ENRC())
-            gdet_after_attenuation  = 0.5 * (gdet.f_21_ENRC() + gdet.f_22_ENRC())
-            if( mode == 'before' ):
+            gdet_after_attenuation = 0.5 * (gdet.f_21_ENRC() + gdet.f_22_ENRC())
+            if mode == "before":
                 return gdet_before_attenuation
-            elif( mode == 'after' ):
+            elif mode == "after":
                 return gdet_after_attenuation
             else:
                 return 0.5 * (gdet_before_attenuation + gdet_after_attenuation)
@@ -181,10 +194,9 @@ class PsanaInterface:
         distance : float
             estimated detector distance
         """
-        return -1*np.mean(self.det.coords_z(self.run))/1e3
+        return -1 * np.mean(self.det.coords_z(self.run)) / 1e3
 
     def get_camera_length(self, pv_camera_length=None):
-
         """
         Retrieve the camera length (clen) in mm.
 
@@ -199,12 +211,12 @@ class PsanaInterface:
             clen, where clen = distance - coffset in mm
         """
         if pv_camera_length is None:
-            if self.det_type == 'jungfrau4M':
-                pv_camera_length = 'CXI:DS1:MMS:06.RBV'
-            if self.det_type == 'Rayonix':
-                pv_camera_length = 'MFX:DET:MMS:04.RBV'
-            if self.det_type == 'epix10k2M':
-                pv_camera_length = 'MFX:ROB:CONT:POS:Z'
+            if self.det_type == "jungfrau4M":
+                pv_camera_length = "CXI:DS1:MMS:06.RBV"
+            if self.det_type == "Rayonix":
+                pv_camera_length = "MFX:DET:MMS:04.RBV"
+            if self.det_type == "epix10k2M":
+                pv_camera_length = "MFX:ROB:CONT:POS:Z"
             logger.debug(f"PV used to retrieve clen parameter: {pv_camera_length}")
 
         try:
@@ -228,9 +240,9 @@ class PsanaInterface:
             0.0 is no beam, 1.0 is full beam.
         """
         if pv_beam_transmission is None:
-            if self.hutch == 'mfx':
+            if self.hutch == "mfx":
                 pv_beam_transmission = "MFX:ATT:COM:R_CUR"
-            elif self.hutch == 'cxi':
+            elif self.hutch == "cxi":
                 pv_beam_transmission = "CXI:DIA:ATT:COM:R_CUR"
             else:
                 raise NotImplementedError
@@ -242,10 +254,10 @@ class PsanaInterface:
 
     def get_timestamp(self, evtId):
         """
-        Retrieve the timestamp (seconds, nanoseconds, fiducials) associated with the input 
+        Retrieve the timestamp (seconds, nanoseconds, fiducials) associated with the input
         event and store in self variables. For further details, see the example here:
         https://confluence.slac.stanford.edu/display/PSDM/Jump+Quickly+to+Events+Using+Timestamps
-        
+
         Parameters
         ----------
         evtId : psana.EventId
@@ -278,16 +290,16 @@ class PsanaInterface:
             found_event = False
             if self.event_code in event_codes:
                 found_event = True
-            if ( found_event != self.event_logic ):
+            if found_event != self.event_logic:
                 skip = True
         return skip
 
     def distribute_events(self, rank, total_ranks, max_events=-1):
         """
         For parallel processing. Update self.counter and self.max_events such that
-        events will be distributed evenly across total_ranks, and each rank will 
+        events will be distributed evenly across total_ranks, and each rank will
         only process its assigned events. Hack to avoid explicitly using MPI here.
-        
+
         Parameters
         ----------
         rank : int
@@ -295,11 +307,11 @@ class PsanaInterface:
         total_ranks : int
             total number of ranks
         max_events : int, optional
-            total number of images desired, option to override self.max_events 
+            total number of images desired, option to override self.max_events
         """
         if max_events == -1:
             max_events = self.max_events
-            
+
         # determine boundary indices between ranks
         split_indices = np.zeros(total_ranks)
         for r in range(total_ranks):
@@ -308,17 +320,17 @@ class PsanaInterface:
                 num_per_rank += 1
             split_indices[r] = num_per_rank
 
-        split_indices = np.append(np.array([0]), np.cumsum(split_indices)).astype(int)   
-        
+        split_indices = np.append(np.array([0]), np.cumsum(split_indices)).astype(int)
+
         # update self variables that determine start and end of this rank's batch
         self.counter = split_indices[rank]
-        self.max_events = split_indices[rank+1]
-        
+        self.max_events = split_indices[rank + 1]
+
     def get_images(self, num_images, assemble=True):
         """
-        Retrieve a fixed number of images from the run. If the pedestal or gain 
+        Retrieve a fixed number of images from the run. If the pedestal or gain
         information is unavailable and unassembled images are requested, return
-        uncalibrated images. 
+        uncalibrated images.
 
         Parameters
         ---------
@@ -333,11 +345,15 @@ class PsanaInterface:
             images retrieved sequentially from run, optionally assembled
         """
         # set up storage array
-        if 'opal' not in self.det_type.lower():
+        if "opal" not in self.det_type.lower():
             if assemble:
-                images = np.zeros((num_images, 
-                                   self.det.image_xaxis(self.run).shape[0], 
-                                   self.det.image_yaxis(self.run).shape[0]))
+                images = np.zeros(
+                    (
+                        num_images,
+                        self.det.image_xaxis(self.run).shape[0],
+                        self.det.image_yaxis(self.run).shape[0],
+                    )
+                )
             else:
                 images = np.zeros((num_images,) + self.det.shape())
         else:
@@ -354,7 +370,7 @@ class PsanaInterface:
                 break
             else:
                 evt = self.runner.event(self.times[self.counter])
-                if assemble and self.det_type.lower()!='rayonix':
+                if assemble and self.det_type.lower() != "rayonix":
                     if not self.calibrate:
                         raise IOError("Error: calibration data not found for this run.")
                     else:
@@ -364,20 +380,37 @@ class PsanaInterface:
                         img = self.det.calib(evt=evt)
                     else:
                         img = self.det.raw(evt=evt)
-                        if self.det_type == 'epix10k2M':
-                            img = img & 0x3fff # exclude first two bits
+                        if self.det_type == "epix10k2M":
+                            img = img & 0x3FFF  # exclude first two bits
                 if img is not None:
                     images[counter_batch] = img
                     counter_batch += 1
-                        
+
                 if self.track_timestamps:
                     self.get_timestamp(evt.get(EventId))
-                    
+
                 self.counter += 1
-             
+
         return images
 
+
+def get_mask(self):
+    """
+    Retrieve one mask for the detector. If the mask is not available, return None.
+
+    Returns
+    -------
+    mask : numpy.ndarray
+        mask for detector, shape (det_shape)
+    """
+    mask = self.det.mask_v2(self.ds.env())
+    if mask is None:
+        logger.warning("Mask not found for this detector.")
+    return mask
+
+
 #### Miscellaneous functions ####
+
 
 def retrieve_pixel_index_map(geom):
     """
@@ -401,9 +434,9 @@ def retrieve_pixel_index_map(geom):
 
     temp_index = [np.asarray(t) for t in geom.get_pixel_coord_indexes()]
     pixel_index_map = np.zeros((np.array(temp_index).shape[2:]) + (2,))
-    pixel_index_map[...,0] = temp_index[0][0]
-    pixel_index_map[...,1] = temp_index[1][0]
-    
+    pixel_index_map[..., 0] = temp_index[0][0]
+    pixel_index_map[..., 1] = temp_index[1][0]
+
     return pixel_index_map.astype(np.int64)
 
 
@@ -432,7 +465,7 @@ def assemble_image_stack_batch(image_stack, pixel_index_map):
 
     if len(pixel_index_map.shape) == 5:
         multiple_panel_dimensions = True
-        
+
     # get boundary
     index_max_x = np.max(pixel_index_map[..., 0]) + 1
     index_max_y = np.max(pixel_index_map[..., 1]) + 1
@@ -449,7 +482,7 @@ def assemble_image_stack_batch(image_stack, pixel_index_map):
             for j in range(pdim2):
                 x = pixel_index_map[i, j, ..., 0]
                 y = pixel_index_map[i, j, ..., 1]
-                idx = i*pdim2 + j
+                idx = i * pdim2 + j
                 images[:, x, y] = image_stack[:, idx]
     else:
         panel_num = image_stack.shape[1]
@@ -464,9 +497,10 @@ def assemble_image_stack_batch(image_stack, pixel_index_map):
 
     return images
 
+
 def disassemble_image_stack_batch(images, pixel_index_map):
     """
-    Diassemble a series of 2D diffraction patterns into their consituent panels. 
+    Diassemble a series of 2D diffraction patterns into their consituent panels.
     Function modified from skopi.
 
     Parameters
@@ -479,7 +513,7 @@ def disassemble_image_stack_batch(images, pixel_index_map):
 
     Returns
     -------
-    image_stack_batch : numpy.ndarray, 3d or 4d 
+    image_stack_batch : numpy.ndarray, 3d or 4d
 
         stack of images, shape (n_images, n_panels, fs_panel_shape, ss_panel_shape)
         or (n_panels, fs_panel_shape, ss_panel_shape)
@@ -494,12 +528,12 @@ def disassemble_image_stack_batch(images, pixel_index_map):
     if multiple_panel_dimensions:
         ishape = images.shape[0]
         (pdim1, pdim2, fs_shape, ss_shape) = pixel_index_map.shape[:-1]
-        image_stack_batch = np.zeros((ishape, pdim1*pdim2, fs_shape, ss_shape))
+        image_stack_batch = np.zeros((ishape, pdim1 * pdim2, fs_shape, ss_shape))
         for i in range(pdim1):
             for j in range(pdim2):
                 x = pixel_index_map[i, j, ..., 0]
                 y = pixel_index_map[i, j, ..., 1]
-                idx = i*pdim2 + j
+                idx = i * pdim2 + j
                 image_stack_batch[:, idx] = images[:, x, y]
     else:
         image_stack_batch = np.zeros((images.shape[0],) + pixel_index_map.shape[:3])
@@ -513,7 +547,9 @@ def disassemble_image_stack_batch(images, pixel_index_map):
 
     return image_stack_batch
 
+
 #### binning methods ####
+
 
 def bin_data(arr, bin_factor, det_shape=None):
     """
