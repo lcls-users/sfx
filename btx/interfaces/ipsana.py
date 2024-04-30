@@ -404,8 +404,6 @@ def get_mask(self):
         mask for detector, shape (det_shape)
     """
     mask = self.det.mask_v2(self.ds.env())
-    if mask is None:
-        logger.warning("Mask not found for this detector.")
     return mask
 
 
