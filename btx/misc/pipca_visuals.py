@@ -382,13 +382,27 @@ def classic_pca_test(filename, num_components):
     psi.counter = start_img
 
     PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
+    eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
+
+    #Get geometry
+    p, x, y = psi.det.shape()
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
     #Get images
-    imgs = psi.get_images(len(PCs['PC1'])).squeeze()
+    imgs = psi.get_images(len(PCs['PC1']))
+
+    #PiPCA eigenimages
+    list_eigenimages_pipca = []   
+    for i in range(num_components):
+        img = eigenimages[f'PC{i+1}']
+        img = img.reshape((p, x, y))
+        img = assemble_image_stack_batch(img, pixel_index_map)
+        list_eigenimages_pipca.append(img)
+
 
     #Perform classic PCA
     pca = PCA(n_components=num_components)
     pca.fit(imgs.reshape(len(PCs['PC1']), -1))
-    eigenimages = pca.components_
+    eigenimages_classic = pca.components_
 
-    return eigenimages, U[:, :num_components]
+    return list_eigenimages, eigenimages_classic
