@@ -391,14 +391,14 @@ def classic_pca_test(filename, num_components):
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
     #Get images
-    imgs = psi.get_images(len(PCs['PC1']))
+    imgs = psi.get_images(len(PCs['PC1']),assemble=False)
+    print(imgs.shape)
     num_images = imgs.shape[0]
 
     #Just be careful, there might have been a downsampling / binning in PiPCA
     imgs = imgs[
             [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
         ]
-
     imgs = np.reshape(imgs, (num_images, p, x, y))
     print(imgs.shape)
 
