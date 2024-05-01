@@ -17,6 +17,8 @@ pn.extension(template='fast')
 pn.state.template.param.update()
 import panel.widgets as pnw
 
+from sklearn.decomposition import PCA
+
 def display_dashboard(filename):
     """
     Displays an interactive dashboard with a PC plot, scree plot, 
@@ -354,3 +356,45 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     average_loss = np.mean(compression_losses)
     
     return average_loss, compression_losses, run
+
+def classic_pca_test(filename, num_components):
+    """
+    Compute the average frobenius norm between eigenimages obtained via PiPCA and those obtained via classic PCA.
+    The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA.
+
+    Parameters:
+    -----------
+    filename : string
+        name of the h5 file
+    num_components: int
+        number of components used
+    
+    Returns:
+    --------
+    Losses between PiPCA and classic PCA
+    """
+
+    data = unpack_pipca_model_file(filename)
+    
+    exp, run, loadings, det_type, start_img, U, S, V = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V']
+
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    psi.counter = start_img
+
+    #Get images
+    imgs = psi.get_images(len(PCs['PC1']))
+
+    #Perform classic PCA
+    num_images, det_shape = imgs.shape[0], imgs.shape[1:]
+    flattened_imgs = imgs.reshape((num_images, -1))
+    pca = PCA(n_components=num_components)
+    pca.fit(flattened_imgs)
+    eigenimages = pca.components_
+
+    # Compute the Frobenius norm of the difference between the eigeinimages obtained via PiPCA and classic PCA
+    losses = []
+    for i in range(num_components):
+        loss = np.linalg.norm(eigenimages[i] - U[:, i])/np.linalg.norm(eigenimages[i])
+        losses.append(loss)
+
+    return losses
