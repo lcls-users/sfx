@@ -474,7 +474,7 @@ def sklearn_ipca_test(filename, num_components, batch_size):
     list_eigenimages_ipca = []
     ipca = IncrementalPCA(n_components=num_components, batch_size=batch_size)
     for i in range(0, len(imgs), batch_size):
-        print(f"Processing batch {i} of {len(imgs)}")
+        print(f"Processing batch {int(i/batch_size)+1} of {int(num_images/batch_size)}")
         ipca.partial_fit(imgs[i:i+batch_size].reshape(num_images, -1))
         print(f"Batch {i} processed")
     eigenimages_ipca = ipca.components_
