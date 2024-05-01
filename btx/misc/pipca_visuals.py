@@ -401,8 +401,13 @@ def classic_pca_test(filename, num_components):
 
 
     #Perform classic PCA
+    list_eigenimages_pca = []
     pca = PCA(n_components=num_components)
     pca.fit(imgs.reshape(len(PCs['PC1']), -1))
     eigenimages_classic = pca.components_
+    for i in range(num_components):
+        img = eigenimages_classic[i].reshape((p, x, y))
+        img = assemble_image_stack_batch(img, pixel_index_map)
+        list_eigenimages_pca.append(img)
 
-    return list_eigenimages_pipca, eigenimages_classic
+    return list_eigenimages_pipca, list_eigenimages_pca
