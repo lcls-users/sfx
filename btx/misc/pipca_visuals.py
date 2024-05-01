@@ -381,6 +381,8 @@ def classic_pca_test(filename, num_components):
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     psi.counter = start_img
 
+    PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
+    
     #Get images
     imgs = psi.get_images(len(PCs['PC1']))
 
