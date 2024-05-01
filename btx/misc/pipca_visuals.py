@@ -392,6 +392,14 @@ def classic_pca_test(filename, num_components):
 
     #Get images
     imgs = psi.get_images(len(PCs['PC1']))
+    num_images = imgs.shape[0]
+
+    #Just be careful, there might have been a downsampling / binning in PiPCA
+    imgs = imgs[
+            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+        ]
+
+    imgs = np.reshape(imgs, (num_images, p, x, y))
     print(imgs.shape)
 
     #PiPCA eigenimages
@@ -402,11 +410,10 @@ def classic_pca_test(filename, num_components):
         img = assemble_image_stack_batch(img, pixel_index_map)
         list_eigenimages_pipca.append(img)
 
-
     #Perform classic PCA
     list_eigenimages_pca = []
     pca = PCA(n_components=num_components)
-    pca.fit(imgs.reshape(imgs.shape[0], -1))
+    pca.fit(imgs.reshape(num_images, -1))
     eigenimages_classic = pca.components_
     for i in range(num_components):
         img = eigenimages_classic[i].reshape((p, x, y))
