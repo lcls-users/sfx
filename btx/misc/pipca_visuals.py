@@ -391,10 +391,4 @@ def classic_pca_test(filename, num_components):
     pca.fit(imgs.reshape(len(PCs['PC1']), -1))
     eigenimages = pca.components_
 
-    # Compute the Frobenius norm of the difference between the eigeinimages obtained via PiPCA and classic PCA
-    losses = []
-    for i in range(num_components):
-        loss = np.linalg.norm(eigenimages[i] - U[:, i])/np.linalg.norm(eigenimages[i])
-        losses.append(loss)
-
-    return losses
+    return eigenimages, U[:, :num_components]
