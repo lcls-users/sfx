@@ -405,4 +405,4 @@ def classic_pca_test(filename, num_components):
     pca.fit(imgs.reshape(len(PCs['PC1']), -1))
     eigenimages_classic = pca.components_
 
-    return list_eigenimages, eigenimages_classic
+    return list_eigenimages_pipca, eigenimages_classic
