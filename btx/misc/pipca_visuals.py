@@ -384,7 +384,6 @@ def classic_pca_test(filename, num_components):
 
     PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
     eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
-    print(eigenimages['PC1'].shape)
 
     #Get geometry
     p, x, y = psi.det.shape()
@@ -392,15 +391,13 @@ def classic_pca_test(filename, num_components):
 
     #Get images
     imgs = psi.get_images(len(PCs['PC1']),assemble=False)
-    print(imgs.shape)
     num_images = imgs.shape[0]
 
     #Just be careful, there might have been a downsampling / binning in PiPCA
     imgs = imgs[
-            [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+            [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
         ]
     imgs = np.reshape(imgs, (num_images, p, x, y))
-    print(imgs.shape)
 
     #PiPCA eigenimages
     list_eigenimages_pipca = []   
@@ -456,7 +453,14 @@ def sklearn_ipca_test(filename, num_components, batch_size):
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
     #Get images
-    imgs = psi.get_images(len(PCs['PC1']))
+    imgs = psi.get_images(len(PCs['PC1']),assemble=False)
+    num_images = imgs.shape[0]
+
+    #Just be careful, there might have been a downsampling / binning in PiPCA
+    imgs = imgs[
+            [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
+        ]
+    imgs = np.reshape(imgs, (num_images, p, x, y))
 
     #PiPCA eigenimages
     list_eigenimages_pipca = []
