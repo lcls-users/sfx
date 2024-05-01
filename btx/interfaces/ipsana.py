@@ -402,7 +402,7 @@ class PsanaInterface:
         mask : numpy.ndarray
             mask for detector, shape (det_shape)
         """
-        evt = self.runner.event(self.times[self.counter])
+        evt = self.runner.event(self.times[0])
         runnum = evt.run()
         mask = self.det.mask_v2(par=runnum, central=central, edges=edges)
         return mask
