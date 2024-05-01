@@ -195,6 +195,7 @@ ${SBATCH_CMD_ACCOUNT}
 #SBATCH --exclusive
 #SBATCH --job-name ${TASK}
 #SBATCH --ntasks=${CORES}
+#SBATCH --mem=0
 ${SBATCH_CMD_RESERVATION}
 
 source "${ANA_CONDA_MANAGE}psconda.sh"
