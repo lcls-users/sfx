@@ -384,6 +384,7 @@ def classic_pca_test(filename, num_components):
 
     PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
     eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
+    print(eigenimages['PC1'].shape)
 
     #Get geometry
     p, x, y = psi.det.shape()
