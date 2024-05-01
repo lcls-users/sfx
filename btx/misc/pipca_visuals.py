@@ -382,15 +382,13 @@ def classic_pca_test(filename, num_components):
     psi.counter = start_img
 
     PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
-    
+
     #Get images
-    imgs = psi.get_images(len(PCs['PC1']))
+    imgs = psi.get_images(len(PCs['PC1'])).squeeze()
 
     #Perform classic PCA
-    num_images, det_shape = imgs.shape[0], imgs.shape[1:]
-    flattened_imgs = imgs.reshape((num_images, -1))
     pca = PCA(n_components=num_components)
-    pca.fit(flattened_imgs)
+    pca.fit(imgs.reshape(len(PCs['PC1']), -1))
     eigenimages = pca.components_
 
     # Compute the Frobenius norm of the difference between the eigeinimages obtained via PiPCA and classic PCA
