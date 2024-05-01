@@ -18,6 +18,7 @@ pn.state.template.param.update()
 import panel.widgets as pnw
 
 from sklearn.decomposition import PCA
+from sklearn.decomposition import IncrementalPCA
 
 def display_dashboard(filename):
     """
@@ -390,6 +391,7 @@ def classic_pca_test(filename, num_components):
 
     #Get images
     imgs = psi.get_images(len(PCs['PC1']))
+    print(imgs.shape)
 
     #PiPCA eigenimages
     list_eigenimages_pipca = []   
@@ -403,7 +405,7 @@ def classic_pca_test(filename, num_components):
     #Perform classic PCA
     list_eigenimages_pca = []
     pca = PCA(n_components=num_components)
-    pca.fit(imgs.reshape(len(PCs['PC1']), -1))
+    pca.fit(imgs.reshape(imgs.shape[0], -1))
     eigenimages_classic = pca.components_
     for i in range(num_components):
         img = eigenimages_classic[i].reshape((p, x, y))
@@ -411,3 +413,61 @@ def classic_pca_test(filename, num_components):
         list_eigenimages_pca.append(img)
 
     return list_eigenimages_pipca, list_eigenimages_pca
+
+def sklearn_ipca_test(filename, num_components, batch_size):
+    """
+    Compute the average frobenius norm between eigenimages obtained via our PiPCA and those obtained via Sklearn IPCA.
+    The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA.
+
+    Parameters:
+    -----------
+    filename : string
+        name of the h5 file
+    num_components: int
+        number of components used
+    batch_size: int
+        batch size used for PiPCA (will be the same for IPCA)
+    
+    Returns:
+    --------
+    Losses between PiPCA and classic IPCA (from Sklearn)
+    """
+
+    data = unpack_pipca_model_file(filename)
+    
+    exp, run, loadings, det_type, start_img, U, S, V = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V']
+
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    psi.counter = start_img
+
+    PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
+    eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
+
+    #Get geometry
+    p, x, y = psi.det.shape()
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+
+    #Get images
+    imgs = psi.get_images(len(PCs['PC1']))
+
+    #PiPCA eigenimages
+    list_eigenimages_pipca = []
+    for i in range(num_components):
+        img = eigenimages[f'PC{i+1}']
+        img = img.reshape((p, x, y))
+        img = assemble_image_stack_batch(img, pixel_index_map)
+        list_eigenimages_pipca.append(img)
+    
+    #Perform IPCA
+    list_eigenimages_ipca = []
+    ipca = IncrementalPCA(n_components=num_components, batch_size=batch_size)
+    for i in range(0, len(imgs), batch_size):
+        ipca.partial_fit(imgs[i:i+batch_size].reshape(-1, x*y))
+    eigenimages_ipca = ipca.components_
+    for i in range(num_components):
+        img = eigenimages_ipca[i].reshape((p, x, y))
+        img = assemble_image_stack_batch(img, pixel_index_map)
+        list_eigenimages_ipca.append(img)
+    
+    return list_eigenimages_pipca, list_eigenimages_ipca
+
