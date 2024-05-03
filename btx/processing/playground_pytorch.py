@@ -11,7 +11,7 @@ from btx.interfaces.ipsana import (
 import time
 
 from btx.misc.pipca_visuals import *
-from btx.processing import PCAonGPU
+from btx.processing.PCAonGPU import gpu_pca
 
 def test_ipca_on_pytorch(filename, num_components, batch_size):
     """
