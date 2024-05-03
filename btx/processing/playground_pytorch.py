@@ -71,7 +71,7 @@ def test_ipca_on_pytorch(filename, num_components, batch_size):
     list_eigenimages = []
     eigenimages = ipca.components_
     for i in range(num_components):
-        img = components[i].reshape((p, x, y))
+        img = eigenimages[i].reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
         list_eigenimages.append(img)
     
