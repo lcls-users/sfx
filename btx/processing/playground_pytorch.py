@@ -58,7 +58,7 @@ def test_ipca_on_pytorch(filename, num_components, batch_size):
         ]
     imgs = np.reshape(imgs, (num_images, p, x, y))
 
-    ipca = PCAonGPU(n_components = num_components, batch_size = batch_size)
+    ipca = IncrementalPCAonGPU(n_components = num_components, batch_size = batch_size)
 
     print("Fitting IPCA")
     ipca.fit(imgs.reshape(num_images, -1))
