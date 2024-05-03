@@ -9,6 +9,7 @@ import torch
 
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("PyTorch is using:", device)
 
 class IncrementalPCAonGPU():
     """
