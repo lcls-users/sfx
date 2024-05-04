@@ -1031,7 +1031,7 @@ class iPCA_Pytorch:
                 create_or_update_dataset(f, 'run', self.psi.run)
                 create_or_update_dataset(f, 'U', ipca.components_)
                 create_or_update_dataset(f, 'S', ipca.explained_variance_)
-                create_or_update_dataset(f, 'V', ipca.components_)
+                create_or_update_dataset(f, 'V', ipca.components_.T)
                 create_or_update_dataset(f, 'mu', ipca.mean_)
                 create_or_update_dataset(f, 'total_variance', ipca.explained_variance_ratio_)
 
