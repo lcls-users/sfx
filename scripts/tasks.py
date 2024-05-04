@@ -700,11 +700,11 @@ def pipca_run(config):
             previous_var_tot = f['total_variance'][:]
 
 def ipca_pytorch(config):
-    from btx.processing.ipca_pytorch import iPCA_Pytorch
-    from btx.processing.ipca_pytorch import append_to_dataset
-    from btx.processing.ipca_pytorch import compute_norm_difference
-    from btx.processing.ipca_pytorch import remove_file_with_timeout
-    from btx.processing.ipca_pytorch import initialize_matrices
+    from btx.processing.pipca import iPCA_Pytorch
+    from btx.processing.pipca import append_to_dataset
+    from btx.processing.pipca import compute_norm_difference
+    from btx.processing.pipca import remove_file_with_timeout
+    from btx.processing.pipca import initialize_matrices
 
     setup = config.setup
     task = config.ipca_pytorch
