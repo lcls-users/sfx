@@ -698,7 +698,61 @@ def pipca_run(config):
             previous_S = f['S'][:]
             previous_mu_tot = f['mu'][:]
             previous_var_tot = f['total_variance'][:]
+
+def ipca_pytorch(config):
+    from btx.processing.ipca_pytorch import iPCA_Pytorch
+    from btx.processing.ipca_pytorch import append_to_dataset
+    from btx.processing.ipca_pytorch import compute_norm_difference
+    from btx.processing.ipca_pytorch import remove_file_with_timeout
+    from btx.processing.ipca_pytorch import initialize_matrices
+
+    setup = config.setup
+    task = config.ipca_pytorch
+    exp = setup.exp
+    run = task.run
+    det_type = setup.det_type
+    start_offset = task.start_offset
+    num_images = task.num_images
+    num_components = task.num_components
+    batch_size = task.batch_size
+    tag = task.tag
+    path = task.path
+    offline = task.offline
+
+    overwrite = True
+
+    filename_with_tag = f"{path}ipca_model_{tag}.h5"
+    
+    remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
+
+    # Initialize number of runs
+    # list_runs = get_runs(tag) function to code later
+
+    if offline:
+        start_run = run
+        num_run = task.num_run
         
+    else:
+        start_run = run
+        num_run = 1
+
+    # Iterate through runs 
+    for run in range(start_run, start_run + num_run):
+        
+        # Create a IPCA instance for the current run
+        ipca = IPCA(
+            exp=exp,
+            run=run,
+            det_type=det_type,
+            num_images=num_images,
+            num_components=num_components,
+            batch_size=batch_size,
+            filename = filename_with_tag
+        )
+
+        # Run iPCA for the current run
+        ipca.run()
+
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Perform an iteration of the Bayesian optimization. """

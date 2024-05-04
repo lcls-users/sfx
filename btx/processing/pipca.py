@@ -1193,7 +1193,7 @@ def initialize_matrices(filename_with_tag):
 #### for command line use ###
 
 
-def parse_input_pipca():
+def parse_input():
     """
     Parse command line input.
     """
@@ -1259,7 +1259,7 @@ def parse_input_pipca():
 
     return parser.parse_args()
 
-def parse_input_ipca_pytorch():
+
 
     """
     Parse command line input.
@@ -1316,19 +1316,9 @@ def parse_input_ipca_pytorch():
 
 if __name__ == "__main__":
 
-    run_on_pipca = False
+    params = parse_input()
+    kwargs = {k: v for k, v in vars(params).items() if v is not None}
 
-    if run_on_pipca:
-        params = parse_input_pipca()
-        kwargs = {k: v for k, v in vars(params).items() if v is not None}
-
-        pipca = PiPCA(**kwargs)
-        pipca.run()
-        pipca.get_outliers()
-
-    else:
-        params = parse_input_ipca_pytorch()
-        kwargs = {k: v for k, v in vars(params).items() if v is not None}
-
-        ipca = iPCA_Pytorch(**kwargs)
-        ipca.run()
+    pipca = PiPCA(**kwargs)
+    pipca.run()
+    pipca.get_outliers()
