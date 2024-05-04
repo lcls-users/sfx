@@ -1018,8 +1018,9 @@ class iPCA_Pytorch:
         execution_time = end_time - start_time  # Calculate the execution time
         frequency = self.num_images/execution_time
 
-        reconstructed_images = np.dot((imgs - ipca.mean_), ipca.components_.T)
-        
+        reconstructed_images = ipca._validate_data(imgs.reshape(self.num_images, -1))
+        reconstructed_images = ipca.transform(reconstructed_images)
+
         # save model to an hdf5 file
         with TaskTimer(self.task_durations, "save inputs file h5"):
             with h5py.File(self.filename, 'a') as f:
