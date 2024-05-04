@@ -1037,7 +1037,7 @@ class iPCA_Pytorch:
 
                 append_to_dataset(f, 'frequency', data=frequency)
                 append_to_dataset(f, 'execution_times', data=execution_time)
-                logging.debug(f'Model saved to {self.filename}')
+                logging.info(f'Model saved to {self.filename}')
         
         for task, durations in self.task_durations.items():
             durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places

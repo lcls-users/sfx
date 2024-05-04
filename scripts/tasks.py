@@ -740,7 +740,7 @@ def ipca_pytorch(config):
     for run in range(start_run, start_run + num_run):
         
         # Create a IPCA instance for the current run
-        ipca = IPCA(
+        ipca = iPCA_Pytorch(
             exp=exp,
             run=run,
             det_type=det_type,
