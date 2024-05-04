@@ -20,6 +20,7 @@ import statistics
 from btx.misc.shortcuts import TaskTimer
 
 from btx.misc.pipca_visuals import compute_compression_loss
+from btx.processing.PCAonGPU.gpu_pca.pca_module import IncrementalPCAonGPU
 
 from btx.interfaces.ipsana import (
     PsanaInterface,
@@ -955,7 +956,99 @@ class PiPCA:
         
         return np.array(batch_indices)
     
+class iPCA_Pytorch:
+
+    """Incremental Principal Component Analysis, uses PyTorch. Can run on GPUs."""
+
+    def __init__(
+        self,
+        exp,
+        run,
+        det_type,
+        start_offset=0,
+        num_images=10,
+        num_components=10,
+        batch_size=10,
+        output_dir="",
+        filename='pipca.model_h5',
+    ):
+
+        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+        self.psi.counter = start_offset
+        self.start_offset = start_offset
+
+        self.output_dir = output_dir
+        self.filename = filename
+
+        self.num_images = num_images
+        self.num_components = num_components
+        self.batch_size = batch_size
+
+        self.task_durations = dict({})
+
+    def run(self):
+        """
+        Run the iPCA algorithm on the given data.
+        """
+
+        start_time = time.time()
+
+        logging.basicConfig(level=logging.DEBUG)
+
+        #Get geometry
+        p, x, y = self.psi.det.shape()
+        num_features = p * x * y
+        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+
+        with TaskTimer(self.task_durations, "Getting images formatted"):
+            imgs = self.psi.get_images(self.num_images, assemble=False)
+
+            imgs = imgs[
+                [i for i in range(self.num_images) if not np.isnan(imgs[i : i + 1]).any()]
+            ]
+            imgs = np.reshape(imgs, (self.num_images, p, x, y))
+            
+        with TaskTimer(self.task_durations, "Initializing model"):
+            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
+
+        with TaskTimer(self.task_durations, "Fitting model"):
+            ipca.fit(imgs.reshape(self.num_images, -1))
+
+        end_time = time.time()
+        execution_time = end_time - start_time  # Calculate the execution time
+        frequency = self.num_images/execution_time
+
+        # save model to an hdf5 file
+        with TaskTimer(self.task_durations, "save inputs file h5"):
+            with h5py.File(self.filename, 'a') as f:
+                if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
+                    # Create datasets only if they don't exist
+                    f.create_dataset('exp', data=self.psi.exp)
+                    f.create_dataset('det_type', data=self.psi.det_type)
+                    f.create_dataset('start_offset', data=self.start_offset)
+
+                create_or_update_dataset(f,'loadings', data=ipca.components_)
+                create_or_update_dataset(f, 'run', self.psi.run)
+                create_or_update_dataset(f, 'U', ipca.components_)
+                create_or_update_dataset(f, 'S', ipca.explained_variance_)
+                create_or_update_dataset(f, 'V', ipca.components_)
+                create_or_update_dataset(f, 'mu', ipca.mean_)
+                create_or_update_dataset(f, 'total_variance', ipca.explained_variance_ratio_)
+
+                append_to_dataset(f, 'frequency', data=frequency)
+                append_to_dataset(f, 'execution_times', data=execution_time)
+                logging.debug(f'Model saved to {self.filename}')
+        
+        for task, durations in self.task_durations.items():
+            durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
+            if len(durations) == 1:
+                logging.debug(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
+            else:
+                mean_duration = np.mean(durations)
+                std_deviation = statistics.stdev(durations)
+                logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
     
+        logging.info(f"Model complete in {end_time - start_time} seconds")    
 
 def distribute_indices_over_ranks(d, size):
     """
@@ -1100,7 +1193,7 @@ def initialize_matrices(filename_with_tag):
 #### for command line use ###
 
 
-def parse_input():
+def parse_input_pipca():
     """
     Parse command line input.
     """
@@ -1166,13 +1259,76 @@ def parse_input():
 
     return parser.parse_args()
 
+def parse_input_ipca_pytorch():
+
+    """
+    Parse command line input.
+    """
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e", "--exp", help="Experiment name.", required=True, type=str)
+    parser.add_argument("-r", "--run", help="Run number.", required=True, type=int)
+    parser.add_argument(
+        "-d",
+        "--det_type",
+        help="Detector name, e.g epix10k2M or jungfrau4M.",
+        required=True,
+        type=str,
+    )
+    parser.add_argument(
+        "--start_offset",
+        help="Run index of first image to be incorporated into iPCA model.",
+        required=False,
+        type=int,
+    )
+    parser.add_argument(
+        "--num_components",
+        help="Number of principal components to compute and maintain.",
+        required=False,
+        type=int,
+    )
+    parser.add_argument(
+        "--batch_size",
+        help="Size of image batch incorporated in each model update.",
+        required=False,
+        type=int,
+    )
+    parser.add_argument(
+        "--num_images",
+        help="Total number of images to be incorporated into model.",
+        required=False,
+        type=int,
+    )
+    parser.add_argument(
+        "--output_dir",
+        help="Path to output directory for recording task duration data.",
+        required=False,
+        type=str,
+    )
+    parser.add_argument(
+        "--filename",
+        help="Name of the file to save the model.",
+        required=False,
+        type=str,
+    )
+    return parser.parse_args()
+
 
 if __name__ == "__main__":
 
-    params = parse_input()
-    kwargs = {k: v for k, v in vars(params).items() if v is not None}
+    run_on_pipca = False
 
-    pipca = PiPCA(**kwargs)
-    pipca.run()
-    pipca.get_outliers()
+    if run_on_pipca:
+        params = parse_input_pipca()
+        kwargs = {k: v for k, v in vars(params).items() if v is not None}
 
+        pipca = PiPCA(**kwargs)
+        pipca.run()
+        pipca.get_outliers()
+
+    else:
+        params = parse_input_ipca_pytorch()
+        kwargs = {k: v for k, v in vars(params).items() if v is not None}
+
+        ipca = iPCA_Pytorch(**kwargs)
+        ipca.run()
