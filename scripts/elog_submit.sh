@@ -164,7 +164,7 @@ if [ ${RUN_NUM} != 'None' ]; then
 fi
 
 ANA_CONDA_MANAGE="${ANA_CONDA_DIR}conda1/manage/bin/"
-ANA_CONDA_BIN="${ANA_CONDA_DIR}conda1/inst/envs/ana-4.0.48-py3/bin/"
+ANA_CONDA_BIN="${ANA_CONDA_DIR}conda1/inst/envs/ana-4.0.48-py3/bin/" #CHANGED FOR PYTORCH, NEED TO MAKE SURE IT'S OKAY
 WHICHPYTHON="${ANA_CONDA_BIN}python"
 WHICHMPIRUN="${ANA_CONDA_BIN}mpirun"
 

@@ -1018,6 +1018,9 @@ class iPCA_Pytorch:
         execution_time = end_time - start_time  # Calculate the execution time
         frequency = self.num_images/execution_time
 
+        reconstructed_images = ipca.transform(imgs.reshape(self.num_images, -1))
+        reconstructed_images = reconstructed_images.reshape(self.num_images, p, x, y)
+
         # save model to an hdf5 file
         with TaskTimer(self.task_durations, "save inputs file h5"):
             with h5py.File(self.filename, 'a') as f:
@@ -1027,13 +1030,12 @@ class iPCA_Pytorch:
                     f.create_dataset('det_type', data=self.psi.det_type)
                     f.create_dataset('start_offset', data=self.start_offset)
 
-                create_or_update_dataset(f,'loadings', data=ipca.components_)
                 create_or_update_dataset(f, 'run', self.psi.run)
-                create_or_update_dataset(f, 'U', ipca.components_)
-                create_or_update_dataset(f, 'S', ipca.explained_variance_)
+                create_or_update_dataset(f, 'reconstructed_images', data=reconstructed_images)
+                create_or_update_dataset(f, 'S', ipca.singular_values_)
                 create_or_update_dataset(f, 'V', ipca.components_.T)
                 create_or_update_dataset(f, 'mu', ipca.mean_)
-                create_or_update_dataset(f, 'total_variance', ipca.explained_variance_ratio_)
+                create_or_update_dataset(f, 'total_variance', ipca.explained_variance_)
 
                 append_to_dataset(f, 'frequency', data=frequency)
                 append_to_dataset(f, 'execution_times', data=execution_time)
