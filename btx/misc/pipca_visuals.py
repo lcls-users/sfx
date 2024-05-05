@@ -125,7 +125,7 @@ def display_dashboard_pytorch(filename):
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
 
-        img = (np.dot(V,reconstructed_images))[img_source]
+        img = (V@reconstructed_images@V.T)[img_source]
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
