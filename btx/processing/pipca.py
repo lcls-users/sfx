@@ -1031,7 +1031,7 @@ class iPCA_Pytorch:
                     f.create_dataset('start_offset', data=self.start_offset)
 
                 create_or_update_dataset(f, 'run', self.psi.run)
-                create_or_update_dataset(f, 'reconstructed_images', data=reconstructed_images)
+                create_or_update_dataset(f, 'loadings', data=reconstructed_images)
                 create_or_update_dataset(f, 'S', ipca.singular_values_)
                 create_or_update_dataset(f, 'V', ipca.components_.T)
                 create_or_update_dataset(f, 'mu', ipca.mean_)

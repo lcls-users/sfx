@@ -37,7 +37,7 @@ def display_dashboard_pytorch(filename):
     run = data['run']
     det_type = data['det_type']
     start_img = data['start_img']
-    reconstructed_images = data['reconstructed_images']
+    loadings = data['loadings']
     S = data['S']
     V = data['V']
 
