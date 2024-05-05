@@ -45,7 +45,7 @@ def display_dashboard_pytorch(filename):
     psi.counter = start_img
 
     # Create PC dictionary and widgets
-    PCs = {f'PC{i}' : v for i, v in enumerate(V.T, start=1)}
+    PCs = {f'PC{i}' : v for i, v in enumerate(reconstructed_images, start=1)}
     PC_options = list(PCs)
 
     PCx = pnw.Select(name='X-Axis', value='PC1', options=PC_options)
@@ -125,7 +125,7 @@ def display_dashboard_pytorch(filename):
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
 
-        img = reconstructed_images[img_source]
+        img = (np.dot(V,reconstructed_images))[img_source]
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
