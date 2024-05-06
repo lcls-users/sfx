@@ -1025,6 +1025,9 @@ class iPCA_Pytorch:
         reconstructed_images = ipca._validate_data(imgs.reshape(self.num_images, -1))
         reconstructed_images = ipca.transform(reconstructed_images)
         
+        print(ipca.device)
+        print(ipca.device == "cuda")
+        
         if ipca.device == "cuda":
             print('Checkpoint')
             reconstructed_images = torch.Tensor.cpu(reconstructed_images)
