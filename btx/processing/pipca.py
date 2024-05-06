@@ -1025,7 +1025,7 @@ class iPCA_Pytorch:
         reconstructed_images = ipca._validate_data(imgs.reshape(self.num_images, -1))
         reconstructed_images = ipca.transform(reconstructed_images)
         
-        if device == 'cuda':
+        if self.device == 'cuda':
             reconstructed_images = reconstructed_images.cpu().numpy()
 
         # save model to an hdf5 file
