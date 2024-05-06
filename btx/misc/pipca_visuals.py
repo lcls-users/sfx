@@ -171,9 +171,9 @@ def display_dashboard_pytorch(filename):
     tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
     tap_dmap_reconstruct = hv.DynamicMap(tap_heatmap_reconstruct, streams=stream1+stream2)
 
-    PC_scree.param.watch(lambda event: compute_loss(PCx.param.value, PCy.param.value, PC_scree.param.value, PC_scree2.param.value), 'value')
-    PC_scree2.param.watch(lambda event: compute_loss(PCx.param.value, PCy.param.value, PC_scree.param.value, PC_scree2.param.value), 'value')
-
+    PC_scree.param.watch(lambda event: compute_loss(posxy.x, posxy.y,PCx.value, PCy.value, PC_scree.value, PC_scree2.value), 'value')
+    PC_scree2.param.watch(lambda event: compute_loss(posxy.x, posxy.y,PCx.value, PCy.value, PC_scree.value, PC_scree2.value), 'value')
+    
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
