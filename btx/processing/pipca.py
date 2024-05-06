@@ -1026,8 +1026,9 @@ class iPCA_Pytorch:
         reconstructed_images = ipca.transform(reconstructed_images)
         
         if ipca.device == "cuda":
-            reconstructed_images = torch.Tensor.cup(reconstructed_images)
-            reconstructed_images = reconstructed_images.numpy()
+            print('Checkpoint')
+            reconstructed_images = torch.Tensor.cpu(reconstructed_images)
+            reconstructed_images = reconstructed_images.detach().numpy()
 
         # save model to an hdf5 file
         with TaskTimer(self.task_durations, "save inputs file h5"):
