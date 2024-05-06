@@ -164,16 +164,18 @@ def display_dashboard_pytorch(filename):
 
             #Compute loss
             diff = np.abs(img - img_reconstructed)
-            loss = np.linalg.norm(diff, 'fro') / np.linalg.norm(img, 'fro') * 100
+            loss = np.linalg.norm(diff, 'fro')
             list_loss.append(loss)
 
+        list_loss *= 100/np.linalg.norm(img, 'fro')
+        print(list_loss)
 
-        #Plot the losses for the selected image
+        #Plot the losses for the selected imageopk
         losses = np.array(list_loss)
         losses = losses.reshape((last_compo-first_compo+1,1))
         losses = np.concatenate((np.arange(first_compo,last_compo+1).reshape((last_compo-first_compo+1,1)), losses), axis=1)
 
-        opts = dict(width=400, height=300, show_grid=True, show_legend=False,
+        opts = dict(width=800, height=300, show_grid=True, show_legend=False,
                     shared_axes=False, toolbar='above', default_tools=['hover','save','reset'],
                     xlabel='Number of components', ylabel='Loss')
         scree = hv.Bars(losses, label="Loss Plot").opts(**opts)
@@ -188,7 +190,8 @@ def display_dashboard_pytorch(filename):
     tap_dmap_loss = hv.DynamicMap(compute_loss, streams=stream1+stream2)
 
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
-                     pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct,tap_dmap_loss)).servable('PiPCA Dashboard')
+                     pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct),
+                     pn.Row(widgets_scree, tap_dmap_loss)).servable('PiPCA Dashboard')
 
 def display_dashboard(filename):
     """
