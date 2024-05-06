@@ -374,6 +374,7 @@ def unpack_ipca_pytorch_model_file(filename):
         data['reconstructed_images'] = np.asarray(f.get('reconstructed_images'))
         data['S'] = np.asarray(f.get('S'))
         data['V'] = np.asarray(f.get('V'))
+        data['mu'] = np.asarray(f.get('mu'))
 
     return data
 
