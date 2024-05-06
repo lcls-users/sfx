@@ -1025,7 +1025,7 @@ class iPCA_Pytorch:
         reconstructed_images = ipca._validate_data(imgs.reshape(self.num_images, -1))
         reconstructed_images = ipca.transform(reconstructed_images)
         
-        print(ipca.device.strip() == "cuda")
+        print(str(ipca.device).strip() == "cuda")
 
         if ipca.device == "cuda":
             print('Checkpoint')
