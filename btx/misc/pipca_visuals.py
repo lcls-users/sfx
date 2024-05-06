@@ -38,6 +38,7 @@ def display_dashboard_pytorch(filename):
     det_type = data['det_type']
     start_img = data['start_img']
     reconstructed_images = data['reconstructed_images']
+    mu = data['mu']
     S = data['S']
     V = data['V']
 
@@ -125,7 +126,7 @@ def display_dashboard_pytorch(filename):
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
 
-        img = np.dot(reconstructed_images[:, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)[img_source]
+        img = np.dot(reconstructed_images[:, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)[img_source]+mu
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
