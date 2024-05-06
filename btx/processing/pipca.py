@@ -1017,13 +1017,16 @@ class iPCA_Pytorch:
             ipca.fit(imgs.reshape(self.num_images, -1))
 
         logging.info("Model fitted")
-        
+
         end_time = time.time()
         execution_time = end_time - start_time  # Calculate the execution time
         frequency = self.num_images/execution_time
 
         reconstructed_images = ipca._validate_data(imgs.reshape(self.num_images, -1))
         reconstructed_images = ipca.transform(reconstructed_images)
+        
+        if device == 'cuda':
+            reconstructed_images = reconstructed_images.cpu().numpy()
 
         # save model to an hdf5 file
         with TaskTimer(self.task_durations, "save inputs file h5"):
