@@ -628,7 +628,7 @@ def sklearn_ipca_test(filename, num_components, batch_size):
     for i in range(0, len(imgs), batch_size):
         print(f"Processing batch {int(i/batch_size)+1} of {int(num_images/batch_size)}")
         ipca.partial_fit(imgs[i:i+batch_size].reshape(batch_size, -1))
-        print(f"Batch {i} processed")
+        print(f"Batch {int(i/batch_size)+1} processed")
     eigenimages_ipca = ipca.components_
     for i in range(num_components):
         img = eigenimages_ipca[i].reshape((p, x, y))
