@@ -167,12 +167,12 @@ def display_dashboard_pytorch(filename):
             loss = np.linalg.norm(diff, 'fro')
             list_loss.append(loss)
 
+        list_loss = np.array(list_loss)
         list_loss *= 100/np.linalg.norm(img, 'fro')
         print(list_loss)
 
-        #Plot the losses for the selected imageopk
-        losses = np.array(list_loss)
-        losses = losses.reshape((last_compo-first_compo+1,1))
+        #Plot the losses for the selected image
+        losses = list_loss.reshape((last_compo-first_compo+1,1))
         losses = np.concatenate((np.arange(first_compo,last_compo+1).reshape((last_compo-first_compo+1,1)), losses), axis=1)
 
         opts = dict(width=800, height=300, show_grid=True, show_legend=False,
