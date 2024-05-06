@@ -188,7 +188,7 @@ def display_dashboard_pytorch(filename):
     tap_dmap_loss = hv.DynamicMap(compute_loss, streams=stream1+stream2)
 
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
-                     pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct,compute_loss)).servable('PiPCA Dashboard')
+                     pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct,tap_dmap_loss)).servable('PiPCA Dashboard')
 
 def display_dashboard(filename):
     """
