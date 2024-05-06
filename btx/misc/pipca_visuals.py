@@ -138,12 +138,42 @@ def display_dashboard_pytorch(filename):
 
         return heatmap_reconstruct
     
+    def compute_loss(x, y, pcx, pcy, pcscree, pcscree2):
+        # Finds the index of image closest to the tap location
+        img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
+
+        #Get geometry
+        p, x, y = psi.det.shape()
+        pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+
+        #Get image
+        counter = psi.counter
+        psi.counter = start_img + img_source
+        img = psi.get_images(1)
+        img = img.squeeze()
+
+        #Get reconstructed image
+        first_compo = int(pcscree[2:])
+        last_compo = int(pcscree2[2:])
+        img_reconstructed = np.dot(reconstructed_images[:, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)[img_source]+mu
+        img_reconstructed = img_reconstructed.reshape((p, x, y))
+        img_reconstructed = assemble_image_stack_batch(img_reconstructed, pixel_index_map)
+
+        #Compute loss
+        diff = np.abs(img - img_reconstructed)
+        loss = np.linalg.norm(diff, 'fro') / np.linalg.norm(img, 'fro') * 100
+        print(f"Loss: {loss:.2f}%")
+        return loss
+
     # Connect the Tap stream to the heatmap callbacks
     stream1 = [posxy]
     stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value, 'pcscree': PC_scree.param.value, 'pcscree2': PC_scree2.param.value})
     tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
     tap_dmap_reconstruct = hv.DynamicMap(tap_heatmap_reconstruct, streams=stream1+stream2)
-        
+
+    PC_scree.param.watch(lambda event: compute_loss(PCx.param.value, PCy.param.value, PC_scree.param.value, PC_scree2.param.value), 'value')
+    PC_scree2.param.watch(lambda event: compute_loss(PCx.param.value, PCy.param.value, PC_scree.param.value, PC_scree2.param.value), 'value')
+
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
