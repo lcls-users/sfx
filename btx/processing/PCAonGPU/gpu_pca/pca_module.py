@@ -230,6 +230,4 @@ class IncrementalPCAonGPU():
         """
         X = X.to(self.device)
         X -= self.mean_
-        transformed_X = torch.mm(X, self.components_.T)
-        transformed_X += self.mean_
-        return transformed_X
+        return torch.mm(X, self.components_.T)
