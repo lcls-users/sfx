@@ -214,6 +214,9 @@ class IncrementalPCAonGPU():
             self.noise_variance_ = explained_variance[self.n_components_ :].mean().item()
         else:
             self.noise_variance_ = 0.0
+
+        torch.cuda.empty_cache() #TEST
+
         return self
 
     def transform(self, X):
