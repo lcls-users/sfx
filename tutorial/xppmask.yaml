@@ -6,8 +6,7 @@ setup:
   det_type: 'XXXX'
 
 generate_histograms:
-  input_file: 'data.h5'
-  dataset: '/entry_1/data_1/data'
+  input_file: 'data.npz'
   output_dir: 'histograms'
 
 calculate_emd:

@@ -2,6 +2,7 @@ from analysis_tasks import calculate_p_values, generate_signal_mask, generate_ba
 from histogram_analysis import calculate_histograms
 from histogram_analysis import get_average_roi_histogram, wasserstein_distance
 from pvalues import calculate_emd_values
+from xpploader import get_imgs_thresh
 import h5py
 import logging
 import matplotlib.pyplot as plt
@@ -10,8 +11,6 @@ import os
 import requests
 
 logger = logging.getLogger(__name__)
-
-import os
 
 def save_array_to_png(array, output_path):
     # Create the "images" subdirectory if it doesn't exist
@@ -29,6 +28,45 @@ def save_array_to_png(array, output_path):
     plt.savefig(png_path)
     plt.close()
 
+class LoadData:
+    def __init__(self, config):
+        required_keys = ['setup', 'load_data']
+        for key in required_keys:
+            if key not in config:
+                raise ValueError(f"Missing required configuration key: {key}")
+
+        self.run_number = config['setup']['run']
+        self.experiment_number = config['setup']['exp']
+        self.roi = config['load_data']['roi']
+        self.energy_filter = config['load_data'].get('energy_filter', [8.8, 5])
+        self.i0_threshold = config['load_data'].get('i0_threshold', 200)
+        self.ipm_pos_filter = config['load_data'].get('ipm_pos_filter', [0.2, 0.5])
+        self.time_bin = config['load_data'].get('time_bin', 2)
+        self.time_tool = config['load_data'].get('time_tool', [0., 0.005])
+        self.output_dir = config['load_data']['output_dir']
+
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    def load_data(self):
+        self.data = get_imgs_thresh(self.run_number, self.experiment_number, self.roi,
+                                    self.energy_filter, self.i0_threshold,
+                                    self.ipm_pos_filter, self.time_bin, self.time_tool)
+
+    def save_data(self):
+        output_file = os.path.join(self.output_dir, f"{self.experiment_number}_run{self.run_number}_data.npz")
+        np.savez(output_file, self.data)
+
+    def summarize(self):
+        summary = f"Loaded data for experiment {self.experiment_number}, run {self.run_number}:\n"
+        summary += f"  Shape: {self.data.shape}\n"
+        summary += f"  Min: {np.min(self.data):.2f}, Max: {np.max(self.data):.2f}\n"
+        summary += f"  Mean: {np.mean(self.data):.2f}, Std: {np.std(self.data):.2f}\n"
+
+        print(summary)
+
+        with open(os.path.join(self.output_dir, f"{self.experiment_number}_run{self.run_number}_summary.txt"), 'w') as f:
+            f.write(summary)
+
 class MakeHistogram:
     def __init__(self, config):
         required_keys = ['setup', 'make_histogram']
@@ -36,8 +74,7 @@ class MakeHistogram:
             if key not in config:
                 raise ValueError(f"Missing required configuration key: {key}")
 
-        self.hdf5_path = config['make_histogram']['input_file']
-        self.dataset_path = config['make_histogram']['dataset']
+        self.input_file = config['make_histogram']['input_file']
         self.exp = config['setup']['exp']
         self.run = config['setup']['run']
         self.output_dir = os.path.join(config['make_histogram']['output_dir'], f"{self.exp}_{self.run}")
@@ -47,10 +84,9 @@ class MakeHistogram:
 
     def load_data(self):
         try:
-            with h5py.File(self.hdf5_path, 'r') as hdf5_file:
-                data = hdf5_file[self.dataset_path][:]
-        except (OSError, KeyError) as e:
-            self.logger.error(f"Error loading data from {self.dataset_path}: {e}")
+            data = np.load(self.input_file)['arr_0']
+        except (IOError, KeyError) as e:
+            self.logger.error(f"Error loading data from {self.input_file}: {e}")
             raise
 
         if data.ndim != 3:
@@ -78,17 +114,15 @@ class MakeHistogram:
         histograms_path = os.path.join(self.output_dir, "histograms.npy")
         np.save(histograms_path, self.histograms)
 
-    def report(self, elog_url):
-        summary = self.summary_str
-        requests.post(elog_url, json=[
-            {"key": "Experiment", "value": self.exp},
-            {"key": "Run", "value": self.run},
-            {"key": "Histogram shape", "value": str(self.histograms.shape)},
-            {"key": "Min value", "value": f"{self.histograms.min():.2f}"},
-            {"key": "Max value", "value": f"{self.histograms.max():.2f}"},
-            {"key": "Mean", "value": f"{self.histograms.mean():.2f}"},
-            {"key": "Summary", "value": summary}
-        ])
+    def save_histogram_image(self):
+        img_path = os.path.join(self.output_dir, "histograms.png")
+        plt.figure(figsize=(8, 6))
+        plt.imshow(self.histograms.sum(axis=0), cmap='viridis')
+        plt.colorbar(label='Counts')
+        plt.title(f"Histograms for {self.exp} run {self.run}")
+        plt.tight_layout()
+        plt.savefig(img_path)
+        plt.close()
 
     @property
     def histogram_summary(self):
@@ -100,6 +134,7 @@ class MakeHistogram:
             "Max value": f"{self.histograms.max():.2f}",
             "Mean": f"{self.histograms.mean():.2f}",
         }
+
 
 class MeasureEMD:
     def __init__(self, config):

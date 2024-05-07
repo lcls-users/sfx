@@ -2,6 +2,27 @@ import os
 import numpy as np
 import h5py
 from xppmask import *
+from xppmask import MakeHistogram
+from xppmask import LoadData
+
+def test_load_data(output_dir, setup_config):
+    config = {
+        'setup': setup_config,
+        'load_data': {
+            'roi': [5, 105, 50, 250],
+            'output_dir': output_dir,
+        },
+    }
+
+    load_data = LoadData(config)
+    load_data.load_data()
+    load_data.save_data()
+    load_data.summarize()
+
+    output_file = os.path.join(output_dir, f"{setup_config['exp']}_run{setup_config['run']}_data.npz")
+    assert os.path.exists(output_file), f"Output file {output_file} does not exist"
+
+    return output_file
 
 def test_make_histogram(data_stack, output_dir, setup_config):
     # Create a temporary configuration dictionary
@@ -142,6 +163,8 @@ def test_build_pump_probe_masks(p_values_file, histograms_file, output_dir, setu
     assert os.path.exists(os.path.join(mask_task.output_dir, "bg_mask.npy"))
 
 if __name__ == '__main__':
+    # TODO test data loader task, but this will only work on s3df
+    # if running in a different environment, download sample data instead
     data = np.load('data.npz')['arr_0']
     output_dir = '.'
     setup_config = {
