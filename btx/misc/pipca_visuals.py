@@ -8,7 +8,6 @@ from btx.interfaces.ipsana import (
     assemble_image_stack_batch,
 )
 
-import hvplot
 import holoviews as hv
 hv.extension('bokeh')
 from holoviews.streams import Params
@@ -93,9 +92,7 @@ def display_dashboard_pytorch(filename):
                     shared_axes=False, toolbar='above', default_tools=['hover','save','reset'],
                     xlabel='Components', ylabel='Singular Values')
         scree = hv.Bars(bars_data, label="Scree Plot").opts(**opts)
-
-        hvplot.save(scree, filename, backend='bokeh')
-
+        
         return scree
         
     # Define function to compute heatmap based on tap location
