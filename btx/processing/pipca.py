@@ -1027,7 +1027,8 @@ class iPCA_Pytorch:
 
         if str(ipca.device).strip() == "cuda":
             print('Checkpoint')
-            reconstructed_images = reconstructed_images.cpu().numpy()
+            reconstructed_images = reconstructed_images.cpu()
+            reconstructed_images = reconstructed_images.detach().numpy()
 
         # save model to an hdf5 file
         with TaskTimer(self.task_durations, "save inputs file h5"):
