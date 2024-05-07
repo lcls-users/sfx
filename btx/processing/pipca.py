@@ -1049,10 +1049,10 @@ class iPCA_Pytorch:
 
                 create_or_update_dataset(f, 'run', self.psi.run)
                 create_or_update_dataset(f, 'reconstructed_images', data=reconstructed_images)
-                create_or_update_dataset(f, 'S', ipca.singular_values_)
-                create_or_update_dataset(f, 'V', ipca.components_.T)
-                create_or_update_dataset(f, 'mu', ipca.mean_)
-                create_or_update_dataset(f, 'total_variance', ipca.explained_variance_)
+                create_or_update_dataset(f, 'S', S)
+                create_or_update_dataset(f, 'V', V)
+                create_or_update_dataset(f, 'mu', mu)
+                create_or_update_dataset(f, 'total_variance', total_variance)
 
                 append_to_dataset(f, 'frequency', data=frequency)
                 append_to_dataset(f, 'execution_times', data=execution_time)
