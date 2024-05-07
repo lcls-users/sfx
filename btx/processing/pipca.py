@@ -1028,12 +1028,12 @@ class iPCA_Pytorch:
         if str(ipca.device).strip() == "cuda":
             print('Checkpoint')
             reconstructed_images = reconstructed_images.cpu().detach().numpy()
-            S = ipca.single_values_.cpu().detach().numpy()
+            S = ipca.singular_values_.cpu().detach().numpy()
             V = ipca.components_.cpu().detach().numpy().T
             mu = ipca.mean_.cpu().detach().numpy()
             total_variance = ipca.explained_variance_.cpu().detach().numpy()
         else:
-            S = ipca.single_values_
+            S = ipca.singular_values_
             V = ipca.components_.T
             mu = ipca.mean_
             total_variance = ipca.explained_variance_
