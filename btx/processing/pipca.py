@@ -1028,7 +1028,15 @@ class iPCA_Pytorch:
         if str(ipca.device).strip() == "cuda":
             print('Checkpoint')
             reconstructed_images = reconstructed_images.cpu().detach().numpy()
-            print(type(reconstructed_images))
+            S = ipca.single_values_.cpu().detach().numpy()
+            V = ipca.components_.cpu().detach().numpy().T
+            mu = ipca.mean_.cpu().detach().numpy()
+            total_variance = ipca.explained_variance_.cpu().detach().numpy()
+        else:
+            S = ipca.single_values_
+            V = ipca.components_.T
+            mu = ipca.mean_
+            total_variance = ipca.explained_variance_
 
         # save model to an hdf5 file
         with TaskTimer(self.task_durations, "save inputs file h5"):
