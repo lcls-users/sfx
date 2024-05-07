@@ -1026,7 +1026,6 @@ class iPCA_Pytorch:
         reconstructed_images = ipca.transform(reconstructed_images)
 
         if str(ipca.device).strip() == "cuda":
-            print('Checkpoint')
             reconstructed_images = reconstructed_images.cpu().detach().numpy()
             S = ipca.singular_values_.cpu().detach().numpy()
             V = ipca.components_.cpu().detach().numpy().T
