@@ -208,8 +208,8 @@ class CrystFEL_to_PyFAI:
                     # psana frame to pyFAI frame
                     # x -> -x, y -> y, z -> -z
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = -z
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -y
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = -x
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = y
                 else:
                     # CrystFEL frame to pyFAI frame
                     # x -> y, y -> y, z -> z
