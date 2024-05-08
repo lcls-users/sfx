@@ -206,13 +206,13 @@ class CrystFEL_to_PyFAI:
                 z = c1z[:, :, np.newaxis] + ss_units * ssz + fs_units * fsz
                 if reference_frame:
                     # psana frame to pyFAI frame
-                    # x -> -x, y -> y, z -> -z
+                    # x -> x, y -> y, z -> -z
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = -z  # axis 3: z along beam
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = x  # axis 1: x top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = y  # axis 2: y right
                 else:
                     # CrystFEL frame to pyFAI frame
-                    # x -> y, y -> -x, z -> z
+                    # x -> y, y -> x, z -> z
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # axis 3: z along beam
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # axis 1: x top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # axis 2: y right
