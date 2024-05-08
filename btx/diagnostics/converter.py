@@ -7,11 +7,11 @@ class CrystFEL_to_PyFAI:
     Convert a CrystFEL geometry file to a PyFAI-friendly geometry format.
     """
 
-    def __init__(self, geom_file, detector_name=None):
+    def __init__(self, geom_file, detector_name=None, psana=True):
         self.geom_file = geom_file
         self.geom = self.from_CrystFEL(geom_file)
         self.pix_pos = self.get_pixel_coordinates(self.geom)
-        self.corner_array = self.get_corner_array(self.pix_pos, self.geom)
+        self.corner_array = self.get_corner_array(self.pix_pos, self.geom, psana)
         self.detector = Epix10k2M()
 
     @staticmethod
@@ -169,7 +169,7 @@ class CrystFEL_to_PyFAI:
         return pix_arr
 
     @staticmethod
-    def get_corner_array(pix_pos, panels):
+    def get_corner_array(pix_pos, panels, reference_frame=True):
         """
         Convert to the corner array needed by PyFAI
         """
@@ -196,7 +196,6 @@ class CrystFEL_to_PyFAI:
                 res = panels["panels"][full_name]["res"]
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
                 fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
-
                 c1x = cx[ss_portion, fs_portion]
                 c1y = cy[ss_portion, fs_portion]
                 c1z = cz[ss_portion, fs_portion]
@@ -205,9 +204,18 @@ class CrystFEL_to_PyFAI:
                 x = c1x[:, :, np.newaxis] + ss_units * ssx + fs_units * fsx
                 y = c1y[:, :, np.newaxis] + ss_units * ssy + fs_units * fsy
                 z = c1z[:, :, np.newaxis] + ss_units * ssz + fs_units * fsz
-                pyfai_fmt[ss_portion, fs_portion, :, 0] = z
-                pyfai_fmt[ss_portion, fs_portion, :, 1] = y
-                pyfai_fmt[ss_portion, fs_portion, :, 2] = x
+                if reference_frame:
+                    # psana frame to pyFAI frame
+                    # x -> -x, y -> y, z -> -z
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = -z
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = y
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -x
+                else:
+                    # CrystFEL frame to pyFAI frame
+                    # x -> -y, y -> x, z -> z
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -y
         return pyfai_fmt
 
 
