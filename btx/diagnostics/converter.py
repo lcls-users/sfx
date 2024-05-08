@@ -214,8 +214,8 @@ class CrystFEL_to_PyFAI:
                     # CrystFEL frame to pyFAI frame
                     # x -> -y, y -> x, z -> z
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = z
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -y
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = y
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = x
         return pyfai_fmt
 
 
