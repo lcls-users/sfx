@@ -205,9 +205,9 @@ class CrystFEL_to_PyFAI:
                 x = c1x[:, :, np.newaxis] + ss_units * ssx + fs_units * fsx
                 y = c1y[:, :, np.newaxis] + ss_units * ssy + fs_units * fsy
                 z = c1z[:, :, np.newaxis] + ss_units * ssz + fs_units * fsz
-                pyfai_fmt[ss_portion, fs_portion, :, 0] = y
-                pyfai_fmt[ss_portion, fs_portion, :, 1] = x
-                pyfai_fmt[ss_portion, fs_portion, :, 2] = z
+                pyfai_fmt[ss_portion, fs_portion, :, 0] = z
+                pyfai_fmt[ss_portion, fs_portion, :, 1] = y
+                pyfai_fmt[ss_portion, fs_portion, :, 2] = x
         return pyfai_fmt
 
 
