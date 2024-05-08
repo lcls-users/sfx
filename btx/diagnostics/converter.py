@@ -138,7 +138,9 @@ class CrystFEL_to_PyFAI:
         # modules are arranged
         nmods = 16  # 16 panels
         nasics = 4  # asics per panel
-        pix_arr = np.zeros([nmods, 176 * 2, 192 * 2, 3])
+        ss_size = 176
+        fs_size = 192
+        pix_arr = np.zeros([nmods, ss_size * 2, fs_size * 2, 3])
         for p in range(nmods):
             pname = f"p{p}"
             for asic in range(nasics):
@@ -146,8 +148,8 @@ class CrystFEL_to_PyFAI:
                 full_name = pname + asicname
                 arow = asic // 2
                 acol = asic % 2
-                ss_portion = slice(arow * 176, (arow + 1) * 176)
-                fs_portion = slice(acol * 192, (acol + 1) * 192)
+                ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
+                fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
                 res = panels["panels"][full_name]["res"]
                 corner_x = panels["panels"][full_name]["corner_x"] / res
                 corner_y = panels["panels"][full_name]["corner_y"] / res
@@ -156,7 +158,7 @@ class CrystFEL_to_PyFAI:
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
                 fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
                 coords_ss, coords_fs = np.meshgrid(
-                    np.arange(0, 176), np.arange(0, 192), indexing="ij"
+                    np.arange(0, ss_size), np.arange(0, fs_size), indexing="ij"
                 )
                 x = corner_x + ssx * coords_ss + fsx * coords_fs
                 y = corner_y + ssy * coords_ss + fsy * coords_fs
@@ -173,21 +175,23 @@ class CrystFEL_to_PyFAI:
         """
         nmods = 16  # 16 panels
         nasics = 4  # asics per panel
-        pixcorner = pix_pos.reshape(nmods * 176 * 2, 192 * 2, 3)
+        ss_size = 176
+        fs_size = 192
+        pixcorner = pix_pos.reshape(nmods * ss_size * 2, fs_size * 2, 3)
         cx, cy, cz = np.moveaxis(pixcorner, -1, 0)
         # Flattened SS dim, fs, Num corners, ZYX coord
-        pyfai_fmt = np.zeros([16 * 176 * 2, 192 * 2, 4, 3])
+        pyfai_fmt = np.zeros([nmods * ss_size * 2, fs_size * 2, 4, 3])
         for p in range(nmods):
             pname = f"p{p}"
             for asic in range(nasics):
                 full_name = f"{pname}a{asic}"
                 arow = asic // 2
                 acol = asic % 2
-                slab_offset = p * 176 * 2
+                slab_offset = p * ss_size * 2
                 ss_portion = slice(
-                    arow * 176 + slab_offset, (arow + 1) * 176 + slab_offset
+                    arow * 176 + slab_offset, (arow + 1) * ss_size + slab_offset
                 )
-                fs_portion = slice(acol * 192, (acol + 1) * 192)
+                fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
                 # Get tile vectors for ss and fs directions
                 res = panels["panels"][full_name]["res"]
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
@@ -201,9 +205,9 @@ class CrystFEL_to_PyFAI:
                 x = c1x[:, :, np.newaxis] + ss_units * ssx + fs_units * fsx
                 y = c1y[:, :, np.newaxis] + ss_units * ssy + fs_units * fsy
                 z = c1z[:, :, np.newaxis] + ss_units * ssz + fs_units * fsz
-                pyfai_fmt[ss_portion, fs_portion, :, 0] = z
-                pyfai_fmt[ss_portion, fs_portion, :, 1] = y
-                pyfai_fmt[ss_portion, fs_portion, :, 2] = x
+                pyfai_fmt[ss_portion, fs_portion, :, 0] = y
+                pyfai_fmt[ss_portion, fs_portion, :, 1] = x
+                pyfai_fmt[ss_portion, fs_portion, :, 2] = z
         return pyfai_fmt
 
 
