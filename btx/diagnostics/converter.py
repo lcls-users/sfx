@@ -207,15 +207,15 @@ class CrystFEL_to_PyFAI:
                 if reference_frame:
                     # psana frame to pyFAI frame
                     # x -> -x, y -> y, z -> -z
-                    pyfai_fmt[ss_portion, fs_portion, :, 0] = -z
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = -x
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = y
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = -z  # axis 3: z along beam
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = -x  # axis 1: x top
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = y  # axis 2: y right
                 else:
                     # CrystFEL frame to pyFAI frame
-                    # x -> y, y -> y, z -> z
-                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = y
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = x
+                    # x -> y, y -> -x, z -> z
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # axis 3: z along beam
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # axis 1: x top
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -x  # axis 2: y right
         return pyfai_fmt
 
 
