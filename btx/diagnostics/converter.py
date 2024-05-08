@@ -224,6 +224,8 @@ class Epix10k2M(Detector):
     PyFAI Detector instance for the Epix10k2M
     """
 
+    IS_FLAT = False  # detector is not flat
+
     def __init__(
         self,
         pixel1=0.0001,
