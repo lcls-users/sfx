@@ -5,8 +5,7 @@ processes data in smaller chunks or batches.
 """
 
 import torch
-from btx.accelerate.src.accelerate.accelerator import Accelerator
-
+from ............btx.accelerate.src.accelerate.accelerator import Accelerator
 
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
