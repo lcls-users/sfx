@@ -5,7 +5,6 @@ processes data in smaller chunks or batches.
 """
 
 import torch
-from ............btx.accelerate.src.accelerate.accelerator import Accelerator
 
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -34,9 +33,6 @@ class IncrementalPCAonGPU():
         self.copy = copy
         self.batch_size = batch_size
         self.device = device
-        
-        #Set up accelerator
-        self.accelerator = Accelerator()
 
         # Set n_components_ based on n_components if provided
         if n_components:
@@ -67,7 +63,6 @@ class IncrementalPCAonGPU():
             X = torch.tensor(X, dtype=dtype).to(self.device)
         elif X.device != self.device:
             X = X.to(self.device)
-        X = self.accelerator.prepare(torch.tensor(X, dtype=dtype))
         if copy:
             X = X.clone()
         return X
@@ -236,6 +231,5 @@ class IncrementalPCAonGPU():
             torch.Tensor: Transformed data tensor with shape (n_samples, n_components).
         """
         X = X.to(self.device)
-        X = self.accelerator.prepare(X)
         X -= self.mean_
         return torch.mm(X, self.components_.T)
