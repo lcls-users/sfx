@@ -206,16 +206,16 @@ class CrystFEL_to_PyFAI:
                 z = c1z[:, :, np.newaxis] + ss_units * ssz + fs_units * fsz
                 if reference_frame:
                     # psana frame to pyFAI frame
-                    # x -> x, y -> y, z -> -z
-                    pyfai_fmt[ss_portion, fs_portion, :, 0] = -z  # axis 3: z along beam
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x  # axis 1: x top
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = y  # axis 2: y right
+                    # x1 <-- -x, x2 <-- -y, x3 <-- -z
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = -z  # 3: along beam
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = -x  # 1 : bottom to top
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -y  # 2: left to right
                 else:
-                    # CrystFEL frame to pyFAI frame
-                    # x -> y, y -> x, z -> z
-                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # axis 3: z along beam
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # axis 1: x top
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # axis 2: y right
+                    # Lab frame to pyFAI frame
+                    # x1 <-- y, x2 <-- x, x3 <-- z
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
         return pyfai_fmt
 
 
@@ -223,8 +223,6 @@ class Epix10k2M(Detector):
     """
     PyFAI Detector instance for the Epix10k2M
     """
-
-    IS_FLAT = False  # detector is not flat
 
     def __init__(
         self,
