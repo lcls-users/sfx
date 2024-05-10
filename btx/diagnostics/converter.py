@@ -153,7 +153,7 @@ class CrystFEL_to_PyFAI:
                 res = panels["panels"][full_name]["res"]
                 corner_x = panels["panels"][full_name]["corner_x"] / res
                 corner_y = panels["panels"][full_name]["corner_y"] / res
-                corner_z = panels["panels"][full_name]["coffset"]
+                corner_z = -panels["panels"][full_name]["coffset"]
                 # Get tile vectors for ss and fs directions
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
                 fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
