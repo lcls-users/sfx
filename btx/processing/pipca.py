@@ -832,7 +832,11 @@ class PiPCA:
 
         counter = self.psi.counter
         self.psi.counter = idx
-        img = self.get_formatted_images(1, 0, num_features)
+        img = self.psi.get_images(1, assemble=False)
+
+        if self.downsample:
+            img = bin_data(img, bin_factor)
+        
         self.psi.counter = counter
 
         img = img - mu
@@ -878,7 +882,11 @@ class PiPCA:
             print(f"Assertion Error: {e}")
         
         self.psi.counter = self.start_offset
-        X = self.get_formatted_images(num_images, 0, num_features)
+        X = self.psi.get_images(num_images, assemble=False)
+        X = X[[i for i in range(num_images) if not np.isnan(X[i : i + 1]).any()]]
+
+        num_valid_imgs, p, x, y = X.shape
+        X = np.reshape(X, (num_valid_imgs, p * x * y)).T
         
         mu_full, _ = self.calculate_sample_mean_and_variance(X)
         
