@@ -48,19 +48,32 @@ class LoadData:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def load_data(self):
-        self.data = get_imgs_thresh(self.run_number, self.experiment_number, self.roi,
-                                    self.energy_filter, self.i0_threshold,
-                                    self.ipm_pos_filter, self.time_bin, self.time_tool)
+        self.data, self.I0, self.laser_delays, self.laser_on_mask, self.laser_off_mask = get_imgs_thresh(
+            self.run_number, self.experiment_number, self.roi,
+            self.energy_filter, self.i0_threshold,
+            self.ipm_pos_filter, self.time_bin, self.time_tool
+        )
 
     def save_data(self):
         output_file = os.path.join(self.output_dir, f"{self.experiment_number}_run{self.run_number}_data.npz")
-        np.savez(output_file, self.data)
+        np.savez(
+            output_file,
+            data=self.data,
+            I0=self.I0,
+            laser_delays=self.laser_delays,
+            laser_on_mask=self.laser_on_mask,
+            laser_off_mask=self.laser_off_mask
+        )
 
     def summarize(self):
         summary = f"Loaded data for experiment {self.experiment_number}, run {self.run_number}:\n"
-        summary += f"  Shape: {self.data.shape}\n"
-        summary += f"  Min: {np.min(self.data):.2f}, Max: {np.max(self.data):.2f}\n"
-        summary += f"  Mean: {np.mean(self.data):.2f}, Std: {np.std(self.data):.2f}\n"
+        summary += f"  Data shape: {self.data.shape}\n"
+        summary += f"  I0 shape: {self.I0.shape}\n"
+        summary += f"  Laser delays shape: {self.laser_delays.shape}\n"
+        summary += f"  Laser on mask shape: {self.laser_on_mask.shape}\n"
+        summary += f"  Laser off mask shape: {self.laser_off_mask.shape}\n"
+        summary += f"  Data min: {np.min(self.data):.2f}, max: {np.max(self.data):.2f}\n"
+        summary += f"  Data mean: {np.mean(self.data):.2f}, std: {np.std(self.data):.2f}\n"
 
         print(summary)
 
@@ -389,51 +402,16 @@ class PumpProbeAnalysis:
         self.save_pump_probe_curves(pump_probe_curves)
 
     def group_images_into_stacks(self, data):
-        binned_delays = data['binned_delays']
-        imgs = data['imgs']
-        laser_on_mask = data['laser_on_mask']
-        laser_off_mask = data['laser_off_mask']
-
-        stacks_on = self.extract_stacks_by_delay(binned_delays[laser_on_mask], imgs[laser_on_mask])
-        stacks_off = self.extract_stacks_by_delay(binned_delays[laser_off_mask], imgs[laser_off_mask])
-
-        return stacks_on, stacks_off
+        pass
 
     def extract_stacks_by_delay(self, binned_delays, img_array):
-        unique_binned_delays = np.unique(binned_delays)
-        stacks = {}
-
-        for delay in unique_binned_delays:
-            mask = (binned_delays == delay)
-            stack = img_array[mask]
-            stacks[delay] = stack
-
-        return stacks
+        pass
 
     def generate_pump_probe_curves(self, stacks_on, stacks_off):
-        delays = sorted(set(stacks_on.keys()) | set(stacks_off.keys()))
-        pump_probe_curves = {'delay': delays, 'laser_on': [], 'laser_off': []}
-
-        for delay in delays:
-            if delay in stacks_on and delay in stacks_off:
-                laser_on_data = stacks_on[delay]
-                laser_off_data = stacks_off[delay]
-
-                laser_on_signal = np.mean(laser_on_data)
-                laser_off_signal = np.mean(laser_off_data)
-
-                pump_probe_curves['laser_on'].append(laser_on_signal)
-                pump_probe_curves['laser_off'].append(laser_off_signal)
-            else:
-                print(f"Warning: Missing data for delay {delay}")
-
-        return pump_probe_curves
+        pass
 
     def save_pump_probe_curves(self, pump_probe_curves):
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        output_file = self.output_dir / 'pump_probe_curves.json'
-        with open(output_file, 'w') as f:
-            json.dump(pump_probe_curves, f, indent=2)
+        pass
 
     def summarize(self):
         # TODO: Implement summarize method
