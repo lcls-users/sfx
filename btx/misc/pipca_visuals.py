@@ -477,7 +477,7 @@ def construct_heatmap_data(img, max_pixels):
 
     return hm_data
 
-def compute_compression_loss(filename, num_components, random_images=False, num_images=10):
+def compute_compression_loss(filename, num_components, random_images=False, num_images=10, type_of_pca='pipca'):
     """
     Compute the average frobenius norm between images in an experiment run and their reconstruction. 
     The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA."
@@ -497,48 +497,93 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     --------
     compression loss between initial dataset and pipca projected images
     """
-    data = unpack_pipca_model_file(filename)
-
-    exp, run, loadings, det_type, start_img, U, S, V, mu = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V'], data['mu']
-
-    model_rank = S.shape[0]
-    if num_components > model_rank:
-        raise ValueError("Error: num_components cannot be greater than the maximum model rank.")
+    if type_of_pca is not in ['pipca', 'pytorch', 'sklearn']:
+        raise ValueError("Error: type_of_pca must be either 'pipca', 'pytorch' or 'sklearn'.")
     
-    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-    psi.counter = start_img
+    if type_of_pca == 'pipca':
+        data = unpack_pipca_model_file(filename)
 
-    PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
+        exp, run, loadings, det_type, start_img, U, S, V, mu = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V'], data['mu']
 
-    compression_losses = []
+        model_rank = S.shape[0]
+        if num_components > model_rank:
+            raise ValueError("Error: num_components cannot be greater than the maximum model rank.")
+        
+        psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+        psi.counter = start_img
 
-    p, x, y = psi.det.shape()
-    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+        PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
 
-    # Compute the projection matrix outside the loop
-    projection_matrix = U[:, :num_components] @ np.diag(S[:num_components])
+        compression_losses = []
 
-    image_indices = random.sample(range(len(PCs['PC1'])), num_images) if random_images else range(len(PCs['PC1']))
+        p, x, y = psi.det.shape()
+        pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
-    for img_source in image_indices:
-        counter = psi.counter
-        psi.counter = start_img + img_source
-        img = psi.get_images(1).squeeze()
+        # Compute the projection matrix outside the loop
+        projection_matrix = U[:, :num_components] @ np.diag(S[:num_components])
 
-        reconstructed_img = projection_matrix @ np.array([V[img_source][:num_components]]).T
-        reconstructed_img = reconstructed_img.reshape((p, x, y))
-        reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
+        image_indices = random.sample(range(len(PCs['PC1'])), num_images) if random_images else range(len(PCs['PC1']))
 
-        # Compute the Frobenius norm of the difference between the original image and the reconstructed image
-        difference = np.subtract(img_normalized, reconstructed_img_normalized, dtype=np.float64)
-        norm = np.linalg.norm(difference, 'fro')
-        original_norm = np.linalg.norm(img, 'fro')
+        for img_source in image_indices:
+            counter = psi.counter
+            psi.counter = start_img + img_source
+            img = psi.get_images(1).squeeze()
 
-        compression_loss = norm / original_norm * 100
-        compression_losses.append(compression_loss)
+            reconstructed_img = projection_matrix @ np.array([V[img_source][:num_components]]).T
+            reconstructed_img = reconstructed_img.reshape((p, x, y))
+            reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
 
-        psi.counter = counter  # Reset counter for the next iteration
+            # Compute the Frobenius norm of the difference between the original image and the reconstructed image
+            difference = np.subtract(img_normalized, reconstructed_img_normalized, dtype=np.float64)
+            norm = np.linalg.norm(difference, 'fro')
+            original_norm = np.linalg.norm(img, 'fro')
 
+            compression_loss = norm / original_norm * 100
+            compression_losses.append(compression_loss)
+
+            psi.counter = counter  # Reset counter for the next iteration
+    
+    if type_of_pca == 'pytorch':
+        data = unpack_ipca_pytorch_model_file(filename)
+
+        exp, run, det_type, start_img, reconstructed_images, S, V, mu = data['exp'], data['run'], data['det_type'], data['start_img'], data['reconstructed_images'], data['S'], data['V'], data['mu']
+
+        model_rank = S.shape[0]
+        if num_components > model_rank:
+            raise ValueError("Error: num_components cannot be greater than the maximum model rank.")
+        
+        psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+        psi.counter = start_img
+
+        compression_losses = []
+
+        p, x, y = psi.det.shape()
+        pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+
+        image_indices = random.sample(range(len(reconstructed_images)), num_images) if random_images else range(len(reconstructed_images))
+
+        for img_source in image_indices:
+            counter = psi.counter
+            psi.counter = start_img + img_source
+            img = psi.get_images(1).squeeze()
+
+            reconstructed_img = np.dot(reconstructed_images[:,:num_components], V[:,:num_components].T)[img_source]+mu
+            reconstructed_img = reconstructed_img.reshape((p, x, y))
+            reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
+
+            # Compute the Frobenius norm of the difference between the original image and the reconstructed image
+            difference = np.subtract(img_normalized, reconstructed_img_normalized, dtype=np.float64)
+            norm = np.linalg.norm(difference, 'fro')
+            original_norm = np.linalg.norm(img, 'fro')
+
+            compression_loss = norm / original_norm * 100
+            compression_losses.append(compression_loss)
+
+            psi.counter = counter
+        
+    elif type_of_pca == 'sklearn':
+        raise NotImplementedError("Error: Sklearn PCA is not yet implemented.")
+    
     average_loss = np.mean(compression_losses)
     
     return average_loss, compression_losses, run
