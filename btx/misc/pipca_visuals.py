@@ -497,7 +497,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     --------
     compression loss between initial dataset and pipca projected images
     """
-    if type_of_pca is not in ['pipca', 'pytorch', 'sklearn']:
+    if type_of_pca not in ['pipca', 'pytorch', 'sklearn']:
         raise ValueError("Error: type_of_pca must be either 'pipca', 'pytorch' or 'sklearn'.")
     
     if type_of_pca == 'pipca':
@@ -585,7 +585,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         raise NotImplementedError("Error: Sklearn PCA is not yet implemented.")
     
     average_loss = np.mean(compression_losses)
-    
+
     return average_loss, compression_losses, run
 
 def classic_pca_test(filename, num_components):
