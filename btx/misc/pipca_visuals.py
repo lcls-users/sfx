@@ -162,7 +162,7 @@ def display_dashboard_pytorch(filename):
         #Compute loss
         diff = np.abs(img - img_reconstructed)
         loss = np.linalg.norm(diff, 'fro') / np.linalg.norm(img, 'fro') * 100
-        print(f"Loss: {loss:.2f}%")
+        print(f"Loss: {loss:.3f}%")
         return loss
 
     # Connect the Tap stream to the heatmap callbacks
@@ -497,9 +497,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     --------
     compression loss between initial dataset and pipca projected images
     """
-    if type_of_pca not in ['pipca', 'pytorch', 'sklearn']:
-        raise ValueError("Error: type_of_pca must be either 'pipca', 'pytorch' or 'sklearn'.")
-    
+
     if type_of_pca == 'pipca':
         data = unpack_pipca_model_file(filename)
 
@@ -543,7 +541,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
 
             psi.counter = counter  # Reset counter for the next iteration
     
-    if type_of_pca == 'pytorch':
+    elif type_of_pca == 'pytorch':
         data = unpack_ipca_pytorch_model_file(filename)
 
         exp, run, det_type, start_img, reconstructed_images, S, V, mu = data['exp'], data['run'], data['det_type'], data['start_img'], data['reconstructed_images'], data['S'], data['V'], data['mu']
@@ -562,15 +560,16 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
 
         image_indices = random.sample(range(len(reconstructed_images)), num_images) if random_images else range(len(reconstructed_images))
 
+        print('Checkpoint 1')
         for img_source in image_indices:
             counter = psi.counter
             psi.counter = start_img + img_source
             img = psi.get_images(1).squeeze()
-
+            print('Checkpoint 2')
             reconstructed_img = np.dot(reconstructed_images[:,:num_components], V[:,:num_components].T)[img_source]+mu
             reconstructed_img = reconstructed_img.reshape((p, x, y))
             reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
-
+            print('Checkpoint 3')
             # Compute the Frobenius norm of the difference between the original image and the reconstructed image
             difference = np.subtract(img, reconstructed_img, dtype=np.float64)
             norm = np.linalg.norm(difference, 'fro')
@@ -583,6 +582,9 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         
     elif type_of_pca == 'sklearn':
         raise NotImplementedError("Error: Sklearn PCA is not yet implemented.")
+    
+    else:
+        raise ValueError("Error: type_of_pca must be either 'pipca' or 'pytorch' or 'sklearn'.")
     
     average_loss = np.mean(compression_losses)
 
