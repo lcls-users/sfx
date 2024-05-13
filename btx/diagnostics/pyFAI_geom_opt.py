@@ -56,6 +56,17 @@ class PyFAIGeomOpt:
         self.detector = detector
         return detector
 
+    def point_index_to_coords(self, point=(0, 0)):
+        """
+        Convert pixel index (x, y) to cartesian coordinates (x, y, z)
+
+        Parameters
+        ----------
+        point : tuple
+            Pixel index (x, y)
+        """
+        return self.detector.calc_cartesian_positions(d1=point[1], d2=point[0], center=True)
+
     def pyFAI_geom_opt(self, powder, mask=None, max_rings=5, pts_per_deg=1, I=0, plot=None):
         """
         From guessed initial geometry, optimize the geometry using pyFAI package
@@ -77,11 +88,11 @@ class PyFAIGeomOpt:
 
         # 2. Define Guessed Geometry
         p1, p2, p3 = self.detector.calc_cartesian_positions()
-        dist = np.mean(p3)
+        distance = np.mean(p3)
         poni1 = np.mean(p1)
         poni2 = np.mean(p2)
         guessed_geom = Geometry(
-            dist=dist,
+            dist=distance,
             poni1=poni1,
             poni2=poni2,
             detector=self.detector,
@@ -109,10 +120,9 @@ class PyFAIGeomOpt:
         powder_img *= mask
 
         # 3. PyFAI Optimization
-        params = [guessed_geom.dist, guessed_geom.poni1, guessed_geom.poni2]
         pixel_size = min(self.detector.pixel1, self.detector.pixel2)
         print(
-            f"Starting optimization with initial guess: dist={params[0]:.3f}m, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
+            f"Starting optimization with initial guess: dist={self.distance:.3f}m, poni1={self.poni1/pixel_size:.3f}pix, poni2={self.poni2/pixel_size:.3f}pix"
         )
         sg = SingleGeometry(
             label="AgBh",
@@ -127,27 +137,22 @@ class PyFAIGeomOpt:
         score = sg.geometry_refinement.refine3(
             fix=["rot1", "rot2", "rot3", "wavelength"]
         )
-        new_params = [
-            sg.geometry_refinement.param[0],
-            sg.geometry_refinement.param[1],
-            sg.geometry_refinement.param[2],
-        ]
         print(
-            f"Optimization complete with final parameters: dist={new_params[0]:.3f}m, poni1={new_params[1]/pixel_size:.3f}pix, poni2={new_params[2]/pixel_size:.3f}pix"
+            f"Optimization complete with final parameters: dist={distance:.3f}m, poni1={poni1/pixel_size:.3f}pix, poni2={poni2/pixel_size:.3f}pix"
         )
-        self.distance = new_params[0]
-        self.poni1 = new_params[1]
-        self.poni2 = new_params[2]
+        self.distance = sg.geometry_refinement.param[0]
+        self.poni1 = sg.geometry_refinement.param[1]
+        self.poni2 = sg.geometry_refinement.param[2]
 
         # 4. Plotting
         if plot is not None:
             fig, ax = plt.subplots(2, 1, figsize=(12, 6))
             ax[0].jupyter.display(sg=sg)
-            ai = AzimuthalIntegrator(dist=new_params[0], poni1=new_params[1], poni2=new_params[2], detector=self.detector, wavelength=wavelength)
+            ai = AzimuthalIntegrator(dist=self.distance, poni1=self.poni1, poni2=self.poni2, detector=self.detector, wavelength=wavelength)
             res = ai.integrate1d(powder_img, 1000, unit="2th_deg", calibrant=behenate)
             ax[1].jupyter.plot1d(res)
             fig.savefig(plot)
-        return new_params, score
+        return score
 
     def deploy_geometry(self, geom_init, outdir, pv_camera_length=None):
         """
@@ -172,11 +177,11 @@ class PyFAIGeomOpt:
 
         # determine and deploy shifts in x,y,z
         p1, p2, p3 = self.detector.calc_cartesian_positions()
-        dx = self.poni2 - np.mean(p2)
-        dy = self.poni1 - np.mean(p1)
+        dx = (self.poni2 - np.mean(p2)) * 1e6
+        dy = (self.poni1 - np.mean(p1)) * 1e6
         dz = self.distance * 1e6 - np.mean(p3)  # convert from m to microns
         geom.move_geo(
-            children.oname, 0, dx=-dx, dy=-dy, dz=-dz
+            children.oname, 0, dx=-dy, dy=-dx, dz=-dz
         )  # move the detector in psana frame
 
         # write optimized geometry files
