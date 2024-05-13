@@ -378,6 +378,7 @@ def unpack_pipca_model_file(filename):
         data['U'] = np.asarray(f.get('U'))
         data['S'] = np.asarray(f.get('S'))
         data['V'] = np.asarray(f.get('V'))
+        data['mu'] = np.asarray(f.get('mu'))
 
     return data
 
@@ -498,7 +499,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     """
     data = unpack_pipca_model_file(filename)
 
-    exp, run, loadings, det_type, start_img, U, S, V = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V']
+    exp, run, loadings, det_type, start_img, U, S, V, mu = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V'], data['mu']
 
     model_rank = S.shape[0]
     if num_components > model_rank:
@@ -524,7 +525,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         psi.counter = start_img + img_source
         img = psi.get_images(1).squeeze()
 
-        reconstructed_img = projection_matrix @ np.array([V[img_source][:num_components]]).T
+        reconstructed_img = projection_matrix @ np.array([V[img_source][:num_components]]).T + mu
         reconstructed_img = reconstructed_img.reshape((p, x, y))
         reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
 
