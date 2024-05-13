@@ -209,7 +209,7 @@ class GeomOpt:
     def report(self, update_url):
         """
         Post summary to elog.
-       
+        
         Parameters
         ----------
         update_url : str

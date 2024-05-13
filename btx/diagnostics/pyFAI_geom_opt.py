@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 import pyFAI
 from pyFAI.calibrant import CalibrantFactory, CALIBRANT_FACTORY
 from pyFAI.goniometer import SingleGeometry
@@ -12,7 +13,7 @@ from btx.diagnostics.converter import CrystFELtoPyFAI
 from btx.misc.metrology import *
 
 
-class pyFAIGeomOpt:
+class PyFAIGeomOpt:
     """
     Class to perform Geometry Optimization using pyFAI
 
@@ -33,13 +34,8 @@ class pyFAIGeomOpt:
         exp,
         run,
         det_type,
-        geom,
-        max_rings=5,
-        pts_per_deg=1,
-        I=0,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
-        self.detector = self.pyFAI_geom(geom)
         self.distance = None
         self.poni1 = None
         self.poni2 = None
@@ -57,9 +53,10 @@ class pyFAIGeomOpt:
         converter = CrystFELtoPyFAI(geom)
         detector = converter.detector
         detector.set_pixel_corners(converter.corner_array)
+        self.detector = detector
         return detector
 
-    def pyFAI_geom_opt(self, powder, mask=None, max_rings=5, pts_per_deg=1, I=0):
+    def pyFAI_geom_opt(self, powder, mask=None, max_rings=5, pts_per_deg=1, I=0, plot=None):
         """
         From guessed initial geometry, optimize the geometry using pyFAI package
 
@@ -99,11 +96,17 @@ class pyFAIGeomOpt:
             self.diagnostics.psi.calibrate = True
             powder_imgs = self.diagnostics.psi.get_images(powder, assemble=False)
             powder_img = np.max(powder_imgs, axis=0)
-            mask = self.diagnostics.psi.get_mask()
-            powder_img *= mask
+            powder_img = np.reshape(powder_img, self.detector.shape)
         else:
             sys.exit("Unrecognized powder type, expected a path or number")
         self.img_shape = powder_img.shape
+
+        if mask:
+            print(f"Loading mask {mask}")
+            mask = np.load(mask)
+        else:
+            mask = self.diagnostics.psi.get_mask()
+        powder_img *= mask
 
         # 3. PyFAI Optimization
         params = [guessed_geom.dist, guessed_geom.poni1, guessed_geom.poni2]
@@ -135,15 +138,26 @@ class pyFAIGeomOpt:
         self.distance = new_params[0]
         self.poni1 = new_params[1]
         self.poni2 = new_params[2]
+
+        # 4. Plotting
+        if plot is not None:
+            fig, ax = plt.subplots(2, 1, figsize=(12, 6))
+            ax[0].jupyter.display(sg=sg)
+            ai = AzimuthalIntegrator(dist=new_params[0], poni1=new_params[1], poni2=new_params[2], detector=self.detector, wavelength=wavelength)
+            res = ai.integrate1d(powder_img, 1000, unit="2th_deg", calibrant=behenate)
+            ax[1].jupyter.plot1d(res)
+            fig.savefig(plot)
         return new_params, score
 
-    def deploy_geometry(self, outdir, pv_camera_length=None):
+    def deploy_geometry(self, geom_init, outdir, pv_camera_length=None):
         """
         Write new geometry files (.geom and .data for CrystFEL and psana respectively)
         with the optimized center and distance.
 
         Parameters
         ----------
+        geom_init : str
+            Initial geometry file in CrystFEL format
         outdir : str
             path to output directory
         pv_camera_length : str
