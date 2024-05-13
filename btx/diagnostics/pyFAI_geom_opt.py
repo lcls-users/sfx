@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import pyFAI
 from pyFAI.calibrant import CalibrantFactory, CALIBRANT_FACTORY
@@ -6,10 +7,12 @@ from pyFAI.geometry import Geometry
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI.gui import jupyter
 from btx.interfaces.ipsana import *
-from btx.diagnostics.converter import CrystFEL_to_PyFAI
+from btx.diagnostics.run import RunDiagnostics
+from btx.diagnostics.converter import CrystFELtoPyFAI
+from btx.misc.metrology import *
 
 
-class pyFAI_Geometry_Optimization:
+class pyFAIGeomOpt:
     """
     Class to perform Geometry Optimization using pyFAI
 
@@ -29,22 +32,19 @@ class pyFAI_Geometry_Optimization:
         self,
         exp,
         run,
-        detector,
+        det_type,
         geom,
-        n_images=100,
-        max_iter=10,
         max_rings=5,
         pts_per_deg=1,
         I=0,
     ):
-        self.exp = exp
-        self.run = run
-        self.det_type = detector
-        self.detector = self.load_geometry(geom)
-        self.powder = self.load_powder_data()
-        self.geometry = self.pyFAI_optimization(max_iter, max_rings, pts_per_deg, I)
+        self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
+        self.detector = self.pyFAI_geom(geom)
+        self.distance = None
+        self.poni1 = None
+        self.poni2 = None
 
-    def load_geometry(self, geom):
+    def pyFAI_geom(self, geom):
         """
         Load geometry from CrystFEL format
         Convert to pyFAI format
@@ -54,32 +54,12 @@ class pyFAI_Geometry_Optimization:
         geom : str
             Geometry file in CrystFEL format
         """
-        converter = CrystFEL_to_PyFAI(geom)
+        converter = CrystFELtoPyFAI(geom)
         detector = converter.detector
         detector.set_pixel_corners(converter.corner_array)
         return detector
 
-    def load_powder_data(self, n_images=100):
-        """
-        Load powder data from the specified experiment and run
-
-        Parameters
-        ----------
-        n_images : int
-            Number of images to load
-        """
-        psi = PsanaInterface(exp=self.exp, run=self.run, det_type=self.det_type)
-        print(
-            f"Instantiated run {self.run} of exp {self.exp} looking at {self.det_type}"
-        )
-        psi.calibrate = True
-        self.psi = psi
-        unassembled_images = psi.get_images(n_images, assemble=False)
-        calib_avg = np.max(unassembled_images, axis=0)
-        calib_avg_flat = np.reshape(calib_avg, (16 * 2 * 176, 2 * 192))
-        return calib_avg_flat
-
-    def pyFAI_optimization(self, max_iter=10, max_rings=5, pts_per_deg=1, I=0):
+    def pyFAI_geom_opt(self, powder, mask=None, max_rings=5, pts_per_deg=1, I=0):
         """
         From guessed initial geometry, optimize the geometry using pyFAI package
 
@@ -94,15 +74,15 @@ class pyFAI_Geometry_Optimization:
         """
         # 1. Define Calibrant
         behenate = CALIBRANT_FACTORY("AgBh")
-        wavelength = self.psi.get_wavelength() * 1e-10
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         behenate.wavelength = wavelength
 
         # 2. Define Guessed Geometry
         p1, p2, p3 = self.detector.calc_cartesian_positions()
-        dist = self.psi.estimate_distance() * 1e-3
-        poni1 = -np.mean(p1)
-        poni2 = -np.mean(p2)
+        dist = np.mean(p3)
+        poni1 = np.mean(p1)
+        poni2 = np.mean(p2)
         guessed_geom = Geometry(
             dist=dist,
             poni1=poni1,
@@ -111,38 +91,109 @@ class pyFAI_Geometry_Optimization:
             wavelength=wavelength,
         )
 
-        # 3. Optimization Loop
+        # 3. Powder Loading
+        if type(powder) == str:
+            powder_img = np.load(powder)
+        elif type(powder) == int:
+            print("Computing powder from scratch")
+            self.diagnostics.psi.calibrate = True
+            powder_imgs = self.diagnostics.psi.get_images(powder, assemble=False)
+            powder_img = np.max(powder_imgs, axis=0)
+            mask = self.diagnostics.psi.get_mask()
+            powder_img *= mask
+        else:
+            sys.exit("Unrecognized powder type, expected a path or number")
+        self.img_shape = powder_img.shape
+
+        # 3. PyFAI Optimization
         params = [guessed_geom.dist, guessed_geom.poni1, guessed_geom.poni2]
-        r = 0
-        best_score = +np.inf
         pixel_size = min(self.detector.pixel1, self.detector.pixel2)
         print(
             f"Starting optimization with initial guess: dist={params[0]:.3f}m, poni1={params[1]/pixel_size:.3f}pix, poni2={params[2]/pixel_size:.3f}pix"
         )
         sg = SingleGeometry(
             label="AgBh",
-            image=self.powder,
+            image=powder_img,
             calibrant=behenate,
             detector=self.detector,
             geometry=guessed_geom,
         )
-        for r in range(max_iter):
-            sg.extract_cp(
-                max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=I * photon_energy
-            )
-            score = sg.geometry_refinement.refine3(
-                fix=["rot1", "rot2", "rot3", "wavelength"]
-            )
-            new_params = [
-                sg.geometry_refinement.param[0],
-                sg.geometry_refinement.param[1],
-                sg.geometry_refinement.param[2],
-            ]
-            if score < best_score:
-                best_params = new_params
-                best_score = score
-            print(f"score={score:e}")
+        sg.extract_cp(
+            max_rings=max_rings, pts_per_deg=pts_per_deg, Imin=I * photon_energy
+        )
+        score = sg.geometry_refinement.refine3(
+            fix=["rot1", "rot2", "rot3", "wavelength"]
+        )
+        new_params = [
+            sg.geometry_refinement.param[0],
+            sg.geometry_refinement.param[1],
+            sg.geometry_refinement.param[2],
+        ]
+        print(
+            f"Optimization complete with final parameters: dist={new_params[0]:.3f}m, poni1={new_params[1]/pixel_size:.3f}pix, poni2={new_params[2]/pixel_size:.3f}pix"
+        )
+        self.distance = new_params[0]
+        self.poni1 = new_params[1]
+        self.poni2 = new_params[2]
+        return new_params, score
+
+    def deploy_geometry(self, outdir, pv_camera_length=None):
+        """
+        Write new geometry files (.geom and .data for CrystFEL and psana respectively)
+        with the optimized center and distance.
+
+        Parameters
+        ----------
+        outdir : str
+            path to output directory
+        pv_camera_length : str
+            PV associated with camera length
+        """
+        # retrieve original geometry
+        run = self.diagnostics.psi.run
+        geom = self.diagnostics.psi.det.geometry(run)
+        top = geom.get_top_geo()
+        children = top.get_list_of_children()[0]
+        pixel_size = self.diagnostics.psi.get_pixel_size() * 1e3  # from mm to microns
+
+        # determine and deploy shifts in x,y,z
+        p1, p2, p3 = self.detector.calc_cartesian_positions()
+        dx = self.poni2 - np.mean(p2)
+        dy = self.poni1 - np.mean(p1)
+        dz = self.distance * 1e6 - np.mean(p3)  # convert from m to microns
+        geom.move_geo(
+            children.oname, 0, dx=-dx, dy=-dy, dz=-dz
+        )  # move the detector in psana frame
+
+        # write optimized geometry files
+        psana_file, crystfel_file = os.path.join(
+            outdir, f"r{run:04}_end.data"
+        ), os.path.join(outdir, f"r{run:04}.geom")
+        temp_file = os.path.join(outdir, "temp.geom")
+        geom.save_pars_in_file(psana_file)
+        generate_geom_file(
+            self.diagnostics.psi.exp,
+            run,
+            self.diagnostics.psi.det_type,
+            psana_file,
+            temp_file,
+            pv_camera_length,
+        )
+        modify_crystfel_header(temp_file, crystfel_file)
+        os.remove(temp_file)
+
+        # Rayonix check
+        if self.diagnostics.psi.get_pixel_size() != self.diagnostics.psi.det.pixel_size(
+            run
+        ):
             print(
-                f"dist={new_params[0]:.3f}m, poni1={new_params[1]/pixel_size:.3f}pix, poni2={new_params[2]/pixel_size:.3f}pix"
+                "Original geometry is wrong due to hardcoded Rayonix pixel size. Correcting geom file now..."
             )
-        return best_params, best_score
+            coffset = (
+                self.distance - self.diagnostics.psi.get_camera_length(pv_camera_length)
+            ) / 1e3  # convert from mm to m
+            res = 1e3 / self.diagnostics.psi.get_pixel_size()  # convert from mm to um
+            os.rename(crystfel_file, temp_file)
+            modify_crystfel_coffset_res(temp_file, crystfel_file, coffset, res)
+            os.remove(psana_file)
+            os.remove(temp_file)
