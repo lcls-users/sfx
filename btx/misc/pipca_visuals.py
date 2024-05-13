@@ -525,12 +525,12 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         psi.counter = start_img + img_source
         img = psi.get_images(1).squeeze()
 
-        reconstructed_img = projection_matrix @ np.array([V[img_source][:num_components]]).T + mu
+        reconstructed_img = projection_matrix @ np.array([V[img_source][:num_components]]).T
         reconstructed_img = reconstructed_img.reshape((p, x, y))
         reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
 
         # Compute the Frobenius norm of the difference between the original image and the reconstructed image
-        difference = np.abs(img - reconstructed_img)
+        difference = np.subtract(img_normalized, reconstructed_img_normalized, dtype=np.float64)
         norm = np.linalg.norm(difference, 'fro')
         original_norm = np.linalg.norm(img, 'fro')
 
