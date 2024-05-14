@@ -1,9 +1,13 @@
 from analysis_tasks import calculate_p_values, generate_signal_mask, generate_background_mask
 from histogram_analysis import calculate_histograms
 from histogram_analysis import get_average_roi_histogram, wasserstein_distance
+from pathlib import Path
+from pump_probe import load_data, calculate_signals_and_errors, calculate_pump_probe_signal, plot_pump_probe_data
 from pvalues import calculate_emd_values
+from scipy.stats import norm
 from xpploader import get_imgs_thresh
 import h5py
+import json
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -97,7 +101,7 @@ class MakeHistogram:
 
     def load_data(self):
         try:
-            data = np.load(self.input_file)['arr_0']
+            data = np.load(self.input_file)['data']
         except (IOError, KeyError) as e:
             self.logger.error(f"Error loading data from {self.input_file}: {e}")
             raise
@@ -364,59 +368,165 @@ class BuildPumpProbeMasks:
         save_array_to_png(self.bg_mask, os.path.join(self.output_dir, "bg_mask.png"))
 
 
-import json
-from pathlib import Path
-import numpy as np
-from pump_probe import load_data, calculate_signals_and_errors, calculate_pump_probe_signal, plot_pump_probe_data
 
 def load_config(config_file):
     with open(config_file, 'r') as f:
         config = json.load(f)
     return config
 
+
 class PumpProbeAnalysis:
     def __init__(self, config):
         self.config = config
-        self.output_dir = Path(config['pump_probe_analysis']['output_dir'])
+        self.output_dir = os.path.join(config['pump_probe_analysis']['output_dir'], f"{config['setup']['exp']}_{config['setup']['run']}")
+        os.makedirs(self.output_dir, exist_ok=True)
+        
+    def run(self, data, signal_mask, bg_mask):
+        # Step 1: Load data (already done externally)
+        self.data = data
+        self.signal_mask = signal_mask 
+        self.bg_mask = bg_mask
+        
+        # Step 2: Group images into stacks by delay and laser condition
+        self.stacks_on, self.stacks_off = self.group_images_into_stacks()
+        
+        # Steps 3-4: Generate pump-probe curves (signals, std devs, p-values)
+        self.delays, self.signals_on, self.std_devs_on, self.signals_off, self.std_devs_off, self.p_values = self.generate_pump_probe_curves()
+        
+        # Step 5: Plot results
+        self.plot_pump_probe_data()
+        
+        # Step 6: Save pump-probe curves 
+        self.save_pump_probe_curves()
+        
+        # Generate summary and report
+        self.summarize()
+        self.report()
+        
+    def group_images_into_stacks(self):
+        binned_delays = self.data['binned_delays']
+        imgs = self.data['imgs']
+        
+        delay_output = np.sort(np.unique(binned_delays))
+        stacks_on, stacks_off = {}, {}
+        
+        for delay_val in delay_output:
+            idx_on = np.where((binned_delays == delay_val) & self.data['laser_on_mask'])[0]
+            idx_off = np.where((binned_delays == delay_val) & self.data['laser_off_mask'])[0]
+            
+            stacks_on[delay_val] = self.extract_stacks_by_delay(imgs[idx_on])
+            stacks_off[delay_val] = self.extract_stacks_by_delay(imgs[idx_off])
+            
+        return stacks_on, stacks_off
+    
+    def extract_stacks_by_delay(self, imgs):
+        return imgs
+    
+    def generate_pump_probe_curves(self):
+        delays, signals_on, signals_off, std_devs_on, std_devs_off = [], [], [], [], []
+        
+        for delay in sorted(self.stacks_on.keys()):
+            stack_on = self.stacks_on[delay]
+            stack_off = self.stacks_off[delay]
+            
+            signal_on, bg_on, total_var_on = self.calculate_signal_and_background(stack_on)
+            signal_off, bg_off, total_var_off = self.calculate_signal_and_background(stack_off)
 
-    def run(self):
-        # Step 1: Load data
-        data = load_data(self.config)
+            norm_signal_on = (signal_on - bg_on) / np.mean(self.data['I0'][self.data['laser_on_mask']])
+            norm_signal_off = (signal_off - bg_off) / np.mean(self.data['I0'][self.data['laser_off_mask']])
 
-        # Step 2: Calculate signals and errors
-        signals_and_errors = calculate_signals_and_errors(data, self.config)
+            std_dev_on = np.sqrt(total_var_on) / np.mean(self.data['I0'][self.data['laser_on_mask']])
+            std_dev_off = np.sqrt(total_var_off) / np.mean(self.data['I0'][self.data['laser_off_mask']])
 
-        # Step 3: Calculate pump-probe signal
-        pump_probe_results = calculate_pump_probe_signal(signals_and_errors, self.config)
+            delays.append(delay)
+            signals_on.append(norm_signal_on)
+            signals_off.append(norm_signal_off)
+            std_devs_on.append(std_dev_on)
+            std_devs_off.append(std_dev_off)
+            
+        p_values = [self.calculate_p_value(signals_on[i], signals_off[i], std_devs_on[i], std_devs_off[i]) for i in range(len(delays))]
+            
+        return delays, signals_on, std_devs_on, signals_off, std_devs_off, p_values
 
-        # Step 4: Plot pump-probe data
-        plot_pump_probe_data(pump_probe_results, self.config)
+    def calculate_signal_and_background(self, stack):
+        integrated_counts = stack.sum(axis=(1,2))
+        signal = np.sum(integrated_counts[self.signal_mask]) 
+        bg = np.sum(integrated_counts[self.bg_mask]) * np.sum(self.signal_mask) / np.sum(self.bg_mask)
+        var_signal = signal
+        var_bg = bg
+        total_var = var_signal + var_bg 
+        return signal, bg, total_var
 
-        # Step 5: Group images into stacks by delay and laser condition
-        stacks_on, stacks_off = self.group_images_into_stacks(data)
+    def calculate_p_value(self, signal_on, signal_off, std_dev_on, std_dev_off):
+        delta_signal = abs(signal_on - signal_off)
+        combined_std_dev = np.sqrt(std_dev_on**2 + std_dev_off**2)
+        z_score = delta_signal / combined_std_dev
+        return 2 * (1 - norm.cdf(z_score))
 
-        # Step 6: Generate pump-probe curves
-        pump_probe_curves = self.generate_pump_probe_curves(stacks_on, stacks_off)
+    def plot_pump_probe_data(self):
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+        
+        ax1.errorbar(self.delays, self.signals_on, yerr=self.std_devs_on, fmt='rs-', label='Laser On')  
+        ax1.errorbar(self.delays, self.signals_off, yerr=self.std_devs_off, fmt='ks-', mec='k', mfc='white', alpha=0.2, label='Laser Off')
+        ax1.set_xlabel('Time Delay (ps)')
+        ax1.set_ylabel('Normalized Signal') 
+        ax1.legend()
+        ax1.grid(True)
 
-        # Step 7: Save pump-probe curves
-        self.save_pump_probe_curves(pump_probe_curves)
-
-    def group_images_into_stacks(self, data):
-        pass
-
-    def extract_stacks_by_delay(self, binned_delays, img_array):
-        pass
-
-    def generate_pump_probe_curves(self, stacks_on, stacks_off):
-        pass
-
-    def save_pump_probe_curves(self, pump_probe_curves):
-        pass
-
+        neg_log_p_values = [-np.log10(p) if p > 0 else 0 for p in self.p_values]
+        ax2.scatter(self.delays, neg_log_p_values, color='red', label='-log(p-value)')
+        for p_val, label in zip([0.05, 0.01, 0.001], ['5%', '1%', '0.1%']):
+            neg_log_p_val = -np.log10(p_val)
+            ax2.axhline(y=neg_log_p_val, color='black', linestyle='--')
+            ax2.text(ax2.get_xlim()[1], neg_log_p_val, label, va='center', ha='left')
+        ax2.set_xlabel('Time Delay (ps)')
+        ax2.set_ylabel('-log(P-value)')
+        ax2.legend()
+        ax2.grid(True)
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir, 'pump_probe_plot.png'))
+        
+    def save_pump_probe_curves(self):
+        np.savez(os.path.join(self.output_dir, 'pump_probe_curves.npz'),
+                 delays=self.delays,
+                 signals_on=self.signals_on,
+                 std_devs_on=self.std_devs_on,
+                 signals_off=self.signals_off, 
+                 std_devs_off=self.std_devs_off,
+                 p_values=self.p_values)
+    
     def summarize(self):
-        # TODO: Implement summarize method
-        pass
+        summary = (f"Pump-probe analysis for {self.config['setup']['exp']} run {self.config['setup']['run']}:\n"
+                   f" Number of delays: {len(self.delays)}\n" 
+                   f" Minimum p-value: {min(self.p_values):.3e}\n"
+                   f" Results saved to: {self.output_dir}\n")
+        print(summary)
+        with open(os.path.join(self.output_dir, 'pump_probe_summary.txt'), 'w') as f:
+            f.write(summary)
 
     def report(self):
-        # TODO: Implement report method
-        pass
+        report = (f"Pump-probe analysis for {self.config['setup']['exp']} run {self.config['setup']['run']}\n\n"
+                  f"Data loaded from: {self.config['setup']['root_dir']}\n"
+                  f"Signal mask loaded from: {self.config['pump_probe_analysis']['signal_mask_path']}\n" 
+                  f"Background mask loaded from: {self.config['pump_probe_analysis']['bg_mask_path']}\n\n"
+                  f"Analysis parameters:\n"
+                  f" I0 threshold: {self.config['pump_probe_analysis']['i0_threshold']}\n"
+                  f" IPM pos filter: {self.config['pump_probe_analysis']['ipm_pos_filter']}\n"
+                  f" Time bin: {self.config['pump_probe_analysis']['time_bin']} ps\n"
+                  f" Time tool: {self.config['pump_probe_analysis']['time_tool']}\n"
+                  f" Energy filter: {self.config['pump_probe_analysis']['energy_filter']} keV\n"
+                  f" Minimum counts per bin: {self.config['pump_probe_analysis']['min_count']}\n\n"
+                  f"Results:\n"
+                  f" Number of delays: {len(self.delays)}\n"
+                  f" Delays (ps): {self.delays}\n"
+                  f" Laser on signals: {self.signals_on}\n"
+                  f" Laser on std devs: {self.std_devs_on}\n"
+                  f" Laser off signals: {self.signals_off}\n"
+                  f" Laser off std devs: {self.std_devs_off}\n"
+                  f" p-values: {self.p_values}\n"
+                  f" Minimum p-value: {min(self.p_values):.3e}\n\n"
+                  f"Plots saved to: {os.path.join(self.output_dir, 'pump_probe_plot.png')}\n"
+                  f"Results saved to: {os.path.join(self.output_dir, 'pump_probe_curves.npz')}\n")
+        with open(os.path.join(self.output_dir, 'pump_probe_report.txt'), 'w') as f:
+            f.write(report)
