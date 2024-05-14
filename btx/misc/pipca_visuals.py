@@ -562,6 +562,8 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
 
         image_indices = random.sample(range(len(reconstructed_images)), num_images) if random_images else range(len(reconstructed_images))
 
+        nb_images_treated = 0
+        
         for img_source in image_indices:
             counter = psi.counter
             psi.counter = start_img + img_source
@@ -581,6 +583,10 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
                 compression_losses[count_compo].append(compression_loss)
                 count_compo+=1
 
+            nb_images_treated+=1
+            if nb_images_treated % 3 == 0:
+                print(f"Processed {nb_images_treated} images out of {len(image_indices)}")
+            
             psi.counter = counter
         
         average_loss = [np.mean(compression_losses[k]) for k in range(len(compression_losses))]
