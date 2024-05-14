@@ -542,14 +542,14 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
             psi.counter = counter  # Reset counter for the next iteration
 
         average_loss = np.mean(compression_losses)
-        
+
     elif type_of_pca == 'pytorch':
         data = unpack_ipca_pytorch_model_file(filename)
 
         exp, run, det_type, start_img, reconstructed_images, S, V, mu = data['exp'], data['run'], data['det_type'], data['start_img'], data['reconstructed_images'], data['S'], data['V'], data['mu']
 
         model_rank = S.shape[0]
-        if num_components > model_rank:
+        if max(num_components) > model_rank:
             raise ValueError("Error: num_components cannot be greater than the maximum model rank.")
         
         psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
