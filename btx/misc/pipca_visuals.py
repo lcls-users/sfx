@@ -585,6 +585,17 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     
     average_loss = np.mean(compression_losses)
 
+    results_file = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/results_loss.txt"
+
+    with open(results_file, "a") as f:
+        f.write("\n============================================\nNUMBER OF COMPONENTS:\n============================================\n" + str(num_components) + "\n")
+        f.write("Average Loss:\n")
+        f.write(str(average_loss) + "\n")
+        f.write("Compression Losses:\n")
+        f.write(str(compression_losses) + "\n")
+        f.write("Run:\n")
+        f.write(str(run) + "\n")
+    
     return average_loss, compression_losses, run
 
 def classic_pca_test(filename, num_components):
