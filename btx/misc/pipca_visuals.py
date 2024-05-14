@@ -540,7 +540,9 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
             compression_losses.append(compression_loss)
 
             psi.counter = counter  # Reset counter for the next iteration
-    
+
+        average_loss = np.mean(compression_losses)
+        
     elif type_of_pca == 'pytorch':
         data = unpack_ipca_pytorch_model_file(filename)
 
@@ -553,7 +555,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
         psi.counter = start_img
 
-        compression_losses = []
+        compression_losses = [[] for _ in range(len(num_components))]
 
         p, x, y = psi.det.shape()
         pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
@@ -564,26 +566,30 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
             counter = psi.counter
             psi.counter = start_img + img_source
             img = psi.get_images(1).squeeze()
-            reconstructed_img = np.dot(reconstructed_images[:,:num_components], V[:,:num_components].T)[img_source]+mu
-            reconstructed_img = reconstructed_img.reshape((p, x, y))
-            reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
-            # Compute the Frobenius norm of the difference between the original image and the reconstructed image
-            difference = np.subtract(img, reconstructed_img, dtype=np.float64)
-            norm = np.linalg.norm(difference, 'fro')
-            original_norm = np.linalg.norm(img, 'fro')
 
-            compression_loss = norm / original_norm * 100
-            compression_losses.append(compression_loss)
+            count_compo=0
+            for k in num_components:
+                reconstructed_img = np.dot(reconstructed_images[:,:k], V[:,:k].T)[img_source]+mu
+                reconstructed_img = reconstructed_img.reshape((p, x, y))
+                reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
+                # Compute the Frobenius norm of the difference between the original image and the reconstructed image
+                difference = np.subtract(img, reconstructed_img, dtype=np.float64)
+                norm = np.linalg.norm(difference, 'fro')
+                original_norm = np.linalg.norm(img, 'fro')
+
+                compression_loss = norm / original_norm * 100
+                compression_losses[count].append(compression_loss)
+                count_compo+=1
 
             psi.counter = counter
         
+        average_loss = [np.mean(compression_losses[k]) for k in range(len(compression_losses))]
+
     elif type_of_pca == 'sklearn':
         raise NotImplementedError("Error: Sklearn PCA is not yet implemented.")
     
     else:
         raise ValueError("Error: type_of_pca must be either 'pipca' or 'pytorch' or 'sklearn'.")
-    
-    average_loss = np.mean(compression_losses)
 
     results_file = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/results_loss.txt"
 
