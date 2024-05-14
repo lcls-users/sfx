@@ -578,7 +578,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
                 original_norm = np.linalg.norm(img, 'fro')
 
                 compression_loss = norm / original_norm * 100
-                compression_losses[count].append(compression_loss)
+                compression_losses[count_compo].append(compression_loss)
                 count_compo+=1
 
             psi.counter = counter
