@@ -6,7 +6,7 @@ from PSCalib.GlobalUtils import CFRAME_LAB, CFRAME_PSANA
 
 class PsanatoCrystFEL:
     """
-    Convert a psana .data geometry file to a CrystFEL geometry format.
+    Convert a psana .data geometry file to a CrystFEL .geom geometry file.
     """
 
     def __init__(self, psana_file, output_file, cframe=CFRAME_LAB, zcorr_um=None):
@@ -15,7 +15,7 @@ class PsanatoCrystFEL:
 
 class CrystFELtoPyFAI:
     """
-    Convert a CrystFEL geometry file to a PyFAI-friendly geometry format.
+    Convert a CrystFEL .geom geometry file to a PyFAI-friendly geometry format.
     """
 
     def __init__(self, geom_file, detector_name=None, psana=True):
@@ -175,7 +175,7 @@ class CrystFELtoPyFAI:
                 res = panels["panels"][full_name]["res"]
                 corner_x = panels["panels"][full_name]["corner_x"] / res
                 corner_y = panels["panels"][full_name]["corner_y"] / res
-                corner_z = 0.0
+                corner_z = panels["panels"][full_name]["coffset"] - np.min(panels["panels"][full_name]["coffset"])
                 # Get tile vectors for ss and fs directions
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
                 fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
@@ -191,7 +191,7 @@ class CrystFELtoPyFAI:
         return pix_arr
 
     @staticmethod
-    def get_corner_array(pix_pos, panels, reference_frame=True):
+    def get_corner_array(pix_pos, panels, cframe=CFRAME_LAB):
         """
         Convert to the corner array needed by PyFAI
 
@@ -238,18 +238,20 @@ class CrystFELtoPyFAI:
                 x = c1x[:, :, np.newaxis] + ss_units * ssx + fs_units * fsx
                 y = c1y[:, :, np.newaxis] + ss_units * ssy + fs_units * fsy
                 z = c1z[:, :, np.newaxis] + ss_units * ssz + fs_units * fsz
-                if reference_frame:
+                # Convert to PyFAI format for detector definition
+                # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
+                if cframe==0:
                     # psana frame to pyFAI frame
                     # x1 <-- -x, x2 <-- -y, x3 <-- -z
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = -z  # 3: along beam
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = -x  # 1 : bottom to top
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -y  # 2: left to right
-                else:
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = y  # 2: left to right
+                elif cframe==1:
                     # Lab frame to pyFAI frame
-                    # x1 <-- y, x2 <-- x, x3 <-- z
+                    # x1 <-- y, x2 <-- -x, x3 <-- z
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -x  # 2: left to right
         return pyfai_fmt
 
 
