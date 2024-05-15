@@ -2,7 +2,7 @@ import numpy as np
 from pyFAI.detectors import Detector
 from PSCalib.UtilsConvert import geometry_to_crystfel, SEGNAME_TO_PARS
 from PSCalib.GeometryAccess import GeometryAccess
-from PSCalib.GlobalUtils import CFRAME_LAB, CFRAME_PSANA, info_ndarr
+from PSCalib.GlobalUtils import CFRAME_LAB, CFRAME_PSANA
 
 class PsanatoCrystFEL:
     """
