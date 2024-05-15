@@ -9,14 +9,7 @@ class PsanatoCrystFEL:
     Convert a psana .data geometry file to a CrystFEL geometry format.
     """
 
-    def __init__(self, psana_file, detector_name=None):
-        self.psana_file = psana_file
-        self.detector_name = detector_name
-
-    def psana_to_crystfel(self, psana_file, output_file, cframe=CFRAME_LAB, zcorr_um=None):
-        """
-        Convert a psana .data geometry file to a CrystFEL geometry format.
-        """
+    def __init__(self, psana_file, output_file, cframe=CFRAME_LAB, zcorr_um=None):
         geometry_to_crystfel(psana_file, output_file, cframe, zcorr_um)
 
 
