@@ -18,11 +18,11 @@ class CrystFELtoPyFAI:
     Convert a CrystFEL .geom geometry file to a PyFAI-friendly geometry format.
     """
 
-    def __init__(self, geom_file, detector_name=None, psana=True):
+    def __init__(self, geom_file, cframe=CFRAME_LAB, det_type=None):
         self.geom_file = geom_file
         self.geom = self.from_CrystFEL(geom_file)
         self.pix_pos = self.get_pixel_coordinates(self.geom)
-        self.corner_array = self.get_corner_array(self.pix_pos, self.geom, psana)
+        self.corner_array = self.get_corner_array(self.pix_pos, self.geom, cframe=cframe)
         self.detector = Epix10k2M()
 
     @staticmethod
