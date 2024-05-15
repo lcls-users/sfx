@@ -1,5 +1,23 @@
 import numpy as np
 from pyFAI.detectors import Detector
+from PSCalib.UtilsConvert import geometry_to_crystfel, SEGNAME_TO_PARS
+from PSCalib.GeometryAccess import GeometryAccess
+from PSCalib.GlobalUtils import CFRAME_LAB, CFRAME_PSANA, info_ndarr
+
+class PsanatoCrystFEL:
+    """
+    Convert a psana .data geometry file to a CrystFEL geometry format.
+    """
+
+    def __init__(self, psana_file, detector_name=None):
+        self.psana_file = psana_file
+        self.detector_name = detector_name
+
+    def psana_to_crystfel(self, psana_file, output_file, cframe=CFRAME_LAB, zcorr_um=None):
+        """
+        Convert a psana .data geometry file to a CrystFEL geometry format.
+        """
+        geometry_to_crystfel(psana_file, output_file, cframe, zcorr_um)
 
 
 class CrystFELtoPyFAI:
@@ -19,6 +37,11 @@ class CrystFELtoPyFAI:
         """
         Parse a CrystFEL geometry file
         Read a text ".geom" file and return the dictionary of geometry components
+
+        Parameters
+        ----------
+        fname : str
+            Path to the CrystFEL geometry file
         """
         detector = {
             "panels": {},
@@ -130,7 +153,13 @@ class CrystFELtoPyFAI:
     @staticmethod
     def get_pixel_coordinates(panels):
         """
-        From a CrystFEL geometry file, calculate Epix10k2M pixel coordinates
+        From a parsed CrystFEL geometry file, calculate Epix10k2M pixel coordinates
+        in a given reference frame
+
+        Parameters
+        ----------
+        panels : dict
+            Dictionary of panels from a CrystFEL geometry file
         """
         # 176 ss pixels, 192 fs pixels per asic
         # pixel size is 0.0001
@@ -172,6 +201,18 @@ class CrystFELtoPyFAI:
     def get_corner_array(pix_pos, panels, reference_frame=True):
         """
         Convert to the corner array needed by PyFAI
+
+        Parameters
+        ----------
+        pix_pos : np.ndarray
+            Pixel positions in .geom reference frame
+
+        panels : dict
+            Dictionary of panels from a CrystFEL geometry file
+
+        reference_frame : bool
+            If True, convert from CrystFEL reference frame to PyFAI reference frame
+            If False, convert from psana reference frame to PyFAI reference frame
         """
         nmods = 16  # 16 panels
         nasics = 4  # asics per panel
