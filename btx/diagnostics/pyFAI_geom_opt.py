@@ -56,17 +56,6 @@ class PyFAIGeomOpt:
         self.detector = detector
         return detector
 
-    def point_index_to_coords(self, point=(0, 0)):
-        """
-        Convert pixel index (x, y) to cartesian coordinates (x, y, z)
-
-        Parameters
-        ----------
-        point : tuple
-            Pixel index (x, y)
-        """
-        return self.detector.calc_cartesian_positions(d1=point[1], d2=point[0], center=True)
-
     def pyFAI_geom_opt(self, powder, mask=None, max_rings=5, pts_per_deg=1, I=0, plot=None):
         """
         From guessed initial geometry, optimize the geometry using pyFAI package

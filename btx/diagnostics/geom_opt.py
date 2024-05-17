@@ -196,7 +196,7 @@ class GeomOpt:
         modify_crystfel_header(temp_file, crystfel_file)
         os.remove(temp_file)
 
-        # Rayonix check
+        """# Rayonix check
         if self.diagnostics.psi.get_pixel_size() != self.diagnostics.psi.det.pixel_size(run):
             print("Original geometry is wrong due to hardcoded Rayonix pixel size. Correcting geom file now...")
             coffset = (self.distance - self.diagnostics.psi.get_camera_length(pv_camera_length)) / 1e3 # convert from mm to m
@@ -204,7 +204,7 @@ class GeomOpt:
             os.rename(crystfel_file, temp_file)
             modify_crystfel_coffset_res(temp_file, crystfel_file, coffset, res)
             os.remove(psana_file)
-            os.remove(temp_file)
+            os.remove(temp_file)"""
 
     def report(self, update_url):
         """

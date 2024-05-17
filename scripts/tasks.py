@@ -188,6 +188,7 @@ def opt_geom(config):
             geom_opt.deploy_geometry(
                 taskdir, pv_camera_length=setup.get("pv_camera_length")
             )
+            logger.info(f"Geometry shift in microns: {geom_opt.shift}")
             logger.info(f"Updated geometry files saved to: {taskdir}")
             logger.debug("Done!")
 

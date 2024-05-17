@@ -79,7 +79,7 @@ class RunDiagnostics:
                 for key in self.powders_final.keys():
                     self.powders_final[key] = assemble_image_stack_batch(self.powders_final[key], self.pixel_index_map)
                 self.panel_mask = assemble_image_stack_batch(np.ones(self.psi.det.shape()), self.pixel_index_map)
- 
+
     def save_powders(self, outdir, raw_img=False):
         """
         Save powders to output directory.
@@ -556,7 +556,6 @@ class RunDiagnostics:
         img = self.psi.det.image(evt=evt)
         if mask_negatives:
             img = np.ma.masked_where(img<=0,img)
-
         if method is 'pyplot':
             fig = plt.figure(figsize=(figsize,figsize),dpi=dpi)
             if log:
