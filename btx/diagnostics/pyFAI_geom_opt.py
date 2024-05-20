@@ -9,8 +9,8 @@ from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI.gui import jupyter
 from btx.interfaces.ipsana import *
 from btx.diagnostics.run import RunDiagnostics
-from btx.diagnostics.converter import CrystFELtoPyFAI
 from btx.misc.metrology import *
+from PSCalib.UtilsConvert import geometry_to_crystfel
 
 
 class PyFAIGeomOpt:
@@ -23,10 +23,10 @@ class PyFAIGeomOpt:
         Experiment name
     run : int
         Run number
-    detector : str
+    det_type : str
         Detector type
-    geom : str
-        Geometry file in CrystFEL format
+    detector : PyFAI(Detector)
+        PyFAI detector object
     """
 
     def __init__(
@@ -34,62 +34,34 @@ class PyFAIGeomOpt:
         exp,
         run,
         det_type,
+        detector,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
         self.distance = None
         self.poni1 = None
         self.poni2 = None
-
-    def pyFAI_geom(self, geom):
-        """
-        Load geometry from CrystFEL format
-        Convert to pyFAI format
-
-        Parameters
-        ----------
-        geom : str
-            Geometry file in CrystFEL format
-        """
-        converter = CrystFELtoPyFAI(geom)
-        detector = converter.detector
-        detector.set_pixel_corners(converter.corner_array)
         self.detector = detector
-        return detector
 
-    def pyFAI_geom_opt(self, powder, mask=None, max_rings=5, pts_per_deg=1, I=0, plot=None):
+    def pyFAI_geom_opt(self, powder, mask=None, max_rings=5, pts_per_deg=1, I=0, plot=''):
         """
         From guessed initial geometry, optimize the geometry using pyFAI package
 
         Parameters
         ----------
+        powder : str or int
+            Path to powder image or number of images to use for calibration
         max_rings : int
             Maximum number of rings to use for calibration
         pts_per_deg : int
             Number of points per degree to use for calibration (spacing of control points)
-        Imin : float
-            Minimum intensity to use for calibration
+        I : int
+            Set Minimum intensity to use for calibration based on photon energy
+        plot : str
+            Path to save plot of optimized geometry
         """
-        # 1. Define Calibrant
-        behenate = CALIBRANT_FACTORY("AgBh")
-        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
-        photon_energy = 1.23984197386209e-09 / wavelength
-        behenate.wavelength = wavelength
 
-        # 2. Define Guessed Geometry
-        p1, p2, p3 = self.detector.calc_cartesian_positions()
-        distance = np.mean(p3)
-        poni1 = np.mean(p1)
-        poni2 = np.mean(p2)
-        guessed_geom = Geometry(
-            dist=distance,
-            poni1=poni1,
-            poni2=poni2,
-            detector=self.detector,
-            wavelength=wavelength,
-        )
-
-        # 3. Powder Loading
         if type(powder) == str:
+            print(f"Loading mask {powder}")
             powder_img = np.load(powder)
         elif type(powder) == int:
             print("Computing powder from scratch")
@@ -108,7 +80,27 @@ class PyFAIGeomOpt:
             mask = self.diagnostics.psi.get_mask()
         powder_img *= mask
 
-        # 3. PyFAI Optimization
+        print("Defining calibrant to be Silver Behenate...")
+        behenate = CALIBRANT_FACTORY("AgBh")
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
+        photon_energy = 1.23984197386209e-09 / wavelength
+        behenate.wavelength = wavelength
+
+        print("Setting initial geometry guess...")
+        p1, p2, p3 = self.detector.calc_cartesian_positions()
+        if self.distance is None:
+            distance = -np.mean(p3)
+        if self.poni1 is None or self.poni2 is None:
+            poni1 = np.mean(p1)
+            poni2 = np.mean(p2)
+        guessed_geom = Geometry(
+            dist=distance,
+            poni1=poni1,
+            poni2=poni2,
+            detector=self.detector,
+            wavelength=wavelength,
+        )
+
         pixel_size = min(self.detector.pixel1, self.detector.pixel2)
         print(
             f"Starting optimization with initial guess: dist={self.distance:.3f}m, poni1={self.poni1/pixel_size:.3f}pix, poni2={self.poni2/pixel_size:.3f}pix"
@@ -133,8 +125,7 @@ class PyFAIGeomOpt:
         self.poni1 = sg.geometry_refinement.param[1]
         self.poni2 = sg.geometry_refinement.param[2]
 
-        # 4. Plotting
-        if plot is not None:
+        if plot != '':
             fig, ax = plt.subplots(2, 1, figsize=(12, 6))
             ax[0].jupyter.display(sg=sg)
             ai = AzimuthalIntegrator(dist=self.distance, poni1=self.poni1, poni2=self.poni2, detector=self.detector, wavelength=wavelength)
@@ -166,27 +157,16 @@ class PyFAIGeomOpt:
 
         # determine and deploy shifts in x,y,z
         p1, p2, p3 = self.detector.calc_cartesian_positions()
-        dx = (self.poni2 - np.mean(p2)) * 1e6
-        dy = (self.poni1 - np.mean(p1)) * 1e6
+        d1 = self.poni1 * 1e6
+        d2 = self.poni2 * 1e6
         dz = self.distance * 1e6 - np.mean(p3)  # convert from m to microns
-        geom.move_geo(
-            children.oname, 0, dx=-dy, dy=-dx, dz=-dz
-        )  # move the detector in psana frame
+        geom.move_geo(children.oname, 0, dx=d1, dy=-d2, dz=-dz)  # move the detector in psana frame
 
         # write optimized geometry files
-        psana_file, crystfel_file = os.path.join(
-            outdir, f"r{run:04}_end.data"
-        ), os.path.join(outdir, f"r{run:04}.geom")
+        psana_file, crystfel_file = os.path.join(outdir, f"r{run:04}_end.data"), os.path.join(outdir, f"r{run:04}.geom")
         temp_file = os.path.join(outdir, "temp.geom")
         geom.save_pars_in_file(psana_file)
-        generate_geom_file(
-            self.diagnostics.psi.exp,
-            run,
-            self.diagnostics.psi.det_type,
-            psana_file,
-            temp_file,
-            pv_camera_length,
-        )
+        geometry_to_crystfel(psana_file, temp_file, cframe=1, zcorr_um=None)
         modify_crystfel_header(temp_file, crystfel_file)
         os.remove(temp_file)
 
@@ -197,11 +177,8 @@ class PyFAIGeomOpt:
             print(
                 "Original geometry is wrong due to hardcoded Rayonix pixel size. Correcting geom file now..."
             )
-            coffset = (
-                self.distance - self.diagnostics.psi.get_camera_length(pv_camera_length)
-            ) / 1e3  # convert from mm to m
+            coffset = self.distance - self.diagnostics.psi.get_camera_length(pv_camera_length) / 1e3  # convert from mm to m
             res = 1e3 / self.diagnostics.psi.get_pixel_size()  # convert from mm to um
             os.rename(crystfel_file, temp_file)
             modify_crystfel_coffset_res(temp_file, crystfel_file, coffset, res)
-            os.remove(psana_file)
             os.remove(temp_file)
