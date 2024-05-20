@@ -210,16 +210,21 @@ def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
 
 if __name__ == '__main__':
     # Load a sample config for testing
-    with open('test_config.json', 'r') as f:
-        test_config = {
-                    'exp': 'test_exp',
-                    'run': 1,
-                }
+    test_config = {
+                'exp': 'test_exp',
+                'run': 1,
+            }
 
     # Save test data to a file
-    data = np.load('data.npz')['data']
-    np.savez('test_data.npz', data=data)
-    test_config['make_histogram']['input_file'] = 'test_data.npz'
+#    data = np.load('data.npz')['data']
+#    np.savez('test_data.npz', data=data)
+    test_config['make_histogram']['input_file'] = 'data.npz'
+
+    # Run LoadData 
+    load_data = LoadData(test_config)
+    load_data.load_data()
+    data_file = load_data.save_data()
+    load_data.summarize()
 
     # Run MakeHistogram
     histogram_maker = MakeHistogram(test_config)

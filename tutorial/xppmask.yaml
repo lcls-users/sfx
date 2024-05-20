@@ -5,6 +5,17 @@ setup:
   run: 15
   det_type: 'XXXX'
 
+load_data:
+  run_number: 1
+  experiment_number: 'xppXXXXX'
+  roi: [5,105,50,250]
+  energy_filter: [8.8, 5]
+  i0_threshold: 200
+  ipm_pos_filter: [0.2, 0.5]
+  time_bin: 2
+  time_tool: [0., 0.005]
+  output_dir: 'loaded_data'
+
 generate_histograms:
   input_file: 'data.npz'
   output_dir: 'histograms'
