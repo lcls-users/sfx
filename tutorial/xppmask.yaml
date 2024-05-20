@@ -1,13 +1,13 @@
 setup:
   queue: 'milano'
-  root_dir: '/sdf/data/lcls/ds/xpp/xppXXXXX'
-  exp: 'xppXXXXX'
+  root_dir: '/sdf/data/lcls/ds/xpp/xppx1003221'
+  exp: 'xppx1003221'
   run: 15
   det_type: 'XXXX'
 
 load_data:
   run_number: 1
-  experiment_number: 'xppXXXXX'
+  experiment_number: 'xppx1003221'
   roi: [5,105,50,250]
   energy_filter: [8.8, 5]
   i0_threshold: 200

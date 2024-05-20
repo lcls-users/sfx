@@ -24,23 +24,17 @@ def test_load_data(output_dir, setup_config):
 
     return output_file
 
-def test_make_histogram(data_stack, output_dir, setup_config):
-    # Create a temporary configuration dictionary
+def test_make_histogram(data_file, output_dir, setup_config):
     config = {
         'setup': {
             'exp': setup_config['exp'],
             'run': setup_config['run'],
         },
         'make_histogram': {
-            'input_file': os.path.join(output_dir, 'test_data.h5'),
-            'dataset': '/entry/data/data',
+            'input_file': data_file,
             'output_dir': output_dir,
         },
     }
-
-    # Save the data stack to a temporary HDF5 file
-    with h5py.File(config['make_histogram']['input_file'], 'w') as hdf5_file:
-        hdf5_file.create_dataset('/entry/data/data', data=data_stack)
 
     # Create and run the MakeHistogram instance
     make_histogram = MakeHistogram(config)
@@ -49,13 +43,13 @@ def test_make_histogram(data_stack, output_dir, setup_config):
     make_histogram.summarize()
 
     # Save the histograms using the save_histograms() method
-    make_histogram.save_histograms()
-
-    # Get the path to the saved histogram file
-    histogram_file = os.path.join(make_histogram.output_dir, "histograms.npy")
+    histogram_file = make_histogram.save_histograms()
 
     # Check if the histogram file exists
     assert os.path.exists(histogram_file), f"Histogram file {histogram_file} does not exist"
+
+    # Save the histogram image
+    make_histogram.save_histogram_image()
 
     # Return the path to the histogram file and the summary
     return histogram_file, make_histogram.histogram_summary
@@ -162,11 +156,6 @@ def test_build_pump_probe_masks(p_values_file, histograms_file, output_dir, setu
     assert os.path.exists(os.path.join(mask_task.output_dir, "signal_mask.npy"))
     assert os.path.exists(os.path.join(mask_task.output_dir, "bg_mask.npy"))
 
-import os
-import numpy as np
-import json
-from xppmask import PumpProbeAnalysis, LoadData, BuildPumpProbeMasks, MakeHistogram, MeasureEMD, CalculatePValues
-
 def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
     # Load the output data from LoadData and BuildPumpProbeMasks
     data = np.load(data_file)
@@ -211,59 +200,28 @@ def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
 if __name__ == '__main__':
     # Load a sample config for testing
     test_config = {
-                'exp': 'test_exp',
-                'run': 1,
+                'exp': 'xppx1003221',
+                'run': 195,
             }
 
-    # Save test data to a file
-#    data = np.load('data.npz')['data']
-#    np.savez('test_data.npz', data=data)
-    test_config['make_histogram']['input_file'] = 'data.npz'
-
-#    # Run LoadData 
-#    load_data = LoadData(test_config)
-#    load_data.load_data()
-#    data_file = load_data.save_data()
-#    load_data.summarize()
-    test_load_data('loaded_data', test_config)
+    # Run LoadData 
+    data_file = test_load_data('loaded_data', test_config)
 
     # Run MakeHistogram
-    histogram_maker = MakeHistogram(test_config)
-    histogram_maker.load_data()
-    histogram_maker.generate_histograms()
-    summary = histogram_maker.summarize()
-    hfile = histogram_maker.save_histograms()
-    histogram_maker.save_histogram_image()
+    hfile, summary = test_make_histogram(data_file, 'histograms', test_config)
     print(summary)
 
     # Run MeasureEMD and save the output
-    emd_file, null_dist_file = MeasureEMD(test_config).run(hfile)
+    emd_file, null_dist_file = test_measure_emd(hfile, 'emd_output', test_config)
 
     # Run CalculatePValues and save the output
-    p_values_file = CalculatePValues(test_config).run(emd_file, null_dist_file)
+    p_values_file = test_calculate_p_values(emd_file, null_dist_file, 'pvalues_output', test_config)
 
     # Run BuildPumpProbeMasks
-    signal_mask_file, bg_mask_file = BuildPumpProbeMasks(test_config).run(p_values_file, hfile)
+    signal_mask_file, bg_mask_file = test_build_pump_probe_masks(p_values_file, hfile, 'masks_output', test_config)
 
     try:
-        test_pump_probe_analysis(test_config, 'test_data.npz', signal_mask_file, bg_mask_file)
+        test_pump_probe_analysis(test_config, data_file, signal_mask_file, bg_mask_file)
         print("PumpProbeAnalysis test passed")
     except AssertionError as e:
         print(f"PumpProbeAnalysis test failed: {str(e)}")
-
-#if __name__ == '__main__':
-#    # TODO test data loader task, but this will only work on s3df
-#    # if running in a different environment, download sample data instead
-#    data = np.load('data.npz')['arr_0']
-#    output_dir = '.'
-#    setup_config = {
-#        'exp': 'test_exp',
-#        'run': 1,
-#    }
-#
-#    hfile, summary = test_make_histogram(data, output_dir, setup_config)
-#    print(summary)
-#
-#    emd_file, null_dist_file = test_measure_emd(hfile, output_dir, setup_config)
-#    p_values_file = test_calculate_p_values(emd_file, null_dist_file, output_dir, setup_config)
-#    test_build_pump_probe_masks(p_values_file, hfile, output_dir, setup_config)
