@@ -220,11 +220,12 @@ if __name__ == '__main__':
 #    np.savez('test_data.npz', data=data)
     test_config['make_histogram']['input_file'] = 'data.npz'
 
-    # Run LoadData 
-    load_data = LoadData(test_config)
-    load_data.load_data()
-    data_file = load_data.save_data()
-    load_data.summarize()
+#    # Run LoadData 
+#    load_data = LoadData(test_config)
+#    load_data.load_data()
+#    data_file = load_data.save_data()
+#    load_data.summarize()
+    test_load_data('loaded_data', test_config)
 
     # Run MakeHistogram
     histogram_maker = MakeHistogram(test_config)
