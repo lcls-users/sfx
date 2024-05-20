@@ -125,13 +125,8 @@ class PyFAIGeomOpt:
         self.poni1 = sg.geometry_refinement.param[1]
         self.poni2 = sg.geometry_refinement.param[2]
 
-        if plot != '':
-            fig, ax = plt.subplots(2, 1, figsize=(12, 6))
-            ax[0].jupyter.display(sg=sg)
-            ai = AzimuthalIntegrator(dist=self.distance, poni1=self.poni1, poni2=self.poni2, detector=self.detector, wavelength=wavelength)
-            res = ai.integrate1d(powder_img, 1000, unit="2th_deg", calibrant=behenate)
-            ax[1].jupyter.plot1d(res)
-            fig.savefig(plot)
+        if plot is not None:
+            self.visualize_results()
         return score
 
     def deploy_geometry(self, geom_init, outdir, pv_camera_length=None):
@@ -182,3 +177,104 @@ class PyFAIGeomOpt:
             os.rename(crystfel_file, temp_file)
             modify_crystfel_coffset_res(temp_file, crystfel_file, coffset, res)
             os.remove(temp_file)
+
+    def display_panel(img=None, cp=None, ai=None, label=None, sg=None, ax=None):
+        """Display an image with the control points and the calibrated rings
+        in Jupyter notebooks
+
+        Parameters
+        ----------
+        :param img: 2D numpy array with an image
+        :param cp: ControlPoint instance
+        :param ai: azimuthal integrator for iso-2th curves
+        :param label: name of the curve
+        :param sg: single geometry object regrouping img, cp and ai
+        :param ax: subplot object to display in, if None, a new one is created.
+        :param photon_energy: photon energy in eV
+        :return: Matplotlib subplot
+        """
+        import numpy
+        from matplotlib import lines
+        from matplotlib.colors import SymLogNorm
+        
+        if ax is None:
+            fig, ax = plt.subplots(2, 2, figsize=(8, 8), dpi=300)
+        if sg is not None:
+            if img is None:
+                img = sg.image
+            if cp is None:
+                cp = sg.control_points
+            if ai is None:
+                ai = sg.geometry_refinement
+            if label is None:
+                label = sg.label
+        n_panels = [2, 6, 10, 14]
+        for i in range(len(n_panels)):
+            img_panel = img[n_panels[i]*352:(n_panels[i]+1)*352,:]
+            ax[i//2, i%2].imshow(img_panel,
+                    origin="lower",
+                    cmap="viridis",
+                    vmax=np.max(img)/100)
+            label = f'panel {n_panels[i]}'
+            ax[i//2, i%2].set_title(label, fontsize='small')
+            if cp is not None:
+                for lbl in cp.get_labels():
+                    pt = numpy.array(cp.get(lbl=lbl).points)
+                    pt_lbl = []
+                    if len(pt) > 0:
+                        for point in pt:
+                            if n_panels[i]*352 <= point[0] <= (n_panels[i]+1)*352:
+                                pt_lbl.append(point)
+                        pt_lbl = np.array(pt_lbl)
+                        if len(pt_lbl) > 0:
+                            ax[i//2, i%2].scatter(pt_lbl[:,1], pt_lbl[:,0]-n_panels[i]*352, label=lbl, s=10)
+            if ai is not None and cp.calibrant is not None:
+                tth = cp.calibrant.get_2th()
+                ttha = ai.twoThetaArray()
+                ax[i//2, i%2].contour(ttha[n_panels[i]*352:(n_panels[i]+1)*352,:], levels=tth, cmap="autumn", linewidths=2, linestyles="dashed")
+            ax[i//2, i%2].axis('off')
+        return ax
+
+    def visualize_results(self, flat_powder, sg0=None, sg1=None, plot=''):
+        """
+        Visualize the extraction of control points and the radial profiles
+        before and after optimization
+
+        Parameters
+        ----------
+        flat_powder : numpy.ndarray
+            Powder image
+        sg0 : SingleGeometry
+            SingleGeometry object before optimization
+        sg1 : SingleGeometry
+            SingleGeometry object after optimization
+        plot : str
+            Path to save plot
+        """
+        fig = plt.figure(figsize=(10, 8), dpi=300)
+
+        subfigs = fig.subfigures(2, 2, height_ratios=[1.2, 1])
+
+        # plotting control points extraction
+        subfigs[0, 0].suptitle('Powder before Optimization')
+        ax0 = subfigs[0, 0].subplots(2, 2)
+        self.display_panel(sg=sg0, ax=ax0)
+        subfigs[0, 1].suptitle('Powder after Optimization')
+        ax1 = subfigs[0, 1].subplots(2, 2)
+        self.display_panel(sg=sg1, ax=ax1)
+
+        # plotting radial profiles with peaks
+        subfigs[1, 0].suptitle('Radially averaged intensity before Optimization')
+        ax2 = subfigs[1, 0].subplots()
+        ai = sg0.geometry_refinement
+        rai = ai.integrate1d(flat_powder, 1000)
+        jupyter.plot1d(rai, calibrant=sg0.calibrant, ax=ax2)
+        subfigs[1, 1].suptitle('Radially averaged intensity after Optimization')
+        ax3 = subfigs[1, 1].subplots()
+        ai = sg1.geometry_refinement
+        rai = ai.integrate1d(flat_powder, 1000)
+        jupyter.plot1d(rai, calibrant=sg1.calibrant, ax=ax3)
+
+        plt.tight_layout()
+        if plot != '':
+            fig.savefig(plot, dpi=300)
