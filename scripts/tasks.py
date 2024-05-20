@@ -113,6 +113,42 @@ def run_analysis(config):
     js.submit()
     logger.debug('Run analysis launched!')
 
+
+def run_resonet(config):
+    """ Predict resolution for individual diffraction patterns """
+    from btx.interfaces.ischeduler import JobScheduler
+    setup = config.setup
+    task = config.run_analysis
+    taskdir = os.path.join(setup.root_dir, 'resonet')
+    os.makedirs(taskdir, exist_ok=True)
+    os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
+
+    command = f"resonet-mfx --expt {setup.expt} --run {setup.run}"
+    extra_args = {"--aduPerPhoton": "adu_per_photon", "--ndevPerNode": "ndevs_per_node",
+              "--maxImg": "max_imgs", "--detzAddr": "detz_address", "--rayonixAddr": "rayonix_addr",
+              "--centerMM": "center_mm", "--detzOffset": "detz_offset"}
+    for argname, confname in extra_args.items():
+        if task.get(confname) is not None:
+            argval = task.get(confname)
+            command += f" {argname} {argval}"
+
+    """
+    Note, the command is run like this:
+    sbatch -p ampere -t60 -N2 --gpus-per-node={config.ndevs_per_node} --cpus-per-gpu={config.cpus_per_gpu} --wrap="mpirun resonet-mfx --expt mfxl1032222 --run 20 --aduPerPhoton 0.7"
+    """
+    js = JobScheduler(os.path.join(".", f'ra_{setup.run:04}.sh'),
+                      queue=setup.queue,
+                      ncores=task.ncores,
+                      jobname=f'ra_{setup.run:04}',
+                      account=setup.account,
+                      reservation=setup.reservation)
+    js.write_header()
+    js.write_main(f"{command}\n", dependencies=['psana'])
+    js.clean_up()
+    js.submit()
+    logger.debug('Resonet analysis launched!')
+
+
 def opt_geom(config):
     from btx.diagnostics.geom_opt import GeomOpt
     from btx.misc.shortcuts import fetch_latest

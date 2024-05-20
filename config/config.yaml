@@ -25,6 +25,14 @@ run_analysis:
   max_events: -1
   ncores: 2
 
+resonet:
+  adu_per_photon: 0.7
+  detz_address: detector_z
+  rayonix_address: Rayonix
+  detz_offset: -140.02
+  center_mm: 170.77 169
+  ndevs_per_node: 1
+
 opt_geom:
   dx: -6 6 5
   dy: -6 6 5
