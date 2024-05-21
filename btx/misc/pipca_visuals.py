@@ -477,7 +477,7 @@ def construct_heatmap_data(img, max_pixels):
 
     return hm_data
 
-def compute_compression_loss(filename, num_components, random_images=False, num_images=10, type_of_pca='pipca'):
+def compute_compression_loss(filename, num_components, random_images=False, num_images=10, type_of_pca='pipca', write_results=False):
     """
     Compute the average frobenius norm between images in an experiment run and their reconstruction. 
     The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA."
@@ -584,7 +584,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
                 count_compo+=1
 
             nb_images_treated+=1
-            if nb_images_treated % 3 == 0:
+            if nb_images_treated % 5 == 0:
                 print(f"Processed {nb_images_treated} images out of {len(image_indices)}")
             
             psi.counter = counter
@@ -597,16 +597,17 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     else:
         raise ValueError("Error: type_of_pca must be either 'pipca' or 'pytorch' or 'sklearn'.")
 
-    results_file = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/results_loss.txt"
+    if write_results:
+        results_file = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/results_loss.txt"
 
-    with open(results_file, "a") as f:
-        f.write("\n============================================\nNUMBER OF COMPONENTS:\n============================================\n" + str(num_components) + "\n")
-        f.write("Average Loss:\n")
-        f.write(str(average_loss) + "\n")
-        f.write("Compression Losses:\n")
-        f.write(str(compression_losses) + "\n")
-        f.write("Run:\n")
-        f.write(str(run) + "\n")
+        with open(results_file, "a") as f:
+            f.write("\n============================================\nNUMBER OF COMPONENTS:\n============================================\n" + str(num_components) + "\n")
+            f.write("Average Loss:\n")
+            f.write(str(average_loss) + "\n")
+            f.write("Compression Losses:\n")
+            f.write(str(compression_losses) + "\n")
+            f.write("Run:\n")
+            f.write(str(run) + "\n")
     
     return average_loss, compression_losses, run
 
