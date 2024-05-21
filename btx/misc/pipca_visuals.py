@@ -496,6 +496,9 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     Returns:
     --------
     compression loss between initial dataset and pipca projected images
+    averaged compression loss
+    run number
+    Eventually write the results in a file
     """
 
     if type_of_pca == 'pipca':
@@ -532,7 +535,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
             reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
 
             # Compute the Frobenius norm of the difference between the original image and the reconstructed image
-            difference = np.subtract(img_normalized, reconstructed_img_normalized, dtype=np.float64)
+            difference = np.subtract(img_normalized, reconstructed_img_normalized)
             norm = np.linalg.norm(difference, 'fro')
             original_norm = np.linalg.norm(img, 'fro')
 
@@ -608,7 +611,11 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
             f.write(str(compression_losses) + "\n")
             f.write("Run:\n")
             f.write(str(run) + "\n")
+        
+        print("Results written in file")
     
+    print("Loss computation done")
+
     return average_loss, compression_losses, run
 
 def classic_pca_test(filename, num_components):
