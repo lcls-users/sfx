@@ -1,19 +1,68 @@
-import numpy as np
-from pathlib import Path
-import tables
-import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from pathlib import Path
 from scipy.optimize import curve_fit
 from typing import List
+import matplotlib.pyplot as plt
+import numpy as np
+import tables
 
-#exp = 'xppx1003221'  
-#h5dir = Path('/sdf/data/lcls/ds/xpp/xppx1003221/hdf5/smalldata/')
+def get_imgs_thresh(run_number, experiment_number, roi,
+                    energy_filter=[8.8, 5], i0_threshold=200,
+                    ipm_pos_filter=[0.2, 0.5], time_bin=2,
+                    time_tool=[0., 0.005]):
+    global exp, h5dir
+    exp = experiment_number
+    h5dir = Path(f'/sdf/data/lcls/ds/xpp/{exp}/hdf5/smalldata/')
 
-def projection_fit_func(x, a, c, w, k1, k0):
-    return gaus(x, a, c, w) + k1*x + k0
+#    rr = SMD_Loader(run_number)
+#
+#    idx_tile = rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][0, 0]
+#    mask = rr.UserDataCfg.jungfrau1M.mask[idx_tile][rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1, 0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1, 1],
+#                                                    rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2, 0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2, 1]]
+#
+#    I0 = rr.ipm2.sum[:]
+#    laser_on_mask = np.array(rr.evr.code_90) == 1
+#    laser_off_mask = np.array(rr.evr.code_91) == 1
+#
+#    imgs = EnergyFilter(rr, energy_filter, roi)
+#    roi_x_start, roi_x_end, roi_y_start, roi_y_end = roi
+#    imgs_thresh = imgs * mask[roi_x_start:roi_x_end, roi_y_start:roi_y_end]
+    rr = SMD_Loader(run_number)
 
-def gaus(x, area, center, width):
-    return abs(area) * np.exp(-np.power(x - center, 2.) / (2 * np.power(width, 2.))) / (width * np.sqrt(2 * np.pi))
+    idx_tile = rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][0, 0]
+    mask = rr.UserDataCfg.jungfrau1M.mask[idx_tile][rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1, 0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1, 1],
+                                                    rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2, 0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2, 1]]
+
+    I0 = rr.ipm2.sum[:]
+    laser_on_mask = np.array(rr.evr.code_90) == 1
+    laser_off_mask = np.array(rr.evr.code_91) == 1
+
+    E0, dE = energy_filter
+    thresh_1, thresh_2 = E0 - dE, E0 + dE
+    thresh_3, thresh_4 = 2 * E0 - dE, 2 * E0 + dE
+    thresh_5, thresh_6 = 3 * E0 - dE, 3 * E0 + dE
+
+    imgs = rr.jungfrau1M.ROI_0_area[:, roi[0]:roi[1], roi[2]:roi[3]]
+    imgs_cleaned = imgs.copy()
+    imgs_cleaned[(imgs_cleaned < thresh_1)
+                 | ((imgs_cleaned > thresh_2) & (imgs_cleaned < thresh_3))
+                 | ((imgs_cleaned > thresh_4) & (imgs_cleaned < thresh_5))
+                 | (imgs_cleaned > thresh_6)] = 0
+    
+    imgs_thresh = imgs_cleaned #* mask[roi[0]:roi[1], roi[2]:roi[3]]
+
+    tt_arg = time_tool[0]
+    laser_delays = np.array(rr.enc.lasDelay) + np.array(rr.tt.FLTPOS_PS) * tt_arg
+
+    # Add TimeTool filtering
+    arg_tt_amplitude = np.array(rr.tt.AMPL) > time_tool[1]
+
+    # Update laser_on_mask and laser_off_mask based on TimeTool conditions
+    if tt_arg == 1:
+        laser_on_mask = laser_on_mask & arg_tt_amplitude
+        laser_off_mask = laser_off_mask & arg_tt_amplitude
+
+    return imgs_thresh, I0, laser_delays, laser_on_mask, laser_off_mask
 
 def SMD_Loader(Run_Number: int) -> tables.File:
     """Load the Small Data"""
@@ -25,12 +74,23 @@ def EnergyFilter(rr: tables.File, Energy_Filter: List[float], ROI: List[int]) ->
     """Threshold the detector images"""
     E0, dE = Energy_Filter
     thresholds = [E0-dE, E0+dE, 2*E0-dE, 2*E0+dE, 3*E0-dE, 3*E0+dE]
-    
+
     imgs_cleaned = rr.jungfrau1M.ROI_0_area[:, ROI[0]:ROI[1], ROI[2]:ROI[3]]
     for i in range(0, len(thresholds), 2):
         imgs_cleaned[(imgs_cleaned > thresholds[i]) & (imgs_cleaned < thresholds[i+1])] = 0
-        
+
     return imgs_cleaned
+
+
+#exp = 'xppx1003221'  
+#h5dir = Path('/sdf/data/lcls/ds/xpp/xppx1003221/hdf5/smalldata/')
+
+def projection_fit_func(x, a, c, w, k1, k0):
+    return gaus(x, a, c, w) + k1*x + k0
+
+def gaus(x, area, center, width):
+    return abs(area) * np.exp(-np.power(x - center, 2.) / (2 * np.power(width, 2.))) / (width * np.sqrt(2 * np.pi))
+
 
 def fit_LS(func, x, y, initial_guess):
     """Fit the curve"""
@@ -136,45 +196,4 @@ def CDW_PP(Run_Number: int, ROI: List[int],
 
     return delay, imgs_on, imgs_off
 
-#def get_imgs_thresh(run_number, experiment_number, roi,
-#                    energy_filter=[8.8, 5], i0_threshold=200, 
-#                    ipm_pos_filter=[0.2, 0.5], time_bin=2,
-#                    time_tool=[0., 0.005]):
-#    
-#    global exp, h5dir
-#    exp = experiment_number
-#    h5dir = Path(f'/sdf/data/lcls/ds/xpp/{exp}/hdf5/smalldata/')
-#    
-#    delay, imgs_on, imgs_off = CDW_PP(run_number, roi, energy_filter, i0_threshold, ipm_pos_filter, time_bin, time_tool)
-#    imgs_thresh = imgs_off
-#    
-#    print(f"Debug: imgs_thresh shape: {imgs_thresh.shape}")
-#    
-#    return imgs_thresh
 
-def get_imgs_thresh(run_number, experiment_number, roi,
-                    energy_filter=[8.8, 5], i0_threshold=200,
-                    ipm_pos_filter=[0.2, 0.5], time_bin=2,
-                    time_tool=[0., 0.005]):
-    global exp, h5dir
-    exp = experiment_number
-    h5dir = Path(f'/sdf/data/lcls/ds/xpp/{exp}/hdf5/smalldata/')
-
-    rr = SMD_Loader(run_number)
-
-    idx_tile = rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][0, 0]
-    mask = rr.UserDataCfg.jungfrau1M.mask[idx_tile][rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1, 0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1, 1],
-                                                    rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2, 0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2, 1]]
-
-    I0 = rr.ipm2.sum[:]
-    laser_on_mask = np.array(rr.evr.code_90) == 1
-    laser_off_mask = np.array(rr.evr.code_91) == 1
-
-    imgs = EnergyFilter(rr, energy_filter, roi)
-    roi_x_start, roi_x_end, roi_y_start, roi_y_end = roi
-    imgs_thresh = imgs * mask[roi_x_start:roi_x_end, roi_y_start:roi_y_end]
-
-    tt_arg = time_tool[0]
-    laser_delays = np.array(rr.enc.lasDelay) + np.array(rr.tt.FLTPOS_PS) * tt_arg
-
-    return imgs_thresh, I0, laser_delays, laser_on_mask, laser_off_mask

@@ -54,6 +54,40 @@ def test_make_histogram(data_file, output_dir, setup_config):
     # Return the path to the histogram file and the summary
     return histogram_file, make_histogram.histogram_summary
 
+def test_make_histogram_from_npz(npz_file, output_dir, setup_config):
+    config = {
+        'setup': {
+            'exp': setup_config['exp'],
+            'run': setup_config['run'],
+        },
+        'make_histogram': {
+            'input_file': npz_file,
+            'output_dir': output_dir,
+        },
+    }
+
+    # Create and run the MakeHistogram instance
+    make_histogram = MakeHistogram(config)
+    
+    # Load data directly from the npz file
+    with np.load(npz_file) as data:
+        make_histogram.data = data['data']
+    
+    make_histogram.generate_histograms()
+    make_histogram.summarize()
+
+    # Save the histograms using the save_histograms() method
+    histogram_file = make_histogram.save_histograms()
+
+    # Check if the histogram file exists
+    assert os.path.exists(histogram_file), f"Histogram file {histogram_file} does not exist"
+
+    # Save the histogram image
+    make_histogram.save_histogram_image()
+
+    # Return the path to the histogram file and the summary
+    return histogram_file, make_histogram.histogram_summary
+
 def test_measure_emd(histogram_file, output_dir, setup_config):
     config = {
         'calculate_emd': {
@@ -150,11 +184,13 @@ def test_build_pump_probe_masks(p_values_file, histograms_file, output_dir, setu
 
     report_path = os.path.join(mask_task.output_dir, 'masks_report.txt')
     mask_task.report(report_path)
-    mask_task.save_masks()
+    signal_mask_file, bg_mask_file = mask_task.save_masks()
 
     assert os.path.exists(report_path)
-    assert os.path.exists(os.path.join(mask_task.output_dir, "signal_mask.npy"))
-    assert os.path.exists(os.path.join(mask_task.output_dir, "bg_mask.npy"))
+    assert os.path.exists(signal_mask_file)
+    assert os.path.exists(bg_mask_file)
+
+    return signal_mask_file, bg_mask_file
 
 def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
     # Load the output data from LoadData and BuildPumpProbeMasks
@@ -200,25 +236,32 @@ def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
 if __name__ == '__main__':
     # Load a sample config for testing
     test_config = {
-                'exp': 'xppx1003221',
-                'run': 195,
-            }
+        'exp': 'xppx1003221',
+        'run': 195,
+    }
 
-    # Run LoadData 
+    # Run LoadData
     data_file = test_load_data('loaded_data', test_config)
 
-    # Run MakeHistogram
-    hfile, summary = test_make_histogram(data_file, 'histograms', test_config)
-    print(summary)
+    # Run MakeHistogram with LoadData output
+    hfile_from_load_data, summary_from_load_data = test_make_histogram(data_file, 'histograms_from_load_data', test_config)
+    print("MakeHistogram with LoadData output:")
+    print(summary_from_load_data)
+
+#    # Run MakeHistogram with pre-existing npz file
+#    npz_file = 'data.npz'  # Replace with the actual path to your npz file
+#    hfile_from_npz, summary_from_npz = test_make_histogram_from_npz(npz_file, 'histograms_from_npz', test_config)
+#    print("MakeHistogram with pre-existing npz file:")
+#    print(summary_from_npz)
 
     # Run MeasureEMD and save the output
-    emd_file, null_dist_file = test_measure_emd(hfile, 'emd_output', test_config)
+    emd_file, null_dist_file = test_measure_emd(hfile_from_load_data, 'emd_output', test_config)
 
     # Run CalculatePValues and save the output
     p_values_file = test_calculate_p_values(emd_file, null_dist_file, 'pvalues_output', test_config)
 
     # Run BuildPumpProbeMasks
-    signal_mask_file, bg_mask_file = test_build_pump_probe_masks(p_values_file, hfile, 'masks_output', test_config)
+    signal_mask_file, bg_mask_file = test_build_pump_probe_masks(p_values_file, hfile_from_load_data, 'masks_output', test_config)
 
     try:
         test_pump_probe_analysis(test_config, data_file, signal_mask_file, bg_mask_file)

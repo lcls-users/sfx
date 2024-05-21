@@ -32,6 +32,7 @@ def save_array_to_png(array, output_path):
     plt.savefig(png_path)
     plt.close()
 
+
 class LoadData:
     def __init__(self, config):
         required_keys = ['setup', 'load_data']
@@ -84,6 +85,31 @@ class LoadData:
         with open(os.path.join(self.output_dir, f"{self.experiment_number}_run{self.run_number}_summary.txt"), 'w') as f:
             f.write(summary)
 
+        # Save additional summary information
+        summary_file = os.path.join(self.output_dir, f"{self.experiment_number}_run{self.run_number}_summary.npz")
+        np.savez(
+            summary_file,
+            data_min=np.min(self.data),
+            data_max=np.max(self.data),
+            data_mean=np.mean(self.data),
+            data_std=np.std(self.data),
+            I0_min=np.min(self.I0),
+            I0_max=np.max(self.I0),
+            I0_mean=np.mean(self.I0),
+            I0_std=np.std(self.I0)
+        )
+
+        # Save an image of the average of all the extracted frames
+        avg_frame = np.mean(self.data, axis=0)
+        plt.figure(figsize=(8, 6))
+        plt.imshow(avg_frame, cmap='viridis')
+        plt.colorbar(label='Intensity')
+        plt.title(f"Average Frame for {self.experiment_number} run {self.run_number}")
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir, f"{self.experiment_number}_run{self.run_number}_avg_frame.png"))
+        plt.close()
+
+
 class MakeHistogram:
     def __init__(self, config):
         required_keys = ['setup', 'make_histogram']
@@ -130,6 +156,7 @@ class MakeHistogram:
     def save_histograms(self):
         histograms_path = os.path.join(self.output_dir, "histograms.npy")
         np.save(histograms_path, self.histograms)
+        return histograms_path
 
     def save_histogram_image(self):
         img_path = os.path.join(self.output_dir, "histograms.png")
@@ -366,6 +393,7 @@ class BuildPumpProbeMasks:
         np.save(bg_mask_path, self.bg_mask)
         save_array_to_png(self.signal_mask, os.path.join(self.output_dir, "signal_mask.png"))
         save_array_to_png(self.bg_mask, os.path.join(self.output_dir, "bg_mask.png"))
+        return signal_mask_path, bg_mask_path
 
 
 
