@@ -156,27 +156,25 @@ def get_imgs_thresh(run_number, experiment_number, roi,
                     energy_filter=[8.8, 5], i0_threshold=200,
                     ipm_pos_filter=[0.2, 0.5], time_bin=2,
                     time_tool=[0., 0.005]):
-    
     global exp, h5dir
     exp = experiment_number
     h5dir = Path(f'/sdf/data/lcls/ds/xpp/{exp}/hdf5/smalldata/')
 
     rr = SMD_Loader(run_number)
 
-    idx_tile = rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][0,0]
-    mask = rr.UserDataCfg.jungfrau1M.mask[idx_tile][rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1,0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1,1],
-                                                    rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2,0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2,1]]
+    idx_tile = rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][0, 0]
+    mask = rr.UserDataCfg.jungfrau1M.mask[idx_tile][rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1, 0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][1, 1],
+                                                    rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2, 0]:rr.UserDataCfg.jungfrau1M.ROI_0__ROI_0_ROI[()][2, 1]]
 
     I0 = rr.ipm2.sum[:]
     laser_on_mask = np.array(rr.evr.code_90) == 1
     laser_off_mask = np.array(rr.evr.code_91) == 1
 
     imgs = EnergyFilter(rr, energy_filter, roi)
-    imgs_thresh = imgs * mask[np.newaxis, :, :]
+    roi_x_start, roi_x_end, roi_y_start, roi_y_end = roi
+    imgs_thresh = imgs * mask[roi_x_start:roi_x_end, roi_y_start:roi_y_end]
 
     tt_arg = time_tool[0]
     laser_delays = np.array(rr.enc.lasDelay) + np.array(rr.tt.FLTPOS_PS) * tt_arg
 
-    print(f"Debug: imgs_thresh shape: {imgs_thresh.shape}")
-    
     return imgs_thresh, I0, laser_delays, laser_on_mask, laser_off_mask
