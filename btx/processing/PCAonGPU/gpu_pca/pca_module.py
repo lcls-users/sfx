@@ -6,6 +6,13 @@ processes data in smaller chunks or batches.
 
 import torch
 
+from torch.distributed.fsdp import (
+    FullyShardedDataParallel as FSDP,
+    MixedPrecision,
+    ShardingStrategy,
+    BackwardPrefetch,
+)
+
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
