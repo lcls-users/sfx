@@ -126,7 +126,7 @@ class IncrementalPCAonGPU():
         v *= signs[:, None]
         return u, v
     
-    def fit(self, X, check_input=True):
+    def fit(self, X, check_input=False):
         """
         Fits the model with data `X` using minibatches of size `batch_size`.
 
@@ -147,7 +147,7 @@ class IncrementalPCAonGPU():
         for start in range(0, n_samples, self.batch_size_):
             end = min(start + self.batch_size_, n_samples)
             X_batch = X[start:end]
-            self.partial_fit(X_batch, check_input=False)
+            self.partial_fit(X_batch, check_input=True)
 
         return self
 
