@@ -147,7 +147,7 @@ class CrystFELtoPyFAI:
     def get_pixel_coordinates(panels):
         """
         From a parsed CrystFEL geometry file, calculate Epix10k2M pixel coordinates
-        in a given reference frame
+        in psana reference frame
 
         Parameters
         ----------
@@ -176,7 +176,7 @@ class CrystFELtoPyFAI:
                 res = panels["panels"][full_name]["res"]
                 corner_x = panels["panels"][full_name]["corner_x"] / res
                 corner_y = panels["panels"][full_name]["corner_y"] / res
-                corner_z = panels["panels"][full_name]["coffset"]-mean_z/2
+                corner_z = panels["panels"][full_name]["coffset"]-mean_z
                 # Get tile vectors for ss and fs directions
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
                 fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
@@ -214,7 +214,7 @@ class CrystFELtoPyFAI:
         fs_size = 192
         pixcorner = pix_pos.reshape(nmods * ss_size * 2, fs_size * 2, 3)
         cx, cy, cz = np.moveaxis(pixcorner, -1, 0)
-        # Flattened SS dim, fs, Num corners, ZYX coord
+        # Flattened ss dim, fs, Num corners, ZYX coord
         pyfai_fmt = np.zeros([nmods * ss_size * 2, fs_size * 2, 4, 3])
         for p in range(nmods):
             pname = f"p{p}"
@@ -243,13 +243,13 @@ class CrystFELtoPyFAI:
                 # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
                 if cframe==0:
                     # psana frame to pyFAI frame
-                    # x1 <-- -x, x2 <-- -y, x3 <-- -z
-                    pyfai_fmt[ss_portion, fs_portion, :, 0] = -z  # 3: along beam
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = -x  # 1 : bottom to top
+                    # x1 <-- -x, x2 <-- y, x3 <-- z
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x  # 1 : bottom to top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = y  # 2: left to right
                 elif cframe==1:
                     # Lab frame to pyFAI frame
-                    # x1 <-- y, x2 <-- -x, x3 <-- z
+                    # x1 <-- y, x2 <-- x, x3 <-- z
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
