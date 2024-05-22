@@ -1030,7 +1030,7 @@ class iPCA_Pytorch:
         execution_time = end_time - start_time  # Calculate the execution time
         frequency = self.num_images/execution_time
 
-        reconstructed_images = ipca._validate_data(imgs.reshape(self.num_images, -1))
+        reconstructed_images = imgs.reshape(self.num_images, -1)
         reconstructed_images = ipca.transform(reconstructed_images)
 
         if str(ipca.device).strip() == "cuda":
