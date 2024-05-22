@@ -46,21 +46,20 @@ class IncrementalPCAonGPU(nn.Module):
         self.var_ = None
         self.n_samples_seen_ = 0
 
-        # Determine the number of GPUs available and how to distribute the components
+        self.components = []  # Liste pour stocker les composants
+
         num_gpus_available = torch.cuda.device_count()
         current_device = torch.cuda.current_device()
         num_gpus_used = current_device + 1
-
-        # Calculate the number of components per GPU
         components_per_gpu = n_components // num_gpus_used
         if n_components % num_gpus_used != 0:
             components_per_gpu += 1
 
-        # Initialize the components list to store components for each GPU
-        self.components = nn.ModuleList([
-            nn.Parameter(torch.zeros(components_per_gpu, batch_size).to(i), requires_grad=True)
-            for i in range(num_gpus_used)
-        ])
+        for i in range(num_gpus_used):
+            self.components.append(
+                torch.zeros(components_per_gpu, batch_size).to(device)
+            )
+
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
