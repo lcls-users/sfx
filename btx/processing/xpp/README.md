@@ -1,6 +1,6 @@
 # xppPumpProbe Analysis Pipeline
 
-*xppPumpProbe* is a modular and configurable analysis pipeline for performing pump-probe experiments on X-ray free-electron laser (XFEL) data. The pipeline is designed to process and analyze data from pump-probe experiments, including loading raw data, generating histograms, calculating Earth Mover's Distance (EMD), computing p-values, generating masks, and performing pump-probe analysis.
+*xppPumpProbe* is an analysis pipeline for analyzing pump-probe experiments at XPP. The pipeline processes and analyzes data from pump-probe experiments, including loading raw data using smd, generating histograms, calculating Earth Mover's Distance (EMD), computing p-values, generating masks, and performing pump-probe analysis. The data loader may have to be redefined per-experiment, but the other components are reusable as is.
 
 ## Pipeline Structure
 
@@ -14,8 +14,6 @@ The *xppPumpProbe* analysis pipeline consists of several tasks that are executed
 6. **PumpProbeAnalysis**: Performs pump-probe analysis using the generated masks and data.
 
 ## Configuration
-
-The *xppPumpProbe* pipeline uses a YAML configuration file to specify parameters for each task. The configuration file has a hierarchical structure, with top-level keys representing different tasks and their specific parameters. Here's an example of the YAML configuration structure:
 
 ```yaml
 setup: 
@@ -84,7 +82,7 @@ The `BuildPumpProbeMasks` task generates binary signal and background masks base
 
 ### PumpProbeAnalysis
 
-The `PumpProbeAnalysis` task performs the pump-probe analysis using the generated masks and loaded data. It groups images into stacks, generates pump-probe curves, calculates p-values, plots the results, and saves the output files. The task produces a pump-probe plot, pump-probe curves data, a summary file, and a report file.
+The `PumpProbeAnalysis` task performs the pump-probe analysis using the generated masks and loaded data. It groups images into stacks, generates intensity vs. delay curves, calculates p-values, plots the results, and saves the output files. The task produces a pump-probe plot, pump-probe curves data, a summary file, and a report file.
 
 ## Running the Pipeline
 
