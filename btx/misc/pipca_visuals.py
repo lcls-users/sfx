@@ -49,7 +49,7 @@ def display_dashboard_pytorch(filename):
     with open(results_file, "w") as f:
         writer = csv.writer(f)
         for val in S:
-            writer.writerow(val)
+            writer.writerow([val])
 
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     psi.counter = start_img
