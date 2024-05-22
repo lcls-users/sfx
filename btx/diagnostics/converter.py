@@ -252,7 +252,7 @@ class CrystFELtoPyFAI:
                     # x1 <-- y, x2 <-- -x, x3 <-- z
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = -x  # 2: left to right
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
         return pyfai_fmt
 
 
