@@ -17,6 +17,9 @@ import panel as pn
 import panel.widgets as pnw
 import statistics
 
+import torch
+import torch.nn as nn
+
 from btx.misc.shortcuts import TaskTimer
 
 from btx.misc.pipca_visuals import compute_compression_loss
@@ -1019,7 +1022,7 @@ class iPCA_Pytorch:
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
             ipca = nn.DataParallel(ipca)
-            
+
         logging.info("Images loaded and formatted and model initialized")
 
         with TaskTimer(self.task_durations, "Fitting model"):
