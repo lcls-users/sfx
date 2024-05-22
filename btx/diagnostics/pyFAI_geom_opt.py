@@ -10,8 +10,7 @@ from pyFAI.gui import jupyter
 from btx.interfaces.ipsana import *
 from btx.diagnostics.run import RunDiagnostics
 from btx.misc.metrology import *
-from PSCalib.UtilsConvert import geometry_to_crystfel
-
+from PSCalib.GeometryAccess import GeometryAccess
 
 class PyFAIGeomOpt:
     """
@@ -61,7 +60,7 @@ class PyFAIGeomOpt:
         """
 
         if type(powder) == str:
-            print(f"Loading mask {powder}")
+            print(f"Loading powder {powder}")
             powder_img = np.load(powder)
         elif type(powder) == int:
             print("Computing powder from scratch")
@@ -69,16 +68,15 @@ class PyFAIGeomOpt:
             powder_imgs = self.diagnostics.psi.get_images(powder, assemble=False)
             powder_img = np.max(powder_imgs, axis=0)
             powder_img = np.reshape(powder_img, self.detector.shape)
+            if mask:
+                print(f"Loading mask {mask}")
+                mask = np.load(mask)
+            else:
+                mask = self.diagnostics.psi.get_mask()
+            powder_img *= mask
         else:
             sys.exit("Unrecognized powder type, expected a path or number")
         self.img_shape = powder_img.shape
-
-        if mask:
-            print(f"Loading mask {mask}")
-            mask = np.load(mask)
-        else:
-            mask = self.diagnostics.psi.get_mask()
-        powder_img *= mask
 
         print("Defining calibrant to be Silver Behenate...")
         behenate = CALIBRANT_FACTORY("AgBh")
@@ -87,12 +85,11 @@ class PyFAIGeomOpt:
         behenate.wavelength = wavelength
 
         print("Setting initial geometry guess...")
-        p1, p2, p3 = self.detector.calc_cartesian_positions()
         if self.distance is None:
-            distance = -np.mean(p3)
+            distance = self.diagnostics.psi.estimate_distance() * 1e-3  # convert from mm to m
         if self.poni1 is None or self.poni2 is None:
-            poni1 = np.mean(p1)
-            poni2 = np.mean(p2)
+            poni1 = 0   # assuming beam center is close to detector center
+            poni2 = 0 
         guessed_geom = Geometry(
             dist=distance,
             poni1=poni1,
@@ -129,39 +126,43 @@ class PyFAIGeomOpt:
             self.visualize_results()
         return score
 
-    def deploy_geometry(self, geom_init, outdir, pv_camera_length=None):
+    def deploy_geometry(self, outdir, psana_file=None, pv_camera_length=None):
         """
         Write new geometry files (.geom and .data for CrystFEL and psana respectively)
         with the optimized center and distance.
 
         Parameters
         ----------
-        geom_init : str
-            Initial geometry file in CrystFEL format
         outdir : str
             path to output directory
+        geom_init : str
+            Initial geometry file in psana format
         pv_camera_length : str
             PV associated with camera length
         """
         # retrieve original geometry
-        run = self.diagnostics.psi.run
-        geom = self.diagnostics.psi.det.geometry(run)
+        if psana_file is None:
+            run = self.diagnostics.psi.run
+            geom = self.diagnostics.psi.det.geometry(run)
+        else:
+            run = self.diagnostics.psi.run
+            geom = GeometryAccess(psana_file)
         top = geom.get_top_geo()
         children = top.get_list_of_children()[0]
-        pixel_size = self.diagnostics.psi.get_pixel_size() * 1e3  # from mm to microns
 
         # determine and deploy shifts in x,y,z
         p1, p2, p3 = self.detector.calc_cartesian_positions()
         d1 = self.poni1 * 1e6
         d2 = self.poni2 * 1e6
         dz = self.distance * 1e6 - np.mean(p3)  # convert from m to microns
-        geom.move_geo(children.oname, 0, dx=d1, dy=-d2, dz=-dz)  # move the detector in psana frame
+        geom.move_geo(children.oname, 0, dx=-d1, dy=-d2, dz=-dz)  # move the detector in psana frame
+        self.geom = geom
 
         # write optimized geometry files
         psana_file, crystfel_file = os.path.join(outdir, f"r{run:04}_end.data"), os.path.join(outdir, f"r{run:04}.geom")
         temp_file = os.path.join(outdir, "temp.geom")
         geom.save_pars_in_file(psana_file)
-        geometry_to_crystfel(psana_file, temp_file, cframe=1, zcorr_um=None)
+        geometry_to_crystfel(psana_file, temp_file, cframe=0, zcorr_um=None)
         modify_crystfel_header(temp_file, crystfel_file)
         os.remove(temp_file)
 

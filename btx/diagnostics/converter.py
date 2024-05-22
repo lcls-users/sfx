@@ -9,7 +9,7 @@ class PsanatoCrystFEL:
     Convert a psana .data geometry file to a CrystFEL .geom geometry file.
     """
 
-    def __init__(self, psana_file, output_file, cframe=CFRAME_LAB, zcorr_um=None):
+    def __init__(self, psana_file, output_file, cframe=CFRAME_PSANA, zcorr_um=None):
         geometry_to_crystfel(psana_file, output_file, cframe, zcorr_um)
 
 
@@ -18,7 +18,7 @@ class CrystFELtoPyFAI:
     Convert a CrystFEL .geom geometry file to a PyFAI-friendly geometry format.
     """
 
-    def __init__(self, geom_file, cframe=CFRAME_LAB, det_type=None):
+    def __init__(self, geom_file, cframe=CFRAME_PSANA, det_type=None):
         self.geom_file = geom_file
         self.geom = self.from_CrystFEL(geom_file)
         self.pix_pos = self.get_pixel_coordinates(self.geom)
@@ -192,7 +192,7 @@ class CrystFELtoPyFAI:
         return pix_arr
 
     @staticmethod
-    def get_corner_array(pix_pos, panels, cframe=CFRAME_LAB):
+    def get_corner_array(pix_pos, panels, cframe=CFRAME_PSANA):
         """
         Convert to the corner array needed by PyFAI
 
@@ -243,13 +243,13 @@ class CrystFELtoPyFAI:
                 # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
                 if cframe==0:
                     # psana frame to pyFAI frame
-                    # x1 <-- -x, x2 <-- y, x3 <-- z
+                    # 0 = z along beam, 1 = dim1 (X) fs, 2 = dim2 (Y) ss
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x  # 1 : bottom to top
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x  # 1: bottom to top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = y  # 2: left to right
                 elif cframe==1:
                     # Lab frame to pyFAI frame
-                    # x1 <-- y, x2 <-- x, x3 <-- z
+                    # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
                     pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
