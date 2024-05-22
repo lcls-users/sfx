@@ -5,7 +5,7 @@ processes data in smaller chunks or batches.
 """
 
 import torch
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+import torch.nn as nn
 
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -30,7 +30,7 @@ class IncrementalPCAonGPU(FSDP):
     """
 
     def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None):
-        super().__init__(parameters=[], process_group=None, reshard_after_forward=True)
+        super().__init__()
         self.n_components = n_components
         self.whiten = whiten
         self.copy = copy
