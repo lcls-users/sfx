@@ -238,6 +238,10 @@ if __name__ == '__main__':
     test_config = {
         'exp': 'xppx1003221',
         'run': 195,
+        'pump_probe_analysis': {
+            'output_dir': 'pump_probe_output',
+            # Add other required configuration values for pump-probe analysis
+        }
     }
 
     # Run LoadData
@@ -268,3 +272,4 @@ if __name__ == '__main__':
         print("PumpProbeAnalysis test passed")
     except AssertionError as e:
         print(f"PumpProbeAnalysis test failed: {str(e)}")
+
