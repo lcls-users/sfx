@@ -46,16 +46,15 @@ class IncrementalPCAonGPU(nn.Module):
         self.var_ = None
         self.n_samples_seen_ = 0
 
-        self.components = []  # Liste pour stocker les composants
-
         num_gpus_available = torch.cuda.device_count()
-        current_device = torch.cuda.current_device()
-        num_gpus_used = current_device + 1
-        components_per_gpu = n_components // num_gpus_used
-        if n_components % num_gpus_used != 0:
+        self.num_gpus_used = num_gpus_available  # Utiliser tous les GPU disponibles
+        components_per_gpu = n_components // self.num_gpus_used
+        if n_components % self.num_gpus_used != 0:
             components_per_gpu += 1
 
-        for i in range(num_gpus_used):
+        self.components = []  # Liste pour stocker les composants
+
+        for i in range(self.num_gpus_used):
             self.components.append(
                 torch.zeros(components_per_gpu, batch_size).to(device)
             )
