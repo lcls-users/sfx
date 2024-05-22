@@ -1037,10 +1037,10 @@ class iPCA_Pytorch:
             batch_imgs = imgs[start:end]
             reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
             reconstructed_batch = ipca.transform(reconstructed_batch)
+            reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
             reconstructed_images = np.append(reconstructed_images, reconstructed_batch)
 
         if str(ipca.device).strip() == "cuda":
-            reconstructed_images = reconstructed_images.cpu().detach().numpy()
             S = ipca.singular_values_.cpu().detach().numpy()
             V = ipca.components_.cpu().detach().numpy().T
             mu = ipca.mean_.cpu().detach().numpy()
