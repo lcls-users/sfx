@@ -235,9 +235,14 @@ def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
 
 if __name__ == '__main__':
     # Load a sample config for testing
+    # TODO unpack setup correctly
     test_config = {
         'exp': 'xppx1003221',
         'run': 195,
+        'setup': {
+            'exp': 'xppx1003221',
+            'run': 195,
+            },
         'pump_probe_analysis': {
             'output_dir': 'pump_probe_output',
             # Add other required configuration values for pump-probe analysis
