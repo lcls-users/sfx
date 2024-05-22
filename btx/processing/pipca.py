@@ -1033,7 +1033,6 @@ class iPCA_Pytorch:
         reconstructed_images = np.array([])
         
         for start in range(0, self.num_images, self.batch_size):
-            print("Checkpoint")
             end = min(start + self.batch_size, self.num_images)
             batch_imgs = imgs[start:end]
             reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
