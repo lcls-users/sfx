@@ -37,25 +37,30 @@ class IncrementalPCAonGPU(nn.Module):
         self.batch_size = batch_size
         self.device = device
 
+        # Determine the number of GPUs available and how to distribute the components
+        num_gpus_available = torch.cuda.device_count()
+        current_device = torch.cuda.current_device()
+        num_gpus_used = current_device + 1
+
+        # Calculate the number of components per GPU
+        components_per_gpu = n_components // num_gpus_used
+        if n_components % num_gpus_used != 0:
+            components_per_gpu += 1
+
+        # Initialize the components list to store components for each GPU
+        self.components = nn.ModuleList([
+            nn.Parameter(torch.zeros(components_per_gpu, batch_size).to(device), requires_grad=True)
+            for _ in range(num_gpus_used)
+        ])
+
         # Set n_components_ based on n_components if provided
         if n_components:
             self.n_components_ = n_components
 
         # Initialize attributes to avoid errors during the first call to partial_fit
-        self.mean_ = None  # Will be initialized properly in partial_fit based on data dimensions
-        self.var_ = None  # Will be initialized properly in partial_fit based on data dimensions
+        self.mean_ = None
+        self.var_ = None
         self.n_samples_seen_ = 0
-
-        self.num_gpus_available = torch.cuda.device_count()
-        if self.num_gpus_available == 0:
-            raise RuntimeError("No GPUs available for computation")
-
-        # Split the components across GPUs
-        self.components_per_gpu = self.n_components // self.num_gpus_available
-        self.components = nn.ModuleList([
-            nn.Parameter(torch.zeros(self.components_per_gpu, device=f'cuda:{i}'))
-            for i in range(self.num_gpus_available)
-        ])
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
