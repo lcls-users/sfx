@@ -126,7 +126,7 @@ def display_dashboard_pytorch(filename):
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
 
-        img = np.dot(reconstructed_images[:, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)[img_source]+mu
+        img = np.dot(reconstructed_images[img_source, first_compo-1:last_compo], V[img_source, first_compo-1:last_compo].T)+mu
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
@@ -155,7 +155,7 @@ def display_dashboard_pytorch(filename):
         #Get reconstructed image
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
-        img_reconstructed = np.dot(reconstructed_images[:, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)[img_source]+mu
+        img_reconstructed = np.dot(reconstructed_images[img_source, first_compo-1:last_compo], V[img_source, first_compo-1:last_compo].T)+mu
         img_reconstructed = img_reconstructed.reshape((p, x, y))
         img_reconstructed = assemble_image_stack_batch(img_reconstructed, pixel_index_map)
 
