@@ -1030,7 +1030,7 @@ class iPCA_Pytorch:
         execution_time = end_time - start_time  # Calculate the execution time
         frequency = self.num_images/execution_time
 
-        reconstructed_images = np.array([])
+        reconstructed_images = np.empty(0, self.num_components)
         
         for start in range(0, self.num_images, self.batch_size):
             end = min(start + self.batch_size, self.num_images)
@@ -1039,7 +1039,7 @@ class iPCA_Pytorch:
             reconstructed_batch = ipca.transform(reconstructed_batch)
             reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
             print("BATCH : ",reconstructed_batch.shape)
-            reconstructed_images = np.concatenate(reconstructed_images, reconstructed_batch)
+            reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
             print("IMAGES : ",reconstructed_images.shape)
 
         logging.info("Images reconstructed")
