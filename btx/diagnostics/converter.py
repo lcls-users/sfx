@@ -175,7 +175,7 @@ class CrystFELtoPyFAI:
                 res = panels["panels"][full_name]["res"]
                 corner_x = panels["panels"][full_name]["corner_x"] / res
                 corner_y = panels["panels"][full_name]["corner_y"] / res
-                corner_z = panels["panels"][full_name]["coffset"] - np.min(panels["panels"][full_name]["coffset"])
+                corner_z = panels["panels"][full_name]["coffset"]
                 # Get tile vectors for ss and fs directions
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
                 fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
@@ -265,11 +265,11 @@ class Epix10k2M(Detector):
         pixel1=0.0001,
         pixel2=0.0001,
         n_modules=16,
-        ss_size=192,
-        fs_size=176,
+        fs_size=192,
+        ss_size=176,
         **kwargs,
     ):
-        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * 2 * fs_size, 2 * ss_size), **kwargs)
+        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * 2 * ss_size, 2 * fs_size), **kwargs)
         self.n_modules = n_modules
         self.ss_size = ss_size
         self.fs_size = fs_size
