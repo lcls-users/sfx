@@ -269,5 +269,8 @@ class Epix10k2M(Detector):
         fs_size=176,
         **kwargs,
     ):
-        super().__init__(pixel1, pixel2, **kwargs)
-        self.shape = (n_modules * 2 * fs_size, 2 * ss_size)
+        super().__init__(pixel1=pixel1, pixel2=pixel2, shape=(n_modules * 2 * fs_size, 2 * ss_size) **kwargs)
+        self.n_modules = n_modules
+        self.ss_size = ss_size
+        self.fs_size = fs_size
+        self.pixel_size = pixel1
