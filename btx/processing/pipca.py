@@ -1039,7 +1039,7 @@ class iPCA_Pytorch:
             reconstructed_batch = ipca.transform(reconstructed_batch)
             reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
             print("BATCH : ",reconstructed_batch.shape)
-            reconstructed_images = np.append(reconstructed_images, reconstructed_batch)
+            reconstructed_images = np.concatenate(reconstructed_images, reconstructed_batch)
             print("IMAGES : ",reconstructed_images.shape)
 
         logging.info("Images reconstructed")
