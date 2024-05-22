@@ -2,6 +2,8 @@ import numpy as np
 import h5py
 import random
 
+import csv 
+
 from btx.interfaces.ipsana import (
     PsanaInterface,
     retrieve_pixel_index_map,
@@ -41,6 +43,13 @@ def display_dashboard_pytorch(filename):
     mu = data['mu']
     S = data['S']
     V = data['V']
+
+    results_file = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/S_matrix.txt"
+
+    with open(results_file, "w") as f:
+        writer = csv.writer(f)
+        for val in S:
+            writer.writerow(val)
 
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     psi.counter = start_img
