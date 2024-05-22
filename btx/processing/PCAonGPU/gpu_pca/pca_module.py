@@ -11,13 +11,8 @@ import torch.nn as nn
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
 print("PyTorch version:", torch.__version__)
-num_gpus_available = torch.cuda.device_count()
-current_device = torch.cuda.current_device()
-num_gpus_used = current_device + 1
-print("Number of GPUs available:", num_gpus_available)
-print("Number of GPUs used:", num_gpus_used)
 
-class IncrementalPCAonGPU():
+class IncrementalPCAonGPU(nn.Module):
     """
     An implementation of Incremental Principal Components Analysis (IPCA) that leverages PyTorch for GPU acceleration.
 
@@ -50,6 +45,17 @@ class IncrementalPCAonGPU():
         self.mean_ = None  # Will be initialized properly in partial_fit based on data dimensions
         self.var_ = None  # Will be initialized properly in partial_fit based on data dimensions
         self.n_samples_seen_ = 0
+
+        self.num_gpus_available = torch.cuda.device_count()
+        if self.num_gpus_available == 0:
+            raise RuntimeError("No GPUs available for computation")
+
+        # Split the components across GPUs
+        self.components_per_gpu = self.n_components // self.num_gpus_available
+        self.components = nn.ModuleList([
+            nn.Parameter(torch.zeros(self.components_per_gpu, device=f'cuda:{i}'))
+            for i in range(self.num_gpus_available)
+        ])
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
@@ -149,6 +155,7 @@ class IncrementalPCAonGPU():
         num_gpus_used = current_device + 1
         print("Number of GPUs available:", num_gpus_available)
         print("Number of GPUs used:", num_gpus_used)
+
         if check_input:
             X = self._validate_data(X)
         n_samples, n_features = X.shape

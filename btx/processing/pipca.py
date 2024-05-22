@@ -1021,8 +1021,6 @@ class iPCA_Pytorch:
             
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
-            ipca = nn.DataParallel(ipca)
-            ipca = ipca.module
 
         logging.info("Images loaded and formatted and model initialized")
 
