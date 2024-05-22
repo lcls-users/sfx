@@ -233,3 +233,4 @@ class IncrementalPCAonGPU():
         X = X.to(self.device)
         X -= self.mean_
         return torch.mm(X, self.components_.T)
+
