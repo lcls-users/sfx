@@ -5,12 +5,13 @@ processes data in smaller chunks or batches.
 """
 
 import torch
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
 
-class IncrementalPCAonGPU():
+class IncrementalPCAonGPU(FSDP):
     """
     An implementation of Incremental Principal Components Analysis (IPCA) that leverages PyTorch for GPU acceleration.
 
@@ -28,6 +29,7 @@ class IncrementalPCAonGPU():
     """
 
     def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None):
+        super().__init__(parameters=[], process_group=None, reshard_after_forward=True)
         self.n_components = n_components
         self.whiten = whiten
         self.copy = copy
