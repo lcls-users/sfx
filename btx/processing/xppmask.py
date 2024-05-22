@@ -430,34 +430,30 @@ def load_config(config_file):
     return config
 
 
+from scipy.stats import norm
 class PumpProbeAnalysis:
     def __init__(self, config):
         self.config = config
         self.output_dir = os.path.join(config['pump_probe_analysis']['output_dir'], f"{config['setup']['exp']}_{config['setup']['run']}")
         os.makedirs(self.output_dir, exist_ok=True)
 
-    def run(self, data, binned_delays, laser_on_mask, laser_off_mask, signal_mask, bg_mask):
-        # Step 1: Load data (already done externally)
+    def run(self, data, binned_delays, I0, laser_on_mask, laser_off_mask, signal_mask, bg_mask):
         self.data = data
         self.binned_delays = binned_delays
+        self.I0 = I0
         self.laser_on_mask = laser_on_mask
         self.laser_off_mask = laser_off_mask
         self.signal_mask = signal_mask
         self.bg_mask = bg_mask
 
-        # Step 2: Group images into stacks by delay and laser condition
         self.stacks_on, self.stacks_off = self.group_images_into_stacks()
 
-        # Steps 3-4: Generate pump-probe curves (signals, std devs, p-values)
         self.delays, self.signals_on, self.std_devs_on, self.signals_off, self.std_devs_off, self.p_values = self.generate_pump_probe_curves()
 
-        # Step 5: Plot results
         self.plot_pump_probe_data()
 
-        # Step 6: Save pump-probe curves
         self.save_pump_probe_curves()
 
-        # Generate summary and report
         self.summarize()
         self.report()
 
@@ -477,9 +473,7 @@ class PumpProbeAnalysis:
 
         return stacks_on, stacks_off
 
-    def extract_stacks_by_delay(self, imgs):
-        return imgs
-    
+
     def generate_pump_probe_curves(self):
         delays, signals_on, signals_off, std_devs_on, std_devs_off = [], [], [], [], []
         
@@ -487,14 +481,14 @@ class PumpProbeAnalysis:
             stack_on = self.stacks_on[delay]
             stack_off = self.stacks_off[delay]
             
-            signal_on, bg_on, total_var_on = self.calculate_signal_and_background(stack_on)
-            signal_off, bg_off, total_var_off = self.calculate_signal_and_background(stack_off)
+            signal_on, bg_on, total_var_on = self.calculate_signal_and_background(stack_on, self.bg_mask)
+            signal_off, bg_off, total_var_off = self.calculate_signal_and_background(stack_off, self.bg_mask)
 
-            norm_signal_on = (signal_on - bg_on) / np.mean(self.data['I0'][self.data['laser_on_mask']])
-            norm_signal_off = (signal_off - bg_off) / np.mean(self.data['I0'][self.data['laser_off_mask']])
+            norm_signal_on = (signal_on - bg_on) / np.mean(self.I0[self.laser_on_mask])
+            norm_signal_off = (signal_off - bg_off) / np.mean(self.I0[self.laser_off_mask])
 
-            std_dev_on = np.sqrt(total_var_on) / np.mean(self.data['I0'][self.data['laser_on_mask']])
-            std_dev_off = np.sqrt(total_var_off) / np.mean(self.data['I0'][self.data['laser_off_mask']])
+            std_dev_on = np.sqrt(total_var_on) / np.mean(self.I0[self.laser_on_mask])
+            std_dev_off = np.sqrt(total_var_off) / np.mean(self.I0[self.laser_off_mask])
 
             delays.append(delay)
             signals_on.append(norm_signal_on)
@@ -506,13 +500,17 @@ class PumpProbeAnalysis:
             
         return delays, signals_on, std_devs_on, signals_off, std_devs_off, p_values
 
-    def calculate_signal_and_background(self, stack):
-        integrated_counts = stack.sum(axis=(1,2))
-        signal = np.sum(integrated_counts[self.signal_mask]) 
-        bg = np.sum(integrated_counts[self.bg_mask]) * np.sum(self.signal_mask) / np.sum(self.bg_mask)
+    def extract_stacks_by_delay(self, imgs):
+        return imgs
+    
+
+    def calculate_signal_and_background(self, stack, bg_mask):
+        integrated_counts = stack.sum(axis=0)
+        signal = np.sum(integrated_counts[self.signal_mask])
+        bg = np.sum(integrated_counts[bg_mask]) * np.sum(self.signal_mask) / np.sum(bg_mask)
         var_signal = signal
         var_bg = bg
-        total_var = var_signal + var_bg 
+        total_var = var_signal + var_bg
         return signal, bg, total_var
 
     def calculate_p_value(self, signal_on, signal_off, std_dev_on, std_dev_off):
@@ -564,17 +562,23 @@ class PumpProbeAnalysis:
             f.write(summary)
 
     def report(self):
+        root_dir = self.config['setup'].get('root_dir', 'N/A')  # Use 'N/A' if 'root_dir' is missing
+
+        # Autogenerate paths
+        signal_mask_path = os.path.join(self.output_dir, "signal_mask.npy")
+        bg_mask_path = os.path.join(self.output_dir, "bg_mask.npy")
+
         report = (f"Pump-probe analysis for {self.config['setup']['exp']} run {self.config['setup']['run']}\n\n"
-                  f"Data loaded from: {self.config['setup']['root_dir']}\n"
-                  f"Signal mask loaded from: {self.config['pump_probe_analysis']['signal_mask_path']}\n" 
-                  f"Background mask loaded from: {self.config['pump_probe_analysis']['bg_mask_path']}\n\n"
+                  f"Data loaded from: {root_dir}\n"
+                  f"Signal mask loaded from: {signal_mask_path}\n"
+                  f"Background mask loaded from: {bg_mask_path}\n\n"
                   f"Analysis parameters:\n"
-                  f" I0 threshold: {self.config['pump_probe_analysis']['i0_threshold']}\n"
-                  f" IPM pos filter: {self.config['pump_probe_analysis']['ipm_pos_filter']}\n"
-                  f" Time bin: {self.config['pump_probe_analysis']['time_bin']} ps\n"
-                  f" Time tool: {self.config['pump_probe_analysis']['time_tool']}\n"
-                  f" Energy filter: {self.config['pump_probe_analysis']['energy_filter']} keV\n"
-                  f" Minimum counts per bin: {self.config['pump_probe_analysis']['min_count']}\n\n"
+                  f" I0 threshold: {self.config['pump_probe_analysis'].get('i0_threshold', 'N/A')}\n"
+                  f" IPM pos filter: {self.config['pump_probe_analysis'].get('ipm_pos_filter', 'N/A')}\n"
+                  f" Time bin: {self.config['pump_probe_analysis'].get('time_bin', 'N/A')} ps\n"
+                  f" Time tool: {self.config['pump_probe_analysis'].get('time_tool', 'N/A')}\n"
+                  f" Energy filter: {self.config['pump_probe_analysis'].get('energy_filter', 'N/A')} keV\n"
+                  f" Minimum counts per bin: {self.config['pump_probe_analysis'].get('min_count', 'N/A')}\n\n"
                   f"Results:\n"
                   f" Number of delays: {len(self.delays)}\n"
                   f" Delays (ps): {self.delays}\n"
@@ -586,5 +590,6 @@ class PumpProbeAnalysis:
                   f" Minimum p-value: {min(self.p_values):.3e}\n\n"
                   f"Plots saved to: {os.path.join(self.output_dir, 'pump_probe_plot.png')}\n"
                   f"Results saved to: {os.path.join(self.output_dir, 'pump_probe_curves.npz')}\n")
+        
         with open(os.path.join(self.output_dir, 'pump_probe_report.txt'), 'w') as f:
             f.write(report)
