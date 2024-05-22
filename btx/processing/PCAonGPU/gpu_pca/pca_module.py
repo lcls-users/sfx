@@ -10,6 +10,7 @@ from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
+print("PyTorch version:", torch.__version__)
 
 class IncrementalPCAonGPU(FSDP):
     """
