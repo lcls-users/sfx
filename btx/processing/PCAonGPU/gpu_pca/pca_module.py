@@ -37,6 +37,15 @@ class IncrementalPCAonGPU(nn.Module):
         self.batch_size = batch_size
         self.device = device
 
+        # Set n_components_ based on n_components if provided
+        if n_components:
+            self.n_components_ = n_components
+
+        # Initialize attributes to avoid errors during the first call to partial_fit
+        self.mean_ = None
+        self.var_ = None
+        self.n_samples_seen_ = 0
+
         # Determine the number of GPUs available and how to distribute the components
         num_gpus_available = torch.cuda.device_count()
         current_device = torch.cuda.current_device()
@@ -49,18 +58,9 @@ class IncrementalPCAonGPU(nn.Module):
 
         # Initialize the components list to store components for each GPU
         self.components = nn.ModuleList([
-            nn.Parameter(torch.zeros(components_per_gpu, batch_size).to(device), requires_grad=True)
-            for _ in range(num_gpus_used)
+            nn.Parameter(torch.zeros(components_per_gpu, batch_size).to(i), requires_grad=True)
+            for i in range(num_gpus_used)
         ])
-
-        # Set n_components_ based on n_components if provided
-        if n_components:
-            self.n_components_ = n_components
-
-        # Initialize attributes to avoid errors during the first call to partial_fit
-        self.mean_ = None
-        self.var_ = None
-        self.n_samples_seen_ = 0
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
