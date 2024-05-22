@@ -11,6 +11,11 @@ import torch.nn as nn
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
 print("PyTorch version:", torch.__version__)
+num_gpus_available = torch.cuda.device_count()
+current_device = torch.cuda.current_device()
+num_gpus_used = current_device + 1
+print("Number of GPUs available:", num_gpus_available)
+print("Number of GPUs used:", num_gpus_used)
 
 class IncrementalPCAonGPU():
     """
@@ -139,6 +144,11 @@ class IncrementalPCAonGPU():
         Returns:
             IncrementalPCAGPU: The fitted IPCA model.
         """
+        num_gpus_available = torch.cuda.device_count()
+        current_device = torch.cuda.current_device()
+        num_gpus_used = current_device + 1
+        print("Number of GPUs available:", num_gpus_available)
+        print("Number of GPUs used:", num_gpus_used)
         if check_input:
             X = self._validate_data(X)
         n_samples, n_features = X.shape
