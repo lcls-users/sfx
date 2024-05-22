@@ -58,6 +58,7 @@ class LoadData:
             self.energy_filter, self.i0_threshold,
             self.ipm_pos_filter, self.time_bin, self.time_tool
         )
+        self.binned_delays = self.calculate_binned_delays(self.laser_delays, self.time_bin)
 
     def save_data(self):
         output_file = os.path.join(self.output_dir, f"{self.experiment_number}_run{self.run_number}_data.npz")
@@ -67,7 +68,8 @@ class LoadData:
             I0=self.I0,
             laser_delays=self.laser_delays,
             laser_on_mask=self.laser_on_mask,
-            laser_off_mask=self.laser_off_mask
+            laser_off_mask=self.laser_off_mask,
+            binned_delays=self.binned_delays
         )
 
     def summarize(self):
@@ -75,6 +77,7 @@ class LoadData:
         summary += f"  Data shape: {self.data.shape}\n"
         summary += f"  I0 shape: {self.I0.shape}\n"
         summary += f"  Laser delays shape: {self.laser_delays.shape}\n"
+        summary += f"  Binned delays shape: {self.binned_delays.shape}\n"
         summary += f"  Laser on mask shape: {self.laser_on_mask.shape}\n"
         summary += f"  Laser off mask shape: {self.laser_off_mask.shape}\n"
         summary += f"  Data min: {np.min(self.data):.2f}, max: {np.max(self.data):.2f}\n"
@@ -108,6 +111,30 @@ class LoadData:
         plt.tight_layout()
         plt.savefig(os.path.join(self.output_dir, f"{self.experiment_number}_run{self.run_number}_avg_frame.png"))
         plt.close()
+
+    def calculate_binned_delays(self, raw_delays, time_bin):
+        # Adjust the bin width to ensure it's a float
+        time_bin = float(time_bin)
+
+        # Determine the minimum and maximum values from the non-NaN delays
+        arg_delay_nan = np.isnan(raw_delays)
+        delay_min = np.floor(raw_delays[~arg_delay_nan].min())
+        delay_max = np.ceil(raw_delays[~arg_delay_nan].max())
+
+        # Create bins that are shifted by half the bin width
+        half_bin = time_bin / 2
+        bins = np.arange(delay_min - half_bin, delay_max + time_bin, time_bin)
+
+        # Assign each delay to the nearest bin
+        binned_indices = np.digitize(raw_delays, bins, right=True)
+
+        # Convert bin indices to delay values
+        binned_delays = bins[binned_indices - 1] + half_bin
+
+        # Ensure that the binned delays are within the min and max range
+        binned_delays = np.clip(binned_delays, delay_min, delay_max)
+
+        return binned_delays
 
 
 class MakeHistogram:
@@ -408,45 +435,48 @@ class PumpProbeAnalysis:
         self.config = config
         self.output_dir = os.path.join(config['pump_probe_analysis']['output_dir'], f"{config['setup']['exp']}_{config['setup']['run']}")
         os.makedirs(self.output_dir, exist_ok=True)
-        
-    def run(self, data, signal_mask, bg_mask):
+
+    def run(self, data, binned_delays, laser_on_mask, laser_off_mask, signal_mask, bg_mask):
         # Step 1: Load data (already done externally)
         self.data = data
-        self.signal_mask = signal_mask 
+        self.binned_delays = binned_delays
+        self.laser_on_mask = laser_on_mask
+        self.laser_off_mask = laser_off_mask
+        self.signal_mask = signal_mask
         self.bg_mask = bg_mask
-        
+
         # Step 2: Group images into stacks by delay and laser condition
         self.stacks_on, self.stacks_off = self.group_images_into_stacks()
-        
+
         # Steps 3-4: Generate pump-probe curves (signals, std devs, p-values)
         self.delays, self.signals_on, self.std_devs_on, self.signals_off, self.std_devs_off, self.p_values = self.generate_pump_probe_curves()
-        
+
         # Step 5: Plot results
         self.plot_pump_probe_data()
-        
-        # Step 6: Save pump-probe curves 
+
+        # Step 6: Save pump-probe curves
         self.save_pump_probe_curves()
-        
+
         # Generate summary and report
         self.summarize()
         self.report()
-        
+
     def group_images_into_stacks(self):
-        binned_delays = self.data['binned_delays']
-        imgs = self.data['imgs']
-        
+        binned_delays = self.binned_delays
+        imgs = self.data
+
         delay_output = np.sort(np.unique(binned_delays))
         stacks_on, stacks_off = {}, {}
-        
+
         for delay_val in delay_output:
-            idx_on = np.where((binned_delays == delay_val) & self.data['laser_on_mask'])[0]
-            idx_off = np.where((binned_delays == delay_val) & self.data['laser_off_mask'])[0]
-            
+            idx_on = np.where((binned_delays == delay_val) & self.laser_on_mask)[0]
+            idx_off = np.where((binned_delays == delay_val) & self.laser_off_mask)[0]
+
             stacks_on[delay_val] = self.extract_stacks_by_delay(imgs[idx_on])
             stacks_off[delay_val] = self.extract_stacks_by_delay(imgs[idx_off])
-            
+
         return stacks_on, stacks_off
-    
+
     def extract_stacks_by_delay(self, imgs):
         return imgs
     

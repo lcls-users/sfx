@@ -22,6 +22,11 @@ def test_load_data(output_dir, setup_config):
     output_file = os.path.join(output_dir, f"{setup_config['exp']}_run{setup_config['run']}_data.npz")
     assert os.path.exists(output_file), f"Output file {output_file} does not exist"
 
+    # Check if binned_delays are saved in the output file
+    with np.load(output_file) as data:
+        assert 'binned_delays' in data, "binned_delays not found in the output file"
+        assert data['binned_delays'].shape == data['laser_delays'].shape, "Shape mismatch between binned_delays and laser_delays"
+
     return output_file
 
 def test_make_histogram(data_file, output_dir, setup_config):
@@ -192,20 +197,21 @@ def test_build_pump_probe_masks(p_values_file, histograms_file, output_dir, setu
 
     return signal_mask_file, bg_mask_file
 
+
 def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
     # Load the output data from LoadData and BuildPumpProbeMasks
-    data = np.load(data_file)
+    data = np.load(data_file, allow_pickle=True)
     signal_mask = np.load(signal_mask_file)
     bg_mask = np.load(bg_mask_file)
 
     # Initialize and run PumpProbeAnalysis
     analysis = PumpProbeAnalysis(config)
-    analysis.run(data, signal_mask, bg_mask)
+    analysis.run(data['data'], data['binned_delays'], data['laser_on_mask'], data['laser_off_mask'], signal_mask, bg_mask)
 
     # Check that output files were generated
     assert os.path.exists(analysis.output_dir), f"Output directory {analysis.output_dir} was not created"
 
-    expected_files = ['pump_probe_plot.png', 'pump_probe_curves.npz', 'pump_probe_summary.txt', 'pump_probe_report.txt'] 
+    expected_files = ['pump_probe_plot.png', 'pump_probe_curves.npz', 'pump_probe_summary.txt', 'pump_probe_report.txt']
     for file in expected_files:
         file_path = os.path.join(analysis.output_dir, file)
         assert os.path.isfile(file_path), f"Expected output file {file_path} was not generated"
@@ -215,23 +221,24 @@ def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
     expected_keys = ['delays', 'signals_on', 'std_devs_on', 'signals_off', 'std_devs_off', 'p_values']
     for key in expected_keys:
         assert key in curves, f"Expected key {key} not found in pump_probe_curves.npz"
-        assert curves[key].shape == (analysis.delays.size,), f"Unexpected shape for {key} in pump_probe_curves.npz"
+        assert curves[key].shape == (len(analysis.delays),), f"Unexpected shape for {key} in pump_probe_curves.npz"
 
     # Check pump_probe_summary.txt
     with open(os.path.join(analysis.output_dir, 'pump_probe_summary.txt'), 'r') as f:
         summary = f.read()
     assert f"Pump-probe analysis for {config['setup']['exp']} run {config['setup']['run']}:" in summary
-    assert f"Number of delays: {analysis.delays.size}" in summary
+    assert f"Number of delays: {len(analysis.delays)}" in summary
     assert f"Results saved to: {analysis.output_dir}" in summary
 
     # Check pump_probe_report.txt
-    with open(os.path.join(analysis.output_dir, 'pump_probe_report.txt'), 'r') as f:  
+    with open(os.path.join(analysis.output_dir, 'pump_probe_report.txt'), 'r') as f:
         report = f.read()
     assert f"Signal mask loaded from: {config['pump_probe_analysis']['signal_mask_path']}" in report
     assert f"Background mask loaded from: {config['pump_probe_analysis']['bg_mask_path']}" in report
     assert "Laser on signals:" in report
     assert "Laser off std devs:" in report
     assert "p-values:" in report
+
 
 if __name__ == '__main__':
     # Load a sample config for testing
