@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
 print("PyTorch version:", torch.__version__)
 
-class IncrementalPCAonGPU(FSDP):
+class IncrementalPCAonGPU():
     """
     An implementation of Incremental Principal Components Analysis (IPCA) that leverages PyTorch for GPU acceleration.
 
