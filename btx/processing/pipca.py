@@ -1030,7 +1030,7 @@ class iPCA_Pytorch:
         execution_time = end_time - start_time  # Calculate the execution time
         frequency = self.num_images/execution_time
 
-        reconstructed_images = np.empty(0, self.num_components)
+        reconstructed_images = np.empty((0, self.num_components))
         
         for start in range(0, self.num_images, self.batch_size):
             end = min(start + self.batch_size, self.num_images)
