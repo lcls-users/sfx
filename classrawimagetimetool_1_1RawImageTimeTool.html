@@ -178,10 +178,10 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Class to reimplement time tool analysis at LCLS from raw images. </p>
 <p>Uses psana to interface with experimental data to retrieve raw camera images. Edge detection is implemented in order to perform jitter correction. Refer to the documentation located at <a href="https://lcls-users.readthedocs.org/during/timetool">https://lcls-users.readthedocs.org/during/timetool</a> for information on the theory and usage of this class.</p>
-<h2><a class="anchor" id="autotoc_md216"></a>
+<h2><a class="anchor" id="autotoc_md215"></a>
 Properties:</h2>
 <p>model - Retrieve or load polynomial model coefficients.</p>
-<h2><a class="anchor" id="autotoc_md217"></a>
+<h2><a class="anchor" id="autotoc_md216"></a>
 Methods:</h2>
 <p><b>init</b>(self, expmt: str, savedir: str) - Instantiate an analysis object for experiment expmt. open_run(self, run: str) - Open DataSource for a specified run. get_tt_name(self) - Determine time tool camera name in data files. calibrate(self, run: str, order: int, figs=True) - Calibrate the analysis object for jitter correction on specified run. process_run(self) - Perform edge detection on all events in a run. detect_edge(self, img: np.array, kernel: np.array) - Perform edge detection on an image. crop_image(self, img: np.array) - Crop time tool image to ROI. fit_calib(self, delays: np.array, edges: np.array, amplitudes: np.array, fwhm: np.array = None, order: int = 2) - Fit polynomial to calibration run data. ttstage_code(self, hutch) - Return the time tool target time stage for a given hutch.( edge_to_time(self, edge) actual_time_ps(self, edge, nominal) timetool_correct(self, edge, nominal, model, figs=True) plot_calib plot_hist </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -1170,7 +1170,7 @@ fwhm (float) Full-width half-max of convolution. Can be used for filtering. </dd
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Apr 27 2024 00:45:37 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Fri May 24 2024 23:40:54 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
