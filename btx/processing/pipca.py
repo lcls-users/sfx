@@ -133,7 +133,7 @@ class PiPCA:
 
         batch_size = self.batch_size
         num_images = self.num_images
-
+        
         # initialize and prime model, if specified
         if self.priming:
             img_batch = self.get_formatted_images(
@@ -169,10 +169,28 @@ class PiPCA:
             self.batch_number = 0
 
         # update model with remaining batches
-        with TaskTimer(self.task_durations, "fetch and update model"):
+        with TaskTimer(self.task_durations, "formatting and update model"):
             for batch_size in batch_sizes:
-                self.fetch_and_update_model(batch_size)
-            
+                with TaskTimer(self.task_durations, "get images on each rank - equiv to old get_formatted_img"):
+                    if self.rank==0:
+                        with TaskTimer(self.task_durations, "get formatted images rank 0"):
+                            imgs = self.psi.get_images(batch_size,assemble=False)
+                            with TaskTimer(self.task_durations, "distribute pixels"):
+                                img_batch = self.get_formatted_images(imgs)
+                    else :
+                        img_batch = None
+                    
+                    self.comm.Barrier()
+
+                    with TaskTimer(self.task_durations, "scattering data to all ranks"):
+                        if self.size == 1:
+                            formatted_imgs = img_batch[0]
+                        else:
+                            formatted_imgs = self.comm.scatter(img_batch,root=0) 
+                    
+                with TaskTimer(self.task_durations, "update model"):
+                    self.update_model(formatted_imgs)
+
         self.comm.Barrier()
         
         with TaskTimer(self.task_durations, "gather matrices end"):
@@ -186,7 +204,7 @@ class PiPCA:
         logging.basicConfig(level=logging.INFO)
 
         if self.rank == 0:  
-            logging.info("Model complete")
+            logging.debug("Model complete")
             execution_time = end_time - start_time  # Calculate the execution time
             frequency = self.num_incorporated_images/execution_time
 
@@ -209,21 +227,24 @@ class PiPCA:
 
                     append_to_dataset(f, 'frequency', data=frequency)
                     append_to_dataset(f, 'execution_times', data=execution_time)
-                    logging.info(f'Model saved to {self.filename}')
+                    logging.debug(f'Model saved to {self.filename}')
 
             # Print the mean duration and standard deviation for each task
             for task, durations in self.task_durations.items():
                 durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
                 if len(durations) == 1:
-                    logging.info(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
+                    logging.debug(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
                 else:
                     mean_duration = np.mean(durations)
                     std_deviation = statistics.stdev(durations)
-                    logging.info(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
+                    logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
+
+            end_time = time.time()
+            logging.info(f"Model complete in {end_time - start_time} seconds")
 
         self.comm.Barrier()
 
-    def get_formatted_images(self, n, start_index, end_index):
+    def get_formatted_images(self, imgs):
         """
         Fetch n - x image segments from run, where x is the number of 'dead' images.
 
@@ -244,12 +265,8 @@ class PiPCA:
 
         bin_factor = self.bin_factor
         downsample = self.downsample
-
         # may have to rewrite eventually when number of images becomes large,
         # i.e. streamed setting, either that or downsample aggressively
-        with TaskTimer(self.task_durations, 'get images'):
-            imgs = self.psi.get_images(n, assemble=False)
-
         if downsample:
             imgs = bin_data(imgs, bin_factor)
 
@@ -260,7 +277,9 @@ class PiPCA:
         num_valid_imgs, p, x, y = imgs.shape
         formatted_imgs = np.reshape(imgs, (num_valid_imgs, p * x * y)).T
 
-        return formatted_imgs[start_index:end_index, :]
+        formatted_imgs_to_scatter = np.split(formatted_imgs, self.split_indices[1:-1])
+
+        return formatted_imgs_to_scatter
 
     def prime_model(self, X):
         """
@@ -291,24 +310,6 @@ class PiPCA:
         self.V = V_T.T
 
         self.num_incorporated_images += n
-
-    def fetch_and_update_model(self, n):
-        """
-        Fetch images and update model.
-
-        Parameters
-        ----------
-        n : int
-            number of images to incorporate
-        """
-
-        rank = self.rank
-        start_index, end_index = self.split_indices[rank], self.split_indices[rank + 1]
-
-        with TaskTimer(self.task_durations, "get formatted images"):
-            img_batch = self.get_formatted_images(n, start_index, end_index)
-
-        self.update_model(img_batch)
 
     def update_model(self, X):
         """
