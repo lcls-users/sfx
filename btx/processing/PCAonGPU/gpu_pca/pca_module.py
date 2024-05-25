@@ -290,6 +290,9 @@ class IncrementalPCAonGPU(nn.Module):
         queue.put((gpu_id, U_k.cpu(), S_k.cpu(), Vt_k.cpu()))
     
     def parallel_svd(self, X, total_components, num_gpus):
+        
+        if num_gpus < 2:
+            return torch.svd(X, some=True)
         processes = []
         queue = mp.Queue()
         components_per_gpu = total_components // num_gpus

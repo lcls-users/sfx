@@ -19,6 +19,7 @@ import statistics
 
 import torch
 import torch.nn as nn
+import torch.multiprocessing as mp
 
 from btx.misc.shortcuts import TaskTimer
 
@@ -1018,7 +1019,9 @@ class iPCA_Pytorch:
                 [i for i in range(self.num_images) if not np.isnan(imgs[i : i + 1]).any()]
             ]
             imgs = np.reshape(imgs, (self.num_images, p, x, y))
-            
+        
+        mp.set_start_method('spawn', force=True)
+
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
 
