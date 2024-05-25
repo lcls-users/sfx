@@ -293,12 +293,12 @@ class IncrementalPCAonGPU(nn.Module):
         if num_gpus < 2:
             return torch.svd(X, some=True)
 
-        processes = []
-        queue = mp.Queue()
-        components_per_gpu = total_components // num_gpus
-        results = [None] * num_gpus
-        
         try:
+            processes = []
+            queue = mp.Queue()
+            components_per_gpu = total_components // num_gpus
+            results = [None] * num_gpus
+            
             for gpu_id in range(num_gpus):
                 start_idx = gpu_id * components_per_gpu
                 end_idx = start_idx + components_per_gpu
