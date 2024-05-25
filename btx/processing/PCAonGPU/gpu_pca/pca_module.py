@@ -196,7 +196,7 @@ class IncrementalPCAonGPU(nn.Module):
         """
         current_gpu_index = torch.cuda.current_device()
         current_device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=current_gpu_index)
-        
+
         first_pass = not hasattr(self, "components_")
 
         if check_input:
@@ -209,7 +209,7 @@ class IncrementalPCAonGPU(nn.Module):
             self.n_components_ = min(n_samples, n_features)
 
         col_mean, col_var, n_total_samples = self._incremental_mean_and_var(
-            X, self.mean_, self.var_, torch.tensor([self.n_samples_seen_], device=self.device)
+            X, self.mean_, self.var_, torch.tensor([self.n_samples_seen_], device=current_device)
         )
 
         # Whitening
