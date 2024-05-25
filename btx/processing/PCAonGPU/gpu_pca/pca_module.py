@@ -273,8 +273,7 @@ class IncrementalPCAonGPU(nn.Module):
         X -= self.mean_
         return torch.mm(X, self.components_.T)
 
-    def svd_on_gpu(self, X, k, gpu_id, start_idx, end_idx, queue):
-
+    def svd_on_gpu(self, X, k, gpu_id, start_idx, end_idx, shared_U, shared_S, shared_Vt):
         device = torch.device(f'cuda:{gpu_id}' if torch.cuda.is_available() else 'cpu')
         X = X.to(device)
         
@@ -286,39 +285,34 @@ class IncrementalPCAonGPU(nn.Module):
         S_k = S[start_idx:end_idx]
         Vt_k = Vt[start_idx:end_idx, :]
         
-        # Put the result into the queue
-        queue.put((gpu_id, U_k.cpu(), S_k.cpu(), Vt_k.cpu()))
+        # Copy the results to shared memory
+        shared_U[start_idx:end_idx, :] = U_k
+        shared_S[start_idx:end_idx] = S_k
+        shared_Vt[:, start_idx:end_idx] = Vt_k
     
-    def parallel_svd(self, X, total_components, num_gpus):
+    def parallel_svd(self, X, total_components):
+        num_gpus = min(self.num_gpus, torch.cuda.device_count())
         if num_gpus < 2:
             return torch.svd(X, some=True)
 
         try:
-            processes = []
-            queue = mp.Queue()
             components_per_gpu = total_components // num_gpus
-            results = [None] * num_gpus
-            
+            shared_U = torch.zeros(X.shape[0], total_components, dtype=X.dtype, device='cuda').share_memory_()
+            shared_S = torch.zeros(total_components, dtype=X.dtype, device='cuda').share_memory_()
+            shared_Vt = torch.zeros(total_components, X.shape[1], dtype=X.dtype, device='cuda').share_memory_()
+
+            processes = []
             for gpu_id in range(num_gpus):
                 start_idx = gpu_id * components_per_gpu
                 end_idx = start_idx + components_per_gpu
-                p = mp.Process(target=self.svd_on_gpu, args=(X, components_per_gpu, gpu_id, start_idx, end_idx, queue))
+                p = mp.Process(target=self.svd_on_gpu, args=(X, components_per_gpu, gpu_id, start_idx, end_idx, shared_U, shared_S, shared_Vt))
                 p.start()
                 processes.append(p)
             
             for p in processes:
                 p.join()
             
-            while not queue.empty():
-                gpu_id, U_k, S_k, Vt_k = queue.get()
-                results[gpu_id] = (U_k, S_k, Vt_k)
-            
-            # Aggregate results
-            U_agg = torch.cat([result[0] for result in results], dim=1)
-            S_agg = torch.cat([result[1] for result in results], dim=0)
-            Vt_agg = torch.cat([result[2] for result in results], dim=0)
-            
-            return U_agg, S_agg, Vt_agg
+            return shared_U, shared_S, shared_Vt
         
         except Exception as e:
             # Print or log the exception for debugging
