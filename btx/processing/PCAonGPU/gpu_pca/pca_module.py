@@ -194,6 +194,9 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             IncrementalPCAGPU: The updated IPCA model after processing the batch.
         """
+        current_gpu_index = torch.cuda.current_device()
+        current_device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=current_gpu_index)
+        
         first_pass = not hasattr(self, "components_")
 
         if check_input:
@@ -216,7 +219,7 @@ class IncrementalPCAonGPU(nn.Module):
             col_batch_mean = torch.mean(X, dim=0)
             X -= col_batch_mean
             mean_correction_factor = torch.sqrt(
-                torch.tensor((self.n_samples_seen_ / n_total_samples.item()) * n_samples, device=self.device)
+                torch.tensor((self.n_samples_seen_ / n_total_samples.item()) * n_samples, device=current_device)
             )
             mean_correction = mean_correction_factor * (self.mean_ - col_batch_mean)
 
