@@ -54,17 +54,18 @@ class IncrementalPCAonGPU(nn.Module):
 
         self.components = []  # Liste pour stocker les composants
 
-        self = nn.DataParallel(self)
         for i in range(self.num_gpus_used):
             self.components.append(
                 torch.zeros(components_per_gpu, batch_size).to(device)
             )
 
+        self = nn.DataParallel(self)
         num_gpus = torch.cuda.device_count()
         for gpu_id in range(num_gpus):
             print(f"GPU {gpu_id}:")
             print(f"    Allocated memory: {torch.cuda.memory_allocated(gpu_id)} bytes")
             print(f"    Reserved memory: {torch.cuda.memory_reserved(gpu_id)} bytes")
+        
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
