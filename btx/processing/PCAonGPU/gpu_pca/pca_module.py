@@ -290,31 +290,38 @@ class IncrementalPCAonGPU(nn.Module):
         queue.put((gpu_id, U_k.cpu(), S_k.cpu(), Vt_k.cpu()))
     
     def parallel_svd(self, X, total_components, num_gpus):
-        
         if num_gpus < 2:
             return torch.svd(X, some=True)
+
         processes = []
         queue = mp.Queue()
         components_per_gpu = total_components // num_gpus
         results = [None] * num_gpus
         
-        for gpu_id in range(num_gpus):
-            start_idx = gpu_id * components_per_gpu
-            end_idx = start_idx + components_per_gpu
-            p = mp.Process(target=self.svd_on_gpu, args=(X, components_per_gpu, gpu_id, start_idx, end_idx, queue))
-            p.start()
-            processes.append(p)
+        try:
+            for gpu_id in range(num_gpus):
+                start_idx = gpu_id * components_per_gpu
+                end_idx = start_idx + components_per_gpu
+                p = mp.Process(target=self.svd_on_gpu, args=(X, components_per_gpu, gpu_id, start_idx, end_idx, queue))
+                p.start()
+                processes.append(p)
+            
+            for p in processes:
+                p.join()
+            
+            while not queue.empty():
+                gpu_id, U_k, S_k, Vt_k = queue.get()
+                results[gpu_id] = (U_k, S_k, Vt_k)
+            
+            # Aggregate results
+            U_agg = torch.cat([result[0] for result in results], dim=1)
+            S_agg = torch.cat([result[1] for result in results], dim=0)
+            Vt_agg = torch.cat([result[2] for result in results], dim=0)
+            
+            return U_agg, S_agg, Vt_agg
         
-        for p in processes:
-            p.join()
-        
-        while not queue.empty():
-            gpu_id, U_k, S_k, Vt_k = queue.get()
-            results[gpu_id] = (U_k, S_k, Vt_k)
-        
-        # Aggregate results
-        U_agg = torch.cat([result[0] for result in results], dim=1)
-        S_agg = torch.cat([result[1] for result in results], dim=0)
-        Vt_agg = torch.cat([result[2] for result in results], dim=0)
-        
-        return U_agg, S_agg, Vt_agg
+        except Exception as e:
+            # Print or log the exception for debugging
+            print("Exception occurred in parallel_svd:", e)
+            # Handle the exception gracefully, e.g., return default values or re-raise
+            raise
