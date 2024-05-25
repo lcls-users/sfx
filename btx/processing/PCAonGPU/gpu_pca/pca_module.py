@@ -6,6 +6,7 @@ processes data in smaller chunks or batches.
 
 import torch
 import torch.nn as nn
+import torch.multiprocessing as mp
 
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -232,7 +233,7 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False)
+        U, S, Vt = self.parallel_svd(X, self.n_components_, self.num_gpus_used)
         U, Vt = self._svd_flip(U, Vt, u_based_decision=False)
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
@@ -272,3 +273,45 @@ class IncrementalPCAonGPU(nn.Module):
         X -= self.mean_
         return torch.mm(X, self.components_.T)
 
+    def svd_on_gpu(self, X, k, gpu_id, start_idx, end_idx, queue):
+
+        device = torch.device(f'cuda:{gpu_id}' if torch.cuda.is_available() else 'cpu')
+        X = X.to(device)
+        
+        # Perform SVD
+        U, S, Vt = torch.linalg.svd(X, full_matrices=False)
+        
+        # Select the components for this GPU
+        U_k = U[:, start_idx:end_idx]
+        S_k = S[start_idx:end_idx]
+        Vt_k = Vt[start_idx:end_idx, :]
+        
+        # Put the result into the queue
+        queue.put((gpu_id, U_k.cpu(), S_k.cpu(), Vt_k.cpu()))
+    
+    def parallel_svd(self, X, total_components, num_gpus):
+        processes = []
+        queue = mp.Queue()
+        components_per_gpu = total_components // num_gpus
+        results = [None] * num_gpus
+        
+        for gpu_id in range(num_gpus):
+            start_idx = gpu_id * components_per_gpu
+            end_idx = start_idx + components_per_gpu
+            p = mp.Process(target=svd_on_gpu, args=(X, components_per_gpu, gpu_id, start_idx, end_idx, queue))
+            p.start()
+            processes.append(p)
+        
+        for p in processes:
+            p.join()
+        
+        while not queue.empty():
+            gpu_id, U_k, S_k, Vt_k = queue.get()
+            results[gpu_id] = (U_k, S_k, Vt_k)
+        
+        # Aggregate results
+        U_agg = torch.cat([result[0] for result in results], dim=1)
+        S_agg = torch.cat([result[1] for result in results], dim=0)
+        Vt_agg = torch.cat([result[2] for result in results], dim=0)
+        
+        return U_agg, S_agg, Vt_agg
