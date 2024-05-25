@@ -1026,7 +1026,7 @@ class iPCA_Pytorch:
         logging.info("Images loaded and formatted and model initialized")
 
         with TaskTimer(self.task_durations, "Fitting model"):
-            ipca.fit(imgs.reshape(self.num_images, -1))
+            ipca.module.fit(imgs.reshape(self.num_images, -1))
 
         logging.info("Model fitted")
 
@@ -1039,8 +1039,8 @@ class iPCA_Pytorch:
         for start in range(0, self.num_images, self.batch_size):
             end = min(start + self.batch_size, self.num_images)
             batch_imgs = imgs[start:end]
-            reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
-            reconstructed_batch = ipca.transform(reconstructed_batch)
+            reconstructed_batch = ipca.module._validate_data(batch_imgs.reshape(end-start, -1))
+            reconstructed_batch = ipca.module.transform(reconstructed_batch)
             reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
             reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
 
