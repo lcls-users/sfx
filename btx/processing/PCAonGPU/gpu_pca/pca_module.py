@@ -58,7 +58,13 @@ class IncrementalPCAonGPU(nn.Module):
             self.components.append(
                 torch.zeros(components_per_gpu, batch_size).to(device)
             )
+        self = nn.DataParallel(self)
 
+        num_gpus_available = torch.cuda.device_count()
+        current_device = torch.cuda.current_device()
+        num_gpus_used = current_device + 1
+        print("Number of GPUs available:", num_gpus_available)
+        print("Number of GPUs used:", num_gpus_used)
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
@@ -153,11 +159,6 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             IncrementalPCAGPU: The fitted IPCA model.
         """
-        num_gpus_available = torch.cuda.device_count()
-        current_device = torch.cuda.current_device()
-        num_gpus_used = current_device + 1
-        print("Number of GPUs available:", num_gpus_available)
-        print("Number of GPUs used:", num_gpus_used)
 
         if check_input:
             X = self._validate_data(X)
