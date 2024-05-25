@@ -58,8 +58,7 @@ class IncrementalPCAonGPU(nn.Module):
             self.components.append(
                 torch.zeros(components_per_gpu, batch_size).to(device)
             )
-
-        self = nn.DataParallel(self, device_ids=range(torch.cuda.device_count()))
+            
         num_gpus = torch.cuda.device_count()
         for gpu_id in range(num_gpus):
             print(f"GPU {gpu_id}:")
