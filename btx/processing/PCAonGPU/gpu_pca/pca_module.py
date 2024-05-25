@@ -31,6 +31,7 @@ class IncrementalPCAonGPU(nn.Module):
 
     def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None):
         super().__init__()
+        self = nn.DataParallel(self)
         self.n_components = n_components
         self.whiten = whiten
         self.copy = copy
@@ -58,13 +59,12 @@ class IncrementalPCAonGPU(nn.Module):
             self.components.append(
                 torch.zeros(components_per_gpu, batch_size).to(device)
             )
-        self = nn.DataParallel(self)
 
-        num_gpus_available = torch.cuda.device_count()
-        current_device = torch.cuda.current_device()
-        num_gpus_used = current_device + 1
-        print("Number of GPUs available:", num_gpus_available)
-        print("Number of GPUs used:", num_gpus_used)
+        num_gpus = torch.cuda.device_count()
+        for gpu_id in range(num_gpus):
+            print(f"GPU {gpu_id}:")
+            print(f"    Allocated memory: {torch.cuda.memory_allocated(gpu_id)} bytes")
+            print(f"    Reserved memory: {torch.cuda.memory_reserved(gpu_id)} bytes")
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
@@ -159,6 +159,11 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             IncrementalPCAGPU: The fitted IPCA model.
         """
+        num_gpus = torch.cuda.device_count()
+        for gpu_id in range(num_gpus):
+            print(f"GPU {gpu_id}:")
+            print(f"    Allocated memory: {torch.cuda.memory_allocated(gpu_id)} bytes")
+            print(f"    Reserved memory: {torch.cuda.memory_reserved(gpu_id)} bytes")
 
         if check_input:
             X = self._validate_data(X)
