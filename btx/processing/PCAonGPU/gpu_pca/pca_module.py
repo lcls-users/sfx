@@ -291,7 +291,7 @@ class IncrementalPCAonGPU(nn.Module):
         shared_Vt[:, start_idx:end_idx] = Vt_k
     
     def parallel_svd(self, X, total_components):
-        num_gpus = min(self.num_gpus, torch.cuda.device_count())
+        num_gpus = min(self.num_gpus_used, torch.cuda.device_count())
         if num_gpus < 2:
             return torch.svd(X, some=True)
 
