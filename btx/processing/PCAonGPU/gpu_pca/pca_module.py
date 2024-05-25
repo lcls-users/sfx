@@ -298,7 +298,7 @@ class IncrementalPCAonGPU(nn.Module):
         for gpu_id in range(num_gpus):
             start_idx = gpu_id * components_per_gpu
             end_idx = start_idx + components_per_gpu
-            p = mp.Process(target=svd_on_gpu, args=(X, components_per_gpu, gpu_id, start_idx, end_idx, queue))
+            p = mp.Process(target=self.svd_on_gpu, args=(X, components_per_gpu, gpu_id, start_idx, end_idx, queue))
             p.start()
             processes.append(p)
         
