@@ -286,7 +286,7 @@ class IncrementalPCAonGPU(nn.Module):
         Vt_k = Vt[start_idx:end_idx, :]
         
         # Copy the results to shared memory
-        shared_U[start_idx:end_idx, :] = U_k
+        shared_U[start_idx:end_idx, :] = U_k.t()
         shared_S[start_idx:end_idx] = S_k
         shared_Vt[:, start_idx:end_idx] = Vt_k
     
@@ -312,7 +312,7 @@ class IncrementalPCAonGPU(nn.Module):
             for p in processes:
                 p.join()
             
-            return shared_U, shared_S, shared_Vt
+            return shared_U.t(), shared_S, shared_Vt
         
         except Exception as e:
             # Print or log the exception for debugging
