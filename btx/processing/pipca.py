@@ -1023,7 +1023,7 @@ class iPCA_Pytorch:
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
             ipca = nn.DataParallel(ipca, device_ids=range(torch.cuda.device_count()))
             ipca = ipca.module
-            
+
         logging.info("Images loaded and formatted and model initialized")
 
         with TaskTimer(self.task_durations, "Fitting model"):
@@ -1047,7 +1047,7 @@ class iPCA_Pytorch:
 
         logging.info("Images reconstructed")
 
-        if str(ipca.device).strip() == "cuda":
+        if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
             V = ipca.components_.cpu().detach().numpy().T
             mu = ipca.mean_.cpu().detach().numpy()
