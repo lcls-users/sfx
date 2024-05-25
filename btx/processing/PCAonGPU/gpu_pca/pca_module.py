@@ -82,10 +82,13 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             torch.Tensor: Validated and possibly copied tensor residing on the specified device.
         """
+        current_gpu_index = torch.cuda.current_device()
+        current_device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=current_gpu_index)
+
         if not isinstance(X, torch.Tensor):
-            X = torch.tensor(X, dtype=dtype).to(self.device)
-        elif X.device != self.device:
-            X = X.to(self.device)
+            X = torch.tensor(X, dtype=dtype).to(current_device)
+        elif X.device != current_device:
+            X = X.to(current_device)
         if copy:
             X = X.clone()
         return X
@@ -259,7 +262,10 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             torch.Tensor: Transformed data tensor with shape (n_samples, n_components).
         """
-        X = X.to(self.device)
+        current_gpu_index = torch.cuda.current_device()
+        current_device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=current_gpu_index)
+
+        X = X.to(current_device)
         X -= self.mean_
         return torch.mm(X, self.components_.T)
 
