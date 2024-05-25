@@ -31,7 +31,6 @@ class IncrementalPCAonGPU(nn.Module):
 
     def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None):
         super().__init__()
-        self = nn.DataParallel(self)
         self.n_components = n_components
         self.whiten = whiten
         self.copy = copy
@@ -55,6 +54,7 @@ class IncrementalPCAonGPU(nn.Module):
 
         self.components = []  # Liste pour stocker les composants
 
+        self = nn.DataParallel(self)
         for i in range(self.num_gpus_used):
             self.components.append(
                 torch.zeros(components_per_gpu, batch_size).to(device)
