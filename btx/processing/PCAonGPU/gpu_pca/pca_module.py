@@ -233,7 +233,7 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
-        U, S, Vt = self.parallel_svd(X, self.n_components_, self.num_gpus_used)
+        U, S, Vt = self.parallel_svd(X, self.n_components_)
         U, Vt = self._svd_flip(U, Vt, u_based_decision=False)
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
