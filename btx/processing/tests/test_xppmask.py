@@ -4,21 +4,22 @@ import h5py
 from xppmask import *
 from xppmask import MakeHistogram
 from xppmask import LoadData
+import yaml
 
-def test_load_data(output_dir, setup_config):
-    config = {
-        'setup': setup_config,
-        'load_data': {
-            'roi': [5, 105, 50, 250],
-        },
-    }
+def load_yaml_config(yaml_file):
+    with open(yaml_file, 'r') as f:
+        config = yaml.safe_load(f)
+    return config 
+
+def test_load_data(output_dir, config):
+
 
     load_data = LoadData(config)
     load_data.load_data()
     load_data.save_data()
     load_data.summarize()
 
-    output_file = os.path.join(output_dir, f"{setup_config['exp']}_run{setup_config['run']}_data.npz")
+    output_file = os.path.join(output_dir, 'load_data', f"{config['setup']['exp']}_{config['setup']['run']}", f"{config['setup']['exp']}_run{config['setup']['run']}_data.npz")
     assert os.path.exists(output_file), f"Output file {output_file} does not exist"
 
     # Check if binned_delays are saved in the output file
@@ -28,29 +29,18 @@ def test_load_data(output_dir, setup_config):
 
     return output_file
 
-def test_make_histogram(data_file, output_dir, setup_config):
-    config = {
-        'setup': {
-            'exp': setup_config['exp'],
-            'run': setup_config['run'],
-            'output_dir': output_dir,
-        },
-        'make_histogram': {
-            'input_file': data_file,
-        },
-    }
+def test_make_histogram(data_file, output_dir, config):
 
-    # Create and run the MakeHistogram instance
+
     make_histogram = MakeHistogram(config)
     make_histogram.load_data()
     make_histogram.generate_histograms()
     make_histogram.summarize()
 
-    # Save the histograms using the save_histograms() method
     histogram_file = make_histogram.save_histograms()
 
-    # Check if the histogram file exists
     assert os.path.exists(histogram_file), f"Histogram file {histogram_file} does not exist"
+    assert histogram_file == os.path.join(output_dir, 'make_histogram', f"{config['setup']['exp']}_{config['setup']['run']}", "histograms.npy")
 
     # Save the histogram image
     make_histogram.save_histogram_image()
@@ -58,17 +48,8 @@ def test_make_histogram(data_file, output_dir, setup_config):
     # Return the path to the histogram file and the summary
     return histogram_file, make_histogram.histogram_summary
 
-def test_make_histogram_from_npz(npz_file, output_dir, setup_config):
-    config = {
-        'setup': {
-            'exp': setup_config['exp'],
-            'run': setup_config['run'],
-        },
-        'make_histogram': {
-            'input_file': npz_file,
-            'output_dir': output_dir,
-        },
-    }
+def test_make_histogram_from_npz(npz_file, output_dir, config):
+
 
     # Create and run the MakeHistogram instance
     make_histogram = MakeHistogram(config)
@@ -92,60 +73,30 @@ def test_make_histogram_from_npz(npz_file, output_dir, setup_config):
     # Return the path to the histogram file and the summary
     return histogram_file, make_histogram.histogram_summary
 
-def test_measure_emd(histogram_file, output_dir, setup_config):
-    config = {
-        'setup': {
-            'exp': setup_config['exp'],
-            'run': setup_config['run'],
-            'output_dir': output_dir,
-            'background_roi_coords': [50, 100, 0, 200],
-        },
-        'calculate_emd': {
-            'num_permutations': 100,  # Reduced permutations for faster testing
-            'histograms_path': histogram_file,
-        },
-    }
+def test_measure_emd(histogram_file, output_dir, config):
 
-    emd_task = MeasureEMD(config)
+
+    emd_task = MeasureEMD(config, histogram_file)
     emd_task.load_histograms()
-    try:
-        emd_task.calculate_emd()
-    except Exception as e:
-        print(f"Error in calculate_emd: {e}")
-        raise
-
+    emd_task.calculate_emd()
     emd_task.summarize()
+
     report_path = os.path.join(emd_task.output_dir, 'report.txt')
-    emd_task.report(report_path)
+    emd_values_path = os.path.join(emd_task.output_dir, "emd_values.npy")
+    emd_null_dist_path = os.path.join(emd_task.output_dir, "emd_null_dist.npy")
 
-    try:
-        emd_task.save_emd_values()
-    except Exception as e:
-        print(f"Error in save_emd_values: {e}")
-        raise
+    assert os.path.exists(report_path), f"Report file {report_path} does not exist"
+    assert os.path.exists(emd_values_path), f"EMD values file {emd_values_path} does not exist"
+    assert os.path.exists(emd_null_dist_path), f"EMD null distribution file {emd_null_dist_path} does not exist"
 
-    try:
-        emd_task.save_null_distribution()
-    except Exception as e:
-        print(f"Error in save_null_distribution: {e}")
-        raise
-
-    assert os.path.exists(report_path)
-    assert os.path.exists(os.path.join(emd_task.output_dir, "emd_values.npy"))
-    assert os.path.exists(os.path.join(emd_task.output_dir, "emd_null_dist.npy"))
+    assert emd_values_path == os.path.join(output_dir, 'measure_emd', f"{config['setup']['exp']}_{config['setup']['run']}", "emd_values.npy")
+    assert emd_null_dist_path == os.path.join(output_dir, 'measure_emd', f"{config['setup']['exp']}_{config['setup']['run']}", "emd_null_dist.npy")
 
     return os.path.join(emd_task.output_dir, "emd_values.npy")
 
 
-def test_calculate_p_values(emd_file, output_dir, setup_config):
-    config = {
-        'setup': {
-            'exp': setup_config['exp'],
-            'run': setup_config['run'],
-            'output_dir': output_dir,
-        },
-        'calculate_p_values': {},
-    }
+def test_calculate_p_values(emd_file, output_dir, config):
+
 
     pval_task = CalculatePValues(config)
     pval_task.load_data()
@@ -153,28 +104,17 @@ def test_calculate_p_values(emd_file, output_dir, setup_config):
     pval_task.summarize()
 
     report_path = os.path.join(pval_task.output_dir, 'pvalues_report.txt')
-    pval_task.report(report_path)
-    pval_task.save_p_values()
+    p_values_path = os.path.join(pval_task.output_dir, "p_values.npy")
 
-    assert os.path.exists(report_path)
-    assert os.path.exists(os.path.join(pval_task.output_dir, "p_values.npy"))
+    assert os.path.exists(report_path), f"Report file {report_path} does not exist"
+    assert os.path.exists(p_values_path), f"P-values file {p_values_path} does not exist"
+
+    assert p_values_path == os.path.join(output_dir, 'calculate_p_values', f"{config['setup']['exp']}_{config['setup']['run']}", "p_values.npy")
 
     return os.path.join(pval_task.output_dir, "p_values.npy")
 
-def test_build_pump_probe_masks(p_values_file, histograms_file, output_dir, setup_config):
-    config = {
-        'setup': {
-            'exp': setup_config['exp'],
-            'run': setup_config['run'],
-            'output_dir': output_dir,
-            'background_roi_coords': [50, 100, 0, 200],
-        },
-        'generate_masks': {
-            'threshold': 0.1,
-            'bg_mask_mult': 2.0,
-            'bg_mask_thickness': 5,
-        },
-    }
+def test_build_pump_probe_masks(p_values_file, histograms_file, output_dir, config):
+
 
     mask_task = BuildPumpProbeMasks(config)
     mask_task.load_histograms()
@@ -183,14 +123,17 @@ def test_build_pump_probe_masks(p_values_file, histograms_file, output_dir, setu
     mask_task.summarize()
 
     report_path = os.path.join(mask_task.output_dir, 'masks_report.txt')
-    mask_task.report(report_path)
-    signal_mask_file, bg_mask_file = mask_task.save_masks()
+    signal_mask_path = os.path.join(mask_task.output_dir, "signal_mask.npy")
+    bg_mask_path = os.path.join(mask_task.output_dir, "bg_mask.npy")
 
-    assert os.path.exists(report_path)
-    assert os.path.exists(signal_mask_file)
-    assert os.path.exists(bg_mask_file)
+    assert os.path.exists(report_path), f"Report file {report_path} does not exist"
+    assert os.path.exists(signal_mask_path), f"Signal mask file {signal_mask_path} does not exist"
+    assert os.path.exists(bg_mask_path), f"Background mask file {bg_mask_path} does not exist"
 
-    return signal_mask_file, bg_mask_file
+    assert signal_mask_path == os.path.join(output_dir, 'build_pump_probe_masks', f"{config['setup']['exp']}_{config['setup']['run']}", "signal_mask.npy")
+    assert bg_mask_path == os.path.join(output_dir, 'build_pump_probe_masks', f"{config['setup']['exp']}_{config['setup']['run']}", "bg_mask.npy")
+
+    return signal_mask_path, bg_mask_path
 
 
 def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
@@ -252,53 +195,33 @@ def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
     assert "Laser off std devs:" in report
     assert "p-values:" in report
 
+# test_xppmask.py
 
 if __name__ == '__main__':
-    # Load a sample config for testing
-    test_config = {
-        'setup': {
-            'exp': 'xppx1003221',
-            'run': 195,
-            'root_dir': '/sdf/data/lcls/ds/xpp/xppx1003221',
-            'output_dir': 'output',
-        },
-        'pump_probe_analysis': {
-            'i0_threshold': 1000,
-            'ipm_pos_filter': [0.1, 0.1],
-            'time_bin': 0.1,
-            'time_tool': [1, 1000],
-            'energy_filter': [1.0, 0.1],
-            'min_count': 200,
-        }
-    }
+    # Load the configuration from xppmask.yaml
+    config_path = 'xppmask.yaml'
+    test_config = load_yaml_config(config_path)
+    test_config['setup']['run'] = 195
 
     # Run LoadData
-    data_file = test_load_data('loaded_data', test_config['setup'])
+    data_file = test_load_data(test_config['setup']['output_dir'], test_config)
 
     # Run MakeHistogram with LoadData output
-    hfile_from_load_data, summary_from_load_data = test_make_histogram(data_file, 'histograms_from_load_data', test_config['setup'])
+    hfile_from_load_data, summary_from_load_data = test_make_histogram(data_file, test_config['setup']['output_dir'], test_config)
     print("MakeHistogram with LoadData output:")
     print(summary_from_load_data)
 
-#    # Run MakeHistogram with pre-existing npz file
-#    npz_file = 'data.npz'  # Replace with the actual path to your npz file
-#    hfile_from_npz, summary_from_npz = test_make_histogram_from_npz(npz_file, 'histograms_from_npz', test_config)
-#    print("MakeHistogram with pre-existing npz file:")
-#    print(summary_from_npz)
-
     # Run MeasureEMD and save the output
-    emd_file = test_measure_emd(hfile_from_load_data, 'emd_output', test_config['setup'])
+    emd_file = test_measure_emd(hfile_from_load_data, test_config['setup']['output_dir'], test_config)
 
     # Run CalculatePValues and save the output
-    p_values_file = test_calculate_p_values(emd_file, os.path.dirname(emd_file), test_config['setup'])
+    p_values_file = test_calculate_p_values(emd_file, test_config['setup']['output_dir'], test_config)
 
     # Run BuildPumpProbeMasks
-    signal_mask_file, bg_mask_file = test_build_pump_probe_masks(p_values_file, hfile_from_load_data, 'masks_output', test_config['setup'])
+    signal_mask_file, bg_mask_file = test_build_pump_probe_masks(p_values_file, hfile_from_load_data, test_config['setup']['output_dir'], test_config)
 
     try:
         test_pump_probe_analysis(test_config, data_file, signal_mask_file, bg_mask_file)
         print("PumpProbeAnalysis test passed")
     except AssertionError as e:
         print(f"PumpProbeAnalysis test failed: {str(e)}")
-
-
