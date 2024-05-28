@@ -94,8 +94,15 @@ def test_make_histogram_from_npz(npz_file, output_dir, setup_config):
 
 def test_measure_emd(histogram_file, output_dir, setup_config):
     config = {
+        'setup': {
+            'exp': setup_config['exp'],
+            'run': setup_config['run'],
+            'output_dir': output_dir,
+            'background_roi_coords': [50, 100, 0, 200],
+        },
         'calculate_emd': {
-            'num_permutations': 100,  # Reduced permutations for faster testing
+            'num_permutations': 100,
+            'histograms_path': histogram_file,
         },
     }
 

@@ -213,8 +213,8 @@ class MeasureEMD:
             if key not in config:
                 raise ValueError(f"Missing required configuration key: {key}")
 
+        self.histograms_path = config['calculate_emd']['histograms_path']
         self.background_roi_coords = config['setup']['background_roi_coords']
-        self.histograms_path = os.path.join(config['setup']['output_dir'], 'histograms', f"{config['setup']['exp']}_{config['setup']['run']}", 'histograms.npy')
         self.num_permutations = config['calculate_emd'].get('num_permutations', 1000)
         self.exp = config['setup']['exp']
         self.run = config['setup']['run']
