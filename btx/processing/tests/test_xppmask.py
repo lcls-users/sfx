@@ -101,7 +101,7 @@ def test_measure_emd(histogram_file, output_dir, setup_config):
             'background_roi_coords': [50, 100, 0, 200],
         },
         'calculate_emd': {
-            'num_permutations': 100,
+            'num_permutations': 100,  # Reduced permutations for faster testing
             'histograms_path': histogram_file,
         },
     }
@@ -134,18 +134,17 @@ def test_measure_emd(histogram_file, output_dir, setup_config):
     assert os.path.exists(os.path.join(emd_task.output_dir, "emd_values.npy"))
     assert os.path.exists(os.path.join(emd_task.output_dir, "emd_null_dist.npy"))
 
-    return os.path.join(emd_task.output_dir, "emd_values.npy"), os.path.join(emd_task.output_dir, "emd_null_dist.npy")
+    return os.path.join(emd_task.output_dir, "emd_values.npy")
 
-def test_calculate_p_values(emd_file, null_dist_file, output_dir, setup_config):
+
+def test_calculate_p_values(emd_file, output_dir, setup_config):
     config = {
         'setup': {
             'exp': setup_config['exp'],
             'run': setup_config['run'],
             'output_dir': output_dir,
         },
-        'calculate_p_values': {
-            'null_dist_path': null_dist_file,
-        },
+        'calculate_p_values': {},
     }
 
     pval_task = CalculatePValues(config)
@@ -288,10 +287,10 @@ if __name__ == '__main__':
 #    print(summary_from_npz)
 
     # Run MeasureEMD and save the output
-    emd_file, null_dist_file = test_measure_emd(hfile_from_load_data, 'emd_output', test_config['setup'])
+    emd_file = test_measure_emd(hfile_from_load_data, 'emd_output', test_config['setup'])
 
     # Run CalculatePValues and save the output
-    p_values_file = test_calculate_p_values(emd_file, null_dist_file, 'pvalues_output', test_config['setup'])
+    p_values_file = test_calculate_p_values(emd_file, os.path.dirname(emd_file), test_config['setup'])
 
     # Run BuildPumpProbeMasks
     signal_mask_file, bg_mask_file = test_build_pump_probe_masks(p_values_file, hfile_from_load_data, 'masks_output', test_config['setup'])

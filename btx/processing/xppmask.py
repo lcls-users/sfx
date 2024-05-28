@@ -300,59 +300,57 @@ class MeasureEMD:
             f.write(self.summary)
 
 class CalculatePValues:
-   def __init__(self, config):
-       required_keys = ['calculate_p_values', 'setup']
-       for key in required_keys:
-           if key not in config:
-               raise ValueError(f"Missing required configuration key: {key}")
+    def __init__(self, config):
+        required_keys = ['calculate_p_values', 'setup']
+        for key in required_keys:
+            if key not in config:
+                raise ValueError(f"Missing required configuration key: {key}")
 
-       self.emd_path = os.path.join(config['setup']['output_dir'], 'emd_results', f"{config['setup']['exp']}_{config['setup']['run']}", 'emd_values.npy')
-       self.exp = config['setup']['exp']
-       self.run = config['setup']['run']
-       self.output_dir = os.path.join(config['setup']['output_dir'], 'p_values', f"{self.exp}_{self.run}")
-       os.makedirs(self.output_dir, exist_ok=True)
+        self.emd_path = os.path.join(config['setup']['output_dir'], 'emd_results', f"{config['setup']['exp']}_{config['setup']['run']}", 'emd_values.npy')
+        self.exp = config['setup']['exp']
+        self.run = config['setup']['run']
+        self.output_dir = os.path.join(config['setup']['output_dir'], 'p_values', f"{self.exp}_{self.run}")
+        os.makedirs(self.output_dir, exist_ok=True)
 
-       if 'null_dist_path' not in config['calculate_p_values']:
-           raise ValueError("Missing required configuration key: 'null_dist_path'")
-       self.null_dist_path = config['calculate_p_values']['null_dist_path']
+        self.null_dist_path = os.path.join(config['setup']['output_dir'], 'emd_results', f"{config['setup']['exp']}_{config['setup']['run']}", 'emd_null_dist.npy')
 
-   def load_data(self):
-       self.emd_values = np.load(self.emd_path)
-       if self.emd_values.ndim != 2:
-           raise ValueError(f"Expected 2D EMD values array, got {self.emd_values.ndim}D")
+    def load_data(self):
+        self.emd_values = np.load(self.emd_path)
+        if self.emd_values.ndim != 2:
+            raise ValueError(f"Expected 2D EMD values array, got {self.emd_values.ndim}D")
 
-       self.null_distribution = np.load(self.null_dist_path)
+        self.null_distribution = np.load(self.null_dist_path)
 
-   def calculate_p_values(self):
-       self.p_values = calculate_p_values(self.emd_values, self.null_distribution)
-
-   def summarize(self):
-       summary = (
-           f"P-value calculation for {self.exp} run {self.run}:\n"
-           f" EMD values shape: {self.emd_values.shape}\n"
-           f" Null distribution length: {len(self.null_distribution)}\n"
-           f" P-values shape: {self.p_values.shape}\n"
-       )
-
-       with open(f"{self.output_dir}_summary.txt", 'w') as f:
-           f.write(summary)
-
-       self.summary = summary
-
-   def report(self, report_path):
-       with open(report_path, 'a') as f:
-           f.write(self.summary)
-
-   def save_p_values(self, p_values_path=None):
-       if p_values_path is None:
-           p_values_path = os.path.join(self.output_dir, "p_values.npy")
-
-       p_values_png_path = os.path.join(self.output_dir, "p_values.png")
-       assert os.path.isdir(self.output_dir), f"Output directory {self.output_dir} does not exist"
-
-       np.save(p_values_path, self.p_values)
-       save_array_to_png(self.p_values, p_values_png_path)
-       assert os.path.isfile(p_values_path), f"P-values file {p_values_path} was not saved correctly"
+    def calculate_p_values(self):
+        self.p_values = calculate_p_values(self.emd_values, self.null_distribution)
+ 
+    def summarize(self):
+        summary = (
+            f"P-value calculation for {self.exp} run {self.run}:\n"
+            f" EMD values shape: {self.emd_values.shape}\n"
+            f" Null distribution length: {len(self.null_distribution)}\n"
+            f" P-values shape: {self.p_values.shape}\n"
+        )
+ 
+        with open(f"{self.output_dir}_summary.txt", 'w') as f:
+            f.write(summary)
+ 
+        self.summary = summary
+ 
+    def report(self, report_path):
+        with open(report_path, 'a') as f:
+            f.write(self.summary)
+ 
+    def save_p_values(self, p_values_path=None):
+        if p_values_path is None:
+            p_values_path = os.path.join(self.output_dir, "p_values.npy")
+ 
+        p_values_png_path = os.path.join(self.output_dir, "p_values.png")
+        assert os.path.isdir(self.output_dir), f"Output directory {self.output_dir} does not exist"
+ 
+        np.save(p_values_path, self.p_values)
+        save_array_to_png(self.p_values, p_values_png_path)
+        assert os.path.isfile(p_values_path), f"P-values file {p_values_path} was not saved correctly"
 
 class BuildPumpProbeMasks:
    def __init__(self, config):
