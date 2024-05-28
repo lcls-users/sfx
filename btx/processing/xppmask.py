@@ -48,8 +48,7 @@ class LoadData:
         self.ipm_pos_filter = config['load_data'].get('ipm_pos_filter', [0.2, 0.5])
         self.time_bin = config['load_data'].get('time_bin', 2)
         self.time_tool = config['load_data'].get('time_tool', [0., 0.005])
-        self.output_dir = config['load_data']['output_dir']
-
+        self.output_dir = os.path.join(config['setup']['output_dir'], f"{self.experiment_number}_{self.run_number}")
         os.makedirs(self.output_dir, exist_ok=True)
 
     def load_data(self):
@@ -147,7 +146,7 @@ class MakeHistogram:
         self.input_file = config['make_histogram']['input_file']
         self.exp = config['setup']['exp']
         self.run = config['setup']['run']
-        self.output_dir = os.path.join(config['make_histogram']['output_dir'], f"{self.exp}_{self.run}")
+        self.output_dir = os.path.join(config['setup']['output_dir'], 'histograms', f"{self.exp}_{self.run}")
         os.makedirs(self.output_dir, exist_ok=True)
 
         self.logger = logging.getLogger(__name__)
@@ -214,15 +213,16 @@ class MeasureEMD:
             if key not in config:
                 raise ValueError(f"Missing required configuration key: {key}")
 
-        self.histograms_path = config['calculate_emd']['histograms_path']
-        self.roi_coords = config['calculate_emd']['roi_coords']
+        self.background_roi_coords = config['setup']['background_roi_coords']
+        self.histograms_path = os.path.join(config['setup']['output_dir'], 'histograms', f"{config['setup']['exp']}_{config['setup']['run']}", 'histograms.npy')
         self.num_permutations = config['calculate_emd'].get('num_permutations', 1000)
         self.exp = config['setup']['exp']
         self.run = config['setup']['run']
-        self.output_dir = os.path.join(config['calculate_emd']['output_path'], f"{self.exp}_{self.run}")
+        self.output_dir = os.path.join(config['setup']['output_dir'], 'emd_results', f"{self.exp}_{self.run}")
         os.makedirs(self.output_dir, exist_ok=True)
 
     def load_histograms(self):
+        print(f"Loading histograms from: {self.histograms_path}")
         if not os.path.exists(self.histograms_path):
             raise FileNotFoundError(f"Histogram file {self.histograms_path} does not exist")
 
@@ -231,11 +231,11 @@ class MeasureEMD:
         if self.histograms.ndim != 3:
             raise ValueError(f"Expected 3D histograms array, got {self.histograms.ndim}D")
 
-        roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.roi_coords
+        roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.background_roi_coords
 
         if not (0 <= roi_x_start < roi_x_end <= self.histograms.shape[1] and
                 0 <= roi_y_start < roi_y_end <= self.histograms.shape[2]):
-            raise ValueError(f"Invalid ROI coordinates for histogram of shape {self.histograms.shape}")
+            raise ValueError(f"Invalid background ROI coordinates for histogram of shape {self.histograms.shape}")
 
     def save_emd_values(self):
         output_file_npy = os.path.join(self.output_dir, "emd_values.npy")
@@ -248,18 +248,18 @@ class MeasureEMD:
         np.save(output_file, self.null_distribution)
 
     def calculate_emd(self):
-        roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.roi_coords
+        roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.background_roi_coords
 
         if not (0 <= roi_x_start < roi_x_end <= self.histograms.shape[1] and
                 0 <= roi_y_start < roi_y_end <= self.histograms.shape[2]):
-            raise ValueError(f"Invalid ROI coordinates for histogram of shape {self.histograms.shape}")
+            raise ValueError(f"Invalid background ROI coordinates for histogram of shape {self.histograms.shape}")
 
         self.avg_hist = get_average_roi_histogram(self.histograms, roi_x_start, roi_x_end, roi_y_start, roi_y_end)
         self.emd_values = calculate_emd_values(self.histograms, self.avg_hist)
         self.generate_null_distribution()
 
     def generate_null_distribution(self):
-        roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.roi_coords
+        roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.background_roi_coords
 
         roi_histograms = self.histograms[:, roi_x_start:roi_x_end, roi_y_start:roi_y_end]
 
@@ -280,163 +280,163 @@ class MeasureEMD:
         self.null_distribution = np.array(null_emd_values)
 
     def summarize(self):
-        summary = (
-            f"EMD calculation for {self.exp} run {self.run}:\n"
-            f" Histogram shape: {self.histograms.shape}\n"
-            f" ROI coordinates: {self.roi_coords}\n"
-            f" EMD values shape: {self.emd_values.shape}\n"
-            f" EMD min: {np.min(self.emd_values):.3f}, max: {np.max(self.emd_values):.3f}\n"
-            f" Null distribution shape: {self.null_distribution.shape}\n"
-            f" Null distribution min: {np.min(self.null_distribution):.3f}, max: {np.max(self.null_distribution):.3f}\n"
-        )
+           summary = (
+               f"EMD calculation for {self.exp} run {self.run}:\n"
+               f" Histogram shape: {self.histograms.shape}\n"
+               f" Background ROI coordinates: {self.background_roi_coords}\n"
+               f" EMD values shape: {self.emd_values.shape}\n"
+               f" EMD min: {np.min(self.emd_values):.3f}, max: {np.max(self.emd_values):.3f}\n"
+               f" Null distribution shape: {self.null_distribution.shape}\n"
+               f" Null distribution min: {np.min(self.null_distribution):.3f}, max: {np.max(self.null_distribution):.3f}\n"
+           )
 
-        with open(f"{self.output_dir}_summary.txt", 'w') as f:
-            f.write(summary)
+           with open(f"{self.output_dir}_summary.txt", 'w') as f:
+               f.write(summary)
 
-        self.summary = summary
+           self.summary = summary
 
     def report(self, report_path):
         with open(report_path, 'a') as f:
             f.write(self.summary)
 
 class CalculatePValues:
-    def __init__(self, config):
-        required_keys = ['calculate_p_values', 'setup']
-        for key in required_keys:
-            if key not in config:
-                raise ValueError(f"Missing required configuration key: {key}")
+   def __init__(self, config):
+       required_keys = ['calculate_p_values', 'setup']
+       for key in required_keys:
+           if key not in config:
+               raise ValueError(f"Missing required configuration key: {key}")
 
-        self.emd_path = config['calculate_p_values']['emd_path']
-        self.exp = config['setup']['exp']
-        self.run = config['setup']['run']
-        self.output_dir = os.path.join(config['calculate_p_values']['output_path'], f"{self.exp}_{self.run}")
-        os.makedirs(self.output_dir, exist_ok=True)
+       self.emd_path = os.path.join(config['setup']['output_dir'], 'emd_results', f"{config['setup']['exp']}_{config['setup']['run']}", 'emd_values.npy')
+       self.exp = config['setup']['exp']
+       self.run = config['setup']['run']
+       self.output_dir = os.path.join(config['setup']['output_dir'], 'p_values', f"{self.exp}_{self.run}")
+       os.makedirs(self.output_dir, exist_ok=True)
 
-        if 'null_dist_path' not in config['calculate_p_values']:
-            raise ValueError("Missing required configuration key: 'null_dist_path'")
-        self.null_dist_path = config['calculate_p_values']['null_dist_path']
+       if 'null_dist_path' not in config['calculate_p_values']:
+           raise ValueError("Missing required configuration key: 'null_dist_path'")
+       self.null_dist_path = config['calculate_p_values']['null_dist_path']
 
-    def load_data(self):
-        self.emd_values = np.load(self.emd_path)
-        if self.emd_values.ndim != 2:
-            raise ValueError(f"Expected 2D EMD values array, got {self.emd_values.ndim}D")
+   def load_data(self):
+       self.emd_values = np.load(self.emd_path)
+       if self.emd_values.ndim != 2:
+           raise ValueError(f"Expected 2D EMD values array, got {self.emd_values.ndim}D")
 
-        self.null_distribution = np.load(self.null_dist_path)
+       self.null_distribution = np.load(self.null_dist_path)
 
-    def calculate_p_values(self):
-        self.p_values = calculate_p_values(self.emd_values, self.null_distribution)
+   def calculate_p_values(self):
+       self.p_values = calculate_p_values(self.emd_values, self.null_distribution)
 
-    def summarize(self):
-        summary = (
-            f"P-value calculation for {self.exp} run {self.run}:\n"
-            f" EMD values shape: {self.emd_values.shape}\n"
-            f" Null distribution length: {len(self.null_distribution)}\n"
-            f" P-values shape: {self.p_values.shape}\n"
-        )
+   def summarize(self):
+       summary = (
+           f"P-value calculation for {self.exp} run {self.run}:\n"
+           f" EMD values shape: {self.emd_values.shape}\n"
+           f" Null distribution length: {len(self.null_distribution)}\n"
+           f" P-values shape: {self.p_values.shape}\n"
+       )
 
-        with open(f"{self.output_dir}_summary.txt", 'w') as f:
-            f.write(summary)
+       with open(f"{self.output_dir}_summary.txt", 'w') as f:
+           f.write(summary)
 
-        self.summary = summary
+       self.summary = summary
 
-    def report(self, report_path):
-        with open(report_path, 'a') as f:
-            f.write(self.summary)
+   def report(self, report_path):
+       with open(report_path, 'a') as f:
+           f.write(self.summary)
 
-    def save_p_values(self, p_values_path=None):
-        if p_values_path is None:
-            p_values_path = os.path.join(self.output_dir, "p_values.npy")
+   def save_p_values(self, p_values_path=None):
+       if p_values_path is None:
+           p_values_path = os.path.join(self.output_dir, "p_values.npy")
 
-        p_values_png_path = os.path.join(self.output_dir, "p_values.png")
-        assert os.path.isdir(self.output_dir), f"Output directory {self.output_dir} does not exist"
+       p_values_png_path = os.path.join(self.output_dir, "p_values.png")
+       assert os.path.isdir(self.output_dir), f"Output directory {self.output_dir} does not exist"
 
-        np.save(p_values_path, self.p_values)
-        save_array_to_png(self.p_values, p_values_png_path)
-        assert os.path.isfile(p_values_path), f"P-values file {p_values_path} was not saved correctly"
+       np.save(p_values_path, self.p_values)
+       save_array_to_png(self.p_values, p_values_png_path)
+       assert os.path.isfile(p_values_path), f"P-values file {p_values_path} was not saved correctly"
 
 class BuildPumpProbeMasks:
-    def __init__(self, config):
-        required_keys = ['generate_masks', 'setup']
-        for key in required_keys:
-            if key not in config:
-                raise ValueError(f"Missing required configuration key: {key}")
+   def __init__(self, config):
+       required_keys = ['generate_masks', 'setup']
+       for key in required_keys:
+           if key not in config:
+               raise ValueError(f"Missing required configuration key: {key}")
 
-        self.histograms_path = config['generate_masks']['histograms_path']
-        self.p_values_path = config['generate_masks']['p_values_path']
-        self.roi_coords = config['generate_masks']['roi_coords']
-        self.threshold = config['generate_masks']['threshold']
-        self.bg_mask_mult = config['generate_masks']['bg_mask_mult']
-        self.bg_mask_thickness = config['generate_masks']['bg_mask_thickness']
-        self.exp = config['setup']['exp']
-        self.run = config['setup']['run']
-        self.output_dir = os.path.join(config['generate_masks']['output_dir'], f"{self.exp}_{self.run}")
-        os.makedirs(self.output_dir, exist_ok=True)
+       self.histograms_path = os.path.join(config['setup']['output_dir'], 'histograms', f"{config['setup']['exp']}_{config['setup']['run']}", 'histograms.npy')
+       self.p_values_path = os.path.join(config['setup']['output_dir'], 'p_values', f"{config['setup']['exp']}_{config['setup']['run']}", 'p_values.npy')
+       self.background_roi_coords = config['setup']['background_roi_coords']
+       self.threshold = config['generate_masks']['threshold']
+       self.bg_mask_mult = config['generate_masks']['bg_mask_mult']
+       self.bg_mask_thickness = config['generate_masks']['bg_mask_thickness']
+       self.exp = config['setup']['exp']
+       self.run = config['setup']['run']
+       self.output_dir = os.path.join(config['setup']['output_dir'], 'masks', f"{self.exp}_{self.run}")
+       os.makedirs(self.output_dir, exist_ok=True)
 
-    def load_histograms(self):
-        if not os.path.exists(self.histograms_path):
-            raise FileNotFoundError(f"Histogram file {self.histograms_path} does not exist")
+   def load_histograms(self):
+       if not os.path.exists(self.histograms_path):
+           raise FileNotFoundError(f"Histogram file {self.histograms_path} does not exist")
 
-        self.histograms = np.load(self.histograms_path)
+       self.histograms = np.load(self.histograms_path)
 
-        if self.histograms.ndim != 3:
-            raise ValueError(f"Expected 3D histograms array, got {self.histograms.ndim}D")
+       if self.histograms.ndim != 3:
+           raise ValueError(f"Expected 3D histograms array, got {self.histograms.ndim}D")
 
-    def load_p_values(self):
-        assert os.path.exists(self.p_values_path), f"P-values file {self.p_values_path} does not exist"
-        assert os.path.isfile(self.p_values_path), f"P-values path {self.p_values_path} is not a file"
+   def load_p_values(self):
+       assert os.path.exists(self.p_values_path), f"P-values file {self.p_values_path} does not exist"
+       assert os.path.isfile(self.p_values_path), f"P-values path {self.p_values_path} is not a file"
 
-        self.p_values = np.load(self.p_values_path)
-        assert self.p_values.ndim == 2, f"Expected 2D p-values array, got {self.p_values.ndim}D"
+       self.p_values = np.load(self.p_values_path)
+       assert self.p_values.ndim == 2, f"Expected 2D p-values array, got {self.p_values.ndim}D"
 
-    def generate_masks(self):
-        roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.roi_coords
+   def generate_masks(self):
+       roi_x_start, roi_x_end, roi_y_start, roi_y_end = self.background_roi_coords
 
-        self.signal_mask = generate_signal_mask(
-            self.p_values, self.threshold, roi_x_start, roi_x_end, roi_y_start, roi_y_end, self.histograms
-        )
+       self.signal_mask = generate_signal_mask(
+           self.p_values, self.threshold, roi_x_start, roi_x_end, roi_y_start, roi_y_end, self.histograms
+       )
 
-        self.bg_mask = generate_background_mask(self.signal_mask, self.bg_mask_mult, self.bg_mask_thickness)
+       self.bg_mask = generate_background_mask(self.signal_mask, self.bg_mask_mult, self.bg_mask_thickness)
 
-    def summarize(self):
-        summary = (f"Mask generation for {self.exp} run {self.run}:\n"
-                   f" P-values shape: {self.p_values.shape}\n"
-                   f" Threshold: {self.threshold}\n"
-                   f" Signal mask shape: {self.signal_mask.shape}\n"
-                   f" Signal mask count: {np.sum(self.signal_mask)}\n"
-                   f" Background mask shape: {self.bg_mask.shape}\n"
-                   f" Background mask count: {np.sum(self.bg_mask)}\n")
-        with open(f"{self.output_dir}_summary.txt", 'w') as f:
-            f.write(summary)
-        self.summary = summary
+   def summarize(self):
+       summary = (f"Mask generation for {self.exp} run {self.run}:\n"
+                  f" P-values shape: {self.p_values.shape}\n"
+                  f" Threshold: {self.threshold}\n"
+                  f" Signal mask shape: {self.signal_mask.shape}\n"
+                  f" Signal mask count: {np.sum(self.signal_mask)}\n"
+                  f" Background mask shape: {self.bg_mask.shape}\n"
+                  f" Background mask count: {np.sum(self.bg_mask)}\n")
+       with open(f"{self.output_dir}_summary.txt", 'w') as f:
+           f.write(summary)
+       self.summary = summary
 
-    def report(self, report_path):
-        with open(report_path, 'a') as f:
-            f.write(self.summary)
+   def report(self, report_path):
+       with open(report_path, 'a') as f:
+           f.write(self.summary)
 
-    def save_masks(self):
-        signal_mask_path = os.path.join(self.output_dir, "signal_mask.npy")
-        bg_mask_path = os.path.join(self.output_dir, "bg_mask.npy")
-        np.save(signal_mask_path, self.signal_mask)
-        np.save(bg_mask_path, self.bg_mask)
-        save_array_to_png(self.signal_mask, os.path.join(self.output_dir, "signal_mask.png"))
-        save_array_to_png(self.bg_mask, os.path.join(self.output_dir, "bg_mask.png"))
-        return signal_mask_path, bg_mask_path
+   def save_masks(self):
+       signal_mask_path = os.path.join(self.output_dir, "signal_mask.npy")
+       bg_mask_path = os.path.join(self.output_dir, "bg_mask.npy")
+       np.save(signal_mask_path, self.signal_mask)
+       np.save(bg_mask_path, self.bg_mask)
+       save_array_to_png(self.signal_mask, os.path.join(self.output_dir, "signal_mask.png"))
+       save_array_to_png(self.bg_mask, os.path.join(self.output_dir, "bg_mask.png"))
+       return signal_mask_path, bg_mask_path
 
 
 
 def load_config(config_file):
-    with open(config_file, 'r') as f:
-        config = json.load(f)
-    return config
+   with open(config_file, 'r') as f:
+       config = json.load(f)
+   return config
 
 
 from scipy.stats import norm
 class PumpProbeAnalysis:
     def __init__(self, config):
         self.config = config
-        self.output_dir = os.path.join(config['pump_probe_analysis']['output_dir'], f"{config['setup']['exp']}_{config['setup']['run']}")
+        self.output_dir = os.path.join(config['setup']['output_dir'], 'pump_probe', f"{config['setup']['exp']}_{config['setup']['run']}")
         os.makedirs(self.output_dir, exist_ok=True)
-
+ 
     def run(self, data, binned_delays, I0, laser_on_mask, laser_off_mask, signal_mask, bg_mask):
         self.data = data
         self.binned_delays = binned_delays
@@ -445,32 +445,32 @@ class PumpProbeAnalysis:
         self.laser_off_mask = laser_off_mask
         self.signal_mask = signal_mask
         self.bg_mask = bg_mask
-
+ 
         self.stacks_on, self.stacks_off = self.group_images_into_stacks()
-
+ 
         self.delays, self.signals_on, self.std_devs_on, self.signals_off, self.std_devs_off, self.p_values = self.generate_pump_probe_curves()
-
+ 
         self.plot_pump_probe_data()
-
+ 
         self.save_pump_probe_curves()
-
+ 
         self.summarize()
         self.report()
 
     def group_images_into_stacks(self):
         binned_delays = self.binned_delays
         imgs = self.data
-
+ 
         delay_output = np.sort(np.unique(binned_delays))
         stacks_on, stacks_off = {}, {}
-
+ 
         for delay_val in delay_output:
             idx_on = np.where((binned_delays == delay_val) & self.laser_on_mask)[0]
             idx_off = np.where((binned_delays == delay_val) & self.laser_off_mask)[0]
-
+ 
             stacks_on[delay_val] = self.extract_stacks_by_delay(imgs[idx_on])
             stacks_off[delay_val] = self.extract_stacks_by_delay(imgs[idx_off])
-
+ 
         return stacks_on, stacks_off
 
 
@@ -483,13 +483,13 @@ class PumpProbeAnalysis:
             
             signal_on, bg_on, total_var_on = self.calculate_signal_and_background(stack_on, self.bg_mask)
             signal_off, bg_off, total_var_off = self.calculate_signal_and_background(stack_off, self.bg_mask)
-
+ 
             norm_signal_on = (signal_on - bg_on) / np.mean(self.I0[self.laser_on_mask])
             norm_signal_off = (signal_off - bg_off) / np.mean(self.I0[self.laser_off_mask])
-
+ 
             std_dev_on = np.sqrt(total_var_on) / np.mean(self.I0[self.laser_on_mask])
             std_dev_off = np.sqrt(total_var_off) / np.mean(self.I0[self.laser_off_mask])
-
+ 
             delays.append(delay)
             signals_on.append(norm_signal_on)
             signals_off.append(norm_signal_off)
@@ -502,7 +502,7 @@ class PumpProbeAnalysis:
 
     def extract_stacks_by_delay(self, imgs):
         return imgs
-    
+   
 
     def calculate_signal_and_background(self, stack, bg_mask):
         integrated_counts = stack.sum(axis=0)
@@ -528,7 +528,7 @@ class PumpProbeAnalysis:
         ax1.set_ylabel('Normalized Signal') 
         ax1.legend()
         ax1.grid(True)
-
+ 
         neg_log_p_values = [-np.log10(p) if p > 0 else 0 for p in self.p_values]
         ax2.scatter(self.delays, neg_log_p_values, color='red', label='-log(p-value)')
         for p_val, label in zip([0.05, 0.01, 0.001], ['5%', '1%', '0.1%']):
@@ -542,7 +542,7 @@ class PumpProbeAnalysis:
         
         plt.tight_layout()
         plt.savefig(os.path.join(self.output_dir, 'pump_probe_plot.png'))
-        
+       
     def save_pump_probe_curves(self):
         np.savez(os.path.join(self.output_dir, 'pump_probe_curves.npz'),
                  delays=self.delays,
@@ -551,7 +551,7 @@ class PumpProbeAnalysis:
                  signals_off=self.signals_off, 
                  std_devs_off=self.std_devs_off,
                  p_values=self.p_values)
-    
+   
     def summarize(self):
         summary = (f"Pump-probe analysis for {self.config['setup']['exp']} run {self.config['setup']['run']}:\n"
                    f" Number of delays: {len(self.delays)}\n" 
@@ -560,14 +560,14 @@ class PumpProbeAnalysis:
         print(summary)
         with open(os.path.join(self.output_dir, 'pump_probe_summary.txt'), 'w') as f:
             f.write(summary)
-
+ 
     def report(self):
         root_dir = self.config['setup'].get('root_dir', 'N/A')  # Use 'N/A' if 'root_dir' is missing
-
+ 
         # Autogenerate paths
-        signal_mask_path = os.path.join(self.output_dir, "signal_mask.npy")
-        bg_mask_path = os.path.join(self.output_dir, "bg_mask.npy")
-
+        signal_mask_path = os.path.join(self.config['setup']['output_dir'], 'masks', f"{self.config['setup']['exp']}_{self.config['setup']['run']}", "signal_mask.npy")
+        bg_mask_path = os.path.join(self.config['setup']['output_dir'], 'masks', f"{self.config['setup']['exp']}_{self.config['setup']['run']}", "bg_mask.npy")
+ 
         report = (f"Pump-probe analysis for {self.config['setup']['exp']} run {self.config['setup']['run']}\n\n"
                   f"Data loaded from: {root_dir}\n"
                   f"Signal mask loaded from: {signal_mask_path}\n"

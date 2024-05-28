@@ -10,7 +10,6 @@ def test_load_data(output_dir, setup_config):
         'setup': setup_config,
         'load_data': {
             'roi': [5, 105, 50, 250],
-            'output_dir': output_dir,
         },
     }
 
@@ -34,10 +33,10 @@ def test_make_histogram(data_file, output_dir, setup_config):
         'setup': {
             'exp': setup_config['exp'],
             'run': setup_config['run'],
+            'output_dir': output_dir,
         },
         'make_histogram': {
             'input_file': data_file,
-            'output_dir': output_dir,
         },
     }
 
@@ -96,14 +95,7 @@ def test_make_histogram_from_npz(npz_file, output_dir, setup_config):
 def test_measure_emd(histogram_file, output_dir, setup_config):
     config = {
         'calculate_emd': {
-            'histograms_path': histogram_file,
-            'output_path': output_dir,
-            'roi_coords': [50, 100, 0, 200],
             'num_permutations': 100,  # Reduced permutations for faster testing
-        },
-        'setup': {
-            'exp': setup_config['exp'],
-            'run': setup_config['run'],
         },
     }
 
@@ -139,14 +131,13 @@ def test_measure_emd(histogram_file, output_dir, setup_config):
 
 def test_calculate_p_values(emd_file, null_dist_file, output_dir, setup_config):
     config = {
-        'calculate_p_values': {
-            'emd_path': emd_file,
-            'null_dist_path': null_dist_file,
-            'output_path': output_dir,
-        },
         'setup': {
             'exp': setup_config['exp'],
             'run': setup_config['run'],
+            'output_dir': output_dir,
+        },
+        'calculate_p_values': {
+            'null_dist_path': null_dist_file,
         },
     }
 
@@ -166,18 +157,16 @@ def test_calculate_p_values(emd_file, null_dist_file, output_dir, setup_config):
 
 def test_build_pump_probe_masks(p_values_file, histograms_file, output_dir, setup_config):
     config = {
-        'generate_masks': {
-            'histograms_path': histograms_file,
-            'p_values_path': p_values_file,
-            'output_dir': output_dir,
-            'roi_coords': [50, 100, 0, 200],
-            'threshold': 0.1,
-            'bg_mask_mult': 2.0,
-            'bg_mask_thickness': 5,
-        },
         'setup': {
             'exp': setup_config['exp'],
             'run': setup_config['run'],
+            'output_dir': output_dir,
+            'background_roi_coords': [50, 100, 0, 200],
+        },
+        'generate_masks': {
+            'threshold': 0.1,
+            'bg_mask_mult': 2.0,
+            'bg_mask_thickness': 5,
         },
     }
 
@@ -233,35 +222,55 @@ def test_pump_probe_analysis(config, data_file, signal_mask_file, bg_mask_file):
     # Check pump_probe_report.txt
     with open(os.path.join(analysis.output_dir, 'pump_probe_report.txt'), 'r') as f:
         report = f.read()
-#    assert f"Signal mask loaded from: {config['pump_probe_analysis']['signal_mask_path']}" in report
-#    assert f"Background mask loaded from: {config['pump_probe_analysis']['bg_mask_path']}" in report
-#    assert "Laser on signals:" in report
-#    assert "Laser off std devs:" in report
-#    assert "p-values:" in report
+    assert f"Data loaded from: {config['setup']['root_dir']}" in report
+
+    signal_mask_path = os.path.join(
+        config['setup']['output_dir'], 
+        'masks', 
+        f"{config['setup']['exp']}_{config['setup']['run']}", 
+        'signal_mask.npy'
+    )
+    expected_message = f"Signal mask loaded from: {signal_mask_path}"
+    assert expected_message in report
+
+#    bg_mask_path = os.path.join(
+#        config['setup']['output_dir'], 
+#        'masks', 
+#        f"{config['setup']['exp']}_{config['setup']['run']}", 
+#        'bg_mask.npy'
+#    )
+#    expected_message = f"Background mask loaded from: {bg_mask_path}"
+#    assert expected_message in report
+
+    assert "Laser on signals:" in report
+    assert "Laser off std devs:" in report
+    assert "p-values:" in report
 
 
 if __name__ == '__main__':
     # Load a sample config for testing
-    # TODO unpack setup correctly
     test_config = {
-        'exp': 'xppx1003221',
-        'run': 195,
         'setup': {
             'exp': 'xppx1003221',
             'run': 195,
-            'root_dir': '/sdf/data/lcls/ds/xpp/xppx1003221', 
+            'root_dir': '/sdf/data/lcls/ds/xpp/xppx1003221',
+            'output_dir': 'output',
         },
         'pump_probe_analysis': {
-            'output_dir': 'pump_probe_output',
-            # Add other required configuration values for pump-probe analysis
+            'i0_threshold': 1000,
+            'ipm_pos_filter': [0.1, 0.1],
+            'time_bin': 0.1,
+            'time_tool': [1, 1000],
+            'energy_filter': [1.0, 0.1],
+            'min_count': 200,
         }
     }
 
     # Run LoadData
-    data_file = test_load_data('loaded_data', test_config)
+    data_file = test_load_data('loaded_data', test_config['setup'])
 
     # Run MakeHistogram with LoadData output
-    hfile_from_load_data, summary_from_load_data = test_make_histogram(data_file, 'histograms_from_load_data', test_config)
+    hfile_from_load_data, summary_from_load_data = test_make_histogram(data_file, 'histograms_from_load_data', test_config['setup'])
     print("MakeHistogram with LoadData output:")
     print(summary_from_load_data)
 
@@ -272,17 +281,18 @@ if __name__ == '__main__':
 #    print(summary_from_npz)
 
     # Run MeasureEMD and save the output
-    emd_file, null_dist_file = test_measure_emd(hfile_from_load_data, 'emd_output', test_config)
+    emd_file, null_dist_file = test_measure_emd(hfile_from_load_data, 'emd_output', test_config['setup'])
 
     # Run CalculatePValues and save the output
-    p_values_file = test_calculate_p_values(emd_file, null_dist_file, 'pvalues_output', test_config)
+    p_values_file = test_calculate_p_values(emd_file, null_dist_file, 'pvalues_output', test_config['setup'])
 
     # Run BuildPumpProbeMasks
-    signal_mask_file, bg_mask_file = test_build_pump_probe_masks(p_values_file, hfile_from_load_data, 'masks_output', test_config)
+    signal_mask_file, bg_mask_file = test_build_pump_probe_masks(p_values_file, hfile_from_load_data, 'masks_output', test_config['setup'])
 
     try:
         test_pump_probe_analysis(test_config, data_file, signal_mask_file, bg_mask_file)
         print("PumpProbeAnalysis test passed")
     except AssertionError as e:
         print(f"PumpProbeAnalysis test failed: {str(e)}")
+
 
