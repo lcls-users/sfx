@@ -761,8 +761,8 @@ def test_serv_client(config):
     import btx.interfaces.iclient
     import btx.interfaces.iserver
     
-    env_server = "~/sdf/group/lcls/ds/ana/sw/conda1/insta/envs/ana-4.0.60-py3/bin/"
-    env_client = "~/sdf/group/lcls/ds/ana/sw/conda1/insta/envs/ana-4.0.60-py3/bin/"
+    env_server = "~/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
+    env_client = "~/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
 
     activate_environment(env_server)
 
