@@ -75,7 +75,7 @@ class IPCRemotePsanaDataset(Dataset):
 
             return result
 
-def main(request_list):
+def main(requests_list):
     server_address = ('localhost', 5000)
 
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
