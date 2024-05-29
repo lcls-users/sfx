@@ -80,7 +80,7 @@ def main(requests_list):
 
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
     dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)
-    data_loader_iter = iter(data_loader)
+    data_loader_iter = iter(dataloader)
 
     # Initialize an empty list to store the batches
     all_data = []
