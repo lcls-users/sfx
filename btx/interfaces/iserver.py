@@ -82,10 +82,15 @@ def unlink_shared_memory(shm_name):
 
 def start_server(address, num_workers):
     # Init TCP socket, set reuse, bind, and listen for connections
+    print('1')
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print('2')
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    print('3')
     server_socket.bind(address)
+    print('4')
     server_socket.listen()
+    print('5')
 
     # Create and start worker processes
     processes = []
@@ -94,6 +99,7 @@ def start_server(address, num_workers):
         p.start()
         processes.append(p)
 
+    print(f"Started {num_workers} worker processes.")
     return processes, server_socket
 
 def main():
@@ -102,7 +108,7 @@ def main():
     print("Starting server ...")
     processes, server_socket = start_server(server_address, num_workers)
     print("Server started")
-    
+
     try:
         # Wait to complete, join is wait
         for p in processes:
