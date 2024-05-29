@@ -759,8 +759,8 @@ def test_serv_client(config):
     print("TESTING SERVER AND CLIENT COMMUNICATION")
     from btx.misc.env_manager import activate_environment
     from btx.misc.env_manager import deactivate_environment
-    import btx.interfaces.iclient
-    import btx.interfaces.iserver
+    import btx.interfaces.iclient as iclient
+    import btx.interfaces.iserver as iserver
     
     env_server = "/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
     env_client = "/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
@@ -773,8 +773,8 @@ def test_serv_client(config):
 
     # Set-up server
     print("=============================Starting server=============================\n \n")
-    """server_process = subprocess.Popen(["python3", "/sdf/home/n/nathfrn/btx/btx/interfaces/iserver.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = server_process.communicate()"""
+    server_process = subprocess.Popen(["python3", iserver], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = server_process.communicate()
     print("Standard Output:", stdout.decode())
     print("Standard Error:", stderr.decode())
     print("\n \n=============================Server started=============================\n \n")
