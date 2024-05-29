@@ -50,8 +50,9 @@ def display_dashboard(filename):
     PCy = pnw.Select(name='Y-Axis', value='PC2', options=PC_options)
     widgets_scatter = pn.WidgetBox(PCx, PCy, width=150)
 
-    PC_scree = pnw.Select(name='Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
-    widgets_scree = pn.WidgetBox(PC_scree, width=150)
+    PC_scree = pnw.Select(name='First Component Cut-off', value=f'PC{1}', options=PC_options)
+    PC_scree2 = pnw.Select(name='Last Component Cut-off', value=f'PC{len(PCs)}', options=PC_options)
+    widgets_scree = pn.WidgetBox(PC_scree,PC_scree2, width=150)
 
     tap_source = None
     posxy = hv.streams.Tap(source=tap_source, x=0, y=0)
@@ -71,11 +72,17 @@ def display_dashboard(filename):
         return scatter
         
     # Create scree plot
-    @pn.depends(PC_scree.param.value)
-    def create_scree(PC_scree):
-        q = int(PC_scree[2:])
-        components = np.arange(1, q + 1)
-        singular_values = S[:q]
+    @pn.depends(PC_scree.param.value, PC_scree2.param.value)
+    def create_scree(PC_scree, PC_scree2):
+        first_compo = int(PC_scree[2:])
+        last_compo = int(PC_scree2[2:])
+
+        if first_compo > last_compo:
+            raise ValueError("Error: First component cut-off cannot be greater than last component cut-off.")
+
+        components = np.arange(first_compo,last_compo+1)
+        singular_values = S[first_compo-1:last_compo]
+
         bars_data = np.stack((components, singular_values)).T
 
         opts = dict(width=400, height=300, show_grid=True, show_legend=False,
@@ -86,7 +93,7 @@ def display_dashboard(filename):
         return scree
         
     # Define function to compute heatmap based on tap location
-    def tap_heatmap(x, y, pcx, pcy, pcscree):
+    def tap_heatmap(x, y, pcx, pcy, pcscree, pcscree2):
         # Finds the index of image closest to the tap location
         img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
 
@@ -105,7 +112,7 @@ def display_dashboard(filename):
         return heatmap
         
     # Define function to compute reconstructed heatmap based on tap location
-    def tap_heatmap_reconstruct(x, y, pcx, pcy, pcscree):
+    def tap_heatmap_reconstruct(x, y, pcx, pcy, pcscree, pcscree2):
         # Finds the index of image closest to the tap location
         img_source = closest_image_index(x, y, PCs[pcx], PCs[pcy])
 
@@ -113,8 +120,10 @@ def display_dashboard(filename):
         p, x, y = psi.det.shape()
         pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
-        q = int(pcscree[2:])
-        img = U[:, :q] @ np.diag(S[:q]) @ np.array([V[img_source][:q]]).T
+        first_compo = int(pcscree[2:])
+        last_compo = int(pcscree2[2:])
+
+        img = U[:, first_compo-1:last_compo] @ np.diag(S[first_compo-1:last_compo]) @ np.array([V[img_source][first_compo-1:last_compo]]).T
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
@@ -128,7 +137,7 @@ def display_dashboard(filename):
         
     # Connect the Tap stream to the heatmap callbacks
     stream1 = [posxy]
-    stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value, 'pcscree': PC_scree.param.value})
+    stream2 = Params.from_params({'pcx': PCx.param.value, 'pcy': PCy.param.value, 'pcscree': PC_scree.param.value, 'pcscree2': PC_scree2.param.value})
     tap_dmap = hv.DynamicMap(tap_heatmap, streams=stream1+stream2)
     tap_dmap_reconstruct = hv.DynamicMap(tap_heatmap_reconstruct, streams=stream1+stream2)
         
@@ -334,6 +343,11 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
         # Compute the Frobenius norm of the difference between the original image and the reconstructed image
         difference = np.abs(img - reconstructed_img)
         norm = np.linalg.norm(difference, 'fro')
+        original_norm = np.linalg.norm(img, 'fro')
+
+        # Normalize the norm by the original norm
+        norm /= original_norm
+
         image_norms.append(norm)
 
         psi.counter = counter  # Reset counter for the next iteration

@@ -151,6 +151,7 @@ CORES=${CORES:=1}
 # TODO: find_peaks needs to be handled from ischeduler. For now we do this...
 if [ ${TASK} != 'find_peaks' ] &&\
    [ ${TASK} != 'determine_cell' ] &&\
+   [ ${TASK} != 'pipca_run' ] &&\
    [ ${TASK} != 'opt_geom' ]; then
   CORES=1
 fi
