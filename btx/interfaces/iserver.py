@@ -3,7 +3,7 @@ import json
 import socket
 from multiprocessing import shared_memory, Process
 import numpy as np
-from btx.interfaces.ipsana import PsanaImg
+from ipsana import PsanaImg
 
 # Initialize buffer for each process
 psana_img_buffer = {}
