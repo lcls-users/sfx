@@ -88,8 +88,8 @@ class Rayonix(Detector):
         n_modules=1,
         n_asics=1,
         asics_shape=(1, 1),
-        fs_size=7680,
-        ss_size=7680,
+        fs_size=1920,
+        ss_size=1920,
         **kwargs,
     ):
         super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * ss_size, fs_size), **kwargs)
@@ -102,13 +102,13 @@ def get_detector(det_type):
     """
     Instantiate a PyFAI Detector object based on the detector type
     """
-    if det_type == "epix10k2m":
+    if det_type == "ePix10k2M":
         return ePix10k2M()
-    elif det_type == "epix100":
+    elif det_type == "ePix100":
         return ePix100()
-    elif det_type == "jungfrau4m":
+    elif det_type == "Jungfrau4M":
         return Jungfrau4M()
-    elif det_type == "rayonix":
+    elif det_type == "Rayonix":
         return Rayonix()
     else:
         raise ValueError("Detector type not recognized")
@@ -159,6 +159,7 @@ class CrystFELtoPyFAI:
         self.panels = self.from_CrystFEL(geom_file)
         self.pix_pos = self.get_pixel_coordinates(self.panels, det_type)
         self.corner_array = self.get_corner_array(self.pix_pos, self.panels, det_type, cframe)
+        self.detector.set_pixel_corners(self.corner_array)
 
     def from_CrystFEL(fname: str):
         """
@@ -288,7 +289,6 @@ class CrystFELtoPyFAI:
         """
         nmods = self.detector.n_modules
         nasics = self.detector.n_asics
-        asics_shape = self.detector.asics_shape
         fs_size = self.detector.fs_size
         ss_size = self.detector.ss_size
         pix_arr = np.zeros([nmods, ss_size, fs_size, 3])
@@ -383,3 +383,10 @@ class CrystFELtoPyFAI:
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
         return pyfai_fmt
+    
+class PyFAItoPsana:
+    """
+    Class to write psana .data geometry files from PyFAI detector instance
+    """
+
+
