@@ -756,6 +756,7 @@ def ipca_pytorch(config):
         ipca.run()
     
 def test_serv_client(config):
+    print("TESTING SERVER AND CLIENT COMMUNICATION")
     from btx.misc.env_manager import activate_environment
     from btx.misc.env_manager import deactivate_environment
     import btx.interfaces.iclient
