@@ -75,9 +75,8 @@ class IPCRemotePsanaDataset(Dataset):
 
             return result
 
-if __name__ == "__main__":
+def main(request_list):
     server_address = ('localhost', 5000)
-    requests_list = [ ('mfxp23120'   , 91 , 'idx', 'mfx', event) for event in range(1000) ]
 
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
     dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)

@@ -764,6 +764,8 @@ def test_serv_client(config):
     
     env_server = "/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
     env_client = "/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
+    
+    requests_list = [ ('mfxp23120'   , 91 , 'idx', 'mfx', event) for event in range(1000) ]
 
     print("=============================Activating server environment=============================\n \n")
     activate_environment(env_server)
@@ -771,8 +773,7 @@ def test_serv_client(config):
 
     # Set-up server
     print("=============================Starting server=============================\n \n")
-    server_path = os.path.expanduser("~/btx/btx/interfaces/iserver.py")
-    subprocess.Popen(["python3", server_path],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    btx.interfaces.iserver.main()
     print("\n \n=============================Server started=============================\n \n")
 
     time.sleep(10)
@@ -786,8 +787,7 @@ def test_serv_client(config):
 
     # Set-up client
     print("=============================Starting client=============================\n \n")
-    client_path = os.path.expanduser("~/btx/btx/interfaces/iclient.py")
-    subprocess.Popen(["python3", client_path],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    btx.interfaces.iclient.main(requests_list)
     print("\n \n=============================Client started=============================\n \n")
 
 
