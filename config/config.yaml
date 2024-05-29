@@ -1,10 +1,10 @@
 setup:
   queue: 'milano'
-  account: ''
-  root_dir: ''
-  exp: ''
-  run: 5
-  det_type: 'Rayonix'
+  account: 'lcls'
+  root_dir: '/sdf/home/d/deebanr/experiments/amo11416/results/Deeban'
+  exp: 'amo11416'
+  run: 2
+  det_type: 'pnccdFront'
   cell: ''
   reservation: ''
 
@@ -22,8 +22,10 @@ build_mask:
   combine: True
 
 run_analysis:
-  max_events: -1
-  ncores: 2
+  max_events: 1
+  ncores: 1
+  lower_sum_threshold: 
+  upper_sum_threshold: 
   total_intensity: True
 
 opt_geom:
