@@ -297,8 +297,8 @@ class CrystFELtoPyFAI:
             for asic in range(nasics):
                 asicname = f"a{asic}"
                 full_name = pname + asicname
-                arow = asic // (nasics/2) 
-                acol = asic % (nasics/2)
+                arow = asic // (nasics//2) 
+                acol = asic % (nasics//2)
                 ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
                 fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
                 res = panels["panels"][full_name]["res"]
