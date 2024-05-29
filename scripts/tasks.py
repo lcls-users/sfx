@@ -759,8 +759,8 @@ def test_serv_client(config):
     print("TESTING SERVER AND CLIENT COMMUNICATION")
     from btx.interfaces.ischeduler import JobScheduler
 
-    server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/server.py")
-    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/client.py")
+    server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
+    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
     command = f"python {server_path}; print('Server is running')"
     command += "; sleep 10"
