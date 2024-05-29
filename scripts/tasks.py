@@ -771,7 +771,7 @@ def test_serv_client(config):
     # Set-up server
     print("=============================Starting server=============================\n \n")
     server_path = os.path.expanduser("~/btx/btx/interfaces/iserver.py")
-    subprocess.Popen(["python3", server_path])
+    subprocess.Popen(["python3", server_path],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print("\n \n=============================Server started=============================\n \n")
 
     time.sleep(10)
@@ -786,7 +786,7 @@ def test_serv_client(config):
     # Set-up client
     print("=============================Starting client=============================\n \n")
     client_path = os.path.expanduser("~/btx/btx/interfaces/iclient.py")
-    subprocess.Popen(["python3", client_path])
+    subprocess.Popen(["python3", client_path],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print("\n \n=============================Client started=============================\n \n")
 
 
