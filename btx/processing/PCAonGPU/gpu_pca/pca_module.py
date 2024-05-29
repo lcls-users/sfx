@@ -156,11 +156,6 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             IncrementalPCAGPU: The fitted IPCA model.
         """
-        num_gpus = torch.cuda.device_count()
-        for gpu_id in range(num_gpus):
-            print(f"GPU {gpu_id}:")
-            print(f"    Allocated memory: {torch.cuda.memory_allocated(gpu_id)} bytes")
-            print(f"    Reserved memory: {torch.cuda.memory_reserved(gpu_id)} bytes")
 
         if check_input:
             X = self._validate_data(X)
@@ -228,11 +223,7 @@ class IncrementalPCAonGPU(nn.Module):
 
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)
         U, Vt = self._svd_flip(U, Vt)
-        num_gpus = torch.cuda.device_count()
-        for gpu_id in range(num_gpus):
-            print(f"GPU {gpu_id}:")
-            print(f"    Allocated memory: {torch.cuda.memory_allocated(gpu_id)} bytes")
-            print(f"    Reserved memory: {torch.cuda.memory_reserved(gpu_id)} bytes")
+
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
 

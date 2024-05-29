@@ -9,6 +9,8 @@ from matplotlib import pyplot as plt
 from matplotlib import colors
 from scipy.linalg import qr
 
+import subprocess
+
 import holoviews as hv
 hv.extension('bokeh')
 from holoviews.streams import Params
@@ -998,6 +1000,8 @@ class iPCA_Pytorch:
 
         self.task_durations = dict({})
 
+        print_installed_packages()
+
     def run(self):
         """
         Run the iPCA algorithm on the given data.
@@ -1088,7 +1092,8 @@ class iPCA_Pytorch:
                 std_deviation = statistics.stdev(durations)
                 logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
     
-        logging.info(f"Model complete in {end_time - start_time} seconds")    
+        logging.info(f"Model complete in {end_time - start_time} seconds")
+        logging.info()    
 
 def distribute_indices_over_ranks(d, size):
     """
@@ -1229,6 +1234,10 @@ def initialize_matrices(filename_with_tag):
         previous_var_tot = None 
 
     return previous_U, previous_S, previous_mu_tot, previous_var_tot
+
+def print_installed_packages():
+    result = subprocess.run(['pip', 'list'], stdout=subprocess.PIPE, text=True)
+    print(result.stdout)
 
 #### for command line use ###
 
