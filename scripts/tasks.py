@@ -778,7 +778,7 @@ def test_serv_client(config):
     print("Standard Output:", stdout.decode())
     print("Standard Error:", stderr.decode())
 
-    timeout = 100
+    timeout = 10
     start_time = time.time()
 
     while True:
@@ -788,7 +788,7 @@ def test_serv_client(config):
         elif time.time() - start_time > timeout:
             # Le délai de 100 secondes est écoulé, terminer le processus du serveur et afficher une erreur
             server_process.terminate()
-            print("Erreur: Le serveur n'a pas pu être démarré dans les 100 secondes.")
+            print(f"Erreur: Le serveur n'a pas pu être démarré dans les {timeout} secondes.")
             break
         else:
             time.sleep(1)
