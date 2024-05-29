@@ -99,8 +99,10 @@ def start_server(address, num_workers):
 def main():
     server_address = ('localhost', 5000)
     num_workers = 5
+    print("Starting server ...")
     processes, server_socket = start_server(server_address, num_workers)
-
+    print("Server started")
+    
     try:
         # Wait to complete, join is wait
         for p in processes:
