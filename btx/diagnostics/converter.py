@@ -291,6 +291,7 @@ class CrystFELtoPyFAI:
         fs_size = self.detector.fs_size
         ss_size = self.detector.ss_size
         pix_arr = np.zeros([nmods, ss_size, fs_size, 3])
+        print(pix_arr.shape)
         mean_z = np.mean([panels["panels"][f"p{p}a{a}"]["coffset"] for p in range(nmods) for a in range(nasics)])
         for p in range(nmods):
             pname = f"p{p}"
@@ -314,7 +315,6 @@ class CrystFELtoPyFAI:
                 x = corner_x + ssx * coords_ss + fsx * coords_fs
                 y = corner_y + ssy * coords_ss + fsy * coords_fs
                 z = corner_z + ssz * coords_ss + fsz * coords_fs
-                print(x.shape)
                 pix_arr[p, ss_portion, fs_portion, 0] = x
                 pix_arr[p, ss_portion, fs_portion, 1] = y
                 pix_arr[p, ss_portion, fs_portion, 2] = z
