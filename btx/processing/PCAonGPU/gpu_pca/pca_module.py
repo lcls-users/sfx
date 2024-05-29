@@ -233,7 +233,7 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
-        U, S, Vt = self.parallel_svd(X, self.n_components_)
+        U, S, Vt = torch.linalg.svd(X, full_matrices=False)
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
 
@@ -271,51 +271,3 @@ class IncrementalPCAonGPU(nn.Module):
         X = X.to(current_device)
         X -= self.mean_
         return torch.mm(X, self.components_.T)
-
-    def svd_on_gpu(self, X, k, gpu_id, start_idx, end_idx, shared_U, shared_S, shared_Vt):
-        device = torch.device(f'cuda:{gpu_id}' if torch.cuda.is_available() else 'cpu')
-        X = X.to(device)
-        
-        # Perform SVD
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False)
-        U, Vt = self._svd_flip(U, Vt, u_based_decision=False)
-        
-        # Select the components for this GPU
-        U_k = U[:, start_idx:end_idx]
-        S_k = S[start_idx:end_idx]
-        Vt_k = Vt[start_idx:end_idx, :]
-        
-        # Copy the results to shared memory
-        shared_U[start_idx:end_idx, :] = U_k.t()
-        shared_S[start_idx:end_idx] = S_k
-        shared_Vt[:, start_idx:end_idx] = Vt_k
-    
-    def parallel_svd(self, X, total_components):
-        num_gpus = min(self.num_gpus_used, torch.cuda.device_count())
-        if num_gpus < 2:
-            return torch.svd(X, some=True)
-
-        try:
-            components_per_gpu = total_components // num_gpus
-            shared_U = torch.zeros(X.shape[0], total_components, dtype=X.dtype, device='cuda').share_memory_()
-            shared_S = torch.zeros(total_components, dtype=X.dtype, device='cuda').share_memory_()
-            shared_Vt = torch.zeros(total_components, X.shape[1], dtype=X.dtype, device='cuda').share_memory_()
-
-            processes = []
-            for gpu_id in range(num_gpus):
-                start_idx = gpu_id * components_per_gpu
-                end_idx = start_idx + components_per_gpu
-                p = mp.Process(target=self.svd_on_gpu, args=(X, components_per_gpu, gpu_id, start_idx, end_idx, shared_U, shared_S, shared_Vt))
-                p.start()
-                processes.append(p)
-            
-            for p in processes:
-                p.join()
-            
-            return shared_U.t(), shared_S, shared_Vt
-        
-        except Exception as e:
-            # Print or log the exception for debugging
-            print("Exception occurred in parallel_svd:", e)
-            # Handle the exception gracefully, e.g., return default values or re-raise
-            raise
