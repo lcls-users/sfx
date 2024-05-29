@@ -768,7 +768,7 @@ def test_serv_client(config):
 
     # Set-up server
     server_path = os.path.expanduser("~/sdf/home/n/nathfrn/btx/interfaces/iserver.py")
-    subprocess.Popen(["python", server_path])
+    subprocess.Popen(["python3", server_path])
 
     time.sleep(10)
 
@@ -777,7 +777,7 @@ def test_serv_client(config):
 
     # Set-up client
     client_path = os.path.expanduser("~/sdf/home/n/nathfrn/btx/interfaces/iclient.py")
-    subprocess.Popen(["python", client_path])
+    subprocess.Popen(["python3", client_path])
 
 
 def bayesian_optimization(config):
