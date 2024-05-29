@@ -313,6 +313,8 @@ class CrystFELtoPyFAI:
                 coords_ss, coords_fs = np.meshgrid(
                     np.arange(0, ss_size), np.arange(0, fs_size), indexing="ij"
                 )
+                print(coords_ss.shape)
+                print(coords_fs.shape)
                 x = corner_x + ssx * coords_ss + fsx * coords_fs
                 y = corner_y + ssy * coords_ss + fsy * coords_fs
                 z = corner_z + ssz * coords_ss + fsz * coords_fs
