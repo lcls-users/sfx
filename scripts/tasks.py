@@ -773,7 +773,7 @@ def test_serv_client(config):
 
     # Set-up server
     print("=============================Starting server=============================\n \n")
-    server_process = subprocess.Popen(["python3", "-m", "btx.interfaces.iserver"])
+    server_process = subprocess.Popen(["python3", "-m", "../btx/interfaces/iserver.py"])
     print("\n \n=============================Server started=============================\n \n")
 
     time.sleep(10)
