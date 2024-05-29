@@ -772,11 +772,8 @@ def test_serv_client(config):
 
     # Set-up server
     print("=============================Starting server=============================\n \n")
-    """iserver_path = os.path.abspath("/sdf/home/n/nathfrn/btx/btx/interfaces/iserver.py")
-    server_process = subprocess.Popen(["python3", iserver_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = server_process.communicate()
-    print("Standard Output:", stdout.decode())
-    print("Standard Error:", stderr.decode())"""
+    iserver_path = os.path.abspath("/sdf/home/n/nathfrn/btx/btx/interfaces/iserver.py")
+    server_process = subprocess.run(["python3", iserver_path], capture_output=True)
 
     timeout = 10
     start_time = time.time()
