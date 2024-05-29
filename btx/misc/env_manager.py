@@ -14,7 +14,6 @@ def activate_environment(activate_script):
     else:
         # For Unix-like systems
         activate_cmd = "source " + activate_script
-        activate_cmd += " && export"
         os.system(activate_cmd)
 
 def deactivate_environment():
