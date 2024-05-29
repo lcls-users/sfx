@@ -767,16 +767,16 @@ def test_serv_client(config):
     activate_environment(env_server)
 
     # Set-up server
-    server_path = os.path.expanduser("~/sdf/home/n/nathfrn/btx/interfaces/iserver.py")
+    server_path = os.path.expanduser("~/sdf/home/n/nathfrn/btx/btx/interfaces/iserver.py")
     subprocess.Popen(["python3", server_path])
 
     time.sleep(10)
 
-    deactivate_environment(env_server)
+    deactivate_environment()
     activate_environment(env_client)
 
     # Set-up client
-    client_path = os.path.expanduser("~/sdf/home/n/nathfrn/btx/interfaces/iclient.py")
+    client_path = os.path.expanduser("~/sdf/home/n/nathfrn/btx/btx/interfaces/iclient.py")
     subprocess.Popen(["python3", client_path])
 
 
