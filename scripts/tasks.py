@@ -772,11 +772,26 @@ def test_serv_client(config):
 
     # Set-up server
     print("=============================Starting server=============================\n \n")
-    """iserver_path = os.path.abspath("/sdf/home/n/nathfrn/btx/btx/interfaces/iserver.py")
+    iserver_path = os.path.abspath("/sdf/home/n/nathfrn/btx/btx/interfaces/iserver.py")
     server_process = subprocess.Popen(["python3", iserver_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = server_process.communicate()
     print("Standard Output:", stdout.decode())
-    print("Standard Error:", stderr.decode())"""
+    print("Standard Error:", stderr.decode())
+
+    timeout = 100
+    start_time = time.time()
+
+    while True:
+        if server_process.poll() is not None:
+            # Le processus du serveur s'est terminé avant le délai
+            break
+        elif time.time() - start_time > timeout:
+            # Le délai de 100 secondes est écoulé, terminer le processus du serveur et afficher une erreur
+            server_process.terminate()
+            print("Erreur: Le serveur n'a pas pu être démarré dans les 100 secondes.")
+            break
+        else:
+            time.sleep(1)
     print("\n \n=============================Server started=============================\n \n")
 
     time.sleep(10)
