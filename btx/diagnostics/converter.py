@@ -372,9 +372,9 @@ class CrystFELtoPyFAI:
                 # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
                 if cframe==0:
                     # psana frame to pyFAI frame
-                    # 0 = z along beam, 1 = dim1 (X) fs, 2 = dim2 (Y) ss
-                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x  # 1: bottom to top
+                    # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = -z  # 3: along beam
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = -x  # 1: bottom to top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = y  # 2: left to right
                 elif cframe==1:
                     # Lab frame to pyFAI frame
