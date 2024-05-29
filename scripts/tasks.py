@@ -767,13 +767,13 @@ def test_serv_client(config):
     
     requests_list = [ ('mfxp23120'   , 91 , 'idx', 'mfx', event) for event in range(1000) ]
 
-    print("=============================Activating server environment=============================\n \n")
+    print("=============================Activating server environment=============================\n")
     activate_environment(env_server)
-    print("\n \n=============================Server environment activated=============================\n \n")
+    print("\n=============================Server environment activated=============================\n \n")
 
     # Set-up server
     print("=============================Starting server=============================\n \n")
-    btx.interfaces.iserver.main()
+    server_process = subprocess.Popen(["python3", "-m", "btx.interfaces.iserver"])
     print("\n \n=============================Server started=============================\n \n")
 
     time.sleep(10)
