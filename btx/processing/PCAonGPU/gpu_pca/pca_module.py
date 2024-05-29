@@ -10,7 +10,8 @@ import torch.multiprocessing as mp
 
 import dask 
 import dask.array as da
-import dask_cuda
+
+import cupy as cp
 
 from mpi4py import MPI
 import numpy as np
