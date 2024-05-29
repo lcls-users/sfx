@@ -757,52 +757,23 @@ def ipca_pytorch(config):
     
 def test_serv_client(config):
     print("TESTING SERVER AND CLIENT COMMUNICATION")
-    from btx.misc.env_manager import activate_environment
-    from btx.misc.env_manager import deactivate_environment
-    import btx.interfaces.iclient
-    
-    env_server = "/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
-    env_client = "/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
-    
-    requests_list = [ ('mfxp23120', 91 , 'idx', 'mfx', event) for event in range(1000) ]
+    from btx.interfaces.ischeduler import JobScheduler
 
-    print("=============================Activating server environment=============================\n")
-    activate_environment(env_server)
-    print("\n=============================Server environment activated=============================\n \n")
+    server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/server.py")
+    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/client.py")
 
-    # Set-up server
-    print("=============================Starting server=============================\n \n")
-    iserver_path = os.path.abspath("/sdf/home/n/nathfrn/btx/btx/interfaces/iserver.py")
-    server_process = subprocess.run(["python3", iserver_path], capture_output=True)
+    command = f"python {server_path}; print('Server is running')"
+    command += "; sleep 10"
+    command += ";conda deactivate; print('Server environment deactivated')"
+    command += "; conda activate ana-4.0.60-py3; print('Client environment activated')"
+    command += f"; python {client_path}; print('Client is running')"
 
-    timeout = 10
-    start_time = time.time()
-
-    while True:
-        if server_process.poll() is not None:
-            break
-        elif time.time() - start_time > timeout:
-            server_process.terminate()
-            print(f"Erreur: Le serveur n'a pas pu être démarré dans les {timeout} secondes.")
-            break
-        else:
-            time.sleep(1)
-    print("\n \n=============================Server started=============================\n \n")
-
-    time.sleep(10)
-
-    print("=============================Deactivating client environment=============================\n \n")
-    deactivate_environment()
-    print("\n \n=============================Client environment deactivated=============================\n \n")
-    print("=============================Activating client environment=============================\n \n")
-    activate_environment(env_client)
-    print("\n \n=============================Client environment activated=============================\n \n")
-
-    # Set-up client
-    print("=============================Starting client=============================\n \n")
-    btx.interfaces.iclient.main(requests_list)
-    print("\n \n=============================Client started=============================\n \n")
-
+    js = JobScheduler(os.path.join(".", f'test_serv_client.sh'),queue = 'milano', ncores=1, jobname=f'test_serv_client')
+    js.write_header()
+    js.write_main(f"{command}\n", dependencies=['psana'])
+    js.clean_up()
+    js.submit()
+    print('All done!')
 
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
