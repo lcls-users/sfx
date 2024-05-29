@@ -102,7 +102,7 @@ def start_server(address, num_workers):
     print(f"Started {num_workers} worker processes.")
     return processes, server_socket
 
-def main():
+if __name__ == "__main__":
     server_address = ('localhost', 5000)
     num_workers = 5
     print("Starting server ...")
