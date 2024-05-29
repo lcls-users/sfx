@@ -768,7 +768,7 @@ def test_serv_client(config):
     command += "; conda activate ana-4.0.60-py3; print('Client environment activated')"
     command += f"; python {client_path}; print('Client is running')"
 
-    js = JobScheduler(os.path.join(".", f'test_serv_client.sh'),queue = 'milano', ncores=1, jobname=f'test_serv_client')
+    js = JobScheduler(os.path.join(".", f'test_serv_client.sh'),queue = 'milano', ncores=1, jobname=f'test_serv_client',logdir='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/')
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'])
     js.clean_up()
