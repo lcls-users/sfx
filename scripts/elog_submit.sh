@@ -170,7 +170,7 @@ fi
 
 ANA_CONDA_MANAGE="${ANA_CONDA_DIR}conda1/manage/bin/"
 ANA_CONDA_BIN="${ANA_CONDA_DIR}conda1/inst/envs/ana-4.0.59-py3/bin/" #CHANGED FOR PYTORCH, NEED TO MAKE SURE IT'S OKAY
-WHICHPYTHON="${ANA_CONDA_BIN}python3.9"
+WHICHPYTHON="${ANA_CONDA_BIN}python"
 WHICHMPIRUN="${ANA_CONDA_BIN}mpirun"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
