@@ -349,13 +349,13 @@ class CrystFELtoPyFAI:
             pname = f"p{p}"
             for asic in range(nasics):
                 full_name = f"{pname}a{asic}"
-                arow = asic // (nasics/2)
-                acol = asic % (nasics/2)
+                arow = asic // (nasics//2)
+                acol = asic % (nasics//2)
                 slab_offset = p * asics_shape[1] *ss_size
                 ss_portion = slice(
-                    arow * ss_size/2 + slab_offset, (arow + 1) * ss_size/2 + slab_offset
+                    arow * ss_size + slab_offset, (arow + 1) * ss_size + slab_offset
                 )
-                fs_portion = slice(acol * fs_size/2, (acol + 1) * fs_size/2)
+                fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
                 # Get tile vectors for ss and fs directions
                 res = panels["panels"][full_name]["res"]
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
