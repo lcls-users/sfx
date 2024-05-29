@@ -241,6 +241,10 @@ class IncrementalPCAonGPU(nn.Module):
 
         X_dask = da.from_array(X.cpu().numpy(), chunks=(self.n_components_, self.batch_size_))
         U, S, Vt = da.linalg.svd_compressed(X_dask, self.n_components_)
+        U = torch.tensor(U.compute(), device=current_device)
+        S = torch.tensor(S.compute(), device=current_device)
+        Vt = torch.tensor(Vt.compute(), device=current_device)
+        
         num_gpus = torch.cuda.device_count()
         for gpu_id in range(num_gpus):
             print(f"GPU {gpu_id}:")
