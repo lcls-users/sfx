@@ -10,6 +10,8 @@ import time
 import yaml
 import csv
 from mpi4py import MPI
+import subprocess
+import socket
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -752,6 +754,29 @@ def ipca_pytorch(config):
 
         # Run iPCA for the current run
         ipca.run()
+    
+def test_serv_client(config):
+    from btx.misc.env_manager import activate_environment
+    from btx.misc.env_manager import deactivate_environment
+    import btx.interfaces.iclient
+    import btx.interfaces.iserver
+    
+    env_server = "~/sdf/group/lcls/ds/ana/sw/conda1/insta/envs/ana-4.0.60-py3/bin/"
+    env_client = "~/sdf/group/lcls/ds/ana/sw/conda1/insta/envs/ana-4.0.60-py3/bin/"
+
+    activate_environment(env_server)
+
+    # Set-up server
+    subprocess.Popen(["python", ../btx/interfaces/iserver.py])
+
+    time.sleep(10)
+
+    deactivate_environment(env_server)
+    activate_environment(env_client)
+
+    # Set-up client
+    subprocess.Popen(["python", ../btx/interfaces/iclient.py])
+
 
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
