@@ -96,7 +96,7 @@ def start_server(address, num_workers):
 
     return processes, server_socket
 
-if __name__ == "__main__":
+def main():
     server_address = ('localhost', 5000)
     num_workers = 5
     processes, server_socket = start_server(server_address, num_workers)
