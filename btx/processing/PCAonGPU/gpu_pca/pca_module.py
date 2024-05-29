@@ -10,7 +10,6 @@ import torch.multiprocessing as mp
 
 import dask 
 import dask.array as da
-import dask_cuda
 
 from mpi4py import MPI
 import numpy as np
@@ -240,7 +239,7 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
-        U, S, Vt = da.linalg.svd_compressed(X, self.n_components_)
+        U, S, Vt = da.linalg.svd_compressed(X.numpy(), self.n_components_)
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
 
