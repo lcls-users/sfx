@@ -767,7 +767,7 @@ def test_serv_client(config):
     activate_environment(env_server)
 
     # Set-up server
-    subprocess.Popen(["python", /sdf/home/n/nathfrn/btx/interfaces/iserver.py])
+    subprocess.Popen(["python", ~/sdf/home/n/nathfrn/btx/interfaces/iserver.py])
 
     time.sleep(10)
 
@@ -775,7 +775,7 @@ def test_serv_client(config):
     activate_environment(env_client)
 
     # Set-up client
-    subprocess.Popen(["python", /sdf/home/n/nathfrn/btx/interfaces/iclient.py])
+    subprocess.Popen(["python", ~/sdf/home/n/nathfrn/btx/interfaces/iclient.py])
 
 
 def bayesian_optimization(config):
