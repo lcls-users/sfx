@@ -301,8 +301,6 @@ class CrystFELtoPyFAI:
                 acol = int(asic % (nasics//2))
                 ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
                 fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
-                print(ss_portion)
-                print(fs_portion)
                 res = panels["panels"][full_name]["res"]
                 corner_x = panels["panels"][full_name]["corner_x"] / res
                 corner_y = panels["panels"][full_name]["corner_y"] / res
@@ -313,11 +311,10 @@ class CrystFELtoPyFAI:
                 coords_ss, coords_fs = np.meshgrid(
                     np.arange(0, ss_size), np.arange(0, fs_size), indexing="ij"
                 )
-                print(coords_ss.shape)
-                print(coords_fs.shape)
                 x = corner_x + ssx * coords_ss + fsx * coords_fs
                 y = corner_y + ssy * coords_ss + fsy * coords_fs
                 z = corner_z + ssz * coords_ss + fsz * coords_fs
+                print(x.shape)
                 pix_arr[p, ss_portion, fs_portion, 0] = x
                 pix_arr[p, ss_portion, fs_portion, 1] = y
                 pix_arr[p, ss_portion, fs_portion, 2] = z
