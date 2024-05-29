@@ -1,31 +1,165 @@
 import numpy as np
 from pyFAI.detectors import Detector
-from PSCalib.UtilsConvert import geometry_to_crystfel, SEGNAME_TO_PARS
-from PSCalib.GeometryAccess import GeometryAccess
+from PSCalib.UtilsConvert import geometry_to_crystfel, header_crystfel ,panel_constants_to_crystfel
 from PSCalib.GlobalUtils import CFRAME_LAB, CFRAME_PSANA
+from PSCalib.GeometryAccess import GeometryAccess
+
+class ePix10k2M(Detector):
+    """
+    PyFAI Detector instance for the ePix10k2M
+    """
+
+    def __init__(
+        self,
+        pixel1=0.0001,
+        pixel2=0.0001,
+        n_modules=16,
+        n_asics=4,
+        asics_shape = (2, 2), # (rows, cols) = (ss, fs)
+        fs_size=192,
+        ss_size=176,
+        **kwargs,
+    ):
+        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[1] * ss_size, asics_shape[0] * fs_size), **kwargs)
+        self.n_modules = n_modules
+        self.n_asics = n_asics
+        self.asics_shape = asics_shape
+        self.ss_size = ss_size
+        self.fs_size = fs_size
+        self.pixel_size = pixel1
+
+class ePix100(Detector):
+    """
+    PyFAI Detector instance for the ePix100
+    """
+
+    def __init__(
+        self,
+        pixel1=0.00005,
+        pixel2=0.00005,
+        n_modules=4,
+        n_asics=4,
+        asics_shape = (2, 2),
+        fs_size=192,
+        ss_size=176,
+        **kwargs,
+    ):
+        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[1] * ss_size, asics_shape[0] * fs_size), **kwargs)
+        self.n_modules = n_modules
+        self.n_asics = n_asics
+        self.asics_shape = asics_shape
+        self.ss_size = ss_size
+        self.fs_size = fs_size
+        self.pixel_size = pixel1
+
+class Jungfrau4M(Detector):
+    """
+    PyFAI Detector instance for the Jungfrau
+    """
+
+    def __init__(
+        self,
+        pixel1=0.075,
+        pixel2=0.075,
+        n_modules=8,
+        n_asics=8,
+        asics_shape=(4, 2), # (rows, cols) = (ss, fs)
+        fs_size=256,
+        ss_size=256,
+        **kwargs,
+    ):
+        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[1] * ss_size, asics_shape[0] * fs_size), **kwargs)
+        self.n_modules = n_modules
+        self.n_asics = n_asics
+        self.asics_shape = asics_shape
+        self.ss_size = ss_size
+        self.fs_size = fs_size
+        self.pixel_size = pixel1
+
+class Rayonix(Detector):
+    """
+    PyFAI Detector instance for the Rayonix
+    """
+
+    def __init__(
+        self,
+        pixel1=0.044,
+        pixel2=0.044,
+        n_modules=1,
+        n_asics=1,
+        asics_shape=(1, 1),
+        fs_size=7680,
+        ss_size=7680,
+        **kwargs,
+    ):
+        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * ss_size, fs_size), **kwargs)
+        self.n_modules = n_modules
+        self.ss_size = ss_size
+        self.fs_size = fs_size
+        self.pixel_size = pixel1
+
+def get_detector(det_type):
+    """
+    Instantiate a PyFAI Detector object based on the detector type
+    """
+    if det_type == "epix10k2m":
+        return ePix10k2M()
+    elif det_type == "epix100":
+        return ePix100()
+    elif det_type == "jungfrau4m":
+        return Jungfrau4M()
+    elif det_type == "rayonix":
+        return Rayonix()
+    else:
+        raise ValueError("Detector type not recognized")
+    
 
 class PsanatoCrystFEL:
     """
-    Convert a psana .data geometry file to a CrystFEL .geom geometry file.
+    Class to convert psana .data geometry files to CrystFEL .geom geometry files in the desired reference frame
     """
 
-    def __init__(self, psana_file, output_file, cframe=CFRAME_PSANA, zcorr_um=None):
-        geometry_to_crystfel(psana_file, output_file, cframe, zcorr_um)
+    def __init__(self, psana_file, output_file, det_type, cframe=CFRAME_PSANA, zcorr_um=None):
+        if det_type == "Rayonix":
+            self.rayonix_geometry_to_crystfel(psana_file, output_file, cframe, zcorr_um)
+        else:
+            geometry_to_crystfel(psana_file, output_file, cframe, zcorr_um)
 
-
+    def rayonix_geometry_to_crystfel(self, psana_file, output_file, cframe=CFRAME_PSANA, zcorr_um=None):
+        geo = GeometryAccess(psana_file, 0, use_wide_pix_center=False)
+        x, y, z = geo.get_pixel_coords(oname=None, oindex=0, do_tilt=True, cframe=cframe)
+        geo1 = geo.get_seg_geo() # GeometryObject
+        seg = geo1.algo # object of the SegmentGeometry subclass
+        segname = geo1.oname
+        nsegs = int(x.size/seg.size())
+        shape = (nsegs,) + seg.shape() # (nsegs, srows, scols)
+        x.shape = shape
+        y.shape = shape
+        z.shape = shape
+        txt = header_crystfel()
+        for n in range(nsegs):
+            z_um = z[n,:]
+            if zcorr_um is not None: z_um -= zcorr_um
+            txt += panel_constants_to_crystfel(seg, n, x[n,:], y[n,:], z_um)
+        if output_file is not None:
+            f = open(output_file,'w')
+            f.write(txt)
+            f.close()
+        
 class CrystFELtoPyFAI:
     """
-    Convert a CrystFEL .geom geometry file to a PyFAI-friendly geometry format.
+    Class to convert CrystFEL .geom geometry files from a given reference frame to PyFAI corner arrays
     """
 
-    def __init__(self, geom_file, cframe=CFRAME_PSANA, det_type=None):
+    def __init__(self, geom_file, det_type, cframe=CFRAME_PSANA):
+        self.det_type = det_type
         self.geom_file = geom_file
-        self.geom = self.from_CrystFEL(geom_file)
-        self.pix_pos = self.get_pixel_coordinates(self.geom)
-        self.corner_array = self.get_corner_array(self.pix_pos, self.geom, cframe=cframe)
-        self.detector = Epix10k2M()
+        self.cframe = cframe
+        self.detector = get_detector(det_type)
+        self.panels = self.from_CrystFEL(geom_file)
+        self.pix_pos = self.get_pixel_coordinates(self.panels, det_type)
+        self.corner_array = self.get_corner_array(self.pix_pos, self.panels, det_type, cframe)
 
-    @staticmethod
     def from_CrystFEL(fname: str):
         """
         Parse a CrystFEL geometry file
@@ -140,11 +274,9 @@ class CrystFELtoPyFAI:
                         panel["no_index"] = int(value)
                     elif "coffset" in obj[1]:
                         panel["coffset"] = float(value)
-
             return detector
 
-    @staticmethod
-    def get_pixel_coordinates(panels):
+    def get_pixel_coordinates(self, panels: dict):
         """
         From a parsed CrystFEL geometry file, calculate Epix10k2M pixel coordinates
         in psana reference frame
@@ -154,23 +286,20 @@ class CrystFELtoPyFAI:
         panels : dict
             Dictionary of panels from a CrystFEL geometry file
         """
-        # 176 ss pixels, 192 fs pixels per asic
-        # pixel size is 0.0001
-        # asics are aranged 2x2 into quads (modules)
-        # modules are arranged
-        nmods = 16  # 16 panels
-        nasics = 4  # asics per panel
-        ss_size = 176
-        fs_size = 192
-        pix_arr = np.zeros([nmods, ss_size * 2, fs_size * 2, 3])
+        nmods = self.detector.n_modules
+        nasics = self.detector.n_asics
+        asics_shape = self.detector.asics_shape
+        fs_size = self.detector.fs_size
+        ss_size = self.detector.ss_size
+        pix_arr = np.zeros([nmods, ss_size, fs_size, 3])
         mean_z = np.mean([panels["panels"][f"p{p}a{a}"]["coffset"] for p in range(nmods) for a in range(nasics)])
         for p in range(nmods):
             pname = f"p{p}"
             for asic in range(nasics):
                 asicname = f"a{asic}"
                 full_name = pname + asicname
-                arow = asic // 2
-                acol = asic % 2
+                arow = asic // (nasics/2) 
+                acol = asic % (nasics/2)
                 ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
                 fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
                 res = panels["panels"][full_name]["res"]
@@ -191,8 +320,7 @@ class CrystFELtoPyFAI:
                 pix_arr[p, ss_portion, fs_portion, 2] = z
         return pix_arr
 
-    @staticmethod
-    def get_corner_array(pix_pos, panels, cframe=CFRAME_PSANA):
+    def get_corner_array(self, pix_pos, panels, cframe=CFRAME_PSANA):
         """
         Convert to the corner array needed by PyFAI
 
@@ -208,25 +336,26 @@ class CrystFELtoPyFAI:
             If True, convert from CrystFEL reference frame to PyFAI reference frame
             If False, convert from psana reference frame to PyFAI reference frame
         """
-        nmods = 16  # 16 panels
-        nasics = 4  # asics per panel
-        ss_size = 176
-        fs_size = 192
-        pixcorner = pix_pos.reshape(nmods * ss_size * 2, fs_size * 2, 3)
+        nmods = self.detector.n_modules
+        nasics = self.detector.n_asics
+        asics_shape = self.detector.asics_shape
+        fs_size = self.detector.fs_size
+        ss_size = self.detector.ss_size
+        pixcorner = pix_pos.reshape(nmods * ss_size, fs_size, 3)
         cx, cy, cz = np.moveaxis(pixcorner, -1, 0)
         # Flattened ss dim, fs, Num corners, ZYX coord
-        pyfai_fmt = np.zeros([nmods * ss_size * 2, fs_size * 2, 4, 3])
+        pyfai_fmt = np.zeros([nmods * ss_size, fs_size, 4, 3])
         for p in range(nmods):
             pname = f"p{p}"
             for asic in range(nasics):
                 full_name = f"{pname}a{asic}"
-                arow = asic // 2
-                acol = asic % 2
-                slab_offset = p * ss_size * 2
+                arow = asic // (nasics/2)
+                acol = asic % (nasics/2)
+                slab_offset = p * asics_shape[1] *ss_size
                 ss_portion = slice(
-                    arow * 176 + slab_offset, (arow + 1) * ss_size + slab_offset
+                    arow * ss_size/2 + slab_offset, (arow + 1) * ss_size/2 + slab_offset
                 )
-                fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
+                fs_portion = slice(acol * fs_size/2, (acol + 1) * fs_size/2)
                 # Get tile vectors for ss and fs directions
                 res = panels["panels"][full_name]["res"]
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
@@ -254,24 +383,3 @@ class CrystFELtoPyFAI:
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
         return pyfai_fmt
-
-
-class Epix10k2M(Detector):
-    """
-    PyFAI Detector instance for the Epix10k2M
-    """
-
-    def __init__(
-        self,
-        pixel1=0.0001,
-        pixel2=0.0001,
-        n_modules=16,
-        fs_size=192,
-        ss_size=176,
-        **kwargs,
-    ):
-        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * 2 * ss_size, 2 * fs_size), **kwargs)
-        self.n_modules = n_modules
-        self.ss_size = ss_size
-        self.fs_size = fs_size
-        self.pixel_size = pixel1
