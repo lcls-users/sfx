@@ -9,8 +9,6 @@ from matplotlib import pyplot as plt
 from matplotlib import colors
 from scipy.linalg import qr
 
-import subprocess
-
 import holoviews as hv
 hv.extension('bokeh')
 from holoviews.streams import Params
@@ -1000,8 +998,6 @@ class iPCA_Pytorch:
 
         self.task_durations = dict({})
 
-        print_installed_packages()
-
     def run(self):
         """
         Run the iPCA algorithm on the given data.
@@ -1235,9 +1231,6 @@ def initialize_matrices(filename_with_tag):
 
     return previous_U, previous_S, previous_mu_tot, previous_var_tot
 
-def print_installed_packages():
-    result = subprocess.run(['pip', 'list'], stdout=subprocess.PIPE, text=True)
-    print(result.stdout)
 
 #### for command line use ###
 
