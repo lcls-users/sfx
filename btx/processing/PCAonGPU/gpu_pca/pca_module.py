@@ -6,13 +6,6 @@ processes data in smaller chunks or batches.
 
 import torch
 import torch.nn as nn
-import torch.multiprocessing as mp
-
-import dask 
-import dask.array as da
-
-from mpi4py import MPI
-import numpy as np
 
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,12 +58,6 @@ class IncrementalPCAonGPU(nn.Module):
             self.components.append(
                 torch.zeros(components_per_gpu, batch_size).to(f"cuda:{gpu_id}")
             )
-
-        num_gpus = torch.cuda.device_count()
-        for gpu_id in range(num_gpus):
-            print(f"GPU {gpu_id}:")
-            print(f"    Allocated memory: {torch.cuda.memory_allocated(gpu_id)} bytes")
-            print(f"    Reserved memory: {torch.cuda.memory_reserved(gpu_id)} bytes")
         
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
@@ -239,12 +226,8 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
-        X_dask = da.from_array(X.cpu().numpy(), chunks=(self.n_components_, self.batch_size_))
-        U, S, Vt = da.linalg.svd_compressed(X_dask, self.n_components_)
-        U = torch.tensor(U.compute(), device=current_device)
-        S = torch.tensor(S.compute(), device=current_device)
-        Vt = torch.tensor(Vt.compute(), device=current_device)
-        
+        U, S, Vt = torch.svd(X, some=False)
+        U, Vt = self._svd_flip(U, Vt)
         num_gpus = torch.cuda.device_count()
         for gpu_id in range(num_gpus):
             print(f"GPU {gpu_id}:")
