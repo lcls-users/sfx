@@ -226,7 +226,7 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
-        U, S, Vt = torch.svd(X, some=False)
+        U, S, Vt = torch.svd(X, full_matrices=False)
         U, Vt = self._svd_flip(U, Vt)
         num_gpus = torch.cuda.device_count()
         for gpu_id in range(num_gpus):
