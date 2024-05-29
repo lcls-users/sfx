@@ -98,22 +98,6 @@ class Rayonix(Detector):
         self.fs_size = fs_size
         self.pixel_size = pixel1
 
-def get_detector(det_type):
-    """
-    Instantiate a PyFAI Detector object based on the detector type
-    """
-    if det_type == "ePix10k2M":
-        return ePix10k2M()
-    elif det_type == "ePix100":
-        return ePix100()
-    elif det_type == "Jungfrau4M":
-        return Jungfrau4M()
-    elif det_type == "Rayonix":
-        return Rayonix()
-    else:
-        raise ValueError("Detector type not recognized")
-    
-
 class PsanatoCrystFEL:
     """
     Class to convert psana .data geometry files to CrystFEL .geom geometry files in the desired reference frame
@@ -155,11 +139,26 @@ class CrystFELtoPyFAI:
         self.det_type = det_type
         self.geom_file = geom_file
         self.cframe = cframe
-        self.detector = get_detector(det_type)
+        self.detector = self.get_detector(det_type)
         self.panels = self.from_CrystFEL(geom_file)
-        self.pix_pos = self.get_pixel_coordinates(self.panels, det_type)
-        self.corner_array = self.get_corner_array(self.pix_pos, self.panels, det_type, cframe)
+        self.pix_pos = self.get_pixel_coordinates(self.panels)
+        self.corner_array = self.get_corner_array(self.pix_pos, self.panels, cframe)
         self.detector.set_pixel_corners(self.corner_array)
+
+    def get_detector(self, det_type):
+        """
+        Instantiate a PyFAI Detector object based on the detector type
+        """
+        if det_type == "ePix10k2M":
+            return ePix10k2M()
+        elif det_type == "ePix100":
+            return ePix100()
+        elif det_type == "Jungfrau4M":
+            return Jungfrau4M()
+        elif det_type == "Rayonix":
+            return Rayonix()
+        else:
+            raise ValueError("Detector type not recognized")
 
     def from_CrystFEL(fname: str):
         """
