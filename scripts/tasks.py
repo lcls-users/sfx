@@ -773,9 +773,7 @@ def test_serv_client(config):
 
     # Set-up server
     print("=============================Starting server=============================\n \n")
-    home_dir = os.path.expanduser("~/btx")
-    script_path = os.path.join(home_dir, "btx", "interfaces", "iserver.py")
-    server_process = subprocess.Popen(["python3", script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    server_process = subprocess.Popen(["python3", "/sdf/home/n/nathfrn/btx/btx/interfaces/iserver.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = server_process.communicate()
     print("Standard Output:", stdout.decode())
     print("Standard Error:", stderr.decode())
