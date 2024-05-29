@@ -160,7 +160,7 @@ class CrystFELtoPyFAI:
         else:
             raise ValueError("Detector type not recognized")
 
-    def from_CrystFEL(fname: str):
+    def from_CrystFEL(self, fname: str):
         """
         Parse a CrystFEL geometry file
         Read a text ".geom" file and return the dictionary of geometry components
