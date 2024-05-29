@@ -764,20 +764,30 @@ def test_serv_client(config):
     env_server = "/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
     env_client = "/sdf/group/lcls/ds/ana/sw/conda1/manage/bin/psconda.sh"
 
+    print("=============================Activating server environment=============================\n \n")
     activate_environment(env_server)
+    print("\n \n=============================Server environment activated=============================\n \n")
 
     # Set-up server
+    print("=============================Starting server=============================\n \n")
     server_path = os.path.expanduser("~/btx/btx/interfaces/iserver.py")
     subprocess.Popen(["python3", server_path])
+    print("\n \n=============================Server started=============================\n \n")
 
     time.sleep(10)
 
+    print("=============================Deactivating client environment=============================\n \n")
     deactivate_environment()
+    print("\n \n=============================Client environment deactivated=============================\n \n")
+    print("=============================Activating client environment=============================\n \n")
     activate_environment(env_client)
+    print("\n \n=============================Client environment activated=============================\n \n")
 
     # Set-up client
+    print("=============================Starting client=============================\n \n")
     client_path = os.path.expanduser("~/btx/btx/interfaces/iclient.py")
     subprocess.Popen(["python3", client_path])
+    print("\n \n=============================Client started=============================\n \n")
 
 
 def bayesian_optimization(config):
