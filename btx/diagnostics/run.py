@@ -46,11 +46,10 @@ class RunDiagnostics:
             unassembled, calibrated images of shape (n_panels, n_x, n_y)
         """
         if not self.powders:
-            for key in ['sum', 'sqr', 'max', 'min']:
+            for key in ['sqr', 'max', 'min']:
                 self.powders[key] = img.copy()
         else:
             if img is not None:
-                self.powders['sum'] += img
                 self.powders['sqr'] += np.square(img)
                 self.powders['max'] = np.maximum(self.powders['max'], img)
                 self.powders['min'] = np.minimum(self.powders['min'], img)
