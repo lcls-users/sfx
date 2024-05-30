@@ -229,7 +229,7 @@ class RunDiagnostics:
         evt_map = map_pixel_gain_mode_for_raw(self.psi.det, raw)
         self.gain_map[evt_map==[self.modes[gain_mode]]] += 1
             
-    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, total_intensity=False, gain_mode=None, raw_img=False):        
+    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, total_intensity=False, gain_mode=None, raw_img=False):
         """
         Compute powders and per-image statistics. If a mask is provided, it is 
         only applied to the stats trajectories, not in computing the powder.
