@@ -22,10 +22,8 @@ build_mask:
   combine: True
 
 run_analysis:
-  max_events: 1
-  ncores: 1
-  lower_sum_threshold: 
-  upper_sum_threshold: 
+  max_events: -1
+  ncores: 2
   total_intensity: True
 
 opt_geom:

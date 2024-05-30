@@ -6,3 +6,6 @@ __pycache__/
 
 # cli -tmp yaml
 tutorial/*-tmp.yaml
+
+# jupyter notebooks
+**/*checkpoints

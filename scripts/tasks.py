@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 # Fetch the URL to post progress update
 update_url = os.environ.get('JID_UPDATE_COUNTERS')
 
-def test(config, cores):
+def test(config):
     print(config)
     requests.post(update_url, json=[ { "key": "root_dir", "value": f"{config.setup.root_dir}" } ])
 
-def fetch_mask(config, cores):
+def fetch_mask(config):
     from btx.interfaces.imask import MaskInterface
     setup = config.setup
     task = config.fetch_mask
@@ -40,7 +40,7 @@ def fetch_mask(config, cores):
     mi.save_mask(os.path.join(taskdir, f'r0000.npy'))
     logger.debug('Done!')
 
-def fetch_geom(config, cores):
+def fetch_geom(config):
     from btx.misc.metrology import retrieve_from_mrxv
     setup = config.setup
     task = config.fetch_geom
@@ -56,7 +56,7 @@ def fetch_geom(config, cores):
                        mrxv_path=mrxv_path)
     logger.debug('Done!')
 
-def build_mask(config, cores):
+def build_mask(config):
     from btx.interfaces.imask import MaskInterface
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
@@ -77,7 +77,7 @@ def build_mask(config, cores):
     mi.save_mask(os.path.join(taskdir, f'r{mi.psi.run:04}.npy'))
     logger.debug('Done!')
 
-def run_analysis(config, cores):
+def run_analysis(config):
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
@@ -96,10 +96,6 @@ def run_analysis(config, cores):
         command += f" --max_events={task.max_events}"
     if task.get('mean_threshold') is not None:
         command += f" --mean_threshold={task.mean_threshold}"
-    if task.get('lower_sum_threshold') is not None:
-        command += f" --lower_sum_threshold={task.lower_sum_threshold}"
-    if task.get('upper_sum_threshold') is not None:
-        command += f" --upper_sum_threshold={task.upper_sum_threshold}"
     if task.get('total_intensity') is not None:
         if task.total_intensity:
             command += f" --total_intensity"
@@ -122,7 +118,7 @@ def run_analysis(config, cores):
     js.submit()
     logger.debug('Run analysis launched!')
 
-def opt_geom(config, cores):
+def opt_geom(config):
     from btx.diagnostics.geom_opt import GeomOpt
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
@@ -172,7 +168,7 @@ def opt_geom(config, cores):
         logger.info(f'Updated geometry files saved to: {taskdir}')
         logger.debug('Done!')
 
-def find_peaks(config, cores):
+def find_peaks(config):
     from btx.processing.peak_finder import PeakFinder
     from btx.misc.shortcuts import fetch_latest
     from btx.interfaces.ielog import update_summary
@@ -199,7 +195,7 @@ def find_peaks(config, cores):
         summary_file = f'{setup.root_dir}/summary_r{setup.run:04}.json'
         update_summary(summary_file, pf.pf_summary)
 
-def find_peaks_multiple_runs(config, cores):
+def find_peaks_multiple_runs(config):
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
@@ -270,7 +266,7 @@ def find_peaks_multiple_runs(config, cores):
     logger.info('Done!')
     
 
-def index(config, cores):
+def index(config):
     from btx.processing.indexer import Indexer
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
@@ -287,7 +283,7 @@ def index(config, cores):
     indexer_obj.launch()
     logger.info(f'Indexing launched!')
 
-def index_multiple_runs(config, cores):
+def index_multiple_runs(config):
     from btx.processing.indexer import Indexer
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
@@ -314,7 +310,7 @@ def index_multiple_runs(config, cores):
         
 
 
-def summarize_idx(config, cores):
+def summarize_idx(config):
     import subprocess
     from mpi4py import MPI
     from btx.interfaces.ielog import update_summary
@@ -366,7 +362,7 @@ def summarize_idx(config, cores):
         update_summary(summary_file, summary_dict)
         post_to_elog(config)
 
-def stream_analysis(config, cores):
+def stream_analysis(config):
     from btx.interfaces.istream import launch_stream_analysis
     setup = config.setup
     task = config.stream_analysis
@@ -387,7 +383,7 @@ def stream_analysis(config, cores):
                            slurm_reservation=setup.reservation)
     logger.info(f'Stream analysis launched')
 
-def determine_cell(config, cores):
+def determine_cell(config):
     from btx.interfaces.istream import StreamInterface, write_cell_file, cluster_cell_params
     setup = config.setup
     task = config.determine_cell
@@ -411,7 +407,7 @@ def determine_cell(config, cores):
         logger.info(f'Wrote updated CrystFEL cell file for sample {task.tag} to {celldir}')
         logger.debug('Done!')
 
-def merge(config, cores):
+def merge(config):
     from btx.processing.merge import StreamtoMtz
     setup = config.setup
     task = config.merge
@@ -436,7 +432,7 @@ def merge(config, cores):
     stream_to_mtz.launch()
     logger.info(f'Merging launched!')
 
-def solve(config, cores):
+def solve(config):
     from btx.interfaces.imtz import run_dimple
     setup = config.setup
     task = config.solve
@@ -452,7 +448,7 @@ def solve(config, cores):
                slurm_reservation=setup.reservation)
     logger.info(f'Dimple launched!')
 
-def refine_geometry(config, cores, task=None):
+def refine_geometry(config, task=None):
     from btx.diagnostics.geoptimizer import Geoptimizer
     from btx.misc.shortcuts import fetch_latest, check_file_existence
     setup = config.setup
@@ -494,7 +490,7 @@ def refine_geometry(config, cores, task=None):
     check_file_existence(os.path.join(task.scan_dir, "results.txt"), geopt.timeout)
     logger.debug('Done!')
 
-def refine_center(config, cores):
+def refine_center(config):
     """ Wrapper for the refine_geometry task, searching for the detector center. """
     setup = config.setup
     task = config.refine_center
@@ -506,7 +502,7 @@ def refine_center(config, cores):
     task.dz = [0]
     refine_geometry(config, task)
 
-def refine_distance(config, cores):
+def refine_distance(config):
     """ Wrapper for the refine_geometry task, searching for the detector distance. """
     setup = config.setup
     task = config.refine_distance
@@ -516,7 +512,7 @@ def refine_distance(config, cores):
     task.dz = np.linspace(task.dz[0], task.dz[1], int(task.dz[2]))
     refine_geometry(config, task)
 
-def elog_display(config, cores):
+def elog_display(config):
     from btx.interfaces.ielog import eLogInterface
     setup = config.setup
     """ Updates the summary page in the eLog with most recent results. """
@@ -525,7 +521,7 @@ def elog_display(config, cores):
     eli.update_summary(plot_type='holoviews')
     logger.debug('Done!')
 
-def post_to_elog(config, cores):
+def post_to_elog(config):
     from btx.interfaces.ielog import elog_report_post
     setup = config.setup
     root_dir = setup.root_dir
@@ -536,7 +532,7 @@ def post_to_elog(config, cores):
     if url:
         elog_report_post(summary_file, url)
 
-def visualize_sample(config, cores):
+def visualize_sample(config):
     from btx.misc.visuals import VisualizeSample
     setup = config.setup
     task = config.visualize_sample
@@ -549,7 +545,7 @@ def visualize_sample(config, cores):
     vs.plot_stats()
     logger.debug('Done!')
 
-def clean_up(config, cores):
+def clean_up(config):
     setup = config.setup
     task = config.clean_up
     taskdir = os.path.join(setup.root_dir, 'index')
@@ -557,7 +553,7 @@ def clean_up(config, cores):
         os.system(f"rm -f {taskdir}/r*/*{task.tag}.cxi")
     logger.debug('Done!')
 
-def plot_saxs(config, cores):
+def plot_saxs(config):
     """! Plot the SAXS profile and associated diagnostic figures."""
     from btx.processing.saxs import SAXSProfiler
     setup = config.setup
@@ -572,7 +568,7 @@ def plot_saxs(config, cores):
     saxs = SAXSProfiler(expmt, run, detector_type, rootdir, method)
     saxs.plot_all()
 
-def timetool_diagnostics(config, cores):
+def timetool_diagnostics(config):
     """! Plot timetool diagnostic figures from data in smalldata hdf5 file."""
     from btx.io.ih5 import SmallDataReader
     setup = config.setup
@@ -589,7 +585,7 @@ def timetool_diagnostics(config, cores):
 
     smdr.plot_timetool_diagnostics(output_type = 'png')
 
-def calibrate_timetool(config, cores):
+def calibrate_timetool(config):
     from btx.processing.rawimagetimetool import RawImageTimeTool
     setup = config.setup
     task = config.calibrate_timetool
@@ -607,7 +603,7 @@ def calibrate_timetool(config, cores):
     if figs:
         logger.info(f'Writing figures to {savedir}/figs.')
 
-def timetool_correct(config, cores):
+def timetool_correct(config):
     from btx.processing.rawimagetimetool import RawImageTimeTool
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
@@ -642,7 +638,7 @@ def update_plot(ax, x, y, label):
     ax.set_xlabel('Run')
     ax.set_ylabel(label)
 
-def pipca_run(config, cores):
+def pipca_run(config):
     from btx.processing.pipca import PiPCA
     from btx.misc.pipca_visuals import compute_compression_loss
     from btx.processing.pipca import append_to_dataset
@@ -702,19 +698,19 @@ def pipca_run(config, cores):
         # Run iPCA for the current run
         pipca.run_model_full(previous_U, previous_S, previous_mu_tot, previous_var_tot)
 
-def bayesian_optimization(config, cores):
+def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Perform an iteration of the Bayesian optimization. """
     logger.info('Running an iteration of the Bayesian Optimization.')
     BayesianOptimization.run_bayesian_opt(config)
     logger.info('Done!')
     
-def bo_init_samples_configs(config, cores):
+def bo_init_samples_configs(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Generates the config files that will be used to generate the initial samples for the Bayesian optimization. """
     BayesianOptimization.init_samples_configs(config, logger)
 
-def bo_aggregate_init_samples(config, cores):
+def bo_aggregate_init_samples(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
     BayesianOptimization.aggregate_init_samples(config, logger)
