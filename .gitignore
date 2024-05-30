@@ -7,5 +7,7 @@ __pycache__/
 # cli -tmp yaml
 tutorial/*-tmp.yaml
 
-# jupyter notebooks
+# S3DF interactive sessions create these files in several directories
+# Adding this line to the .gitignore makes it simpler to add, commit, and 
+# push code
 **/*checkpoints
