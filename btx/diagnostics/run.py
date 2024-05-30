@@ -169,14 +169,12 @@ class RunDiagnostics:
             self.stats['photon_energy_eV'][self.n_proc] = photon_energy_eV
 
             if img is None:
-                self.stats['sum'][self.n_proc] = np.nan
                 self.stats['total_intensity'][self.n_proc] = np.nan
                 self.stats['mean'][self.n_proc] = np.nan
                 self.stats['std'][self.n_proc] = np.nan
                 self.stats['max'][self.n_proc] = np.nan
                 self.stats['min'][self.n_proc] = np.nan
             else:
-                self.stats['sum'][self.n_proc] = np.sum(img)
                 self.stats['total_intensity'][self.n_proc] = np.sum(img)/photon_energy_eV
                 self.stats['mean'][self.n_proc] = np.mean(img)
                 self.stats['std'][self.n_proc] = np.std(img)
