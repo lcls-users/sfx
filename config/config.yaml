@@ -1,10 +1,10 @@
 setup:
   queue: 'milano'
-  account: 'lcls'
-  root_dir: '/sdf/home/d/deebanr/experiments/amo11416/results/Deeban'
-  exp: 'amo11416'
-  run: 2
-  det_type: 'pnccdFront'
+  account: ''
+  root_dir: ''
+  exp: ''
+  run: 5
+  det_type: 'Rayonix'
   cell: ''
   reservation: ''
 

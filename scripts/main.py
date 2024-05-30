@@ -52,7 +52,7 @@ def main():
         globals()[task]
     except Exception as e:
         print(f'{task} not found.')
-    globals()[task](config, cores)
+    globals()[task](config)
 
     return 0, 'Task successfully executed'
 
