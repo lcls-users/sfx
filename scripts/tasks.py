@@ -698,6 +698,12 @@ def pipca_run(config):
         # Run iPCA for the current run
         pipca.run_model_full(previous_U, previous_S, previous_mu_tot, previous_var_tot)
 
+        with h5py.File(filename_with_tag, 'r') as f:
+            previous_U = f['U'][:]
+            previous_S = f['S'][:]
+            previous_mu_tot = f['mu'][:]
+            previous_var_tot = f['total_variance'][:]
+
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Perform an iteration of the Bayesian optimization. """
