@@ -762,7 +762,7 @@ def test_serv_client(config):
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
-    commands = [
+    command = [
         f"python {server_path}",
         "echo 'Server is running'",
         "sleep 10",
