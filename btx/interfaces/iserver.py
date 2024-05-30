@@ -94,6 +94,7 @@ def start_server(address, num_workers):
         p = Process(target=worker_process, args=(server_socket,))
         p.start()
         processes.append(p)
+        print(_)
 
     print(f"Started {num_workers} worker processes.")
     return processes, server_socket
