@@ -90,6 +90,7 @@ def start_server(address, num_workers):
     # Create and start worker processes
     processes = []
     for _ in range(num_workers):
+        print(_)
         p = Process(target=worker_process, args=(server_socket,))
         p.start()
         processes.append(p)
