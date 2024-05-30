@@ -144,7 +144,7 @@ class RunDiagnostics:
 
     def compute_stats(self, evt, img):
         """
-        Compute the following image stats: sum, mean, std deviation, max, and min
+        Compute the following image stats: mean, std deviation, max, min
 
         Parameters
         ----------
