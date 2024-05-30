@@ -353,9 +353,9 @@ class RunDiagnostics:
         """
         if self.rank == 0:
             n_plots = len(self.stats_final.keys())-1
-            keys = ['mean', 'max', 'min', 'std', 'beam_energy_eV', 'total_intensity', 'photon_energy_eV', 'gain_mode_counts']
+            keys = ['mean', 'max', 'min', 'std', 'beam_energy_eV', 'photon_energy_eV', 'gain_mode_counts']
             labels = ['mean(I)', 'max(I)', 'min(I)', 'std dev(I)', 
-                      'Beam\nenergy (eV)', 'Photon\nenergy (eV)', 'Total Intensity (# electrons)',
+                      'Beam\nenergy (eV)', 'Photon\nenergy (eV)', 
                       f'No. pixels in\n{self.gain_mode} mode']
 
             # Remove keys which are unavailable
