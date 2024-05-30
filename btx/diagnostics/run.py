@@ -9,7 +9,6 @@ from matplotlib.colors import LogNorm
 import holoviews as hv
 from holoviews import opts
 import pandas as pd
-import h5py as h5
 from btx.interfaces.ipsana import *
 from btx.interfaces.ischeduler import JobScheduler
 
@@ -114,10 +113,8 @@ class RunDiagnostics:
             suffix=""
             if raw_img:
                 suffix = "_raw"
-            hf = h5.File(os.path.join(outdir, f"r{self.psi.run:04}.h5"), 'w')
             for key in self.stats_final.keys():
-                hf.create_dataset(f"r{self.psi.run:04}_{key}{suffix}", data=self.stats_final[key])
-            hf.close()
+                np.save(os.path.join(outdir, f"r{self.psi.run:04}_trace_{key}{suffix}.npy"), self.stats_final[key])
 
     def load_traces(self, outdir, raw_img=False):
         """
