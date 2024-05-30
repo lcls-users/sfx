@@ -277,11 +277,10 @@ class RunDiagnostics:
                 img = self.psi.det.calib(evt=evt)
             if img is None:
                 self.n_empty += 1
-                continue
                 
             if threshold:
                 if np.mean(img) > threshold:
-                    print(f"Excluding event {idx + 1} with image mean: {np.mean(img)}")
+                    print(f"Excluding event {idx} with image mean: {np.mean(img)}")
                     n_excluded += 1
                     img = None
 
