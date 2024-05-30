@@ -92,8 +92,6 @@ def run_analysis(config):
     command += f" -e {setup.exp} -r {setup.run} -d {setup.det_type} -o {taskdir}"
     if mask_file:
         command += f" -m {mask_file}"
-    if task.get('max_events') is not None:
-        command += f" --max_events={task.max_events}"
     if task.get('mean_threshold') is not None:
         command += f" --mean_threshold={task.mean_threshold}"
     if task.get('total_intensity') is not None:
