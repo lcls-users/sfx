@@ -181,7 +181,6 @@ class RunDiagnostics:
             self.n_empty += 1
             self.stats['beam_energy_eV'][self.n_proc] = np.nan
             self.stats['photon_energy_eV'][self.n_proc] = np.nan
-            self.stats['sum'][self.n_proc] = np.nan
             self.stats['total_intensity'][self.n_proc] = np.nan
             self.stats['mean'][self.n_proc] = np.nan
             self.stats['std'][self.n_proc] = np.nan
