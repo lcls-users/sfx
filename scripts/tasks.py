@@ -762,17 +762,11 @@ def test_serv_client(config):
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
-    command = [
-        f"python {server_path}",
-        "echo 'Server is running'",
-        "sleep 10",
-        "conda deactivate",
-        "echo 'Server environment deactivated'",
-        "conda activate ana-4.0.60-py3",
-        "echo 'Client environment activated'",
-        f"python {client_path}",
-        "echo 'Client is running'"
-    ]
+    command = f"python {server_path}; echo'Server is running'"
+    command += "; sleep 10"
+    command += ";conda deactivate; echo 'Server environment deactivated'"
+    command += "; conda activate ana-4.0.60-py3; echo 'Client environment activated'"
+    command += f"; python {client_path}; echo 'Client is running'"
 
     js = JobScheduler(os.path.join(".", f'test_serv_client.sh'),queue = 'milano', ncores=1, jobname=f'test_serv_client',logdir='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/')
     js.write_header()
