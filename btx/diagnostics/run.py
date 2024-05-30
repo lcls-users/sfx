@@ -154,7 +154,7 @@ class RunDiagnostics:
             unassembled, calibrated images of shape (n_panels, n_x, n_y)
         """
         if not self.stats:
-            for key in ['sum', 'mean', 'std', 'max', 'min', 'beam_energy_eV', 'total_intensity', 'photon_energy_eV']:
+            for key in ['mean', 'std', 'max', 'min', 'beam_energy_eV', 'total_intensity', 'photon_energy_eV']:
                 self.stats[key] = np.zeros(self.psi.max_events - self.psi.counter)
         
         beam_energy_mJ   = self.psi.get_fee_gas_detector_energy_mJ_evt(evt)
