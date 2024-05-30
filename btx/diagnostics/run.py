@@ -135,7 +135,7 @@ class RunDiagnostics:
             suffix=""
             if raw_img:
                 suffix = "_raw"
-            for key in ['sum', 'mean', 'std', 'max', 'min', 'beam_energy_eV', 'photon_energy_eV']:
+            for key in ['mean', 'std', 'max', 'min', 'beam_energy_eV', 'photon_energy_eV']:
                 filepath_key = os.path.join(outdir, f"r{self.psi.run:04}_trace_{key}{suffix}.npy")
                 try:
                     self.stats_final[key] = np.load(filepath_key)
