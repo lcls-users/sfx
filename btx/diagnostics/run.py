@@ -247,8 +247,6 @@ class RunDiagnostics:
             if supplied, exclude events whose mean is above this value
         total_intensity : bool
             if True, compute the total intensity
-        compute_total_intensity : bool
-            if True, compute the total intensity
         gain_mode : str
             gain mode to retrieve statistics for, e.g. 'AML-L' 
         raw_img : bool
