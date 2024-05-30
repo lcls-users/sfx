@@ -1,7 +1,6 @@
 import signal
 import json
 import socket
-import multiprocessing
 from multiprocessing import shared_memory, Process
 import numpy as np
 from ipsana import PsanaImg
@@ -18,12 +17,9 @@ def get_psana_img(exp, run, access_mode, detector_name):
         psana_img_buffer[key] = PsanaImg(exp, run, access_mode, detector_name)
     return psana_img_buffer[key]
 
-def worker_process(server_socket_fd):
+def worker_process(server_socket):
     # Ignore CTRL+C in the worker process
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    # Duplicate the file descriptor and create a new socket object from it
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, fileno=server_socket_fd)
 
     while True:
         try:
@@ -67,7 +63,7 @@ def worker_process(server_socket_fd):
             # Wait for the client's acknowledgment
             ack = connection.recv(1024).decode('utf-8')
             if ack == "ACK":
-                print(f"Shared memory {shm.name} ready to unlink.")
+                print(f"Shared memory {shm.name} ready to unlink. Creation took {t.duration * 1e3} ms.")
                 unlink_shared_memory(shm.name)
             else:
                 print("Did not receive proper acknowledgment from client.")
@@ -75,10 +71,6 @@ def worker_process(server_socket_fd):
         except Exception as e:
             print(f"Unexpected error: {e}")
             continue
-        finally:
-            connection.close()
-
-    server_socket.close()
 
 def unlink_shared_memory(shm_name):
     try:
@@ -95,15 +87,14 @@ def start_server(address, num_workers):
     server_socket.bind(address)
     server_socket.listen()
 
-    # Get the file descriptor of the server socket
-    server_socket_fd = server_socket.fileno()
-
     # Create and start worker processes
     processes = []
     for _ in range(num_workers):
-        p = Process(target=worker_process, args=(server_socket_fd,))
+        print(_)
+        p = Process(target=worker_process, args=(server_socket,))
         p.start()
         processes.append(p)
+        print(_)
 
     print(f"Started {num_workers} worker processes.")
     return processes, server_socket
@@ -122,7 +113,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Shutdown signal received")
 
-        for _ in range(num_workers):
+        for p in processes:
             # Trigger connection to unblock accept() in workers
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as trigger_socket:
                 trigger_socket.connect(server_address)
