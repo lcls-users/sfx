@@ -703,7 +703,7 @@ def pipca_run(config):
             previous_S = f['S'][:]
             previous_mu_tot = f['mu'][:]
             previous_var_tot = f['total_variance'][:]
-
+            
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Perform an iteration of the Bayesian optimization. """
