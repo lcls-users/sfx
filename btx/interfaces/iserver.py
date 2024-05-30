@@ -17,14 +17,20 @@ def get_psana_img(exp, run, access_mode, detector_name):
         psana_img_buffer[key] = PsanaImg(exp, run, access_mode, detector_name)
     return psana_img_buffer[key]
 
-def worker_process(server_socket):
+def worker_process(server_address):
     # Ignore CTRL+C in the worker process
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    # Create a new socket for the worker
+    worker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    worker_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    worker_socket.bind(server_address)
+    worker_socket.listen()
 
     while True:
         try:
             # Accept a new connection
-            connection, client_address = server_socket.accept()
+            connection, client_address = worker_socket.accept()
 
             # Receive request data
             request_data = connection.recv(4096).decode('utf-8')
@@ -63,7 +69,7 @@ def worker_process(server_socket):
             # Wait for the client's acknowledgment
             ack = connection.recv(1024).decode('utf-8')
             if ack == "ACK":
-                print(f"Shared memory {shm.name} ready to unlink. Creation took {t.duration * 1e3} ms.")
+                print(f"Shared memory {shm.name} ready to unlink.")
                 unlink_shared_memory(shm.name)
             else:
                 print("Did not receive proper acknowledgment from client.")
@@ -71,6 +77,10 @@ def worker_process(server_socket):
         except Exception as e:
             print(f"Unexpected error: {e}")
             continue
+        finally:
+            connection.close()
+
+    worker_socket.close()
 
 def unlink_shared_memory(shm_name):
     try:
@@ -81,29 +91,27 @@ def unlink_shared_memory(shm_name):
         pass
 
 def start_server(address, num_workers):
-    # Init TCP socket, set reuse, bind, and listen for connections
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(address)
-    server_socket.listen()
+    # Create a control socket for sending shutdown signals
+    control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    control_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    control_socket.bind(('localhost', address[1] + 1))
+    control_socket.listen()
 
     # Create and start worker processes
     processes = []
     for _ in range(num_workers):
-        print(_)
-        p = Process(target=worker_process, args=(server_socket,))
+        p = Process(target=worker_process, args=(address,))
         p.start()
         processes.append(p)
-        print(_)
 
     print(f"Started {num_workers} worker processes.")
-    return processes, server_socket
+    return processes, control_socket
 
 if __name__ == "__main__":
     server_address = ('localhost', 5000)
     num_workers = 4
     print("Starting server ...")
-    processes, server_socket = start_server(server_address, num_workers)
+    processes, control_socket = start_server(server_address, num_workers)
     print("Server started")
 
     try:
@@ -113,14 +121,14 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Shutdown signal received")
 
-        for p in processes:
+        for _ in range(num_workers):
             # Trigger connection to unblock accept() in workers
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as trigger_socket:
-                trigger_socket.connect(server_address)
+                trigger_socket.connect(('localhost', server_address[1] + 1))
                 trigger_socket.sendall("DONE".encode('utf-8'))
 
         # Wait to complete, join is wait
         for p in processes:
             p.join()
-        server_socket.close()
+        control_socket.close()
         print("Server shutdown gracefully.")
