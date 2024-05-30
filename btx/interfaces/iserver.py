@@ -101,7 +101,7 @@ def start_server(address, num_workers):
 
 if __name__ == "__main__":
     server_address = ('localhost', 5000)
-    num_workers = 5
+    num_workers = 4
     print("Starting server ...")
     processes, server_socket = start_server(server_address, num_workers)
     print("Server started")
