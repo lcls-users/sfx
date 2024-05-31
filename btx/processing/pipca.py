@@ -1301,61 +1301,6 @@ def parse_input():
 
     return parser.parse_args()
 
-
-
-    """
-    Parse command line input.
-    """
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--exp", help="Experiment name.", required=True, type=str)
-    parser.add_argument("-r", "--run", help="Run number.", required=True, type=int)
-    parser.add_argument(
-        "-d",
-        "--det_type",
-        help="Detector name, e.g epix10k2M or jungfrau4M.",
-        required=True,
-        type=str,
-    )
-    parser.add_argument(
-        "--start_offset",
-        help="Run index of first image to be incorporated into iPCA model.",
-        required=False,
-        type=int,
-    )
-    parser.add_argument(
-        "--num_components",
-        help="Number of principal components to compute and maintain.",
-        required=False,
-        type=int,
-    )
-    parser.add_argument(
-        "--batch_size",
-        help="Size of image batch incorporated in each model update.",
-        required=False,
-        type=int,
-    )
-    parser.add_argument(
-        "--num_images",
-        help="Total number of images to be incorporated into model.",
-        required=False,
-        type=int,
-    )
-    parser.add_argument(
-        "--output_dir",
-        help="Path to output directory for recording task duration data.",
-        required=False,
-        type=str,
-    )
-    parser.add_argument(
-        "--filename",
-        help="Name of the file to save the model.",
-        required=False,
-        type=str,
-    )
-    return parser.parse_args()
-
-
 if __name__ == "__main__":
 
     params = parse_input()

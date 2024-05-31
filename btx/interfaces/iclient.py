@@ -7,6 +7,7 @@ import time
 import requests
 import io
 import numpy as np
+import argparse
 
 from multiprocessing import shared_memory
 
@@ -74,9 +75,50 @@ class IPCRemotePsanaDataset(Dataset):
 
             return result
 
+
+def parse_input():
+    """
+    Parse command line input.
+    """
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e", "--exp", help="Experiment name.", required=True, type=str)
+    parser.add_argument("-r", "--run", help="Run number.", required=True, type=int)
+    parser.add_argument(
+        "-d",
+        "--det_type",
+        help="Detector name, e.g epix10k2M or jungfrau4M.",
+        required=True,
+        type=str,
+    )
+    parser.add_argument(
+        "--start_offset",
+        help="Run index of first image to be incorporated into iPCA model.",
+        required=False,
+        type=int,
+    )
+    parser.add_argument(
+        "--num_images",
+        help="Total number of images to be incorporated into model.",
+        required=True,
+        type=int,
+    )
+
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
 
-    requests_list = [ ('mfxp23120', 91 , 'idx', 'epix10k2M', event) for event in range(1000) ]
+    params = parse_input()
+    exp = params.exp
+    run = params.run
+    det_type = params.det_type
+    start_offset = params.start_offset
+    if start_offset is None:
+        start_offset = 0
+    num_images = params.num_images
+
+    requests_list = [ (exp, run, 'idx', det_type, event) for event in range(start_offset,start_offset+num_images) ]
 
     server_address = ('localhost', 5000)
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
@@ -96,4 +138,9 @@ if __name__ == "__main__":
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
         sock.sendall("DONE".encode('utf-8'))
+
+    print('Server is shut down!')
+
+    
+
 

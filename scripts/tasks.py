@@ -759,6 +759,14 @@ def test_serv_client(config):
     print("TESTING SERVER AND CLIENT COMMUNICATION")
     from btx.interfaces.ischeduler import JobScheduler
 
+    setup = config.setup
+    task = config.test_serv_client
+    exp = setup.exp
+    run = task.run
+    det_type = setup.det_type
+    start_offset = task.start_offset
+    num_images = task.num_images
+
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
@@ -766,7 +774,7 @@ def test_serv_client(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate ana-4.0.59-py3; echo 'Client environment activated'"
-    command += f"; python {client_path}; echo 'Client is running'"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} -s {start_offset} -n {num_images}"
 
     js = JobScheduler(os.path.join(".", f'test_serv_client.sh'),queue = 'milano', ncores=1, jobname=f'test_serv_client',logdir='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/')
     js.write_header()
