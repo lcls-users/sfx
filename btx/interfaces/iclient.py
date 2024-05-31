@@ -88,7 +88,7 @@ if __name__ == "__main__":
     dataloader_iter = iter(dataloader)
     for i in range(4):
         print(i+4)
-        batch = dataloader_iter.next()
+        batch = dataloader_iter.__next__()
         print(batch.shape)
         time.sleep(1)
     
