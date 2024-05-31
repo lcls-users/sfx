@@ -77,7 +77,7 @@ class IPCRemotePsanaDataset(Dataset):
 
 if __name__ == "__main__":
 
-    requests_list = [ ('mfxp23120', 91 , 'idx', 'mfx', event) for event in range(100) ]
+    requests_list = [ ('mfxp23120', 91 , 'idx', 'epix10k2M', event) for event in range(100) ]
 
     server_address = ('localhost', 5000)
     print('1')
