@@ -18,7 +18,7 @@ load_data:
   time_tool: [0., 0.005]
 
 make_histogram:
-  input_file: 'data.npz'
+  input_file: 'data.npz' # optional parameter for bypassing the load_data task by using a pre-generated dataset instead
 
 calculate_emd:
   num_permutations: 1000

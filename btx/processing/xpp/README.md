@@ -15,49 +15,7 @@ The *xppPumpProbe* analysis pipeline consists of several tasks that are executed
 
 ## Configuration
 
-```yaml
-setup: 
-  root_dir: /path/to/data 
-  exp: experiment_name 
-  run: run_number 
-
-load_data: 
-  roi: [x_start, x_end, y_start, y_end] 
-  energy_filter: [energy_center, energy_width] 
-  i0_threshold: 200 
-  ipm_pos_filter: [0.2, 0.5] 
-  time_bin: 2 
-  time_tool: [0., 0.005] 
-  output_dir: /path/to/output 
-
-make_histogram: 
-  input_file: /path/to/loaded_data.npz 
-  output_dir: /path/to/output 
-
-measure_emd: 
-  histograms_path: /path/to/histograms.npy 
-  output_path: /path/to/output 
-  roi_coords: [x_start, x_end, y_start, y_end] 
-  num_permutations: 1000 
-
-calculate_p_values: 
-  emd_path: /path/to/emd_values.npy 
-  null_dist_path: /path/to/null_dist.npy 
-  output_path: /path/to/output 
-
-generate_masks: 
-  histograms_path: /path/to/histograms.npy 
-  p_values_path: /path/to/p_values.npy 
-  output_dir: /path/to/output 
-  roi_coords: [x_start, x_end, y_start, y_end] 
-  threshold: 0.1 
-  bg_mask_mult: 2.0 
-  bg_mask_thickness: 5 
-
-pump_probe_analysis: 
-  output_dir: /path/to/output 
-```
-
+todo
 ## Task Descriptions
 
 ### LoadData
