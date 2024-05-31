@@ -77,18 +77,18 @@ class IPCRemotePsanaDataset(Dataset):
 
 if __name__ == "__main__":
 
-    requests_list = [ ('mfxp23120', 91 , 'idx', 'mfx', event) for event in range(1000) ]
+    requests_list = [ ('mfxp23120', 91 , 'idx', 'mfx', event) for event in range(100) ]
 
     server_address = ('localhost', 5000)
     print('1')
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
     print('2')
-    dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
+    dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)
     print('3')
     dataloader_iter = iter(dataloader)
-    for i in range(10):
+    for i in range(4):
         print(i+4)
-        batch = next(dataloader_iter)
+        batch = dataloader_iter.next()
         print(batch.shape)
         time.sleep(1)
     
