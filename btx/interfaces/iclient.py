@@ -86,12 +86,17 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)
     print('3')
     dataloader_iter = iter(dataloader)
-    for i in range(4):
-        print(i+4)
-        batch = dataloader_iter.__next__()
-        print(batch.shape)
-        time.sleep(1)
     
+    all_data = []
+
+    for batch in dataloader_iter:
+        batch_data = batch[0]
+        all_data.append(batch_data)
+
+    all_data_array = np.concatenate(all_data, axis=0)
+    print(all_data_array.shape)
+    
+    print('Letsgo')
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
         sock.sendall("DONE".encode('utf-8'))
