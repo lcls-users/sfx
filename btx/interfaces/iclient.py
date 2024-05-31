@@ -48,7 +48,7 @@ class IPCRemotePsanaDataset(Dataset):
             # Receive and process response
             response_data = sock.recv(4096).decode('utf-8')
             print(type(response_data))
-            response_json = json.loads(response_data)
+            """response_json = json.loads(response_data)
 
             # Use the JSON data to access the shared memory
             shm_name = response_json['name']
@@ -68,7 +68,7 @@ class IPCRemotePsanaDataset(Dataset):
                 # Ensure shared memory is closed even if an exception occurs
                 if shm:
                     shm.close()
-                    shm.unlink()
+                    shm.unlink()"""
 
             # Send acknowledgment after successfully accessing shared memory
             sock.sendall("ACK".encode('utf-8'))
