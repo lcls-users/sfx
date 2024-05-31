@@ -83,35 +83,5 @@ if __name__ == "__main__":
 
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
     dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
-    print(type(dataloader))
-    data_loader_iter = iter(dataloader)
-    print(type(data_loader_iter))
-
-    """# Initialize an empty list to store the batches
-    all_data = []
-
-    # Iterate over the iterator to fetch all batches
-    while True:
-        try:
-            batch = next(data_loader_iter)
-            all_data.append(batch)
-        except StopIteration:
-            break
-
-    # Concatenate all batches into a single array
-    all_data_array = np.concatenate(all_data, axis=0)
-    print(all_data_array.shape)"""
-    batch_idx       = 0
-    while True:
-        try:
-            t_s = time.monotonic()
-            batch_data = next(data_loader_iter)
-            t_e = time.monotonic()
-            loading_time_in_sec = (t_e - t_s)
-
-            print(f"Batch idx: {batch_idx:d}, Total time: {loading_time_in_sec:.2f} s, Average time: {loading_time_in_sec / len(batch_data) * 1e3:.2f} ms/event, Batch shape: {batch_data.shape}")
-
-            batch_idx += 1
-        except StopIteration:
-            break
+    print(dataloader)
 
