@@ -34,7 +34,7 @@ var searchData=
   ['compute_5fnorm_5fdifference_140',['compute_norm_difference',['../namespacepipca.html#a5a11c5467957e50ab9d244945d6b0373',1,'pipca']]],
   ['compute_5fpowders_141',['compute_powders',['../classpeak__finder_1_1PeakFinder.html#a3cf1a61610b9d83ad0746f70750786fa',1,'peak_finder::PeakFinder']]],
   ['compute_5fresolution_142',['compute_resolution',['../namespacebtx_1_1misc_1_1xtal.html#abe843c0f452f0286f9fe066f2aa97d76',1,'btx.misc.xtal.compute_resolution()'],['../classbtx_1_1interfaces_1_1istream_1_1StreamInterface.html#a04bd389a632c4dd1cde5735dc67d5d9a',1,'btx.interfaces.istream.StreamInterface.compute_resolution()']]],
-  ['compute_5frun_5fstats_143',['compute_run_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae7d505d4cc3dc298e572f6d92a10f592',1,'btx::diagnostics::run::RunDiagnostics']]],
+  ['compute_5frun_5fstats_143',['compute_run_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a006dff5f2c921ce7556749a6e3ad2da6',1,'btx::diagnostics::run::RunDiagnostics']]],
   ['compute_5fstats_144',['compute_stats',['../classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a499495fa9602a5e41b10d0f914f60861',1,'btx::diagnostics::run::RunDiagnostics']]],
   ['concentriccircles_145',['ConcentricCircles',['../classbtx_1_1misc_1_1radial_1_1ConcentricCircles.html',1,'btx::misc::radial']]],
   ['config_146',['config',['../namespacebtx_1_1diagnostics_1_1geoptimizer.html#a1b3dfcc48be228583984da1c3696b34b',1,'btx::diagnostics::geoptimizer']]],
