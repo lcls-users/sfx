@@ -82,6 +82,10 @@ if __name__ == "__main__":
     server_address = ('localhost', 5000)
 
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
+    print(dataset)
+    print(dataset.shape)
+    print("===============================")
     dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
     print(repr(dataloader))
+    print("===============================")
 
