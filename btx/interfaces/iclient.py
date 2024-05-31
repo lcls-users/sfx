@@ -90,9 +90,8 @@ if __name__ == "__main__":
     
     all_data = np.concatenate(all_data, axis=0)
     
-    print(len(all_data))
     print(all_data.shape)
-    print('Letsgo')
+    print('Images are loaded!')
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
