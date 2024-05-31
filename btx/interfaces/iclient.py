@@ -87,10 +87,11 @@ if __name__ == "__main__":
 
     for batch in dataloader_iter:
         batch_data = batch[0]
+        print(batch.shape)
+        print(batch_data.shape)
         all_data.append(batch_data)
-
-    print(all_data.shape)
     
+    print(len(all_data))
     print('Letsgo')
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
