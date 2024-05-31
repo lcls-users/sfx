@@ -56,7 +56,7 @@ def worker_process(server_socket):
                 'shape': data.shape,
                 'dtype': str(data.dtype)
             })
-
+            print(response_data)
             # Send response with shared memory details
             connection.sendall(response_data.encode('utf-8'))
 
