@@ -93,8 +93,8 @@ if __name__ == "__main__":
     print(len(all_data))
     print(all_data.shape)
     print('Letsgo')
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
-        sock.sendall("ACK".encode('utf-8'))
         sock.sendall("DONE".encode('utf-8'))
 
