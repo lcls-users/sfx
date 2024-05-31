@@ -151,7 +151,7 @@ class RunDiagnostics:
             unassembled, calibrated images of shape (n_panels, n_x, n_y)
         """
         if not self.stats:
-            for key in ['mean', 'std', 'max', 'min', 'beam_energy_eV', 'photon_energy_eV']:
+            for key in ['mean', 'std', 'max', 'min', 'beam_energy_eV', 'total_intensity', 'photon_energy_eV']:
                 self.stats[key] = np.zeros(self.psi.max_events - self.psi.counter)
         
         beam_energy_mJ   = self.psi.get_fee_gas_detector_energy_mJ_evt(evt)
@@ -166,11 +166,13 @@ class RunDiagnostics:
             self.stats['photon_energy_eV'][self.n_proc] = photon_energy_eV
 
             if img is None:
+                self.stats['total_intensity'][self.n_proc] = np.nan
                 self.stats['mean'][self.n_proc] = np.nan
                 self.stats['std'][self.n_proc] = np.nan
                 self.stats['max'][self.n_proc] = np.nan
                 self.stats['min'][self.n_proc] = np.nan
             else:
+                self.stats['total_intensity'][self.n_proc] = np.sum(img)/photon_energy_eV
                 self.stats['mean'][self.n_proc] = np.mean(img)
                 self.stats['std'][self.n_proc] = np.std(img)
                 self.stats['max'][self.n_proc] = np.max(img)
@@ -179,6 +181,7 @@ class RunDiagnostics:
             self.n_empty += 1
             self.stats['beam_energy_eV'][self.n_proc] = np.nan
             self.stats['photon_energy_eV'][self.n_proc] = np.nan
+            self.stats['total_intensity'][self.n_proc] = np.nan
             self.stats['mean'][self.n_proc] = np.nan
             self.stats['std'][self.n_proc] = np.nan
             self.stats['max'][self.n_proc] = np.nan
@@ -226,7 +229,7 @@ class RunDiagnostics:
         evt_map = map_pixel_gain_mode_for_raw(self.psi.det, raw)
         self.gain_map[evt_map==[self.modes[gain_mode]]] += 1
             
-    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, gain_mode=None, raw_img=False):
+    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, total_intensity=False, gain_mode=None, raw_img=False):
         """
         Compute powders and per-image statistics. If a mask is provided, it is 
         only applied to the stats trajectories, not in computing the powder.
@@ -241,6 +244,8 @@ class RunDiagnostics:
             if True, only compute the powder pattern
         threshold : float
             if supplied, exclude events whose mean is above this value
+        total_intensity : bool
+            if True, compute the total intensity
         gain_mode : str
             gain mode to retrieve statistics for, e.g. 'AML-L' 
         raw_img : bool
@@ -770,6 +775,7 @@ def main():
     rd.compute_run_stats(max_events=params.max_events, 
                          mask=params.mask, 
                          threshold=params.mean_threshold,
+                         total_intensity=params.total_intensity,
                          gain_mode=params.gain_mode,
                          raw_img=params.raw_img)
     rd.save_powders(params.outdir, raw_img=params.raw_img)
@@ -799,6 +805,7 @@ def parse_input():
     parser.add_argument('-m', '--mask', help='Binary mask for computing trajectories', required=False, type=str)
     parser.add_argument('--max_events', help='Number of images to process, -1 for full run', required=False, default=-1, type=int)
     parser.add_argument('--mean_threshold', help='Exclude images with a mean above this threshold', required=False, type=float)
+    parser.add_argument('--total_intensity', help='Compute total intensity of images', action='store_true')
     parser.add_argument('--gain_mode', help='Gain mode to track, e.g. AML-L for epix10k2M autoranging low gain', required=False, type=str)
     parser.add_argument('--raw_img', help="Analyze raw rather than calibrated images", action='store_true')
     parser.add_argument('--outlier_threshold', help='Consider images with a mean below this threshold outliers for energy stats plot',
