@@ -48,7 +48,7 @@ class IPCRemotePsanaDataset(Dataset):
             # Receive and process response
             response_data = sock.recv(4096).decode('utf-8')
             print(type(response_data))
-            """response_json = json.loads(response_data)
+            response_json = json.loads(response_data)
 
             # Use the JSON data to access the shared memory
             shm_name = response_json['name']
@@ -68,12 +68,12 @@ class IPCRemotePsanaDataset(Dataset):
                 # Ensure shared memory is closed even if an exception occurs
                 if shm:
                     shm.close()
-                    shm.unlink()"""
+                    shm.unlink()
 
             # Send acknowledgment after successfully accessing shared memory
             sock.sendall("ACK".encode('utf-8'))
 
-            #return result
+            return result
 
 if __name__ == "__main__":
 
@@ -82,12 +82,12 @@ if __name__ == "__main__":
     server_address = ('localhost', 5000)
 
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-    dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)
+    dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
     print(type(dataloader))
     data_loader_iter = iter(dataloader)
     print(type(data_loader_iter))
 
-    # Initialize an empty list to store the batches
+    """# Initialize an empty list to store the batches
     all_data = []
 
     # Iterate over the iterator to fetch all batches
@@ -100,5 +100,18 @@ if __name__ == "__main__":
 
     # Concatenate all batches into a single array
     all_data_array = np.concatenate(all_data, axis=0)
-    print("=================================== \n =================================================== \n =======================================================",all_data_array.shape,"=================================== \n =================================================== \n =======================================================")
+    print(all_data_array.shape)"""
+    batch_idx       = 0
+    while True:
+        try:
+            t_s = time.monotonic()
+            batch_data = next(dataloader_iter)
+            t_e = time.monotonic()
+            loading_time_in_sec = (t_e - t_s)
+
+            print(f"Batch idx: {batch_idx:d}, Total time: {loading_time_in_sec:.2f} s, Average time: {loading_time_in_sec / len(batch_data) * 1e3:.2f} ms/event, Batch shape: {batch_data.shape}")
+
+            batch_idx += 1
+        except StopIteration:
+            break
 
