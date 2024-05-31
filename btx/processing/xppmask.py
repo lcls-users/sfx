@@ -425,6 +425,7 @@ class PumpProbeAnalysis:
     def __init__(self, config):
         self.config = config
         self.output_dir = os.path.join(config['setup']['output_dir'], 'pump_probe', f"{config['setup']['exp']}_{config['setup']['run']}")
+        self.min_count = config['pump_probe_analysis']['min_count']
         os.makedirs(self.output_dir, exist_ok=True)
  
     def run(self, data, binned_delays, I0, laser_on_mask, laser_off_mask, signal_mask, bg_mask):
@@ -451,17 +452,28 @@ class PumpProbeAnalysis:
         binned_delays = self.binned_delays
         imgs = self.data
  
-        delay_output = np.sort(np.unique(binned_delays))
+        unique_binned_delays = np.unique(binned_delays)
         stacks_on, stacks_off = {}, {}
  
-        for delay_val in delay_output:
+        for delay_val in unique_binned_delays:
             idx_on = np.where((binned_delays == delay_val) & self.laser_on_mask)[0]
             idx_off = np.where((binned_delays == delay_val) & self.laser_off_mask)[0]
  
-            stacks_on[delay_val] = self.extract_stacks_by_delay(imgs[idx_on])
-            stacks_off[delay_val] = self.extract_stacks_by_delay(imgs[idx_off])
+            stack_on = self.extract_stacks_by_delay(imgs[idx_on])
+            stack_off = self.extract_stacks_by_delay(imgs[idx_off])
+ 
+            if stack_on is not None:
+                stacks_on[delay_val] = stack_on
+            if stack_off is not None:
+                stacks_off[delay_val] = stack_off
  
         return stacks_on, stacks_off
+
+    def extract_stacks_by_delay(self, img_stack):
+        if img_stack.shape[0] >= self.min_count:
+            return img_stack
+        else:
+            return None
 
 
     def generate_pump_probe_curves(self):
@@ -490,9 +502,6 @@ class PumpProbeAnalysis:
             
         return delays, signals_on, std_devs_on, signals_off, std_devs_off, p_values
 
-    def extract_stacks_by_delay(self, imgs):
-        return imgs
-   
 
     def calculate_signal_and_background(self, stack, bg_mask):
         integrated_counts = stack.sum(axis=0)
