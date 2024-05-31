@@ -1,7 +1,7 @@
 import signal
 import json
 import socket
-from multiprocessing import shared_memory, Process, Queue
+from multiprocessing import shared_memory, Process
 import numpy as np
 from ipsana import PsanaImg
 
@@ -17,22 +17,20 @@ def get_psana_img(exp, run, access_mode, detector_name):
         psana_img_buffer[key] = PsanaImg(exp, run, access_mode, detector_name)
     return psana_img_buffer[key]
 
-def worker_process(connection_queue):
+def worker_process(server_socket):
     # Ignore CTRL+C in the worker process
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     while True:
         try:
-            connection, client_address = connection_queue.get()
-            if connection is None:
-                print("Worker received shutdown signal.")
-                break
+            # Accept a new connection
+            connection, client_address = server_socket.accept()
 
             # Receive request data
             request_data = connection.recv(4096).decode('utf-8')
 
             if request_data == "DONE":
-                print("Received shutdown signal. Shutting down worker.")
+                print("Received shutdown signal. Shutting down server.")
                 connection.close()
                 break
 
@@ -65,11 +63,11 @@ def worker_process(connection_queue):
             # Wait for the client's acknowledgment
             ack = connection.recv(1024).decode('utf-8')
             if ack == "ACK":
-                print(f"Shared memory {shm.name} ready to unlink.")
+                print(f"Shared memory {shm.name} ready to unlink. Creation took {t.duration * 1e3} ms.")
                 unlink_shared_memory(shm.name)
             else:
                 print("Did not receive proper acknowledgment from client.")
-            connection.close()
+
         except Exception as e:
             print(f"Unexpected error: {e}")
             continue
@@ -82,15 +80,6 @@ def unlink_shared_memory(shm_name):
     except FileNotFoundError:
         pass
 
-def dispatcher_process(server_socket, connection_queue):
-    while True:
-        try:
-            connection, client_address = server_socket.accept()
-            connection_queue.put((connection, client_address))
-        except Exception as e:
-            print(f"Dispatcher error: {e}")
-            break
-
 def start_server(address, num_workers):
     # Init TCP socket, set reuse, bind, and listen for connections
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -98,27 +87,23 @@ def start_server(address, num_workers):
     server_socket.bind(address)
     server_socket.listen()
 
-    connection_queue = Queue()
-
-    # Create and start dispatcher process
-    dispatcher = Process(target=dispatcher_process, args=(server_socket, connection_queue))
-    dispatcher.start()
-
     # Create and start worker processes
     processes = []
     for _ in range(num_workers):
-        p = Process(target=worker_process, args=(connection_queue,))
+        print(_)
+        p = Process(target=worker_process, args=(server_socket,))
         p.start()
         processes.append(p)
+        print(_)
 
-    print(f"Started {num_workers} worker processes and dispatcher.")
-    return processes, dispatcher, server_socket, connection_queue
+    print(f"Started {num_workers} worker processes.")
+    return processes, server_socket
 
 if __name__ == "__main__":
     server_address = ('localhost', 5000)
     num_workers = 4
     print("Starting server ...")
-    processes, dispatcher, server_socket, connection_queue = start_server(server_address, num_workers)
+    processes, server_socket = start_server(server_address, num_workers)
     print("Server started")
 
     try:
@@ -128,12 +113,13 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Shutdown signal received")
 
-        for _ in range(len(processes)):
-            connection_queue.put((None, None))
+        for p in processes:
+            # Trigger connection to unblock accept() in workers
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as trigger_socket:
+                trigger_socket.connect(server_address)
+                trigger_socket.sendall("DONE".encode('utf-8'))
 
-        dispatcher.terminate()
-        dispatcher.join()
-
+        # Wait to complete, join is wait
         for p in processes:
             p.join()
         server_socket.close()
