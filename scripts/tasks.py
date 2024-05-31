@@ -763,7 +763,6 @@ def test_serv_client(config):
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
     command = f"python {server_path}; echo'Server is running'"
-    command += "nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) ); head_node=${nodes[0]}; head_node_ip=$(srun --nodes=1 --ntasks=1 -w "$head_node" hostname --ip-address); head_node_ip=$(echo "$head_node_ip" | awk '{print $1}'); echo Node IP: $head_node_ip "
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate ana-4.0.60-py3; echo 'Client environment activated'"
