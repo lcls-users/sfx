@@ -86,15 +86,15 @@ if __name__ == "__main__":
     all_data = []
 
     for batch in dataloader_iter:
-        batch_data = batch[0]
-        print(batch.shape)
-        print(batch_data.shape)
-        all_data.append(batch_data)
+        all_data.append(batch)
+    
+    all_data = np.concatenate(all_data, axis=0)
     
     print(len(all_data))
+    print(all_data.shape)
     print('Letsgo')
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
-        socket.sendall("ACK".encode('utf-8'))
+        sock.sendall("ACK".encode('utf-8'))
         sock.sendall("DONE".encode('utf-8'))
 
