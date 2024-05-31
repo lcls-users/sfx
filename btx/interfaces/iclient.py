@@ -91,11 +91,12 @@ if __name__ == "__main__":
     all_data = []
 
     # Iterate over the iterator to fetch all batches
-    for batch in data_loader_iter:
-        # Each batch is a tuple, and the first element of the tuple contains the batch data
-        batch_data = batch[0]
-        # Append the batch data to the list
-        all_data.append(batch_data)
+    while True:
+        try:
+            batch = next(data_loader_iter)
+            all_data.append(batch)
+        except StopIteration:
+            break
 
     # Concatenate all batches into a single array
     all_data_array = np.concatenate(all_data, axis=0)
