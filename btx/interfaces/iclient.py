@@ -80,11 +80,8 @@ if __name__ == "__main__":
     requests_list = [ ('mfxp23120', 91 , 'idx', 'epix10k2M', event) for event in range(100) ]
 
     server_address = ('localhost', 5000)
-    print('1')
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-    print('2')
     dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)
-    print('3')
     dataloader_iter = iter(dataloader)
     
     all_data = []
