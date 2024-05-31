@@ -82,10 +82,14 @@ if __name__ == "__main__":
     server_address = ('localhost', 5000)
 
     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-    print(dataset)
-    print(dataset.shape)
-    print("===============================")
     dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
-    print(repr(dataloader))
-    print("===============================")
+    dataloader_iter = iter(dataloader)
+    for i in range(10):
+        batch = next(dataloader_iter)
+        print(batch.shape)
+        time.sleep(1)
+    
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.connect(server_address)
+        sock.sendall("DONE".encode('utf-8'))
 
