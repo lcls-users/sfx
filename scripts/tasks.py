@@ -762,7 +762,7 @@ def test_serv_client(config):
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
-    command = f"python {server_path}; echo'Server is running'"
+    command = f"python {server_path} &; echo'Server is running'"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate ana-4.0.60-py3; echo 'Client environment activated'"
