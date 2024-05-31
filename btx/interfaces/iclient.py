@@ -34,6 +34,10 @@ class IPCRemotePsanaDataset(Dataset):
     def fetch_event(self, exp, run, access_mode, detector_name, event):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.connect(self.server_address)
+            CLIENT_CONNECTED_FILE = "client_connected.txt"
+            with open(CLIENT_CONNECTED_FILE, "w") as f:
+                f.write("CLIENT_CONNECTED")
+            print("Signaled workers about client connection.")
 
             # Send request
             request_data = json.dumps({
