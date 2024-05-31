@@ -47,7 +47,6 @@ class IPCRemotePsanaDataset(Dataset):
 
             # Receive and process response
             response_data = sock.recv(4096).decode('utf-8')
-            print(type(response_data))
             response_json = json.loads(response_data)
 
             # Use the JSON data to access the shared memory
@@ -90,7 +89,6 @@ if __name__ == "__main__":
         batch_data = batch[0]
         all_data.append(batch_data)
 
-    all_data_array = np.concatenate(all_data, axis=0)
     print(all_data_array.shape)
     
     print('Letsgo')
