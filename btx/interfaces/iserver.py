@@ -4,8 +4,6 @@ import socket
 from multiprocessing import shared_memory, Process
 import numpy as np
 from ipsana import PsanaImg
-import os
-import time 
 
 # Initialize buffer for each process
 psana_img_buffer = {}
@@ -25,54 +23,50 @@ def worker_process(server_socket):
 
     while True:
         try:
-            if os.path.exists(CLIENT_CONNECTED_FILE):
-                # Accept a new connection
-                connection, client_address = server_socket.accept()
+            # Accept a new connection
+            connection, client_address = server_socket.accept()
 
-                # Receive request data
-                request_data = connection.recv(4096).decode('utf-8')
+            # Receive request data
+            request_data = connection.recv(4096).decode('utf-8')
 
-                if request_data == "DONE":
-                    print("Received shutdown signal. Shutting down server.")
-                    connection.close()
-                    break
+            if request_data == "DONE":
+                print("Received shutdown signal. Shutting down server.")
+                connection.close()
+                break
 
-                request_data = json.loads(request_data)
-                exp           = request_data.get('exp')
-                run           = request_data.get('run')
-                access_mode   = request_data.get('access_mode')
-                detector_name = request_data.get('detector_name')
-                event         = request_data.get('event')
-                mode          = request_data.get('mode')
+            request_data = json.loads(request_data)
+            exp           = request_data.get('exp')
+            run           = request_data.get('run')
+            access_mode   = request_data.get('access_mode')
+            detector_name = request_data.get('detector_name')
+            event         = request_data.get('event')
+            mode          = request_data.get('mode')
 
-                # Fetch psana image data
-                psana_img = get_psana_img(exp, run, access_mode, detector_name)
-                data = psana_img.get(event, None, mode)
+            # Fetch psana image data
+            psana_img = get_psana_img(exp, run, access_mode, detector_name)
+            data = psana_img.get(event, None, mode)
 
-                # Keep numpy array in a shared memory
-                shm = shared_memory.SharedMemory(create=True, size=data.nbytes)
-                shared_array = np.ndarray(data.shape, dtype=data.dtype, buffer=shm.buf)
-                shared_array[:] = data
+            # Keep numpy array in a shared memory
+            shm = shared_memory.SharedMemory(create=True, size=data.nbytes)
+            shared_array = np.ndarray(data.shape, dtype=data.dtype, buffer=shm.buf)
+            shared_array[:] = data
 
-                response_data = json.dumps({
-                    'name': shm.name,
-                    'shape': data.shape,
-                    'dtype': str(data.dtype)
-                })
+            response_data = json.dumps({
+                'name': shm.name,
+                'shape': data.shape,
+                'dtype': str(data.dtype)
+            })
 
-                # Send response with shared memory details
-                connection.sendall(response_data.encode('utf-8'))
+            # Send response with shared memory details
+            connection.sendall(response_data.encode('utf-8'))
 
-                # Wait for the client's acknowledgment
-                ack = connection.recv(1024).decode('utf-8')
-                if ack == "ACK":
-                    print(f"Shared memory {shm.name} ready to unlink. Creation took {t.duration * 1e3} ms.")
-                    unlink_shared_memory(shm.name)
-                else:
-                    print("Did not receive proper acknowledgment from client.")
+            # Wait for the client's acknowledgment
+            ack = connection.recv(1024).decode('utf-8')
+            if ack == "ACK":
+                print(f"Shared memory {shm.name} ready to unlink. Creation took {t.duration * 1e3} ms.")
+                unlink_shared_memory(shm.name)
             else:
-                print("Waiting for client connection...")
-                time.sleep(5)
+                print("Did not receive proper acknowledgment from client.")
 
         except Exception as e:
             print(f"Unexpected error: {e}")
@@ -106,7 +100,6 @@ def start_server(address, num_workers):
     return processes, server_socket
 
 if __name__ == "__main__":
-    CLIENT_CONNECTED_FILE = "client_connected.txt"
     server_address = ('localhost', 5000)
     num_workers = 4
     print("Starting server ...")
