@@ -105,7 +105,7 @@ if __name__ == "__main__":
     while True:
         try:
             t_s = time.monotonic()
-            batch_data = next(dataloader_iter)
+            batch_data = next(data_loader_iter)
             t_e = time.monotonic()
             loading_time_in_sec = (t_e - t_s)
 
