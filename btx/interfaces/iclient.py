@@ -89,7 +89,7 @@ if __name__ == "__main__":
         batch_data = batch[0]
         all_data.append(batch_data)
 
-    print(all_data_array.shape)
+    print(all_data.shape)
     
     print('Letsgo')
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
