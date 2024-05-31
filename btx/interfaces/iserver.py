@@ -62,7 +62,6 @@ def worker_process(server_socket):
             # Wait for the client's acknowledgment
             ack = connection.recv(1024).decode('utf-8')
             if ack == "ACK":
-                print(f"Shared memory {shm.name} ready to unlink.")
                 unlink_shared_memory(shm.name)
             else:
                 print("Did not receive proper acknowledgment from client.")
@@ -89,11 +88,9 @@ def start_server(address, num_workers):
     # Create and start worker processes
     processes = []
     for _ in range(num_workers):
-        print(_)
         p = Process(target=worker_process, args=(server_socket,))
         p.start()
         processes.append(p)
-        print(_)
 
     print(f"Started {num_workers} worker processes.")
     return processes, server_socket

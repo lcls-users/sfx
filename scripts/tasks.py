@@ -765,7 +765,7 @@ def test_serv_client(config):
     command = f"python {server_path} & echo 'Server is running'"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
-    command += "; conda activate ana-4.0.60-py3; echo 'Client environment activated'"
+    command += "; conda activate ana-4.0.59-py3; echo 'Client environment activated'"
     command += f"; python {client_path}; echo 'Client is running'"
 
     js = JobScheduler(os.path.join(".", f'test_serv_client.sh'),queue = 'milano', ncores=1, jobname=f'test_serv_client',logdir='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/')
