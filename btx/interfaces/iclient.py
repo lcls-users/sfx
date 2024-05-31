@@ -86,9 +86,8 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
     print('3')
     dataloader_iter = iter(dataloader)
-    print('4')
     for i in range(10):
-        print(i+5)
+        print(i+4)
         batch = next(dataloader_iter)
         print(batch.shape)
         time.sleep(1)
