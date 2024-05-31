@@ -73,7 +73,7 @@ class IPCRemotePsanaDataset(Dataset):
             # Send acknowledgment after successfully accessing shared memory
             sock.sendall("ACK".encode('utf-8'))
 
-            return result
+            #return result
 
 if __name__ == "__main__":
 
