@@ -994,7 +994,7 @@ class iPCA_Pytorch:
             retrieve_pixel_index_map,
             assemble_image_stack_batch,
         )
-        
+
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
         self.psi.counter = start_offset
         self.start_offset = start_offset
@@ -1213,7 +1213,6 @@ class iPCA_Pytorch_without_Psana:
     
         logging.info(f"Model complete in {end_time - start_time} seconds")
         logging.info()    
-
 
 def distribute_indices_over_ranks(d, size):
     """

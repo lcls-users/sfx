@@ -8,6 +8,7 @@ import requests
 import io
 import numpy as np
 import argparse
+import time
 
 from multiprocessing import shared_memory
 
@@ -109,6 +110,7 @@ def parse_input():
 
 if __name__ == "__main__":
 
+    start_time = time.time()
     params = parse_input()
     exp = params.exp
     run = params.run
@@ -140,6 +142,9 @@ if __name__ == "__main__":
         sock.sendall("DONE".encode('utf-8'))
 
     print('Server is shut down!')
+
+    end_time = time.time()
+    print(f"Time elapsed: {end_time - start_time} seconds.")
 
     
 
