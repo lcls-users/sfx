@@ -394,6 +394,7 @@ class PsanaImg:
 
         # Set up detector
         self.detector = psana.Detector(detector_name)
+        self.detector_name = detector_name
 
         # Set image reading mode
         self.read = { "raw"   : self.detector.raw,
@@ -421,6 +422,9 @@ class PsanaImg:
         data = self.read[mode](event)
         img  = data[int(id_panel)] if id_panel is not None else data
 
+        if self.detector_name == "epix10k2M":
+            img = img & 0x3fff
+            
         return img
 
 

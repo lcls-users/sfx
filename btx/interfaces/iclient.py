@@ -164,7 +164,7 @@ if __name__ == "__main__":
     loading_batch_size = params.loading_batch_size
 
     for event in range(start_offset, start_offset + num_images, loading_batch_size):
-        requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
+        requests_list = [ (exp, run, 'idx', det_type, img, 'raw') for img in range(event,event+loading_batch_size) ]
 
         server_address = ('localhost', 5000)
         dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
