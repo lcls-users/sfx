@@ -15,6 +15,9 @@ from multiprocessing import shared_memory
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
+from btx.processing.pipca_nopsana import main as client_task # This is the main function that runs the iPCA algorithm
+from btx.processing.pipca_nopsana import remove_file_with_timeout
+
 class IPCRemotePsanaDataset(Dataset):
     def __init__(self, server_address, requests_list):
         """
@@ -110,6 +113,30 @@ def parse_input():
         required=True,
         type=int,
     )
+    parser.add_argument(
+        "--num_components",
+        help="Number of principal components to retain.",
+        required=True,
+        type=int,
+    )
+    parser.add_argument(
+        "--batch_size",
+        help="Batch size for iPCA algorithm.",
+        required=True,
+        type=int,
+    )
+    parser.add_argument(
+        "--path",
+        help="Path to the output directory.",
+        required=False,
+        type=str,
+    )
+    parser.add_argument(
+        "--tag",
+        help="Tag to append to the output file name.",
+        required=False,
+        type=str,
+    )
 
     return parser.parse_args()
 
@@ -122,7 +149,15 @@ if __name__ == "__main__":
     run = params.run
     det_type = params.det_type
     start_offset = params.start_offset
+    num_components = params.num_components
+    batch_size = params.batch_size
+    path = params.path
+    tag = params.tag
+    filename_with_tag = f"{path}pipca_model_{tag}.h5"
+    overwrite = True
+    remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     all_data = []
+
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
@@ -141,15 +176,20 @@ if __name__ == "__main__":
         print(f"Processed {event+loading_batch_size} images.")
     
     all_data = np.concatenate(all_data, axis=0)
+
     
     print(all_data.shape)
     print('Images are loaded!')
+    
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
         sock.sendall("DONE".encode('utf-8'))
 
     print('Server is shut down!')
+
+    client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag)
+    print('Pipca is done!')
 
     end_time = time.time()
     print(f"Time elapsed: {end_time - start_time} seconds.")
