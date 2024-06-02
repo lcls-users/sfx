@@ -40,7 +40,7 @@ class iPCA_Pytorch_without_Psana:
         batch_size=10,
         output_dir="",
         filename='pipca.model_h5',
-        images=None
+        images=np.array([])
     ):
 
         self.start_offset = start_offset
@@ -192,5 +192,5 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
     filename = filename_with_tag,
     images = images
     )
-
+    
     ipca_instance.run()

@@ -15,7 +15,7 @@ from multiprocessing import shared_memory
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-from btx.processing.pipca_nopsana import main as client_task # This is the main function that runs the iPCA algorithm
+from btx.processing.pipca_nopsana import main as run_client_task # This is the main function that runs the iPCA algorithm
 from btx.processing.pipca_nopsana import remove_file_with_timeout
 
 class IPCRemotePsanaDataset(Dataset):
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
         for batch in dataloader_iter:
             all_data.append(batch)
-        print(f"Processed {event+loading_batch_size} images.")
+        print(f"Loaded {event+loading_batch_size} images.")
     
     all_data = np.concatenate(all_data, axis=0)
 
@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
-    client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data)
+    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data)
     print('Pipca is done!')
 
     end_time = time.time()
