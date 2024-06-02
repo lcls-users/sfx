@@ -58,7 +58,7 @@ class iPCA_Pytorch_without_Psana:
         self.exp = exp
         self.det_type = det_type
 
-    def run(self):
+    def run_model(self):
         """
         Run the iPCA algorithm on the given data.
         """
@@ -193,4 +193,4 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
     images = images
     )
     
-    ipca_instance.run()
+    ipca_instance.run_model()
