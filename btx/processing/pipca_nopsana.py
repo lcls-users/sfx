@@ -66,8 +66,6 @@ class iPCA_Pytorch_without_Psana:
         start_time = time.time()
 
         logging.basicConfig(level=logging.DEBUG)
-        
-        mp.set_start_method('spawn', force=True)
 
         self.images = self.images[
                 [i for i in range(self.num_images) if not np.isnan(self.images[i : i + 1]).any()]
