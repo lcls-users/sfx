@@ -766,10 +766,17 @@ def test_serv_client(config):
     det_type = setup.det_type
     start_offset = task.start_offset
     num_images = task.num_images
+    num_components = task.num_components
+    batch_size = task.batch_size
+    path = task.path
+    tag = task.tag
+    owerwrite = task.overwrite
+
     if task.get('loading_batch_size') is not None:
         loading_batch_size = task.loading_batch_size
     else:
         loading_batch_size = 2000
+        
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
@@ -777,7 +784,7 @@ def test_serv_client(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate ana-4.0.59-py3; echo 'Client environment activated'"
-    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images {num_images} --loading_batch_size {loading_batch_size}"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images {num_images} --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --overwrite {overwrite}"
 
     js = JobScheduler(os.path.join(".", f'test_serv_client.sh'),queue = 'milano', ncores=1, jobname=f'test_serv_client',logdir='/sdf/home/n/nathfrn/btx/scripts')
     js.write_header()

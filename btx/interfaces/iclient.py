@@ -137,6 +137,12 @@ def parse_input():
         required=False,
         type=str,
     )
+    parser.add_argument(
+        "--overwrite",
+        help="Whether to overwrite the output file if it already exists.",
+        required=False,
+        action="store_true",
+    )
 
     return parser.parse_args()
 
@@ -153,8 +159,8 @@ if __name__ == "__main__":
     batch_size = params.batch_size
     path = params.path
     tag = params.tag
+    overwrite = params.overwrite
     filename_with_tag = f"{path}pipca_model_{tag}.h5"
-    overwrite = True
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     all_data = []
 
