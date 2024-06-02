@@ -406,7 +406,7 @@ class PsanaImg:
         return len(self.timestamps)
 
 
-    def get(self, event_num, id_panel = None, mode = "calib"):
+    def get(self, event_num, id_panel = None, mode = "image"):
         # Fetch the timestamp according to event number...
         timestamp = self.timestamps[event_num]
 
