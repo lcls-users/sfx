@@ -136,7 +136,6 @@ class iPCA_Pytorch_without_Psana:
                 logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
     
         logging.info(f"Model complete in {end_time - start_time} seconds")
-        logging.info()    
 
 def append_to_dataset(f, dataset_name, data):
     if dataset_name not in f:
