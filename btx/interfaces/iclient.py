@@ -105,8 +105,8 @@ def parse_input():
         type=int,
     )
     parser.add_argument(
-        "--batch_size",
-        help="Size of the batches.",
+        "--loading_batch_size",
+        help="Size of the batches used when loading the images on the client.",
         required=True,
         type=int,
     )
@@ -126,10 +126,10 @@ if __name__ == "__main__":
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
-    batch_size = params.batch_size
+    loading_batch_size = params.loading_batch_size
 
-    for event in range(start_offset, start_offset + num_images, batch_size):
-        requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+batch_size) ]
+    for event in range(start_offset, start_offset + num_images, loading_batch_size):
+        requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
         server_address = ('localhost', 5000)
         dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
         for batch in dataloader_iter:
             all_data.append(batch)
-        print(f"Processed {event+batch_size} images.")
+        print(f"Processed {event+loading_batch_size} images.")
     
     all_data = np.concatenate(all_data, axis=0)
     
