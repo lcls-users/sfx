@@ -87,7 +87,7 @@ class iPCA_Pytorch_without_Psana:
         
         for start in range(0, self.num_images, self.batch_size):
             end = min(start + self.batch_size, self.num_images)
-            batch_imgs = imgs[start:end]
+            batch_imgs = self.images[start:end]
             reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
             reconstructed_batch = ipca.transform(reconstructed_batch)
             reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
@@ -182,7 +182,7 @@ def remove_file_with_timeout(filename_with_tag, overwrite=True, timeout=10):
 
 def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images):
 
-    ipca = iPCA_Pytorch_without_Psana(
+    ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,
     run=run,
     det_type=det_type,
@@ -193,4 +193,4 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
     images = images
     )
 
-    ipca.run()
+    ipca_instance.run()
