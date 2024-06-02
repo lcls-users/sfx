@@ -138,6 +138,7 @@ if __name__ == "__main__":
 
         for batch in dataloader_iter:
             all_data.append(batch)
+        print(f"Processed {event+batch_size} images.")
     
     all_data = np.concatenate(all_data, axis=0)
     
