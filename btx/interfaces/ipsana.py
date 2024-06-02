@@ -422,6 +422,9 @@ class PsanaImg:
         data = self.read[mode](event)
         img  = data[int(id_panel)] if id_panel is not None else data
 
+        if self.detector_name == "epix10k2M":
+            img = img & 0x3fff
+
         return img
 
 
