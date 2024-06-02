@@ -154,7 +154,7 @@ if __name__ == "__main__":
     path = params.path
     tag = params.tag
     overwrite = True
-    filename_with_tag = f"{path}pipca_model_{tag}.h5"
+    filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     all_data = []
 
