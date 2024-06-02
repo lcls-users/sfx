@@ -69,8 +69,8 @@ class iPCA_Pytorch_without_Psana:
         
         mp.set_start_method('spawn', force=True)
 
-        images = images[
-                [i for i in range(self.num_images) if not np.isnan(images[i : i + 1]).any()]
+        self.images = self.images[
+                [i for i in range(self.num_images) if not np.isnan(self.images[i : i + 1]).any()]
             ]
 
         with TaskTimer(self.task_durations, "Initializing model"):
