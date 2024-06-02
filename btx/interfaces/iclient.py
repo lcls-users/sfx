@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
-    client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag)
+    client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data)
     print('Pipca is done!')
 
     end_time = time.time()
