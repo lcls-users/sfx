@@ -1090,7 +1090,6 @@ class iPCA_Pytorch:
                 logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
     
         logging.info(f"Model complete in {end_time - start_time} seconds")
-        logging.info()    
 
 def distribute_indices_over_ranks(d, size):
     """
