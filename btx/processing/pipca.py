@@ -26,6 +26,13 @@ from btx.misc.shortcuts import TaskTimer
 from btx.misc.pipca_visuals import compute_compression_loss
 from btx.processing.PCAonGPU.gpu_pca.pca_module import IncrementalPCAonGPU
 
+from btx.interfaces.ipsana import (
+    PsanaInterface,
+    bin_data,
+    bin_pixel_index_map,
+    retrieve_pixel_index_map,
+    assemble_image_stack_batch,
+)
 
 class PiPCA:
 
@@ -46,14 +53,6 @@ class PiPCA:
         output_dir="",
         filename='pipca.model_h5',
     ):
-
-        from btx.interfaces.ipsana import (
-            PsanaInterface,
-            bin_data,
-            bin_pixel_index_map,
-            retrieve_pixel_index_map,
-            assemble_image_stack_batch,
-        )
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -986,14 +985,6 @@ class iPCA_Pytorch:
         output_dir="",
         filename='pipca.model_h5',
     ):
-        
-        from btx.interfaces.ipsana import (
-            PsanaInterface,
-            bin_data,
-            bin_pixel_index_map,
-            retrieve_pixel_index_map,
-            assemble_image_stack_batch,
-        )
 
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
         self.psi.counter = start_offset
@@ -1079,119 +1070,6 @@ class iPCA_Pytorch:
                     f.create_dataset('start_offset', data=self.start_offset)
 
                 create_or_update_dataset(f, 'run', self.psi.run)
-                create_or_update_dataset(f, 'reconstructed_images', data=reconstructed_images)
-                create_or_update_dataset(f, 'S', S)
-                create_or_update_dataset(f, 'V', V)
-                create_or_update_dataset(f, 'mu', mu)
-                create_or_update_dataset(f, 'total_variance', total_variance)
-
-                append_to_dataset(f, 'frequency', data=frequency)
-                append_to_dataset(f, 'execution_times', data=execution_time)
-                logging.info(f'Model saved to {self.filename}')
-        
-        for task, durations in self.task_durations.items():
-            durations = [float(round(float(duration), 2)) for duration in durations]  # Convert to float and round to 2 decimal places
-            if len(durations) == 1:
-                logging.debug(f"Task: {task}, Duration: {durations[0]:.2f} (Only 1 duration)")
-            else:
-                mean_duration = np.mean(durations)
-                std_deviation = statistics.stdev(durations)
-                logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
-    
-        logging.info(f"Model complete in {end_time - start_time} seconds")
-        logging.info()    
-
-class iPCA_Pytorch_without_Psana:
-
-    """Incremental Principal Component Analysis, uses PyTorch. Can run on GPUs."""
-
-    def __init__(
-        self,
-        exp,
-        run,
-        det_type,
-        start_offset=0,
-        num_images=10,
-        num_components=10,
-        batch_size=10,
-        output_dir="",
-        filename='pipca.model_h5',
-        images=None
-    ):
-
-        self.start_offset = start_offset
-        self.images = images
-        self.output_dir = output_dir
-        self.filename = filename
-
-        self.num_images = num_images
-        self.num_components = num_components
-        self.batch_size = batch_size
-
-        self.task_durations = dict({})
-
-        self.run = run
-        self.exp = exp
-        self.det_type = det_type
-
-    def run(self):
-        """
-        Run the iPCA algorithm on the given data.
-        """
-
-        start_time = time.time()
-
-        logging.basicConfig(level=logging.DEBUG)
-        
-        mp.set_start_method('spawn', force=True)
-
-        with TaskTimer(self.task_durations, "Initializing model"):
-            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
-
-        logging.info("Images loaded and formatted and model initialized")
-
-        with TaskTimer(self.task_durations, "Fitting model"):
-            ipca.fit(self.images.reshape(self.num_images, -1))
-
-        logging.info("Model fitted")
-
-        end_time = time.time()
-        execution_time = end_time - start_time  # Calculate the execution time
-        frequency = self.num_images/execution_time
-
-        reconstructed_images = np.empty((0, self.num_components))
-        
-        for start in range(0, self.num_images, self.batch_size):
-            end = min(start + self.batch_size, self.num_images)
-            batch_imgs = imgs[start:end]
-            reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
-            reconstructed_batch = ipca.transform(reconstructed_batch)
-            reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
-            reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
-
-        logging.info("Images reconstructed")
-
-        if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
-            S = ipca.singular_values_.cpu().detach().numpy()
-            V = ipca.components_.cpu().detach().numpy().T
-            mu = ipca.mean_.cpu().detach().numpy()
-            total_variance = ipca.explained_variance_.cpu().detach().numpy()
-        else:
-            S = ipca.singular_values_
-            V = ipca.components_.T
-            mu = ipca.mean_
-            total_variance = ipca.explained_variance_
-
-        # save model to an hdf5 file
-        with TaskTimer(self.task_durations, "save inputs file h5"):
-            with h5py.File(self.filename, 'a') as f:
-                if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
-                    # Create datasets only if they don't exist
-                    f.create_dataset('exp', data=self.exp)
-                    f.create_dataset('det_type', data=self.det_type)
-                    f.create_dataset('start_offset', data=self.start_offset)
-
-                create_or_update_dataset(f, 'run', self.run)
                 create_or_update_dataset(f, 'reconstructed_images', data=reconstructed_images)
                 create_or_update_dataset(f, 'S', S)
                 create_or_update_dataset(f, 'V', V)
