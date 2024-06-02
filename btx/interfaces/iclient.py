@@ -104,6 +104,12 @@ def parse_input():
         required=True,
         type=int,
     )
+    parser.add_argument(
+        "--batch_size",
+        help="Size of the batches.",
+        required=True,
+        type=int,
+    )
 
     return parser.parse_args()
 
@@ -116,21 +122,22 @@ if __name__ == "__main__":
     run = params.run
     det_type = params.det_type
     start_offset = params.start_offset
+    all_data = []
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
+    batch_size = params.batch_size
 
-    requests_list = [ (exp, run, 'idx', det_type, event) for event in range(start_offset,start_offset+num_images) ]
+    for event in range(start_offset, start_offset + num_images, batch_size):
+        requests_list = [ (exp, run, 'idx', det_type, event) for event in range(start_offset,start_offset+num_images) ]
 
-    server_address = ('localhost', 5000)
-    dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-    dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)
-    dataloader_iter = iter(dataloader)
-    
-    all_data = []
+        server_address = ('localhost', 5000)
+        dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
+        dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)
+        dataloader_iter = iter(dataloader)
 
-    for batch in dataloader_iter:
-        all_data.append(batch)
+        for batch in dataloader_iter:
+            all_data.append(batch)
     
     all_data = np.concatenate(all_data, axis=0)
     
