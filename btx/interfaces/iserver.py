@@ -42,6 +42,7 @@ def worker_process(server_socket):
             event         = request_data.get('event')
             mode          = request_data.get('mode')
 
+            print(mode)
             # Fetch psana image data
             psana_img = get_psana_img(exp, run, access_mode, detector_name)
             data = psana_img.get(event, None, mode)
