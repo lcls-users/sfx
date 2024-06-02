@@ -770,13 +770,13 @@ def test_serv_client(config):
     batch_size = task.batch_size
     path = task.path
     tag = task.tag
-    owerwrite = task.overwrite
+    overwrite = task.overwrite
 
     if task.get('loading_batch_size') is not None:
         loading_batch_size = task.loading_batch_size
     else:
         loading_batch_size = 2000
-        
+
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
