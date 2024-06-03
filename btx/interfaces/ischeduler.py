@@ -44,14 +44,11 @@ class JobScheduler:
         self.ana_conda_manage = f'{self.ana_conda_dir}conda1/manage/bin/'
         self.ana_conda_bin = f'{self.ana_conda_dir}conda1/inst/envs/ana-4.0.60-py3/bin/'
 
-    def _find_python_path(self,python_path=None):
+    def _find_python_path(self):
         """ Determine the relevant python path. """
         pythonpath=None
         possible_paths = [f"{self.ana_conda_bin}python"]
-
-        if python_path is not None:
-            possible_paths.append(python_path)
-
+    
         try:
             pythonpath = os.environ['WHICHPYTHON']
         except KeyError:
@@ -134,16 +131,16 @@ class JobScheduler:
             if 'SIT_PSDM_DATA' in os.environ:
                 jfile.write(f"export SIT_PSDM_DATA={os.environ['SIT_PSDM_DATA']}\n")
 
-    def write_main(self, application, dependencies=[],python_path=None):
+    def write_main(self, application, dependencies=[],find_python_path=True):
         """ Write application and source requested dependencies. """
         if dependencies:
             self._write_dependencies(dependencies)
 
-        if python_path is None:
+        if find_python_path:
             pythonpath = self._find_python_path()
         else:
-            pythonpath = self._find_python_path(python_path=python_path)
-
+            pythonpath = "python"
+            
         with open(self.jobfile, 'a') as jfile:
             jfile.write(application.replace("python", pythonpath))
 
