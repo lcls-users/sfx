@@ -224,7 +224,7 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
-        X_cupy = cp.asarray(X_torch.cpu().numpy())
+        X_cupy = cp.asarray(X.cpu().numpy())
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)
         cluster = LocalCUDACluster()
         client = Client(cluster)
