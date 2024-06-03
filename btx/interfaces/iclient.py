@@ -9,6 +9,8 @@ import io
 import numpy as np
 import argparse
 import time
+import os
+import sys
 
 from multiprocessing import shared_memory
 
@@ -143,6 +145,20 @@ def parse_input():
 
 if __name__ == "__main__":
 
+    # Python version
+    print("Python version:")
+    print(sys.version)
+
+    # Python executable location
+    print("\nPython executable location:")
+    print(sys.executable)
+
+    # Environment variables
+    print("\nEnvironment variables:")
+    for key, value in os.environ.items():
+        print(f"{key}: {value}")
+    
+    
     start_time = time.time()
     params = parse_input()
     exp = params.exp

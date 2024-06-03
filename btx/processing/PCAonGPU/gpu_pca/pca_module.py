@@ -9,6 +9,7 @@ import torch.nn as nn
 import dask.array as da
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
+import cupy as cp
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
