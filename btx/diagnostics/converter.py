@@ -28,15 +28,15 @@ class ePix10k2M(Detector):
         self.fs_size = fs_size
         self.pixel_size = pixel1
 
-class ePix100(Detector):
+class ePix10kaQuad(Detector):
     """
     PyFAI Detector instance for the ePix100
     """
 
     def __init__(
         self,
-        pixel1=0.00005,
-        pixel2=0.00005,
+        pixel1=0.0001,
+        pixel2=0.0001,
         n_modules=4,
         n_asics=4,
         asics_shape = (2, 2),
@@ -149,13 +149,13 @@ class CrystFELtoPyFAI:
         """
         Instantiate a PyFAI Detector object based on the detector type
         """
-        if det_type == "ePix10k2M":
+        if det_type == "epix10k2M":
             return ePix10k2M()
-        elif det_type == "ePix100":
-            return ePix100()
-        elif det_type == "Jungfrau4M":
+        elif "Epix10kaQuad" in det_type:
+            return ePix10kaQuad()
+        elif det_type == "jungfrau4M":
             return Jungfrau4M()
-        elif det_type == "Rayonix":
+        elif det_type == "rayonix" or det_type == "Rayonix":
             return Rayonix()
         else:
             raise ValueError("Detector type not recognized")
