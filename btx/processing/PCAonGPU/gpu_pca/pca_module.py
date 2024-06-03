@@ -6,7 +6,10 @@ processes data in smaller chunks or batches.
 
 import torch
 import torch.nn as nn
-
+import cupy as cp
+import dask.array as da
+from dask_cuda import LocalCUDACluster
+from dask.distributed import Client
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
@@ -221,7 +224,17 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
+        X_cupy = cp.asarray(X_torch.cpu().numpy())
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)
+        cluster = LocalCUDACluster()
+        client = Client(cluster)
+
+        # Étape 3: Effectuer la SVD approximative avec Dask et CuPy
+        X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
+        U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components, compute=False)
+        U = torch.tensor(cp.asnumpy(U.compute()))
+        S = torch.tensor(cp.asnumpy(S.compute()))
+        Vt = torch.tensor(cp.asnumpy(Vt.compute()))
         U, Vt = self._svd_flip(U, Vt)
 
         explained_variance = S**2 / (n_total_samples.item() - 1)
