@@ -788,7 +788,7 @@ def test_serv_client(config):
 
     js = JobScheduler(os.path.join(".", f'test_serv_client.sh'),queue = 'ampere', ncores=1, jobname=f'test_serv_client',logdir='/sdf/home/n/nathfrn/btx/scripts')
     js.write_header()
-    js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
+    js.write_main(f"{command}\n", dependencies=['psana'],find_python_path="/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath/bin/python")
     js.clean_up()
     js.submit()
     print('All done!')
