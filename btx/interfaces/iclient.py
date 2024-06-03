@@ -195,13 +195,6 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
-    os.environ['PATH'] = "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath" + ':' + os.environ['PATH']
-
-    importlib.reload(sys)
-
-    # Remplacer le processus Python actuel par une nouvelle instance de Python dans le nouvel environnement
-    os.execv(sys.executable, [sys.executable] + sys.argv)
-
     run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data)
     print('Pipca is done!')
 

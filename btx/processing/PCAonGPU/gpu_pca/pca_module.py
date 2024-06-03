@@ -8,6 +8,14 @@ import torch
 import torch.nn as nn
 import os
 import sys
+
+os.environ['PATH'] = "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath" + ':' + os.environ['PATH']
+
+importlib.reload(sys)
+
+# Remplacer le processus Python actuel par une nouvelle instance de Python dans le nouvel environnement
+os.execv(sys.executable, [sys.executable] + sys.argv)
+
 """import dask.array as da
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
