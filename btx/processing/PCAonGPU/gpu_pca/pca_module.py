@@ -10,11 +10,7 @@ import os
 import sys
 import importlib
 os.environ['PATH'] = "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath" + ':' + os.environ['PATH']
-
-importlib.reload(sys)
-
-# Remplacer le processus Python actuel par une nouvelle instance de Python dans le nouvel environnement
-os.execv(sys.executable, [sys.executable] + sys.argv)
+os.environ['PYTHONPATH'] = "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath/lib/python3.12/site-packages" + ':' + os.environ['PYTHONPATH']
 
 """import dask.array as da
 from dask_cuda import LocalCUDACluster
