@@ -205,11 +205,11 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
-    subprocess.run(f"conda deactivate", shell=True)
-    subprocess.run(f"conda activate /sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath", shell=True)
+    subprocess.run(f"conda deactivate", shell=True, check=True)
+    subprocess.run(f"conda activate /sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath", shell=True,check=True)
 
     print('Environment changed!')
-    
+
     run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data)
     print('Pipca is done!')
 
