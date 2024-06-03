@@ -11,6 +11,7 @@ import argparse
 import time
 import os
 import sys
+import subprocess
 
 from multiprocessing import shared_memory
 
@@ -158,7 +159,7 @@ if __name__ == "__main__":
     for key, value in os.environ.items():
         print(f"{key}: {value}")
     
-    
+
     start_time = time.time()
     params = parse_input()
     exp = params.exp
@@ -204,6 +205,11 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
+    subprocess.run(f"conda deactivate", shell=True)
+    subprocess.run(f"conda activate /sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath", shell=True)
+
+    print('Environment changed!')
+    
     run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data)
     print('Pipca is done!')
 
