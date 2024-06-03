@@ -138,8 +138,11 @@ class JobScheduler:
 
         if find_python_path:
             pythonpath = self._find_python_path()
-            with open(self.jobfile, 'a') as jfile:
-                jfile.write(application.replace("python", pythonpath))
+        else:
+            pythonpath = "python"
+            
+        with open(self.jobfile, 'a') as jfile:
+            jfile.write(application.replace("python", pythonpath))
 
     def submit(self):
         """ Submit to queue. """
