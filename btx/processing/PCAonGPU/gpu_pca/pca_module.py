@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import os
 import sys
-
+import importlib
 os.environ['PATH'] = "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath" + ':' + os.environ['PATH']
 
 importlib.reload(sys)
