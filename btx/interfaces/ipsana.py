@@ -154,9 +154,9 @@ class PsanaInterface:
         """
         Retrieve pulse energy measured by Front End Enclosure Gas Detectors.
         For more information:
-         - https://pswww.slac.stanford.edu/swdoc/releases/ana-current/psana-ref/html/psana/#class-psana-bld-blddatafeegasdetenergyv1
-         - https://confluence.slac.stanford.edu/display/PSDM/New+XTCAV+Documentation
-         - https://www-ssrl.slac.stanford.edu/lcls/technotes/LCLS-TN-09-5.pdf
+        - https://pswww.slac.stanford.edu/swdoc/releases/ana-current/psana-ref/html/psana/#class-psana-bld-blddatafeegasdetenergyv1
+        - https://confluence.slac.stanford.edu/display/PSDM/New+XTCAV+Documentation
+        - https://www-ssrl.slac.stanford.edu/lcls/technotes/LCLS-TN-09-5.pdf
 
         Note: the pulse energy is equal to the photon energy times the number of photons in the pulse.
 
@@ -393,7 +393,7 @@ class PsanaInterface:
 
         return images
 
-    def get_mask(self, central=False, edges=False):
+    def get_mask(self, central=True, edges=True):
         """
         Retrieve one mask for the detector. If the mask is not available, return None.
 
