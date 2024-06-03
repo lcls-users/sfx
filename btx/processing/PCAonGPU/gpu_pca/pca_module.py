@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import os
 import sys
+import subprocess
 
 subprocess.call(["deactivate"], shell=True)
 # Réactiver l'environnement virtuel
