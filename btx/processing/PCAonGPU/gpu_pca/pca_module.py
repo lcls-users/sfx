@@ -6,25 +6,14 @@ processes data in smaller chunks or batches.
 
 import torch
 import torch.nn as nn
-import os
-import sys
-import subprocess
-
-subprocess.call(["deactivate"], shell=True)
-# Réactiver l'environnement virtuel
-subprocess.call(["source", "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath" + "/bin/activate"], shell=True)
-"""import dask.array as da
+import dask.array as da
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
-import cupy as cp"""
+import cupy as cp
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
 print("PyTorch version:", torch.__version__)
-
-# Python executable location
-print("\nPython executable location from PCA_module:")
-print(sys.executable)
 
 class IncrementalPCAonGPU(nn.Module):
     """
