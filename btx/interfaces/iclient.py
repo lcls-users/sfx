@@ -205,6 +205,8 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
+    subprocess.run(f"source ~/.bashrc", shell=True, check=True)
+    subprocess.run(f"psana", shell=True, check=True)
     subprocess.run(f"conda deactivate", shell=True, check=True)
     subprocess.run(f"conda activate /sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath", shell=True,check=True)
 
