@@ -18,13 +18,8 @@ print("PyTorch is using:", device)
 print("PyTorch version:", torch.__version__)
 
 # Python executable location
-print("\nPython executable location:")
+print("\nPython executable location from PCA_module:")
 print(sys.executable)
-
-# Environment variables
-print("\nEnvironment variables:")
-for key, value in os.environ.items():
-    print(f"{key}: {value}")
 
 class IncrementalPCAonGPU(nn.Module):
     """

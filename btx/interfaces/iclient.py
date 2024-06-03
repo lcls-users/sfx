@@ -12,6 +12,7 @@ import time
 import os
 import sys
 import subprocess
+import importlib
 
 from multiprocessing import shared_memory
 
@@ -146,18 +147,9 @@ def parse_input():
 
 if __name__ == "__main__":
 
-    # Python version
-    print("Python version:")
-    print(sys.version)
-
     # Python executable location
-    print("\nPython executable location:")
+    print("\nPython executable location from client:")
     print(sys.executable)
-
-    # Environment variables
-    print("\nEnvironment variables:")
-    for key, value in os.environ.items():
-        print(f"{key}: {value}")
     
 
     start_time = time.time()
@@ -205,7 +197,7 @@ if __name__ == "__main__":
 
     os.environ['PATH'] = "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath" + ':' + os.environ['PATH']
 
-    reload(sys)
+    importlib.reload(sys)
 
     # Remplacer le processus Python actuel par une nouvelle instance de Python dans le nouvel environnement
     os.execv(sys.executable, [sys.executable] + sys.argv)
