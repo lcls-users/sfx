@@ -6,7 +6,6 @@ processes data in smaller chunks or batches.
 
 import torch
 import torch.nn as nn
-import cupy as cp
 import dask.array as da
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
