@@ -8,14 +8,14 @@ import torch
 import torch.nn as nn
 import os
 import sys
-import importlib
-os.environ['PATH'] = "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath" + ':' + os.environ['PATH']
-os.environ['PYTHONPATH'] = "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath/lib/python3.12/site-packages" + ':' + os.environ['PYTHONPATH']
 
+subprocess.call(["deactivate"], shell=True)
+# Réactiver l'environnement virtuel
+subprocess.call(["source", "/sdf/home/n/nathfrn/mfxp23120/scratch/nathfrn/env_nath" + "/bin/activate"], shell=True)
 """import dask.array as da
 from dask_cuda import LocalCUDACluster
-from dask.distributed import Client"""
-import cupy as cp
+from dask.distributed import Client
+import cupy as cp"""
 # Determine if there's a GPU available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
