@@ -61,6 +61,9 @@ class IncrementalPCAonGPU():
 
         self.components = []  # Liste pour stocker les composants
 
+        self.client,self.cluster = self.set_up_client()
+        self.setup_rmm_pool(self.client)
+
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
         Validates and converts the input data `X` to the appropriate tensor format.
@@ -217,8 +220,7 @@ class IncrementalPCAonGPU():
                 )
 
         X_cupy = cp.asarray(X.data)
-        client = self.set_up_client()
-        self.setup_rmm_pool(client)
+        client,cluster = self.client, self.cluster
 
         try:
         # Convertir les données CuPy en tableau Dask
@@ -303,7 +305,7 @@ class IncrementalPCAonGPU():
         # Création du client Dask
         client = Client(cluster)
 
-        return client
+        return client,cluster
     
     def setup_rmm_pool(self,client):
         client.run(
