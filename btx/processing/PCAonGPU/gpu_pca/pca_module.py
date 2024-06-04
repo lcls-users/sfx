@@ -224,18 +224,31 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
-        X_cupy = cp.asarray(X.cpu().numpy())
-        cluster = LocalCUDACluster()
-        client = Client(cluster)
+        try:
+        # Convertir les données CuPy en tableau Dask
+            X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
 
-        # Étape 3: Effectuer la SVD approximative avec Dask et CuPy
-        X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
-        U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components, compute=False)
-        U = torch.tensor(cp.asnumpy(U.compute()))
-        S = torch.tensor(cp.asnumpy(S.compute()))
-        Vt = torch.tensor(cp.asnumpy(Vt.compute()))
-        client.close()
-        cluster.close()
+            # Effectuer la SVD compressée avec Dask et CuPy
+            U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components, compute=False)
+
+            # Vérifier et convertir les résultats en tableaux CuPy si nécessaire
+            if not isinstance(U, cp.ndarray):
+                U = cp.asarray(U)
+            if not isinstance(S, cp.ndarray):
+                S = cp.asarray(S)
+            if not isinstance(Vt, cp.ndarray):
+                Vt = cp.asarray(Vt)
+
+            # Convertir les résultats de CuPy à PyTorch
+            U = torch.tensor(U.get())
+            S = torch.tensor(S.get())
+            Vt = torch.tensor(Vt.get())
+
+        finally:
+            # Fermer le client et le cluster
+            client.close()
+            cluster.close()
+
         U, Vt = self._svd_flip(U, Vt)
 
         explained_variance = S**2 / (n_total_samples.item() - 1)
