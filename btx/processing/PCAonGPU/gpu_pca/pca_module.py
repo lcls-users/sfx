@@ -280,7 +280,7 @@ class IncrementalPCAonGPU():
                                     protocol = "ucx",
                                     enable_tcp_over_ucx=True,
                                     enable_nvlink=True,
-                                    rmm_pool_size="10GB",)
+                                    rmm_pool_size="100GB",)
 
         # Création du client Dask
         client = Client(cluster)
