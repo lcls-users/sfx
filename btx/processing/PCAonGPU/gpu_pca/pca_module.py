@@ -312,9 +312,6 @@ class IncrementalPCAonGPU():
         client = self.client
         # Allocate memory manually using CuPy functions (adapt based on your needs)
         total_memory_bytes = parse_bytes("26GB")
-        gpu_memory = cp.cuda.get_device_total_memory()
-        if total_memory_bytes > gpu_memory:
-            raise MemoryError("Insufficient GPU memory")
         memory = cp.cuda.malloc(total_memory_bytes)
         client.run(
             lambda: memory  # Send allocated memory to workers
