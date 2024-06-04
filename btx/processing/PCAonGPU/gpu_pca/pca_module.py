@@ -231,6 +231,9 @@ class IncrementalPCAonGPU():
 
         U, S, Vt = da.compute(U_dask, S_dask, Vt_dask)
 
+        cp.get_default_memory_pool().free_all_blocks()
+        torch.cuda.empty_cache()
+        
         client.close()
         cluster.close()
         # Convertir les résultats de CuPy à PyTorch
@@ -280,7 +283,7 @@ class IncrementalPCAonGPU():
                                     protocol = "ucx",
                                     enable_tcp_over_ucx=True,
                                     enable_nvlink=True,
-                                    rmm_pool_size="90%")
+                                    rmm_pool_size="20GB"
         
         # Création du client Dask
         client = Client(cluster)
