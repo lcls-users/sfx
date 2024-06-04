@@ -276,15 +276,11 @@ class IncrementalPCAonGPU():
         return torch.mm(X, self.components_.T)
 
     def set_up_client(self):
-        device_cp = cp.cuda.Device()
-        free_mem, total_mem = device_cp.mem_info
-        rmm_pool_size = int(total_mem * 0.90)
-
         cluster = LocalCUDACluster(n_workers=4, 
                                     protocol = "ucx",
                                     enable_tcp_over_ucx=True,
                                     enable_nvlink=True,
-                                    rmm_pool_size=rmm_pool_size)
+                                    rmm_pool_size="90%")
         
         # Création du client Dask
         client = Client(cluster)
