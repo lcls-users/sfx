@@ -283,7 +283,7 @@ class IncrementalPCAonGPU():
                                     rmm_pool_size="100GB",)
 
         # Obtenez la mémoire totale disponible sur les GPU
-        total_memory = cp.cuda.runtime.memGetInfo()[1]  # En octets
+        total_memory = 0.8*cp.cuda.runtime.memGetInfo()[1]  # En octets
 
         # Convertissez la mémoire totale en une chaîne lisible
         total_memory_str = cp.cuda.memory.Memory(total_memory).tostring()
