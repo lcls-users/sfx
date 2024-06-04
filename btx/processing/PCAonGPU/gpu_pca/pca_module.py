@@ -235,6 +235,9 @@ class IncrementalPCAonGPU(nn.Module):
             U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components)
 
             # Convertir les résultats de CuPy à PyTorch
+            print(type(U))
+            U = cp.asarray(U)
+            print(type(U))
             U = U.compute()
             print(type(U))
             print(U.shape)
