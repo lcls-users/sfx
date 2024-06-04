@@ -225,7 +225,6 @@ class IncrementalPCAonGPU(nn.Module):
                 )
 
         X_cupy = cp.asarray(X.cpu().numpy())
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False)
         cluster = LocalCUDACluster()
         client = Client(cluster)
 
@@ -235,6 +234,8 @@ class IncrementalPCAonGPU(nn.Module):
         U = torch.tensor(cp.asnumpy(U.compute()))
         S = torch.tensor(cp.asnumpy(S.compute()))
         Vt = torch.tensor(cp.asnumpy(Vt.compute()))
+        client.close()
+        cluster.close()
         U, Vt = self._svd_flip(U, Vt)
 
         explained_variance = S**2 / (n_total_samples.item() - 1)
