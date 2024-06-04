@@ -9,6 +9,7 @@ import dask.array as da
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
 import cupy as cp
+import logging
 
 class IncrementalPCAonGPU():
     """
@@ -37,6 +38,12 @@ class IncrementalPCAonGPU():
         print("PyTorch is using:", device)
         print("PyTorch version:", torch.__version__)
         self.device = device
+
+        logging.basicConfig(level=logging.INFO)
+
+        # Configure specific loggers for numba and distributed
+        logging.getLogger('numba').setLevel(logging.INFO)
+        logging.getLogger('distributed').setLevel(logging.INFO)
         
         # Set n_components_ based on n_components if provided
         if n_components:
@@ -155,7 +162,7 @@ class IncrementalPCAonGPU():
             end = min(start + self.batch_size_, n_samples)
             X_batch = X[start:end]
             self.partial_fit(X_batch, check_input=True)
-
+            cp._default_memory_pool.free_all_blocks()
         return self
 
     def partial_fit(self, X, check_input=True):
