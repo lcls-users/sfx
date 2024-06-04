@@ -312,7 +312,7 @@ class IncrementalPCAonGPU():
         client = self.client
         # Allocate memory manually using CuPy functions (adapt based on your needs)
         total_memory_bytes = parse_bytes("26GB")
-        memory = cp.cuda.malloc(total_memory_bytes)
+        memory = cp.cuda.alloc(total_memory_bytes)
         client.run(
             lambda: memory  # Send allocated memory to workers
         )
