@@ -222,24 +222,22 @@ class IncrementalPCAonGPU():
         X_cupy = cp.asarray(X.data)
         client,cluster = self.client, self.cluster
 
-        try:
+        
         # Convertir les données CuPy en tableau Dask
-            rs = da.random.RandomState(RandomState=cp.random.RandomState)
-            X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
+        rs = da.random.RandomState(RandomState=cp.random.RandomState)
+        X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
 
-            # Effectuer la SVD compressée avec Dask et CuPy
-            U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components,seed=rs)
+        # Effectuer la SVD compressée avec Dask et CuPy
+        U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components,seed=rs)
 
-            # Convertir les résultats de CuPy à PyTorch
-            U = torch.tensor(cp.asnumpy(U.compute()),device=self.device)
-            S = torch.tensor(cp.asnumpy(S.compute()),device=self.device)
-            Vt = torch.tensor(cp.asnumpy(Vt.compute()),device=self.device)
+        # Convertir les résultats de CuPy à PyTorch
+        U = torch.tensor(cp.asnumpy(U.compute()),device=self.device)
+        S = torch.tensor(cp.asnumpy(S.compute()),device=self.device)
+        Vt = torch.tensor(cp.asnumpy(Vt.compute()),device=self.device)
 
-
-        finally:
-            # Fermer le client et le cluster
-            client.close()
-            cluster.close()
+        # Fermer le client et le cluster
+        client.close()
+        cluster.close()
 
         U, Vt = self._svd_flip(U, Vt)
 
@@ -295,7 +293,7 @@ class IncrementalPCAonGPU():
         # Création du cluster Dask CUDA
         cluster = LocalCUDACluster(
             protocol="ucx",
-            interface="enp33s0f0",  # Interface réseau spécifique
+            interface="enp225s0",  # Interface réseau spécifique
             enable_tcp_over_ucx=True,  # Utilisation de TCP avec UCX
             enable_infiniband=False,
             enable_nvlink=True,
