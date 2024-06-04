@@ -285,7 +285,7 @@ class IncrementalPCAonGPU():
         os.environ['UCX_TLS']='tcp,cuda_copy,cuda_ipc'
         os.environ['UCX_SOCKADDR_TLS_PRIORITY']='tcp'
         os.environ["UCX_RNDV_SCHEME"] = "get_zcopy"
-        protocol = "ucx"
+        protocol = "tcp"
         enable_tcp_over_ucx = True
         enable_nvlink = True
         enable_infiniband = False
