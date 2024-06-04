@@ -312,6 +312,6 @@ class IncrementalPCAonGPU():
         client = self.client
         client.run(
             cp.cuda.set_allocator,
-            rmm.rmm_cupy_allocator
+            rmm.rmm_alloc
         )
         
