@@ -220,7 +220,7 @@ class IncrementalPCAonGPU():
                 )
 
         X_cupy = cp.asarray(X.data)
-        client,cluster = self.set_up_client()
+        self.client,self.cluster = self.set_up_client()
         self.setup_rmm_pool()
 
         
