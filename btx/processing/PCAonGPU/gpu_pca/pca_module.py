@@ -278,8 +278,8 @@ class IncrementalPCAonGPU():
 
     def set_up_client(self):
         # Configuration des variables d'environnement
-        os.environ['UCX_TLS'] = 'tcp,sockcm,cuda_copy,cuda_ipc'
-        os.environ['UCX_SOCKADDR_TLS_PRIORITY'] = 'sockcm'
+        os.environ['UCX_TLS'] = 'cuda_copy,cuda_ipc,gdr'
+        os.environ['UCX_SOCKADDR_TLS_PRIORITY'] = 'gdr'
         os.environ["UCX_RNDV_SCHEME"] = "get_zcopy"
 
         # Initialisation de UCX
