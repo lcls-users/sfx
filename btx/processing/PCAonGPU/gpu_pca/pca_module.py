@@ -5,7 +5,6 @@ processes data in smaller chunks or batches.
 """
 
 import torch
-import torch.nn as nn
 import dask.array as da
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
@@ -15,7 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("PyTorch is using:", device)
 print("PyTorch version:", torch.__version__)
 
-class IncrementalPCAonGPU(nn.Module):
+class IncrementalPCAonGPU():
     """
     An implementation of Incremental Principal Components Analysis (IPCA) that leverages PyTorch for GPU acceleration.
 
@@ -33,35 +32,22 @@ class IncrementalPCAonGPU(nn.Module):
     """
 
     def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None):
-        super().__init__()
         self.n_components = n_components
         self.whiten = whiten
         self.copy = copy
         self.batch_size = batch_size
-
+        self.device = device
+        
         # Set n_components_ based on n_components if provided
         if n_components:
             self.n_components_ = n_components
 
         # Initialize attributes to avoid errors during the first call to partial_fit
-        self.mean_ = None
-        self.var_ = None
+        self.mean_ = None  # Will be initialized properly in partial_fit based on data dimensions
+        self.var_ = None  # Will be initialized properly in partial_fit based on data dimensions
         self.n_samples_seen_ = 0
 
-        num_gpus_available = torch.cuda.device_count()
-        self.num_gpus_used = num_gpus_available  # Utiliser tous les GPU disponibles
-        components_per_gpu = n_components // self.num_gpus_used
-        if n_components % self.num_gpus_used != 0:
-            components_per_gpu += 1
-
         self.components = []  # Liste pour stocker les composants
-
-        for i in range(self.num_gpus_used):
-            gpu_id = i % num_gpus_available  # Sélectionner un GPU différent pour chaque composant
-            self.components.append(
-                torch.zeros(components_per_gpu, batch_size).to(f"cuda:{gpu_id}")
-            )
-        
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
@@ -79,13 +65,10 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             torch.Tensor: Validated and possibly copied tensor residing on the specified device.
         """
-        current_gpu_index = torch.cuda.current_device()
-        current_device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=current_gpu_index)
-
         if not isinstance(X, torch.Tensor):
-            X = torch.tensor(X, dtype=dtype).to(current_device)
-        elif X.device != current_device:
-            X = X.to(current_device)
+            X = torch.tensor(X, dtype=dtype).to(self.device)
+        elif X.device != self.device:
+            X = X.to(self.device)
         if copy:
             X = X.clone()
         return X
@@ -186,9 +169,6 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             IncrementalPCAGPU: The updated IPCA model after processing the batch.
         """
-        current_gpu_index = torch.cuda.current_device()
-        current_device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=current_gpu_index)
-
         first_pass = not hasattr(self, "components_")
 
         if check_input:
@@ -201,7 +181,7 @@ class IncrementalPCAonGPU(nn.Module):
             self.n_components_ = min(n_samples, n_features)
 
         col_mean, col_var, n_total_samples = self._incremental_mean_and_var(
-            X, self.mean_, self.var_, torch.tensor([self.n_samples_seen_], device=current_device)
+            X, self.mean_, self.var_, torch.tensor([self.n_samples_seen_], device=self.device)
         )
 
         # Whitening
@@ -211,7 +191,7 @@ class IncrementalPCAonGPU(nn.Module):
             col_batch_mean = torch.mean(X, dim=0)
             X -= col_batch_mean
             mean_correction_factor = torch.sqrt(
-                torch.tensor((self.n_samples_seen_ / n_total_samples.item()) * n_samples, device=current_device)
+                torch.tensor((self.n_samples_seen_ / n_total_samples.item()) * n_samples, device=self.device)
             )
             mean_correction = mean_correction_factor * (self.mean_ - col_batch_mean)
 
@@ -236,9 +216,9 @@ class IncrementalPCAonGPU(nn.Module):
             U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components,seed=rs)
 
             # Convertir les résultats de CuPy à PyTorch
-            U = torch.tensor(cp.asnumpy(U.compute()),device=current_device)
-            S = torch.tensor(cp.asnumpy(S.compute()),device=current_device)
-            Vt = torch.tensor(cp.asnumpy(Vt.compute()),device=current_device)
+            U = torch.tensor(cp.asnumpy(U.compute()),device=self.device)
+            S = torch.tensor(cp.asnumpy(S.compute()),device=self.device)
+            Vt = torch.tensor(cp.asnumpy(Vt.compute()),device=self.device)
 
 
         finally:
@@ -279,9 +259,6 @@ class IncrementalPCAonGPU(nn.Module):
         Returns:
             torch.Tensor: Transformed data tensor with shape (n_samples, n_components).
         """
-        current_gpu_index = torch.cuda.current_device()
-        current_device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=current_gpu_index)
-
-        X = X.to(current_device)
+        X = X.to(self.device)
         X -= self.mean_
         return torch.mm(X, self.components_.T)
