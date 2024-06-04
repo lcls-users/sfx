@@ -227,12 +227,12 @@ class IncrementalPCAonGPU():
         X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
 
         # Effectuer la SVD compressée avec Dask et CuPy
-        U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components,seed=rs)
+        U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components,seed=rs,compute = True)
 
         # Convertir les résultats de CuPy à PyTorch
-        U = torch.tensor(cp.asnumpy(U.compute()),device=self.device)
-        S = torch.tensor(cp.asnumpy(S.compute()),device=self.device)
-        Vt = torch.tensor(cp.asnumpy(Vt.compute()),device=self.device)
+        U = torch.tensor(cp.asnumpy(U),device=self.device)
+        S = torch.tensor(cp.asnumpy(S),device=self.device)
+        Vt = torch.tensor(cp.asnumpy(Vt),device=self.device)
 
         # Fermer le client et le cluster
         client.close()
