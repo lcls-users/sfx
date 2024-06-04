@@ -11,7 +11,7 @@ from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
 from dask_cuda.initialize import initialize
 from dask.utils import parse_bytes
-import cupy
+import cupy as cp
 import rmm
 import cudf
 import logging
@@ -219,7 +219,7 @@ class IncrementalPCAonGPU():
         X_cupy = cp.asarray(X.data)
         client = self.set_up_client()
         self.setup_rmm_pool(client)
-        
+
         try:
         # Convertir les données CuPy en tableau Dask
             rs = da.random.RandomState(RandomState=cp.random.RandomState)
