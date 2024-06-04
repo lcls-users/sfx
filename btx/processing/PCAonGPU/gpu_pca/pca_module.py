@@ -62,7 +62,6 @@ class IncrementalPCAonGPU():
         self.components = []  # Liste pour stocker les composants
 
         self.client,self.cluster = self.set_up_client()
-        self.setup_rmm_pool(self.client)
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
@@ -279,21 +278,12 @@ class IncrementalPCAonGPU():
     def set_up_client(self):
         cluster = LocalCUDACluster(n_workers=4, 
                                     protocol = "ucx",
-                                    enable_tcp_over_ucx=True,)
+                                    enable_tcp_over_ucx=True,
+                                    enable_nvlink=True,
+                                    rmm_pool_size="10GB",)
 
         # Création du client Dask
         client = Client(cluster)
 
         return client,cluster
     
-    def setup_rmm_pool(self,client):
-        client.run(
-            cudf.set_allocator,
-            pool=True,
-            initial_pool_size=parse_bytes("26GB"),
-            allocator="default"
-        )
-        client.run(
-            cupy.cuda.set_allocator,
-            rmm.rmm_cupy_allocator
-        )
