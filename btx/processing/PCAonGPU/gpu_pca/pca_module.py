@@ -311,7 +311,7 @@ class IncrementalPCAonGPU():
     def setup_rmm_pool(self):
         client = self.client
         client.run(
-            cupy.cuda.set_allocator,
+            cp.cuda.set_allocator,
             rmm.rmm_cupy_allocator
         )
         
