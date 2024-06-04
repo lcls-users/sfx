@@ -61,7 +61,8 @@ class IncrementalPCAonGPU():
 
         self.components = []  # Liste pour stocker les composants
 
-        self.client,self.cluster = self.set_up_client()
+        self.client= self.set_up_client()
+        self.setup_rmm_pool()
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
@@ -280,24 +281,43 @@ class IncrementalPCAonGPU():
         return torch.mm(X, self.components_.T)
 
     def set_up_client(self):
-        rmm_pool_size = "36GB"
-        rmm_pool_size_in_gb = int(rmm_pool_size[:-2])
-        rmm_pool_size_in_bytes = rmm_pool_size_in_gb * 1024**3
-        cluster = LocalCUDACluster(n_workers=4, 
-                                    protocol = "ucx",
-                                    enable_tcp_over_ucx=True,
-                                    enable_nvlink=True,
-                                    rmm_pool_size=rmm_pool_size)
-        
-        rmm.reinitialize(
-            pool_allocator=True,  # Utiliser un allocateur de pool
-            initial_pool_size=rmm_pool_size_in_bytes  # Taille du pool initial spécifiée
+        os.environ['UCX_TLS']='tcp,cuda_copy,cuda_ipc'
+        os.environ['UCX_SOCKADDR_TLS_PRIORITY']='tcp'
+        os.environ["UCX_RNDV_SCHEME"] = "get_zcopy"
+        protocol = "ucx"
+        enable_tcp_over_ucx = True
+        enable_nvlink = True
+        enable_infiniband = False
+
+        initialize(
+            create_cuda_context=True,
+            enable_tcp_over_ucx=enable_tcp_over_ucx,
+            enable_infiniband=enable_infiniband,
+            enable_nvlink=enable_nvlink,
         )
-        
-        cp.cuda.set_allocator(rmm.rmm_cupy_allocator)
+
+        cluster = LocalCUDACluster(local_directory=".",   
+                                protocol=protocol,
+                                enable_tcp_over_ucx=enable_tcp_over_ucx,
+                                enable_infiniband=enable_infiniband,
+                                enable_nvlink=enable_nvlink,
+                            )
 
         # Création du client Dask
         client = Client(cluster)
 
-        return client,cluster
+        return client
+    
+    def setup_rmm_pool(self):
+        client = self.client
+        client.run(
+            cudf.set_allocator,
+            pool=True,
+            initial_pool_size= parse_bytes("26GB"),
+            allocator="default"
+        )
+        client.run(
+            cupy.cuda.set_allocator,
+            rmm.rmm_cupy_allocator
+        )
     
