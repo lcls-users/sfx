@@ -281,6 +281,8 @@ class IncrementalPCAonGPU():
 
     def set_up_client(self):
         rmm_pool_size = "36GB"
+        rmm_pool_size_in_gb = int(rmm_pool_size[:-2])
+        rmm_pool_size_in_bytes = rmm_pool_size_in_gb * 1024**3
         cluster = LocalCUDACluster(n_workers=4, 
                                     protocol = "ucx",
                                     enable_tcp_over_ucx=True,
@@ -289,7 +291,7 @@ class IncrementalPCAonGPU():
         
         rmm.reinitialize(
             pool_allocator=True,  # Utiliser un allocateur de pool
-            initial_pool_size=rmm_pool_size  # Taille du pool initial spécifiée
+            initial_pool_size=rmm_pool_size_in_bytes  # Taille du pool initial spécifiée
         )
         
         cp.cuda.set_allocator(rmm.rmm_cupy_allocator)
