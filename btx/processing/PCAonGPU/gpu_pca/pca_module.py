@@ -230,9 +230,9 @@ class IncrementalPCAonGPU():
         U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components,seed=rs,compute = True)
 
         # Convertir les résultats de CuPy à PyTorch
-        U = torch.tensor(cp.asnumpy(U),device=self.device)
-        S = torch.tensor(cp.asnumpy(S),device=self.device)
-        Vt = torch.tensor(cp.asnumpy(Vt),device=self.device)
+        U = torch.tensor(cp.asnumpy(U.get()),device=self.device)
+        S = torch.tensor(cp.asnumpy(S.get()),device=self.device)
+        Vt = torch.tensor(cp.asnumpy(Vt.get()),device=self.device)
 
         # Fermer le client et le cluster
         client.close()
