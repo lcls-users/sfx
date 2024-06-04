@@ -295,7 +295,7 @@ class IncrementalPCAonGPU():
         # Création du cluster Dask CUDA
         cluster = LocalCUDACluster(
             protocol="ucx",
-            interface="enp33s0f0",  # Interface réseau spécifique
+            interface="enp34s0f3u1u2c2",  # Interface réseau spécifique
             enable_tcp_over_ucx=True,  # Utilisation de TCP avec UCX
             enable_infiniband=False,
             enable_nvlink=True,
