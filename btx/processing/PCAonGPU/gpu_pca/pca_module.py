@@ -276,20 +276,16 @@ class IncrementalPCAonGPU():
         return torch.mm(X, self.components_.T)
 
     def set_up_client(self):
+        device_cp = cp.cuda.Device()
+        free_mem, total_mem = device_cp.mem_info
+        rmm_pool_size = int(total_mem * 0.90)
+
         cluster = LocalCUDACluster(n_workers=4, 
                                     protocol = "ucx",
                                     enable_tcp_over_ucx=True,
                                     enable_nvlink=True,
-                                    rmm_pool_size="100GB",)
-
-        # Obtenez la mémoire totale disponible sur les GPU
-        total_memory = 0.8*cp.cuda.runtime.memGetInfo()[1]  # En octets
-
-        # Convertissez la mémoire totale en une chaîne lisible
-        total_memory_str = cp.cuda.memory.Memory(total_memory).tostring()
-
-        # Initialisez RMM avec la taille de la pool égale à la mémoire totale disponible
-        rmm.reinitialize(pool_allocator=True, initial_pool_size=total_memory)
+                                    rmm_pool_size=rmm_pool_size)
+        
         # Création du client Dask
         client = Client(cluster)
 
