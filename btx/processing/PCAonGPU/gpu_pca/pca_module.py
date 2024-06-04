@@ -278,9 +278,8 @@ class IncrementalPCAonGPU():
 
     def set_up_client(self):
         # Configuration des variables d'environnement
-        os.environ['UCX_TLS'] = 'tcp,cuda_copy,cuda_ipc'
-        os.environ['UCX_SOCKADDR_TLS_PRIORITY'] = 'tcp'
-        os.environ["UCX_RNDV_SCHEME"] = "get_zcopy"
+        os.environ['UCX_TLS'] = 'cuda_copy,cuda_ipc'
+        os.environ['UCX_SOCKADDR_TLS_PRIORITY'] = 'cuda_copy'
 
         # Initialisation de UCX
         initialize(
@@ -292,7 +291,7 @@ class IncrementalPCAonGPU():
 
         # Création du cluster Dask CUDA
         cluster = LocalCUDACluster(
-            protocol="tcp",
+            protocol="ucx",
             enable_tcp_over_ucx=True,  # Utilisation de TCP avec UCX
             enable_infiniband=False,
             enable_nvlink=True,
