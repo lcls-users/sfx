@@ -282,20 +282,25 @@ class IncrementalPCAonGPU():
         os.environ['UCX_SOCKADDR_TLS_PRIORITY'] = 'cuda_copy'
 
         # Initialisation de UCX
+        protocol = "ucx"
+        interface = "enp33s0f0"    # DGX-2
+        enable_tcp_over_ucx = True
+        enable_nvlink = True
+        enable_infiniband = False
+
         initialize(
             create_cuda_context=True,
-            enable_tcp_over_ucx=True,  # Utilisation de TCP avec UCX
-            enable_infiniband=False,
-            enable_nvlink=True,
+            enable_tcp_over_ucx=enable_tcp_over_ucx,
+            enable_infiniband=enable_infiniband,
+            enable_nvlink=enable_nvlink,
         )
 
-        # Création du cluster Dask CUDA
-        cluster = LocalCUDACluster(
-            protocol="ucx",
-            enable_tcp_over_ucx=True,  # Utilisation de TCP avec UCX
-            enable_infiniband=False,
-            enable_nvlink=True,
-            n_workers=4,  # Nombre de travailleurs égal au nombre de GPU
+        cluster = LocalCUDACluster(local_directory=".",   
+                                protocol=protocol,
+                                interface=interface,
+                                enable_tcp_over_ucx=enable_tcp_over_ucx,
+                                enable_infiniband=enable_infiniband,
+                                enable_nvlink=enable_nvlink,
         )
 
         # Création du client Dask
