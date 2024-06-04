@@ -236,9 +236,9 @@ class IncrementalPCAonGPU(nn.Module):
 
             # Convertir les résultats de CuPy à PyTorch
             print(type(U))
-            U = cp.asarray(U)
-            print(type(U))
             U = U.compute()
+            print(type(U))
+            U = U.np()
             print(type(U))
             print(U.shape)
             U = torch.tensor(U)
