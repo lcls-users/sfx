@@ -234,14 +234,6 @@ class IncrementalPCAonGPU(nn.Module):
             # Effectuer la SVD compressée avec Dask et CuPy
             U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components, compute=False)
 
-            # Vérifier et convertir les résultats en tableaux CuPy si nécessaire
-            if not isinstance(U, cp.ndarray):
-                U = cp.asarray(U)
-            if not isinstance(S, cp.ndarray):
-                S = cp.asarray(S)
-            if not isinstance(Vt, cp.ndarray):
-                Vt = cp.asarray(Vt)
-
             # Convertir les résultats de CuPy à PyTorch
             U = torch.tensor(U.get())
             S = torch.tensor(S.get())
