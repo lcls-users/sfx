@@ -42,7 +42,7 @@ class IncrementalPCAonGPU():
         logging.basicConfig(level=logging.INFO)
 
         # Configure specific loggers for numba and distributed
-        logging.getLogger('numba').setLevel(logging.INFO)
+        logging.getLogger('numba').setLevel(logging.WARN)
         logging.getLogger('distributed').setLevel(logging.INFO)
         
         # Set n_components_ based on n_components if provided
