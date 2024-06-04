@@ -224,6 +224,9 @@ class IncrementalPCAonGPU(nn.Module):
                     )
                 )
 
+        X_cupy = cp.asarray(X.cpu().numpy())
+        cluster = LocalCUDACluster()
+        client = Client(cluster)
         try:
         # Convertir les données CuPy en tableau Dask
             X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
