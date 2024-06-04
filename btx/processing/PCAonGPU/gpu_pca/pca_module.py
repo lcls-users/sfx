@@ -282,6 +282,14 @@ class IncrementalPCAonGPU():
                                     enable_nvlink=True,
                                     rmm_pool_size="100GB",)
 
+        # Obtenez la mémoire totale disponible sur les GPU
+        total_memory = cp.cuda.runtime.memGetInfo()[1]  # En octets
+
+        # Convertissez la mémoire totale en une chaîne lisible
+        total_memory_str = cp.cuda.memory.Memory(total_memory).tostring()
+
+        # Initialisez RMM avec la taille de la pool égale à la mémoire totale disponible
+        rmm.reinitialize(pool_allocator=True, initial_pool_size=total_memory)
         # Création du client Dask
         client = Client(cluster)
 
