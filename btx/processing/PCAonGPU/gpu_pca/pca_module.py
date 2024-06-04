@@ -235,7 +235,7 @@ class IncrementalPCAonGPU(nn.Module):
             U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components)
 
             # Convertir les résultats de CuPy à PyTorch
-            U = torch.tensor(U)
+            U = torch.tensor(U.compute())
             S = torch.tensor(S)
             Vt = torch.tensor(Vt)
 
