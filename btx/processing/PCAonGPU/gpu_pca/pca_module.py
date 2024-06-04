@@ -230,6 +230,7 @@ class IncrementalPCAonGPU(nn.Module):
         try:
         # Convertir les données CuPy en tableau Dask
             X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
+            print(type(X_dask))
 
             # Effectuer la SVD compressée avec Dask et CuPy
             U, S, Vt = da.linalg.svd_compressed(X_dask, k=self.n_components)
