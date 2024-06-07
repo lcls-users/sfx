@@ -222,7 +222,7 @@ class IncrementalPCAonGPU():
                         mean_correction,
                     )
                 )
-
+        print("X shape: ",X.shape)
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)        
         """X_cupy = cp.asarray(X.data)
         
