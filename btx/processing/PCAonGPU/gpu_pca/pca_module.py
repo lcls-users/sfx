@@ -249,7 +249,7 @@ class IncrementalPCAonGPU():
         tasks = [(X_dask_futures[i], self.n_components, rscp) for i in range(len(X_dask_futures))]
 
         # Appeler client.map avec svd_compressed_dask et les tâches à exécuter
-        svd_futures = client.map(svd_compressed_dask, *zip(*tasks))
+        svd_futures = self.client.map(svd_compressed_dask, *zip(*tasks))
 
 
         results = self.client.gather(svd_futures)
