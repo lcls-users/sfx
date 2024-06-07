@@ -235,7 +235,7 @@ class IncrementalPCAonGPU():
 
         U, S, Vt = da.compute(U_dask, S_dask, Vt_dask)"""
 
-        scattered_data_future = self.client.scatter(X_cupy, broadcast=True)
+        scattered_data_future = self.client.scatter(X_cupy, broadcast=True).result()
 
         # Convert scattered CuPy arrays to Dask arrays
         X_dask_futures = da.from_array(scattered_data_future, asarray=True, chunks='auto')
