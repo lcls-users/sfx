@@ -235,8 +235,8 @@ class IncrementalPCAonGPU():
         cp.get_default_memory_pool().free_all_blocks()
         torch.cuda.empty_cache()
 
-        client.close()
-        cluster.close()
+        self.client.close()
+        self.cluster.close()
 
         # Convertir les résultats de CuPy à PyTorch
         U = torch.tensor(U, device=self.device)
