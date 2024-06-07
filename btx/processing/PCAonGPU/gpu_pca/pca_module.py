@@ -15,6 +15,7 @@ import cupy as cp
 import rmm
 import cudf
 import logging
+import subprocess
 
 class IncrementalPCAonGPU():
     """
