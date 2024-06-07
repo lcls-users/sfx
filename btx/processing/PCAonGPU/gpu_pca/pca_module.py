@@ -241,11 +241,11 @@ class IncrementalPCAonGPU():
         X_dask_futures = da.from_array(scattered_data_future, asarray=True, chunks='auto')
         print(X_dask_futures.shape)
         # Perform compressed SVD using Dask and CuPy
-        def svd_compressed_dask(X_dask, n_components, rs):
-            U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X_dask, k=n_components, seed=rs, compute=False)
+        def svd_compressed_dask(X, n_components, rs):
+            U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X, k=n_components, seed=rs, compute=False)
             return da.compute(U_dask, S_dask, Vt_dask)
         
-        svd_futures = self.client.map(svd_compressed_dask, X_dask_futures, n_components=self.n_components, rs=rscp)
+        svd_futures = self.client.map(svd_compressed_dask, X_dask_futures, [self.n_components] * len(X_dask_futures), [rscp] * len(X_dask_futures))
 
         results = self.client.gather(svd_futures)
         print(results)
