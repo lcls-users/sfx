@@ -282,7 +282,7 @@ class IncrementalPCAonGPU():
         return torch.mm(X, self.components_.T)
 
     def set_up_client(self):
-"""        os.environ['UCX_TLS']='tcp,cuda_copy,cuda_ipc'
+        """os.environ['UCX_TLS']='tcp,cuda_copy,cuda_ipc'
         os.environ['UCX_SOCKADDR_TLS_PRIORITY']='tcp'
         os.environ["UCX_RNDV_SCHEME"] = "get_zcopy"
         protocol = "ucx"
