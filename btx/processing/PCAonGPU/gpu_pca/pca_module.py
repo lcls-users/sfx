@@ -221,7 +221,6 @@ class IncrementalPCAonGPU():
 
         X_cupy = cp.asarray(X.data)
         self.client,self.cluster = self.set_up_client()
-        self.setup_rmm_pool()
 
         
         # Convertir les données CuPy en tableau Dask
@@ -312,11 +311,3 @@ class IncrementalPCAonGPU():
 
         return client,cluster
     
-    def setup_rmm_pool(self):
-        client = self.client
-        # Allocate memory manually using CuPy functions (adapt based on your needs)
-        total_memory_bytes = parse_bytes("26GB")
-        memory = cp.cuda.alloc(total_memory_bytes)
-        client.run(
-            lambda: memory  # Send allocated memory to workers
-        )
