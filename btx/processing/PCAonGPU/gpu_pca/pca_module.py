@@ -306,7 +306,7 @@ class IncrementalPCAonGPU():
 
         # Création du client Dask
         os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
-        cluster = LocalCUDACluster(n_workers=4, threads_per_worker=1, memory_limit="16GB")
+        cluster = LocalCUDACluster(n_workers=4, threads_per_worker=1, memory_limit="35GB")
         client = Client(cluster)
         print(client)
 
