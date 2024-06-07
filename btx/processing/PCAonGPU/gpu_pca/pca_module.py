@@ -216,9 +216,23 @@ class IncrementalPCAonGPU():
             mean_correction = mean_correction_factor * (self.mean_ - col_batch_mean)
 
             if self.singular_values_ is not None and self.components_ is not None:
-                X = torch.vstack(
+                """X = torch.vstack(
                     (
                         self.singular_values_.view((-1, 1)) * self.components_,
+                        X,
+                        mean_correction,
+                    )
+                )"""
+                mean_correction = mean_correction.view(1, -1)
+                components_multiplied = self.singular_values_.view(-1, 1) * self.components_
+
+                # Adjust the sizes of the tensors to match in the second dimension (number of features)
+                if components_multiplied.shape[1] != X.shape[1]:
+                    components_multiplied = components_multiplied[:, :X.shape[1]]
+
+                X = torch.vstack(
+                    (
+                        components_multiplied,
                         X,
                         mean_correction,
                     )
