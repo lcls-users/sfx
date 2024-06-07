@@ -245,21 +245,10 @@ class IncrementalPCAonGPU():
             U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X, k=n_components, seed=rs, compute=False)
             return da.compute(U_dask, S_dask, Vt_dask)
         
-        print(X_dask_futures[0].shape)
-        # Créer une liste de tuples contenant les données et les arguments nécessaires pour chaque élément de X_dask_futures
-        tasks = [(X_dask_futures[i].reshape(-1,1), self.n_components, rscp) for i in range(len(X_dask_futures))]
-
-        # Appeler client.map avec svd_compressed_dask et les tâches à exécuter
-        svd_futures = self.client.map(svd_compressed_dask, *zip(*tasks))
-
-
-        results = self.client.gather(svd_futures)
+        svd_future = self.client.submit(svd_compressed_dask, X_dask, self.n_components, rscp)
 
         # Combine the results if necessary
-        U, S, Vt = zip(*results)
-        U = cp.concatenate(U)
-        S = cp.concatenate(S)
-        Vt = cp.concatenate(Vt)
+        U, S, Vt = svd_future.result()
 
         print("U: ",U.shape, "S:",S.shape,"V:", Vt.shape)
 
