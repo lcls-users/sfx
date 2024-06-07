@@ -247,9 +247,13 @@ class IncrementalPCAonGPU():
         
         """svd_future = self.client.submit(svd_compressed_dask, X_dask_futures, self.n_components, rscp)"""
         svd_future = self.client.map(svd_compressed_dask, [X_dask_futures], [self.n_components], [rscp])
+        da.compute(svd_future)  # Attendre que tous les futurs se terminent
 
-        # Combine the results if necessary
-        U, S, Vt = svd_future.result()
+        # Collecter les résultats
+        results = [future.result() for future in svd_future]
+
+        # Déballer les résultats
+        U, S, Vt = zip(*results)
 
         print("U: ",U.shape, "S:",S.shape,"V:", Vt.shape)
 
