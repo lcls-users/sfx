@@ -282,10 +282,10 @@ class IncrementalPCAonGPU():
         return torch.mm(X, self.components_.T)
 
     def set_up_client(self):
-        os.environ['UCX_TLS']='tcp,cuda_copy,cuda_ipc'
+"""        os.environ['UCX_TLS']='tcp,cuda_copy,cuda_ipc'
         os.environ['UCX_SOCKADDR_TLS_PRIORITY']='tcp'
         os.environ["UCX_RNDV_SCHEME"] = "get_zcopy"
-        protocol = "tcp"
+        protocol = "ucx"
         enable_tcp_over_ucx = True
         enable_nvlink = True
         enable_infiniband = False
@@ -302,10 +302,13 @@ class IncrementalPCAonGPU():
                                 enable_tcp_over_ucx=enable_tcp_over_ucx,
                                 enable_infiniband=enable_infiniband,
                                 enable_nvlink=enable_nvlink,
-                            )
+                            )"""
 
         # Création du client Dask
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+        cluster = LocalCUDACluster(n_workers=4, threads_per_worker=1, memory_limit="16GB")
         client = Client(cluster)
+        print(client)
 
         return client,cluster
     
