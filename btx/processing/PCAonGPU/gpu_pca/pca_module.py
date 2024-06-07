@@ -225,10 +225,10 @@ class IncrementalPCAonGPU():
                 )
         print(X.shape)
         self.print_gpu_memory()
-        X = X.to(torch.device('cuda:1'))
+        """X = X.to(torch.device('cuda:1'))
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)    
-        U, S, Vt = U.to(self.device), S.to(self.device), Vt.to(self.device)    
-        """X_cupy = cp.asarray(X.data)
+        U, S, Vt = U.to(self.device), S.to(self.device), Vt.to(self.device)    """
+        X_cupy = cp.asarray(X.data)
         
         rscp = da.random.RandomState(RandomState=cp.random.RandomState)
 
@@ -255,7 +255,7 @@ class IncrementalPCAonGPU():
 
         U = torch.tensor(U, device=self.device)
         S = torch.tensor(S, device=self.device)
-        Vt = torch.tensor(Vt, device=self.device)"""
+        Vt = torch.tensor(Vt, device=self.device)
 
         U, Vt = self._svd_flip(U, Vt)
 
@@ -318,8 +318,8 @@ class IncrementalPCAonGPU():
                             )"""
 
         # Création du client Dask
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
-        cluster = LocalCUDACluster(n_workers=4, threads_per_worker=1, memory_limit="35GB")
+        os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3"
+        cluster = LocalCUDACluster(n_workers=3, threads_per_worker=1, memory_limit="35GB")
         client = Client(cluster)
         print(client)
 
