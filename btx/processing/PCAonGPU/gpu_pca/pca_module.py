@@ -157,6 +157,7 @@ class IncrementalPCAonGPU():
         Returns:
             IncrementalPCAGPU: The fitted IPCA model.
         """
+        self.client,self.cluster = self.set_up_client()
 
         if check_input:
             X = self._validate_data(X)
@@ -171,6 +172,9 @@ class IncrementalPCAonGPU():
             X_batch = X[start:end]
             self.partial_fit(X_batch, check_input=True)
             cp._default_memory_pool.free_all_blocks()
+        
+        self.client.close()
+        self.cluster.close()
         return self
 
     def partial_fit(self, X, check_input=True):
@@ -220,7 +224,6 @@ class IncrementalPCAonGPU():
                 )
 
         X_cupy = cp.asarray(X.data)
-        self.client,self.cluster = self.set_up_client()
 
         
         # Convertir les données CuPy en tableau Dask
@@ -234,9 +237,6 @@ class IncrementalPCAonGPU():
 
         cp.get_default_memory_pool().free_all_blocks()
         torch.cuda.empty_cache()
-
-        self.client.close()
-        self.cluster.close()
 
         # Convertir les résultats de CuPy à PyTorch
         U = torch.tensor(U, device=self.device)
