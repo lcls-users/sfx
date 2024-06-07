@@ -244,7 +244,7 @@ class IncrementalPCAonGPU():
         def svd_compressed_dask(X, n_components, rs):
             U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X, k=n_components, seed=rs, compute=False)
             U, S, Vt = da.compute(U_dask, S_dask, Vt_dask)
-            return U.compute(), S.compute(), Vt.compute()
+            return U, S, Vt
         
         """svd_future = self.client.submit(svd_compressed_dask, X_dask_futures, self.n_components, rscp)"""
         svd_future = self.client.map(svd_compressed_dask, [X_dask_futures], [self.n_components], [rscp])
@@ -252,7 +252,7 @@ class IncrementalPCAonGPU():
 
         # Collecter les résultats
         results = [future.result() for future in svd_future]
-
+        print("Results:",results)
         # Déballer les résultats
         U, S, Vt = zip(*results)
 
