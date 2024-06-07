@@ -223,6 +223,7 @@ class IncrementalPCAonGPU():
                     )
                 )
         print(X.shape)
+        self.print_gpu_memory()
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)        
         """X_cupy = cp.asarray(X.data)
         
@@ -320,4 +321,24 @@ class IncrementalPCAonGPU():
         print(client)
 
         return client,cluster
-    
+
+    def print_gpu_memory(self):
+        if torch.cuda.is_available():
+            print("Available GPUs:")
+            for i in range(torch.cuda.device_count()):
+                print(f"GPU {i}:")
+                print(f"  Name: {torch.cuda.get_device_name(i)}")
+
+                # Using torch.cuda.memory_allocated() and torch.cuda.memory_reserved()
+                allocated_memory = torch.cuda.memory_allocated(i)
+                reserved_memory = torch.cuda.memory_reserved(i)
+                print(f"  Memory Allocated: {allocated_memory / (1024 ** 2):.2f} MB")
+                print(f"  Memory Reserved: {reserved_memory / (1024 ** 2):.2f} MB")
+
+                # Using nvidia-smi
+                result = subprocess.run(['nvidia-smi', '--id='+str(i), '--query-gpu=memory.used,memory.free', '--format=csv,nounits,noheader'], stdout=subprocess.PIPE)
+                used_memory, free_memory = result.stdout.decode().strip().split(',')
+                print(f"  Memory Used: {used_memory} MB")
+                print(f"  Memory Free: {free_memory} MB")
+        else:
+            print("No GPU available")    
