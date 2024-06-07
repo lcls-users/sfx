@@ -224,7 +224,7 @@ class IncrementalPCAonGPU():
                 )
         print("Shape of X:",X.shape)
         X_cupy = cp.asarray(X.data)
-
+        print("Shape of X_cupy:",X_cupy.shape)
         
         # Convertir les données CuPy en tableau Dask
         rscp = da.random.RandomState(RandomState=cp.random.RandomState)
