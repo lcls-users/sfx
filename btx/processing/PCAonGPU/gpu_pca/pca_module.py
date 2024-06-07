@@ -254,8 +254,10 @@ class IncrementalPCAonGPU():
         results = [future.result() for future in svd_future]
         print("Results:",results)
         # Déballer les résultats
-        U, S, Vt = zip(*results)
-
+        U = np.concatenate([result[0] for result in results], axis=0)
+        S = np.concatenate([result[1] for result in results], axis=0)
+        Vt = np.concatenate([result[2] for result in results], axis=0)
+        
         print("U: ",U.shape, "S:",S.shape,"V:", Vt.shape)
 
         cp.get_default_memory_pool().free_all_blocks()
