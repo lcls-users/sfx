@@ -257,9 +257,9 @@ class IncrementalPCAonGPU():
 
         # Combine the results if necessary
         U, S, Vt = zip(*results)
-        U = np.concatenate(U)
-        S = np.concatenate(S)
-        Vt = np.concatenate(Vt)
+        U = cp.concatenate(U)
+        S = cp.concatenate(S)
+        Vt = cp.concatenate(Vt)
 
         print(U.shape, S.shape, Vt.shape)
 
