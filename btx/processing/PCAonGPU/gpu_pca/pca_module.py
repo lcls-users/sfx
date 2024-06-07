@@ -222,34 +222,24 @@ class IncrementalPCAonGPU():
                         mean_correction,
                     )
                 )
-        X_cupy = cp.asarray(X.data)
+
+        U, S, Vt = torch.linalg.svd(X, full_matrices=False)        
+        """X_cupy = cp.asarray(X.data)
         
-        # Convertir les données CuPy en tableau Dask
         rscp = da.random.RandomState(RandomState=cp.random.RandomState)
-        """X_dask = da.from_array(X_cupy, asarray=True, chunks='auto')
-
-        # Effectuer la SVD compressée avec Dask et CuPy
-        U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X_dask, k=self.n_components,seed=rs,compute = True)
-
-        U, S, Vt = da.compute(U_dask, S_dask, Vt_dask)"""
 
         scattered_data_future = self.client.scatter(X_cupy, broadcast=True).result()
 
-        # Convert scattered CuPy arrays to Dask arrays
         X_dask_futures = da.from_array(scattered_data_future, asarray=True, chunks='auto')
-        # Perform compressed SVD using Dask and CuPy
+
         def svd_compressed_dask(X, n_components, rs):
             U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X, k=n_components, seed=rs, compute=False)
             U, S, Vt = da.compute(U_dask, S_dask, Vt_dask)
             return U, S, Vt
         
-        """svd_future = self.client.submit(svd_compressed_dask, X_dask_futures, self.n_components, rscp)"""
         svd_future = self.client.map(svd_compressed_dask, [X_dask_futures], [self.n_components], [rscp])
-        da.compute(svd_future)  # Attendre que tous les futurs se terminent
-
-        # Collecter les résultats
+        da.compute(svd_future) 
         results = [future.result() for future in svd_future]
-        # Déballer les résultats
         U = cp.concatenate([result[0] for result in results], axis=0)
         S = cp.concatenate([result[1] for result in results], axis=0)
         Vt = cp.concatenate([result[2] for result in results], axis=0)
@@ -259,10 +249,9 @@ class IncrementalPCAonGPU():
         cp.get_default_memory_pool().free_all_blocks()
         torch.cuda.empty_cache()
 
-        # Convertir les résultats de CuPy à PyTorch
         U = torch.tensor(U, device=self.device)
         S = torch.tensor(S, device=self.device)
-        Vt = torch.tensor(Vt, device=self.device)
+        Vt = torch.tensor(Vt, device=self.device)"""
 
         U, Vt = self._svd_flip(U, Vt)
 
