@@ -246,7 +246,7 @@ class IncrementalPCAonGPU():
             return da.compute(U_dask, S_dask, Vt_dask)
         
         """svd_future = self.client.submit(svd_compressed_dask, X_dask_futures, self.n_components, rscp)"""
-        svd_futures = self.client.map(svd_compressed_dask, [X_dask_futures], [self.n_components], [rscp])
+        svd_future = self.client.map(svd_compressed_dask, [X_dask_futures], [self.n_components], [rscp])
 
         # Combine the results if necessary
         U, S, Vt = svd_future.result()
