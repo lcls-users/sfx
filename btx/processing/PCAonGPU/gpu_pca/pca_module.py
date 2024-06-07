@@ -245,7 +245,7 @@ class IncrementalPCAonGPU():
             U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X, k=n_components, seed=rs, compute=False)
             return da.compute(U_dask, S_dask, Vt_dask)
         
-        svd_futures = self.client.map(svd_compressed_dask, X_dask_futures, [self.n_components] * len(X_dask_futures), [rscp] * len(X_dask_futures))
+        svd_futures = self.client.starmap(svd_compressed_dask, [(X_dask, self.n_components, rscp)] * len(X_dask_futures))
 
         results = self.client.gather(svd_futures)
         print(results)
