@@ -245,6 +245,7 @@ class IncrementalPCAonGPU():
             U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X, k=n_components, seed=rs, compute=False)
             return da.compute(U_dask, S_dask, Vt_dask)
         
+        print(X_dask_futures[0].shape)
         # Créer une liste de tuples contenant les données et les arguments nécessaires pour chaque élément de X_dask_futures
         tasks = [(X_dask_futures[i].reshape(-1,1), self.n_components, rscp) for i in range(len(X_dask_futures))]
 
@@ -253,7 +254,6 @@ class IncrementalPCAonGPU():
 
 
         results = self.client.gather(svd_futures)
-        print(results)
 
         # Combine the results if necessary
         U, S, Vt = zip(*results)
@@ -261,7 +261,7 @@ class IncrementalPCAonGPU():
         S = cp.concatenate(S)
         Vt = cp.concatenate(Vt)
 
-        print(U.shape, S.shape, Vt.shape)
+        print("U: ",U.shape, "S:",S.shape,"V:", Vt.shape)
 
         cp.get_default_memory_pool().free_all_blocks()
         torch.cuda.empty_cache()
