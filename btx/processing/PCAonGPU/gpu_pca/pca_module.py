@@ -40,7 +40,7 @@ class IncrementalPCAonGPU():
         self.copy = copy
         self.batch_size = batch_size
         # Determine if there's a GPU available
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print("PyTorch is using:", device)
         print("PyTorch version:", torch.__version__)
         self.device = device
@@ -225,7 +225,9 @@ class IncrementalPCAonGPU():
                 )
         print(X.shape)
         self.print_gpu_memory()
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False)        
+        X = X.to(torch.device('cuda:1'))
+        U, S, Vt = torch.linalg.svd(X, full_matrices=False)    
+        U, S, Vt = U.to(self.device), S.to(self.device), Vt.to(self.device)    
         """X_cupy = cp.asarray(X.data)
         
         rscp = da.random.RandomState(RandomState=cp.random.RandomState)
