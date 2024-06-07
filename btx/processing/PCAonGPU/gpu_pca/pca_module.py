@@ -235,7 +235,7 @@ class IncrementalPCAonGPU():
 
         U, S, Vt = da.compute(U_dask, S_dask, Vt_dask)"""
 
-        scattered_data = client.scatter(X_cupy, broadcast=True)
+        scattered_data = self.client.scatter(X_cupy, broadcast=True)
 
         # Convert scattered CuPy arrays to Dask arrays
         X_dask_futures = [da.from_array(fut, asarray=True, chunks='auto') for fut in scattered_data]
@@ -245,9 +245,9 @@ class IncrementalPCAonGPU():
             U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X_dask, k=n_components, seed=rs, compute=True)
             return da.compute(U_dask, S_dask, Vt_dask)
         
-        svd_futures = client.map(svd_compressed_dask, X_dask_futures, n_components=self.n_components, rs=rs)
+        svd_futures = self.client.map(svd_compressed_dask, X_dask_futures, n_components=self.n_components, rs=rs)
 
-        results = client.gather(svd_futures)
+        results = self.client.gather(svd_futures)
 
         # Combine the results if necessary
         U, S, Vt = zip(*results)
@@ -256,7 +256,7 @@ class IncrementalPCAonGPU():
         Vt = np.concatenate(Vt)
 
         print(U.shape, S.shape, Vt.shape)
-        
+
         cp.get_default_memory_pool().free_all_blocks()
         torch.cuda.empty_cache()
 
