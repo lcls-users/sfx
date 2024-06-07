@@ -61,6 +61,7 @@ class IncrementalPCAonGPU():
 
         self.components = []  # Liste pour stocker les composants
 
+        self.singular_values_ = None
         self.client= None
         self.cluster = None
 
