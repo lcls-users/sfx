@@ -255,7 +255,7 @@ class IncrementalPCAonGPU():
 
         U, Vt = self._svd_flip(U, Vt)
 
-        explained_variance = S**2 / (n_total_samples.item() - 1)
+        """explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
 
         self.n_samples_seen_ = n_total_samples.item()
@@ -268,9 +268,19 @@ class IncrementalPCAonGPU():
         if self.n_components_ not in (n_samples, n_features):
             self.noise_variance_ = explained_variance[self.n_components_ :].mean().item()
         else:
-            self.noise_variance_ = 0.0
+            self.noise_variance_ = 0.0"""
+        # Update principal components
+        self.components_, self.singular_values_ = self._incremental_update_components(
+            U, S, Vt, n_samples, self.n_components_, self.components_, self.singular_values_
+        )
 
-        torch.cuda.empty_cache() #TEST
+        # Update mean and variance
+        self.mean_ = col_mean
+        self.var_ = col_var
+
+        self.n_samples_seen_ = n_total_samples.item()
+
+        torch.cuda.empty_cache()
 
         return self
 
@@ -321,3 +331,35 @@ class IncrementalPCAonGPU():
 
         return client,cluster
     
+    def _incremental_update_components(self, U, S, Vt, n_samples, n_components, components, singular_values):
+        """
+        Incrementally updates the principal components and singular values based on the current batch.
+
+        Args:
+            U (torch.Tensor): Left singular vectors tensor.
+            S (torch.Tensor): Singular values tensor.
+            Vt (torch.Tensor): Right singular vectors tensor.
+            n_samples (int): Number of samples in the current batch.
+            n_components (int): Number of components to keep.
+            components (torch.Tensor): Previous principal components tensor.
+            singular_values (torch.Tensor): Previous singular values tensor.
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: Updated principal components and singular values tensors.
+        """
+        if components is None or singular_values is None:
+            components = Vt[:, :n_components]
+            singular_values = S[:n_components]
+        else:
+            # Update principal components
+            n_old_samples = n_samples - U.shape[0]  # Number of samples from previous batches
+            total_samples = n_samples + n_old_samples
+            total_singular_values = torch.cat((singular_values, S), dim=0)
+            total_components = torch.cat((components, Vt[:, :n_components]), dim=1)
+
+            # Truncated SVD on the concatenated matrix
+            _, s, v = torch.linalg.svd(total_components.T, full_matrices=False)
+            components = total_components @ v[:, :n_components]
+            singular_values = s[:n_components]
+
+        return components, singular_values
