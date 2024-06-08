@@ -227,35 +227,6 @@ class IncrementalPCAonGPU():
         print(X.shape)
         self.init_process(0, 4)
         S, Vt = self.alternative_svd(X)
-        """X_cupy = cp.asarray(X.data)
-        
-        rscp = da.random.RandomState(RandomState=cp.random.RandomState)
-
-        scattered_data_future = self.client.scatter(X_cupy, broadcast=True).result()
-
-        X_dask_futures = da.from_array(scattered_data_future, asarray=True, chunks='auto')
-
-        def svd_compressed_dask(X, n_components, rs):
-            U_dask, S_dask, Vt_dask = da.linalg.svd_compressed(X, k=n_components, seed=rs, compute=False)
-            U, S, Vt = da.compute(U_dask, S_dask, Vt_dask)
-            return U, S, Vt
-        
-        svd_future = self.client.map(svd_compressed_dask, [X_dask_futures], [self.n_components], [rscp])
-        da.compute(svd_future) 
-        self.print_gpu_memory()
-        results = [future.result() for future in svd_future]
-        U = cp.concatenate([result[0] for result in results], axis=0)
-        S = cp.concatenate([result[1] for result in results], axis=0)
-        Vt = cp.concatenate([result[2] for result in results], axis=0)
-
-        print("U: ",U.shape, "S:",S.shape,"V:", Vt.shape)
-
-        cp.get_default_memory_pool().free_all_blocks()
-        torch.cuda.empty_cache()
-
-        U = torch.tensor(U, device=self.device)
-        S = torch.tensor(S, device=self.device)
-        Vt = torch.tensor(Vt, device=self.device)"""
 
         #U, Vt = self._svd_flip(U, Vt)
         print("S:",S.shape,"V:", Vt.shape)
@@ -295,28 +266,6 @@ class IncrementalPCAonGPU():
         return torch.mm(X, self.components_.T)
 
     def set_up_client(self):
-        """os.environ['UCX_TLS']='tcp,cuda_copy,cuda_ipc'
-        os.environ['UCX_SOCKADDR_TLS_PRIORITY']='tcp'
-        os.environ["UCX_RNDV_SCHEME"] = "get_zcopy"
-        protocol = "ucx"
-        enable_tcp_over_ucx = True
-        enable_nvlink = True
-        enable_infiniband = False
-
-        initialize(
-            create_cuda_context=True,
-            enable_tcp_over_ucx=enable_tcp_over_ucx,
-            enable_infiniband=enable_infiniband,
-            enable_nvlink=enable_nvlink,
-        )
-
-        cluster = LocalCUDACluster(local_directory=".",   
-                                protocol=protocol,
-                                enable_tcp_over_ucx=enable_tcp_over_ucx,
-                                enable_infiniband=enable_infiniband,
-                                enable_nvlink=enable_nvlink,
-                            )"""
-
         # Création du client Dask
         os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3"
         cluster = LocalCUDACluster(n_workers=3, threads_per_worker=1, memory_limit="35GB")
@@ -451,10 +400,10 @@ class IncrementalPCAonGPU():
             Right singular vectors of A.
         """
         # Compute QR factorization of A
-        Q_r, _, R_tilde = parallel_qr(A)
+        Q_r, _, R_tilde = self.parallel_qr(A)
 
         # Compute QR factorization of R_tilde^T
-        _, _, Vt = parallel_qr(R_tilde.t())
+        _, _, Vt = self.parallel_qr(R_tilde.t())
 
         # Compute singular values from diagonal of R_tilde
         S = torch.diagonal(R_tilde)
