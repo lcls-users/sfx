@@ -396,8 +396,8 @@ class IncrementalPCAonGPU():
         dist.init_process_group(
             backend=backend,
             init_method=f'tcp://{master_addr}:{master_port}',
-            rank=-1,
-            world_size=-1
+            rank=0,
+            world_size=4
         )
     
     def alternative_svd(self,A):
