@@ -355,7 +355,7 @@ class IncrementalPCAonGPU():
         Data Analysis and Reduction for Big Scientific Data (DRBSD-7) (pp. 19-25). IEEE.
         """
         _, x = A.shape
-        num_components = self.num_components
+        num_components = self.n_components
         m = x - num_components - 1
 
         Q_r1, R_r = torch.linalg.qr(A)
