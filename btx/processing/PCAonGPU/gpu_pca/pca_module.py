@@ -65,6 +65,10 @@ class IncrementalPCAonGPU():
 
         self.client= None
         self.cluster = None
+        self.rank = int(os.environ['RANK'])
+        self.size = int(os.environ['WORLD_SIZE'])
+        self.master_addr = os.environ.get('MASTER_ADDR', '127.0.0.1')
+        self.master_port = os.environ.get('MASTER_PORT', '29500')
         self.init_process()
         self.rank = dist.get_rank()
         self.size = dist.get_world_size()
@@ -391,13 +395,13 @@ class IncrementalPCAonGPU():
         return Q_r, U_tilde, S_tilde
 
 
-    def init_process(self, backend='tcp', master_addr='127.0.0.1', master_port='29500'):
+    def init_process(self):
         # Initialize the process group
         dist.init_process_group(
-            backend=backend,
-            init_method=f'tcp://{master_addr}:{master_port}',
-            rank=0,
-            world_size=4
+            backend='nccl',
+            init_method=f'tcp://{self.master_addr}:{self.master_port}',
+            rank=self.rank,
+            world_size=self.size
         )
     
     def alternative_svd(self,A):
