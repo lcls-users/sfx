@@ -158,7 +158,7 @@ class IncrementalPCAonGPU():
         Returns:
             IncrementalPCAGPU: The fitted IPCA model.
         """
-        self.client,self.cluster = self.set_up_client()
+        #self.client,self.cluster = self.set_up_client()
 
         if check_input:
             X = self._validate_data(X)
@@ -174,8 +174,8 @@ class IncrementalPCAonGPU():
             self.partial_fit(X_batch, check_input=True)
             cp._default_memory_pool.free_all_blocks()
         
-        self.client.close()
-        self.cluster.close()
+        #self.client.close()
+        #self.cluster.close()
         return self
 
     def partial_fit(self, X, check_input=True):
