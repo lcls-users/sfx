@@ -6,6 +6,7 @@ processes data in smaller chunks or batches.
 
 import os
 import torch
+import torch.distributed as dist
 import dask.array as da
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
@@ -224,11 +225,9 @@ class IncrementalPCAonGPU():
                     )
                 )
         print(X.shape)
-        """X = X.to(torch.device('cuda:1'))
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False)    
-        U, S, Vt = U.to(self.device), S.to(self.device), Vt.to(self.device)    """
-        self.client,self.cluster = self.set_up_client()
-        X_cupy = cp.asarray(X.data)
+        self.init_process(0, 4)
+        S, Vt = self.alternative_svd(X)
+        """X_cupy = cp.asarray(X.data)
         
         rscp = da.random.RandomState(RandomState=cp.random.RandomState)
 
@@ -248,8 +247,7 @@ class IncrementalPCAonGPU():
         U = cp.concatenate([result[0] for result in results], axis=0)
         S = cp.concatenate([result[1] for result in results], axis=0)
         Vt = cp.concatenate([result[2] for result in results], axis=0)
-        self.client.close()
-        self.cluster.close()
+
         print("U: ",U.shape, "S:",S.shape,"V:", Vt.shape)
 
         cp.get_default_memory_pool().free_all_blocks()
@@ -257,10 +255,10 @@ class IncrementalPCAonGPU():
 
         U = torch.tensor(U, device=self.device)
         S = torch.tensor(S, device=self.device)
-        Vt = torch.tensor(Vt, device=self.device)
+        Vt = torch.tensor(Vt, device=self.device)"""
 
-        U, Vt = self._svd_flip(U, Vt)
-
+        #U, Vt = self._svd_flip(U, Vt)
+        print("S:",S.shape,"V:", Vt.shape)
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
 
@@ -349,3 +347,116 @@ class IncrementalPCAonGPU():
                 print(f"  Memory Used: {used_memory} MB")
                 print(f"  Memory Free: {free_memory} MB")
     
+    def parallel_qr(self, A):
+        """
+        Perform parallelized QR factorization on input tensor A using PyTorch's distributed communication primitives.
+
+        Parameters
+        ----------
+        A : torch.Tensor, shape (_ x q+m+1)
+            Input data to be factorized.
+
+        Returns
+        -------
+        q_fin : torch.Tensor, shape (_, q+m+1)
+            Q_{r,1} from TSQR algorithm, where r = self.rank + 1
+        U_tilde : torch.Tensor, shape (q+m+1, q+m+1)
+            Q_{r,2} from TSQR algorithm, where r = self.rank + 1
+        S_tilde : torch.Tensor, shape (q+m+1)
+            R_tilde from TSQR algorithm, where r = self.rank + 1
+
+        Notes
+        -----
+        Parallel QR algorithm implemented from [1], with additional elements from [2]
+        sprinkled in to record elements for iPCA using SVD, etc.
+
+        References
+        ----------
+        [1] Benson AR, Gleich DF, Demmel J. Direct QR factorizations for tall-and-skinny
+        matrices in MapReduce architectures. In2013 IEEE international conference on
+        big data 2013 Oct 6 (pp. 264-272). IEEE.
+
+        [2] Ross DA, Lim J, Lin RS, Yang MH. Incremental learning for robust visual tracking.
+        International journal of computer vision. 2008 May;77(1):125-41.
+
+        [3] Maulik, R., & Mengaldo, G. (2021, November). PyParSVD: A streaming, distributed and
+        randomized singular-value-decomposition library. In 2021 7th International Workshop on
+        Data Analysis and Reduction for Big Scientific Data (DRBSD-7) (pp. 19-25). IEEE.
+        """
+        _, x = A.shape
+        num_components = self.num_components
+        m = x - num_components - 1
+
+        Q_r1, R_r = torch.linalg.qr(A)
+
+        dist.barrier()
+
+        if self.rank == 0:
+            R = torch.empty((self.size * (num_components + m + 1), num_components + m + 1))
+        else:
+            R = None
+
+        dist.gather(R_r, R, dst=0)
+
+        if self.rank == 0:
+            Q_2, R_tilde = torch.linalg.qr(R)
+
+            U_tilde, S_tilde, _ = torch.svd(R_tilde)
+        else:
+            U_tilde = torch.empty((num_components + m + 1, num_components + m + 1))
+            S_tilde = torch.empty(num_components + m + 1)
+            Q_2 = None
+
+        dist.barrier()
+
+        Q_r2 = torch.empty((num_components + m + 1, num_components + m + 1))
+        dist.scatter(Q_2, Q_r2, src=0)
+
+        Q_r = torch.mm(Q_r1, Q_r2)
+
+        dist.barrier()
+
+        dist.broadcast(S_tilde, src=0)
+
+        dist.barrier()
+
+        dist.broadcast(U_tilde, src=0)
+
+        return Q_r, U_tilde, S_tilde
+
+
+    def init_process(self,rank, size, backend='tcp', master_addr='127.0.0.1', master_port='29500'):
+        # Initialize the process group
+        dist.init_process_group(
+            backend=backend,
+            init_method=f'tcp://{master_addr}:{master_port}',
+            rank=rank,
+            world_size=size
+        )
+    
+    def alternative_svd(self,A):
+        """
+        Compute the SVD of A using parallel QR factorization.
+
+        Parameters
+        ----------
+        A : torch.Tensor
+            Input matrix.
+
+        Returns
+        -------
+        S : torch.Tensor
+            Singular values of A.
+        Vt : torch.Tensor
+            Right singular vectors of A.
+        """
+        # Compute QR factorization of A
+        Q_r, _, R_tilde = parallel_qr(A)
+
+        # Compute QR factorization of R_tilde^T
+        _, _, Vt = parallel_qr(R_tilde.t())
+
+        # Compute singular values from diagonal of R_tilde
+        S = torch.diagonal(R_tilde)
+
+        return S, Vt
