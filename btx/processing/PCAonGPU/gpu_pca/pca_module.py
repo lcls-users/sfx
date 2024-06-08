@@ -65,6 +65,7 @@ class IncrementalPCAonGPU():
 
         self.client= None
         self.cluster = None
+        self.init_process()
         self.rank = dist.get_rank()
         self.size = dist.get_world_size()
     
@@ -228,7 +229,6 @@ class IncrementalPCAonGPU():
                 )
         print(X.shape)
         if self.rank == 0:
-            self.init_process()
             _, _, R_tilde = self.parallel_qr(X)
         else:
             Q_r = None
