@@ -65,7 +65,9 @@ class IncrementalPCAonGPU():
 
         self.client= None
         self.cluster = None
-
+        self.rank = dist.get_rank()
+        self.size = dist.get_world_size()
+    
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
         Validates and converts the input data `X` to the appropriate tensor format.
@@ -225,8 +227,23 @@ class IncrementalPCAonGPU():
                     )
                 )
         print(X.shape)
-        self.init_process(0, 4)
-        S, Vt = self.alternative_svd(X)
+        if self.rank == 0:
+            self.init_process(self.rank, self.size)
+            _, _, R_tilde = self.parallel_qr(X)
+        else:
+            Q_r = None
+            U_tilde = None
+            S_tilde = None
+        
+        dist.barrier()
+        if self.rank == 0:
+            _,_,Vt = self.parallel_qr(R_tilde.t())
+            S = torch.diagonal(R_tilde)
+        else:
+            Vt = None
+            S = None
+        
+        dist.barrier()
 
         #U, Vt = self._svd_flip(U, Vt)
         print("S:",S.shape,"V:", Vt.shape)
@@ -350,7 +367,7 @@ class IncrementalPCAonGPU():
         if self.rank == 0:
             Q_2, R_tilde = torch.linalg.qr(R)
 
-            U_tilde, S_tilde, _ = torch.svd(R_tilde)
+            U_tilde, S_tilde, _ = torch.linalg.svd(R_tilde)
         else:
             U_tilde = torch.empty((num_components + m + 1, num_components + m + 1))
             S_tilde = torch.empty(num_components + m + 1)
