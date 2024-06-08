@@ -363,7 +363,8 @@ class IncrementalPCAonGPU():
         dist.barrier()
 
         if self.rank == 0:
-            R = torch.empty(R_r.shape)
+            a,b = R_r.shape
+            R = torch.empty((self.size*a,b))
         else:
             R = None
 
