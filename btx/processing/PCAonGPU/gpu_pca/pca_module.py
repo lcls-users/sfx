@@ -224,7 +224,6 @@ class IncrementalPCAonGPU():
                     )
                 )
         print(X.shape)
-        self.print_gpu_memory()
         """X = X.to(torch.device('cuda:1'))
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)    
         U, S, Vt = U.to(self.device), S.to(self.device), Vt.to(self.device)    """
@@ -244,6 +243,7 @@ class IncrementalPCAonGPU():
         
         svd_future = self.client.map(svd_compressed_dask, [X_dask_futures], [self.n_components], [rscp])
         da.compute(svd_future) 
+        self.print_gpu_memory()
         results = [future.result() for future in svd_future]
         U = cp.concatenate([result[0] for result in results], axis=0)
         S = cp.concatenate([result[1] for result in results], axis=0)
