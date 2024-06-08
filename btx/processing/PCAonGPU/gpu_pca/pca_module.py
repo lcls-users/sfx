@@ -228,7 +228,7 @@ class IncrementalPCAonGPU():
                 )
         print(X.shape)
         if self.rank == 0:
-            self.init_process(self.rank, self.size)
+            self.init_process()
             _, _, R_tilde = self.parallel_qr(X)
         else:
             Q_r = None
@@ -391,13 +391,13 @@ class IncrementalPCAonGPU():
         return Q_r, U_tilde, S_tilde
 
 
-    def init_process(self,rank, size, backend='tcp', master_addr='127.0.0.1', master_port='29500'):
+    def init_process(self, backend='tcp', master_addr='127.0.0.1', master_port='29500'):
         # Initialize the process group
         dist.init_process_group(
             backend=backend,
             init_method=f'tcp://{master_addr}:{master_port}',
-            rank=rank,
-            world_size=size
+            rank=-1,
+            world_size=-1
         )
     
     def alternative_svd(self,A):
