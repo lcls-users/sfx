@@ -367,6 +367,7 @@ class IncrementalPCAonGPU():
         else:
             R = None
 
+        print(R_r.shape, R.shape)
         dist.gather(R_r, R, dst=0)
 
         if self.rank == 0:
