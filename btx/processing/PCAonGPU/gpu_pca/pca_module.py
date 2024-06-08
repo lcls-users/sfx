@@ -363,7 +363,7 @@ class IncrementalPCAonGPU():
         dist.barrier()
 
         if self.rank == 0:
-            R = torch.empty((self.size * (num_components + m + 1), num_components + m + 1))
+            R = sparse_tensor_vide = torch.sparse_coo_tensor((self.size * (num_components + m + 1), num_components + m + 1))
         else:
             R = None
 
