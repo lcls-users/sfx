@@ -364,7 +364,7 @@ class IncrementalPCAonGPU():
 
         if self.rank == 0:
             a,b = R_r.shape
-            R = torch.empty((self.size*a,b))
+            R = torch.empty((self.size * (num_components + m + 1), num_components + m + 1))
         else:
             R = None
 
