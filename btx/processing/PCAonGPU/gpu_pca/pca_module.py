@@ -358,7 +358,7 @@ class IncrementalPCAonGPU():
         num_components = self.n_components
         m = x - num_components - 1
 
-        Q_r1, R_r = torch.linalg.qr(A)
+        Q_r1, R_r = torch.linalg.qr(A, mode='reduced')
 
         dist.barrier()
 
@@ -372,7 +372,7 @@ class IncrementalPCAonGPU():
         dist.gather(R_r, R, dst=0)
 
         if self.rank == 0:
-            Q_2, R_tilde = torch.linalg.qr(R)
+            Q_2, R_tilde = torch.linalg.qr(R, mode='reduced')
 
             U_tilde, S_tilde, _ = torch.linalg.svd(R_tilde)
         else:
