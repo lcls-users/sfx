@@ -65,8 +65,8 @@ class IncrementalPCAonGPU():
 
         self.client= None
         self.cluster = None
-        self.rank = int(os.environ['RANK'])
-        self.size = int(os.environ['WORLD_SIZE'])
+        self.rank = int(os.environ.get('RANK', 0))
+        self.size = int(os.environ.get('WORLD_SIZE', 1))
         self.master_addr = os.environ.get('MASTER_ADDR', '127.0.0.1')
         self.master_port = os.environ.get('MASTER_PORT', '29500')
         self.init_process()
