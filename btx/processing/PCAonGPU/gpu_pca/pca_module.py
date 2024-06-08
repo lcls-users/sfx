@@ -40,7 +40,7 @@ class IncrementalPCAonGPU():
         self.copy = copy
         self.batch_size = batch_size
         # Determine if there's a GPU available
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0,1,2,3" if torch.cuda.is_available() else "cpu")
         print("PyTorch is using:", device)
         print("PyTorch version:", torch.__version__)
         self.device = device
@@ -225,10 +225,8 @@ class IncrementalPCAonGPU():
                 )
         print(X.shape)
         self.print_gpu_memory()
-        """X = X.to(torch.device('cuda:1'))
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False)    
-        U, S, Vt = U.to(self.device), S.to(self.device), Vt.to(self.device)    """
-        X_cupy = cp.asarray(X.data)
+        U, S, Vt = torch.linalg.svd(X, full_matrices=False)
+        """X_cupy = cp.asarray(X.data)
         
         rscp = da.random.RandomState(RandomState=cp.random.RandomState)
 
@@ -248,7 +246,7 @@ class IncrementalPCAonGPU():
         S = cp.concatenate([result[1] for result in results], axis=0)
         Vt = cp.concatenate([result[2] for result in results], axis=0)
 
-        print("U: ",U.shape, "S:",S.shape,"V:", Vt.shape)
+        print("U: ",U.shape, "S:",S.shape,"V:", Vt.shape)"""
 
         cp.get_default_memory_pool().free_all_blocks()
         torch.cuda.empty_cache()
@@ -326,9 +324,12 @@ class IncrementalPCAonGPU():
         return client,cluster
 
     def print_gpu_memory(self):
-        if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        if num_gpus == 0:
+            print("No GPU available")
+        else:
             print("Available GPUs:")
-            for i in range(torch.cuda.device_count()):
+            for i in range(num_gpus):
                 print(f"GPU {i}:")
                 print(f"  Name: {torch.cuda.get_device_name(i)}")
 
@@ -343,5 +344,4 @@ class IncrementalPCAonGPU():
                 used_memory, free_memory = result.stdout.decode().strip().split(',')
                 print(f"  Memory Used: {used_memory} MB")
                 print(f"  Memory Free: {free_memory} MB")
-        else:
-            print("No GPU available")    
+    
