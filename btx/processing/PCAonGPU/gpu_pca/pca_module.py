@@ -41,7 +41,7 @@ class IncrementalPCAonGPU():
         self.copy = copy
         self.batch_size = batch_size
         # Determine if there's a GPU available
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         torch.cuda.init()
         print("PyTorch is using:", device)
         print("PyTorch version:", torch.__version__)
