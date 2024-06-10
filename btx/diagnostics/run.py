@@ -229,7 +229,7 @@ class RunDiagnostics:
         evt_map = map_pixel_gain_mode_for_raw(self.psi.det, raw)
         self.gain_map[evt_map==[self.modes[gain_mode]]] += 1
             
-    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, total_intensity=False, gain_mode=None, raw_img=False):
+    def compute_run_stats(self, max_events=-1, mask=None, events_mask=None, powder_only=False, threshold=None, total_intensity=False, gain_mode=None, raw_img=False):
         """
         Compute powders and per-image statistics. If a mask is provided, it is 
         only applied to the stats trajectories, not in computing the powder.
@@ -240,6 +240,8 @@ class RunDiagnostics:
             number of images to process; if -1, process entire run
         mask : str or np.ndarray, shape (n_panels, n_x, n_y)
             binary mask file or array in unassembled psana shape, optional 
+        events_mask : np.ndarray, shape (n_events,)
+            boolean mask array for the run events
         powder_only : bool
             if True, only compute the powder pattern
         threshold : float
@@ -267,6 +269,9 @@ class RunDiagnostics:
                     start_idx += 1
                     
         for idx in np.arange(start_idx, end_idx):
+            if events_mask is not None and not events_mask[idx]:
+                continue
+
             evt = self.psi.runner.event(self.psi.times[idx])
             self.psi.get_timestamp(evt.get(EventId))
             if raw_img:
