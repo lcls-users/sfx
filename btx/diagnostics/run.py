@@ -35,6 +35,17 @@ class RunDiagnostics:
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size() 
 
+    def init_base_powders(self):
+        """
+        Initialize the base powders: sum, sum of squares, max, and min.
+        Parameters
+        ----------
+        img_shape : tuple, 3d
+            The shape of unassembled, calibrated images: (n_panels, n_x, n_y)
+        """
+        for key in ['sum', 'sqr', 'max', 'min']:
+            self.powders[key] = np.zeros(self.psi.det.shape())
+
     def compute_base_powders(self, img):
         """
         Compute the base powders: max, sum, sum of squares.
@@ -61,16 +72,10 @@ class RunDiagnostics:
         """
         self.powders_final = dict()
         total_n_proc = self.comm.reduce(self.n_proc, MPI.SUM)
-        if total_n_proc == 0:
-            powder_max = np.zeros(self.psi.det.shape())
-            powder_min = np.zeros(self.psi.det.shape())
-            powder_sum = np.zeros(self.psi.det.shape())
-            powder_sqr = np.zeros(self.psi.det.shape())
-        else:
-            powder_max = np.array(self.comm.gather(self.powders['max'], root=0))
-            powder_min = np.array(self.comm.gather(self.powders['min'], root=0))
-            powder_sum = np.array(self.comm.gather(self.powders['sum'], root=0))
-            powder_sqr = np.array(self.comm.gather(self.powders['sqr'], root=0))
+        powder_max = np.array(self.comm.gather(self.powders['max'], root=0))
+        powder_min = np.array(self.comm.gather(self.powders['min'], root=0))
+        powder_sum = np.array(self.comm.gather(self.powders['sum'], root=0))
+        powder_sqr = np.array(self.comm.gather(self.powders['sqr'], root=0))
         if self.gain_map is not None:
             powder_gain = np.array(self.comm.gather(self.gain_map, root=0))
 
@@ -275,6 +280,8 @@ class RunDiagnostics:
                     print("First image of the run is an outlier and will be excluded")
                     start_idx += 1
                     
+        self.init_base_powders()
+        self.comm.Barrier()
         for idx in np.arange(start_idx, end_idx):
             if events_mask is not None and not events_mask[idx]:
                 continue
