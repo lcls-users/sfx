@@ -35,19 +35,6 @@ class RunDiagnostics:
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size() 
 
-    def init_base_powders(self, img_shape):
-        """
-        Initialize the base powders: sum, sum of squares, max, and min.
-
-        Parameters
-        ----------
-        img_shape : tuple, 3d
-            The shape of unassembled, calibrated images: (n_panels, n_x, n_y)
-        """
-        self.powders = dict()
-        for key in ['sum', 'sqr', 'max', 'min']:
-            self.powders[key] = np.zeros(img_shape)
-
     def compute_base_powders(self, img):
         """
         Compute the base powders: max, sum, sum of squares.
@@ -288,8 +275,6 @@ class RunDiagnostics:
                     print("First image of the run is an outlier and will be excluded")
                     start_idx += 1
                     
-        self.init_base_powders(self.psi.det.shape())
-        self.comm.Barrier()
         for idx in np.arange(start_idx, end_idx):
             if events_mask is not None and not events_mask[idx]:
                 continue
