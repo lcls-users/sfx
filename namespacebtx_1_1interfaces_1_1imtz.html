@@ -124,10 +124,10 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Return command to convert from an XDS-formatted hkl to an mtz file. </p>
-<h2><a class="anchor" id="autotoc_md76"></a>
+<h2><a class="anchor" id="autotoc_md77"></a>
 Parameters</h2>
 <p>outmtz : str name of output mtz file</p>
-<h2><a class="anchor" id="autotoc_md77"></a>
+<h2><a class="anchor" id="autotoc_md78"></a>
 Returns</h2>
 <p>command : str commands to run ccp4's f2mtz and cad </p>
 
@@ -215,7 +215,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Run dimple to solve the structure: <a href="http://ccp4.github.io/dimple/">http://ccp4.github.io/dimple/</a>. </p>
-<h2><a class="anchor" id="autotoc_md78"></a>
+<h2><a class="anchor" id="autotoc_md79"></a>
 Parameters</h2>
 <p>mtz : str input mtz file pdb : str input PDB file for phasing or rigid body refinement outdir : str output directory for storing results anomalous : bool if True, generate an anomalous difference map slurm_account : str SLURM account to use. Default: "lcls" slurm_reservation : str SLURM reservation to use, if one. Default: "" </p>
 
@@ -254,7 +254,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Write an F2MTZ.INP file specific for anomalous data. </p>
-<h2><a class="anchor" id="autotoc_md75"></a>
+<h2><a class="anchor" id="autotoc_md76"></a>
 Parameters</h2>
 <p>cell : ndarray, shape (6,) unit cell parameters sg_number : int space group number fname : str output file </p>
 
@@ -300,7 +300,7 @@ Parameters</h2>
 
 <p>Write a create-xscale file for converting an hkl file from CrystFEL to XDS format. </p>
 <p>Original file can be found here: <a href="https://github.com/biochem-fan/CrystFEL/blob/master/scripts/create-xscale">https://github.com/biochem-fan/CrystFEL/blob/master/scripts/create-xscale</a></p>
-<h2><a class="anchor" id="autotoc_md73"></a>
+<h2><a class="anchor" id="autotoc_md74"></a>
 Parameters</h2>
 <p>out_hkl : str name of output hkl file cell : ndarray, shape (6,) unit cell parameters sg_number : int space group number exe : str name of executable file </p>
 
@@ -346,7 +346,7 @@ Parameters</h2>
 
 <p>Write the input file required for xdsconv, which outputs temp.hkl, F2MTZ.INP, and XDSCONV.LP files. </p>
 <p>These are the inputs for ccp4's f2mtz program.</p>
-<h2><a class="anchor" id="autotoc_md74"></a>
+<h2><a class="anchor" id="autotoc_md75"></a>
 Parameters</h2>
 <p>hklfile : str hkl file to convert res_range : tuple (low_res, high_res) cutoffs in Angstroms anomalous : bool if False, merge Friedel pairs inp_path : str working directory </p>
 
@@ -412,7 +412,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri May 31 2024 18:19:53 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Jun 12 2024 05:23:06 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

@@ -140,10 +140,10 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Finds the index of image closest to the tap location. </p>
-<h2><a class="anchor" id="autotoc_md132"></a>
+<h2><a class="anchor" id="autotoc_md133"></a>
 Parameters:</h2>
 <p>x : float tap location on x-axis of tap source plot y : float tap location on y-axis of tap source plot PCx_vector : ndarray, shape (d,) principle component chosen for x-axis PCx_vector : ndarray, shape (d,) principle component chosen for y-axis</p>
-<h2><a class="anchor" id="autotoc_md133"></a>
+<h2><a class="anchor" id="autotoc_md134"></a>
 Returns:</h2>
 <p>img_source: index of the image closest to tap location </p>
 
@@ -189,10 +189,10 @@ Returns:</h2>
 
 <p>Compute the average frobenius norm between images in an experiment run and their reconstruction. </p>
 <p>The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA."</p>
-<h2><a class="anchor" id="autotoc_md136"></a>
+<h2><a class="anchor" id="autotoc_md137"></a>
 Parameters:</h2>
 <p>filename : string name of the h5 file num_components: int number of components used random_images: bool, optional whether to choose random images or all images (default is False) num_images: int, optional number of random images to select if random_images is True (default is 10)</p>
-<h2><a class="anchor" id="autotoc_md137"></a>
+<h2><a class="anchor" id="autotoc_md138"></a>
 Returns:</h2>
 <p>compression loss between initial dataset and pipca projected images </p>
 
@@ -225,10 +225,10 @@ Returns:</h2>
 </div><div class="memdoc">
 
 <p>Formats img to properly be displayed by hv.Heatmap() </p>
-<h2><a class="anchor" id="autotoc_md134"></a>
+<h2><a class="anchor" id="autotoc_md135"></a>
 Parameters:</h2>
 <p>img : ndarray, shape (x_pixels x y_pixels) single image we want to display on a heatmap max_pixels: ing max number of pixels on x and y axes of heatmap</p>
-<h2><a class="anchor" id="autotoc_md135"></a>
+<h2><a class="anchor" id="autotoc_md136"></a>
 Returns:</h2>
 <p>hm_data : ndarray, shape ((x_pixels*y__pixels) x 3) coordinates to be displayed by hv.Heatmap (row, col, color) </p>
 
@@ -251,7 +251,7 @@ Returns:</h2>
 </div><div class="memdoc">
 
 <p>Displays an interactive dashboard with a PC plot, scree plot, and intensity heatmaps of the selected source image as well as its reconstructed image using the model obtained by pipca. </p>
-<h2><a class="anchor" id="autotoc_md128"></a>
+<h2><a class="anchor" id="autotoc_md129"></a>
 Parameters</h2>
 <p>filename : str Name of the read document to display figures </p>
 
@@ -274,7 +274,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Displays a PC selector widget and a heatmap of the eigenimage corresponding to the selected PC. </p>
-<h2><a class="anchor" id="autotoc_md129"></a>
+<h2><a class="anchor" id="autotoc_md130"></a>
 Parameters</h2>
 <p>filename : str Name of the read document to display figures </p>
 
@@ -297,10 +297,10 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Reads PiPCA model information from h5 file and returns its contents. </p>
-<h2><a class="anchor" id="autotoc_md130"></a>
+<h2><a class="anchor" id="autotoc_md131"></a>
 Parameters</h2>
 <p>filename: str name of h5 file you want to unpack</p>
-<h2><a class="anchor" id="autotoc_md131"></a>
+<h2><a class="anchor" id="autotoc_md132"></a>
 Returns</h2>
 <p>data: dict A dictionary containing the extracted data from the h5 file. </p>
 
@@ -324,7 +324,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri May 31 2024 18:19:53 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Jun 12 2024 05:23:06 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

@@ -82,6 +82,9 @@ $(function() {
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a5edd57ebff76e6dabf009f8555f6cb7a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a5edd57ebff76e6dabf009f8555f6cb7a">__init__</a> (self, exp, run, det_type)</td></tr>
 <tr class="separator:a5edd57ebff76e6dabf009f8555f6cb7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2dc44600f9a28d29ec121b2ca2a1cc39"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a2dc44600f9a28d29ec121b2ca2a1cc39">init_base_powders</a> (self)</td></tr>
+<tr class="memdesc:a2dc44600f9a28d29ec121b2ca2a1cc39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the base powders: sum, sum of squares, max, and min.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a2dc44600f9a28d29ec121b2ca2a1cc39">More...</a><br /></td></tr>
+<tr class="separator:a2dc44600f9a28d29ec121b2ca2a1cc39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0685bc4061b5fe5bda56dcc9dbbca67d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a0685bc4061b5fe5bda56dcc9dbbca67d">compute_base_powders</a> (self, img)</td></tr>
 <tr class="memdesc:a0685bc4061b5fe5bda56dcc9dbbca67d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the base powders: max, sum, sum of squares.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a0685bc4061b5fe5bda56dcc9dbbca67d">More...</a><br /></td></tr>
 <tr class="separator:a0685bc4061b5fe5bda56dcc9dbbca67d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -106,9 +109,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6bb9d60330835c147995b36b7552458c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a6bb9d60330835c147995b36b7552458c">get_gain_statistics</a> (self, raw, <a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae42e8c224e09f154d705887dbac0a2ec">gain_mode</a>='AML-L')</td></tr>
 <tr class="memdesc:a6bb9d60330835c147995b36b7552458c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve statistics for a particular gain mode, specifically a map of the number of times a pixel has been in a certain gain mode and the number of pixels in that gain mode per event.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a6bb9d60330835c147995b36b7552458c">More...</a><br /></td></tr>
 <tr class="separator:a6bb9d60330835c147995b36b7552458c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a006dff5f2c921ce7556749a6e3ad2da6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a006dff5f2c921ce7556749a6e3ad2da6">compute_run_stats</a> (self, max_events=-1, mask=None, powder_only=False, threshold=None, total_intensity=False, <a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae42e8c224e09f154d705887dbac0a2ec">gain_mode</a>=None, raw_img=False)</td></tr>
-<tr class="memdesc:a006dff5f2c921ce7556749a6e3ad2da6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute powders and per-image statistics.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a006dff5f2c921ce7556749a6e3ad2da6">More...</a><br /></td></tr>
-<tr class="separator:a006dff5f2c921ce7556749a6e3ad2da6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97d487593b8b87974bb68d3c6f2ea211"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a97d487593b8b87974bb68d3c6f2ea211">compute_run_stats</a> (self, max_events=-1, mask=None, events_mask=None, powder_only=False, threshold=None, total_intensity=False, <a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#ae42e8c224e09f154d705887dbac0a2ec">gain_mode</a>=None, raw_img=False)</td></tr>
+<tr class="memdesc:a97d487593b8b87974bb68d3c6f2ea211"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute powders and per-image statistics.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a97d487593b8b87974bb68d3c6f2ea211">More...</a><br /></td></tr>
+<tr class="separator:a97d487593b8b87974bb68d3c6f2ea211"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41827ab91c1b0bd5a4adeebda2dbddca"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a41827ab91c1b0bd5a4adeebda2dbddca">visualize_powder</a> (self, tag='max', vmin=-1e5, vmax=1e5, output=None, figsize=12, dpi=300)</td></tr>
 <tr class="memdesc:a41827ab91c1b0bd5a4adeebda2dbddca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visualize the powder image: the distribution of intensities as a histogram and the positive and negative-valued pixels on the assembled detector image.  <a href="classbtx_1_1diagnostics_1_1run_1_1RunDiagnostics.html#a41827ab91c1b0bd5a4adeebda2dbddca">More...</a><br /></td></tr>
 <tr class="separator:a41827ab91c1b0bd5a4adeebda2dbddca"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -249,10 +252,10 @@ Public Attributes</h2></td></tr>
 
 <p>Check whether the first event of the run should be excluded; it's considered an outlier if mean_0 &gt; &lt; mean_n + scale_factor * std_n &gt; where n ranges from [1,n_images). </p>
 <p>If any of the first few events are None, exclude the first image to simplify matters.</p>
-<h2><a class="anchor" id="autotoc_md49"></a>
+<h2><a class="anchor" id="autotoc_md50"></a>
 Parameters</h2>
 <p>mask : np.ndarray, shape (n_panels, n_x, n_y) binary mask file or array in unassembled psana shape, optional scale_factor : float parameter that tunes how conservative outlier rejection is n_images : int number of total images to compare, including first</p>
-<h2><a class="anchor" id="autotoc_md50"></a>
+<h2><a class="anchor" id="autotoc_md51"></a>
 Returns:</h2>
 <p>exclude : bool if True, first event was detected as an outlier </p>
 
@@ -285,14 +288,14 @@ Returns:</h2>
 </div><div class="memdoc">
 
 <p>Compute the base powders: max, sum, sum of squares. </p>
-<h2><a class="anchor" id="autotoc_md37"></a>
+<h2><a class="anchor" id="autotoc_md38"></a>
 Parameters</h2>
 <p>img : numpy.ndarray, 3d unassembled, calibrated images of shape (n_panels, n_x, n_y) </p>
 
 </div>
 </div>
-<a id="a006dff5f2c921ce7556749a6e3ad2da6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a006dff5f2c921ce7556749a6e3ad2da6">&#9670;&nbsp;</a></span>compute_run_stats()</h2>
+<a id="a97d487593b8b87974bb68d3c6f2ea211"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97d487593b8b87974bb68d3c6f2ea211">&#9670;&nbsp;</a></span>compute_run_stats()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -314,6 +317,12 @@ Parameters</h2>
           <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>mask</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>events_mask</em> = <code>None</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -355,9 +364,9 @@ Parameters</h2>
 
 <p>Compute powders and per-image statistics. </p>
 <p>If a mask is provided, it is only applied to the stats trajectories, not in computing the powder.</p>
-<h2><a class="anchor" id="autotoc_md43"></a>
+<h2><a class="anchor" id="autotoc_md44"></a>
 Parameters</h2>
-<p>max_events : int number of images to process; if -1, process entire run mask : str or np.ndarray, shape (n_panels, n_x, n_y) binary mask file or array in unassembled psana shape, optional powder_only : bool if True, only compute the powder pattern threshold : float if supplied, exclude events whose mean is above this value total_intensity : bool if True, compute the total intensity gain_mode : str gain mode to retrieve statistics for, e.g. 'AML-L' raw_img : bool if True, analyze raw rather than calibrated images </p>
+<p>max_events : int number of images to process; if -1, process entire run mask : str or np.ndarray, shape (n_panels, n_x, n_y) binary mask file or array in unassembled psana shape, optional events_mask : np.ndarray, shape (n_events,) a Boolean mask of events considered for computing the statistics powder_only : bool if True, only compute the powder pattern threshold : float if supplied, exclude events whose mean is above this value total_intensity : bool if True, compute the total intensity gain_mode : str gain mode to retrieve statistics for, e.g. 'AML-L' raw_img : bool if True, analyze raw rather than calibrated images </p>
 
 </div>
 </div>
@@ -394,7 +403,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Compute the following image stats: mean, std deviation, max, min. </p>
-<h2><a class="anchor" id="autotoc_md41"></a>
+<h2><a class="anchor" id="autotoc_md42"></a>
 Parameters</h2>
 <p>evt : psana.Event object individual psana event <br  />
  img : numpy.ndarray, 3d unassembled, calibrated images of shape (n_panels, n_x, n_y) </p>
@@ -476,7 +485,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Display the detector image corresponding to a given event ID. </p>
-<h2><a class="anchor" id="autotoc_md48"></a>
+<h2><a class="anchor" id="autotoc_md49"></a>
 Parameters</h2>
 <p>event_id : int Index of the desired event vmin : float Lowest pixel value figsize : int Figure size dpi : int Figure dots per inch title : str or None Figure title log : bool Whether the detector image is displayed on linear or log scale. mask_negatives: bool Whether negative intensity pixels should be masked. method: str options: 'pyplot' (default) or 'holoviews' </p>
 
@@ -555,9 +564,32 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Retrieve statistics for a particular gain mode, specifically a map of the number of times a pixel has been in a certain gain mode and the number of pixels in that gain mode per event. </p>
-<h2><a class="anchor" id="autotoc_md42"></a>
+<h2><a class="anchor" id="autotoc_md43"></a>
 Parameters</h2>
 <p>raw : ndarray, shape (det_shape) uncalibrated image gain_mode : str gain mode to retrieve statistics for, e.g. 'AML-L' </p>
+
+</div>
+</div>
+<a id="a2dc44600f9a28d29ec121b2ca2a1cc39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2dc44600f9a28d29ec121b2ca2a1cc39">&#9670;&nbsp;</a></span>init_base_powders()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def btx.diagnostics.run.RunDiagnostics.init_base_powders </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize the base powders: sum, sum of squares, max, and min. </p>
+<h2><a class="anchor" id="autotoc_md37"></a>
+Parameters</h2>
+<p>img_shape : tuple, 3d The shape of unassembled, calibrated images: (n_panels, n_x, n_y) </p>
 
 </div>
 </div>
@@ -594,7 +626,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Load previously saved trajectories of statistics. </p>
-<h2><a class="anchor" id="autotoc_md40"></a>
+<h2><a class="anchor" id="autotoc_md41"></a>
 Parameters</h2>
 <p>outdir: str path to directory where traces have been saved raw_img : bool if True, load trace files with _raw nomenclature </p>
 
@@ -633,7 +665,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Save powders to output directory. </p>
-<h2><a class="anchor" id="autotoc_md38"></a>
+<h2><a class="anchor" id="autotoc_md39"></a>
 Parameters</h2>
 <p>output : str path to directory in which to save powders, optional raw_img : bool if True, save powder files with _raw nomenclature </p>
 
@@ -672,7 +704,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Save trajectories of statistics to output directory. </p>
-<h2><a class="anchor" id="autotoc_md39"></a>
+<h2><a class="anchor" id="autotoc_md40"></a>
 Parameters</h2>
 <p>output : str path to directory in which to save traces, optional raw_img : bool if True, save powder files with _raw nomenclature </p>
 
@@ -712,7 +744,7 @@ Parameters</h2>
 
 <p>Plot the number of incoming photons per event, the number of incoming photons versus the mean image intensity, and the beam energy versus photon energy. </p>
 <p>Energies are in eV.</p>
-<h2><a class="anchor" id="autotoc_md46"></a>
+<h2><a class="anchor" id="autotoc_md47"></a>
 Parameters</h2>
 <p>output : str path for optionally saving plot to disk outlier_threshold : float mean intensity threshold for considering images outliers </p>
 
@@ -745,7 +777,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Plot the distribution of the frequency with which each pixel appears in a particular gain mode. </p>
-<h2><a class="anchor" id="autotoc_md45"></a>
+<h2><a class="anchor" id="autotoc_md46"></a>
 Parameters</h2>
 <p>output : str path for optionally saving plot to disk </p>
 
@@ -838,7 +870,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Plot trajectories of run statistics. </p>
-<h2><a class="anchor" id="autotoc_md44"></a>
+<h2><a class="anchor" id="autotoc_md45"></a>
 Parameters</h2>
 <p>output : str path for optionally saving plot to disk </p>
 
@@ -924,7 +956,7 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Plot trajectories of run statistics, interactively. </p>
-<h2><a class="anchor" id="autotoc_md47"></a>
+<h2><a class="anchor" id="autotoc_md48"></a>
 Parameters</h2>
 <p>y_key : str self.stats_final key to plot color_by : str self.stats_final key used to color </p>
 
@@ -1133,7 +1165,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri May 31 2024 18:19:53 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Jun 12 2024 05:23:06 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

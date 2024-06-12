@@ -132,10 +132,10 @@ Variables</h2></td></tr>
 
 <p>Assemble the image stack to obtain a 2D pattern according to the index map. </p>
 <p>Either a batch or a single image can be provided. Modified from skopi.</p>
-<h2><a class="anchor" id="autotoc_md81"></a>
+<h2><a class="anchor" id="autotoc_md82"></a>
 Parameters</h2>
 <p>image_stack : numpy.ndarray, 3d or 4d stack of images, shape (n_images, n_panels, fs_panel_shape, ss_panel_shape) or (n_panels, fs_panel_shape, ss_panel_shape) pixel_index_map : numpy.ndarray, 4d pixel coordinates, shape (n_panels, fs_panel_shape, ss_panel_shape, 2)</p>
-<h2><a class="anchor" id="autotoc_md82"></a>
+<h2><a class="anchor" id="autotoc_md83"></a>
 Returns</h2>
 <p>images : numpy.ndarray, 3d stack of assembled images, shape (n_images, fs_panel_shape, ss_panel_shape) of shape (fs_panel_shape, ss_panel_shape) if ony one image provided </p>
 
@@ -239,10 +239,10 @@ Returns</h2>
 
 <p>Diassemble a series of 2D diffraction patterns into their consituent panels. </p>
 <p>Function modified from skopi.</p>
-<h2><a class="anchor" id="autotoc_md83"></a>
+<h2><a class="anchor" id="autotoc_md84"></a>
 Parameters</h2>
 <p>images : numpy.ndarray, 3d stack of assembled images, shape (n_images, fs_panel_shape, ss_panel_shape) of shape (fs_panel_shape, ss_panel_shape) if ony one image provided pixel_index_map : numpy.ndarray, 4d pixel coordinates, shape (n_panels, fs_panel_shape, ss_panel_shape, 2)</p>
-<h2><a class="anchor" id="autotoc_md84"></a>
+<h2><a class="anchor" id="autotoc_md85"></a>
 Returns</h2>
 <p>image_stack_batch : numpy.ndarray, 3d or 4d </p><pre class="fragment">stack of images, shape (n_images, n_panels, fs_panel_shape, ss_panel_shape)
 or (n_panels, fs_panel_shape, ss_panel_shape)
@@ -266,10 +266,10 @@ or (n_panels, fs_panel_shape, ss_panel_shape)
 </div><div class="memdoc">
 
 <p>Retrieve a pixel index map that specifies the relative arrangement of pixels on an LCLS detector. </p>
-<h2><a class="anchor" id="autotoc_md79"></a>
+<h2><a class="anchor" id="autotoc_md80"></a>
 Parameters</h2>
 <p>geom : string or GeometryAccess Object if str, full path to a psana *-end.data file else, a PSCalib.GeometryAccess.GeometryAccess object</p>
-<h2><a class="anchor" id="autotoc_md80"></a>
+<h2><a class="anchor" id="autotoc_md81"></a>
 Returns</h2>
 <p>pixel_index_map : numpy.ndarray, 4d or 5d pixel coordinates, shape (n_panels, fs_panel_shape, ss_panel_shape, 2) shape (pidx1, pidx2, fs_shape, ss_shape, 2) </p>
 
@@ -293,7 +293,7 @@ Returns</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri May 31 2024 18:19:53 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Jun 12 2024 05:23:06 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

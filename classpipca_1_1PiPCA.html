@@ -324,10 +324,10 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Compute the sample mean and variance of a flattened stack of n images. </p>
-<h2><a class="anchor" id="autotoc_md200"></a>
+<h2><a class="anchor" id="autotoc_md201"></a>
 Parameters</h2>
 <p>imgs : ndarray, shape (d x n) horizonally stacked batch of flattened images</p>
-<h2><a class="anchor" id="autotoc_md201"></a>
+<h2><a class="anchor" id="autotoc_md202"></a>
 Returns</h2>
 <p>mu_m : ndarray, shape (d x 1) mean of imgs su_m : ndarray, shape (d x 1) sample variance of imgs (1 dof) </p>
 
@@ -393,7 +393,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Method to retrieve single image from run subject to model binning constraints. </p>
-<h2><a class="anchor" id="autotoc_md212"></a>
+<h2><a class="anchor" id="autotoc_md213"></a>
 Parameters</h2>
 <p>idx : int Run index of image to be retrieved. output_dir : str, optional File path to output directory, by default "" save_image : bool, optional Whether to save image to file, by default False </p>
 
@@ -426,10 +426,10 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Returns 1D array of batch indices depending on batch sizes and number of incorporated images. </p>
-<h2><a class="anchor" id="autotoc_md213"></a>
+<h2><a class="anchor" id="autotoc_md214"></a>
 Parameters</h2>
 <p>batch_sizes : ndarray, shape (b,) number of images in each batch, where b is the number of batches</p>
-<h2><a class="anchor" id="autotoc_md214"></a>
+<h2><a class="anchor" id="autotoc_md215"></a>
 Returns</h2>
 <p>batch_indices : ndarray, shape (b+1,) division indices between batches </p>
 
@@ -552,10 +552,10 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Fetch n - x image segments from run, where x is the number of 'dead' images. </p>
-<h2><a class="anchor" id="autotoc_md194"></a>
+<h2><a class="anchor" id="autotoc_md195"></a>
 Parameters</h2>
 <p>n : int number of images to retrieve start_index : int start index of subsection of data to retrieve end_index : int end index of subsection of data to retrieve</p>
-<h2><a class="anchor" id="autotoc_md195"></a>
+<h2><a class="anchor" id="autotoc_md196"></a>
 Returns</h2>
 <p>ndarray, shape (end_index-start_index, n-x) n-x retrieved image segments of dimension end_index-start_index </p>
 
@@ -578,7 +578,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Method to retrieve model parameters. </p>
-<h2><a class="anchor" id="autotoc_md211"></a>
+<h2><a class="anchor" id="autotoc_md212"></a>
 Returns</h2>
 <p>U_tot : ndarray, shape (d x q) iPCA principal axes from model. S_tot : ndarray, shape (1 x q) iPCA singular values from model. V_tot : ndarray, shape (n x q) iPCA eigenimages from model. mu_tot : ndarray, shape (1 x d) Data mean computed from all input images. var_tot : ndarray, shape (1 x d) Sample data variance computed from all input images. </p>
 
@@ -631,16 +631,16 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Perform parallelized qr factorization on input matrix A. </p>
-<h2><a class="anchor" id="autotoc_md202"></a>
+<h2><a class="anchor" id="autotoc_md203"></a>
 Parameters</h2>
 <p>A : ndarray, shape (_ x q+m+1) Input data to be factorized.</p>
-<h2><a class="anchor" id="autotoc_md203"></a>
+<h2><a class="anchor" id="autotoc_md204"></a>
 Returns</h2>
 <p>q_fin : ndarray, shape (_, q+m+1) Q_{r,1} from TSQR algorithm, where r = self.rank + 1 U_tilde : ndarray, shape (q+m+1, q+m+1) Q_{r,2} from TSQR algorithm, where r = self.rank + 1 S_tilde : ndarray, shape (q+m+1) R_tilde from TSQR algorithm, where r = self.rank + 1</p>
-<h2><a class="anchor" id="autotoc_md204"></a>
+<h2><a class="anchor" id="autotoc_md205"></a>
 Notes</h2>
 <p>Parallel QR algorithm implemented from [1], with additional elements from [2] sprinkled in to record elements for iPCA using SVD, etc.</p>
-<h2><a class="anchor" id="autotoc_md205"></a>
+<h2><a class="anchor" id="autotoc_md206"></a>
 References</h2>
 <p>[1] Benson AR, Gleich DF, Demmel J. Direct QR factorizations for tall-and-skinny matrices in MapReduce architectures. In2013 IEEE international conference on big data 2013 Oct 6 (pp. 264-272). IEEE.</p>
 <p>[2] Ross DA, Lim J, Lin RS, Yang MH. Incremental learning for robust visual tracking. International journal of computer vision. 2008 May;77(1):125-41.</p>
@@ -675,7 +675,7 @@ References</h2>
 </div><div class="memdoc">
 
 <p>Initialize model on sample of data using batch PCA. </p>
-<h2><a class="anchor" id="autotoc_md196"></a>
+<h2><a class="anchor" id="autotoc_md197"></a>
 Parameters</h2>
 <p>X : ndarray, shape (d x n) set of n (d x 1) observations </p>
 
@@ -814,10 +814,10 @@ Parameters</h2>
 </div><div class="memdoc">
 
 <p>Method to initialize iPCA parameters. </p>
-<h2><a class="anchor" id="autotoc_md192"></a>
+<h2><a class="anchor" id="autotoc_md193"></a>
 Parameters</h2>
 <p>num_images : int Desired number of images to incorporate into model. num_components : int Desired number of components for model to maintain. batch_size : int Desired size of image block to be incorporated into model at each update. bin_factor : int Factor to bin data by.</p>
-<h2><a class="anchor" id="autotoc_md193"></a>
+<h2><a class="anchor" id="autotoc_md194"></a>
 Returns</h2>
 <p>num_images : int Number of images to incorporate into model. num_components : int Number of components for model to maintain. batch_size : int Size of image block to be incorporated into model at each update. num_features : int Number of features (dimension) in each image. </p>
 
@@ -850,13 +850,13 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Update model with new batch of observations using iPCA. </p>
-<h2><a class="anchor" id="autotoc_md197"></a>
+<h2><a class="anchor" id="autotoc_md198"></a>
 Parameters</h2>
 <p>X : ndarray, shape (d x m) batch of m (d x 1) observations</p>
-<h2><a class="anchor" id="autotoc_md198"></a>
+<h2><a class="anchor" id="autotoc_md199"></a>
 Notes</h2>
 <p>Implementation of iPCA algorithm from [1].</p>
-<h2><a class="anchor" id="autotoc_md199"></a>
+<h2><a class="anchor" id="autotoc_md200"></a>
 References</h2>
 <p>[1] Ross DA, Lim J, Lin RS, Yang MH. Incremental learning for robust visual tracking. International journal of computer vision. 2008 May;77(1):125-41. </p>
 
@@ -907,10 +907,10 @@ References</h2>
 </div><div class="memdoc">
 
 <p>Compute combined mean of two blocks of data. </p>
-<h2><a class="anchor" id="autotoc_md206"></a>
+<h2><a class="anchor" id="autotoc_md207"></a>
 Parameters</h2>
 <p>mu_n : ndarray, shape (d x 1) mean of first block of data mu_m : ndarray, shape (d x 1) mean of second block of data n : int number of observations in first block of data m : int number of observations in second block of data</p>
-<h2><a class="anchor" id="autotoc_md207"></a>
+<h2><a class="anchor" id="autotoc_md208"></a>
 Returns</h2>
 <p>mu_nm : ndarray, shape (d x 1) combined mean of both blocks of input data </p>
 
@@ -973,10 +973,10 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Compute combined sample variance of two blocks of data described by input parameters. </p>
-<h2><a class="anchor" id="autotoc_md208"></a>
+<h2><a class="anchor" id="autotoc_md209"></a>
 Parameters</h2>
 <p>s_n : ndarray, shape (d x 1) sample variance of first block of data s_m : ndarray, shape (d x 1) sample variance of second block of data mu_n : ndarray, shape (d x 1) mean of first block of data mu_m : ndarray, shape (d x 1) mean of second block of data n : int number of observations in first block of data m : int number of observations in second block of data</p>
-<h2><a class="anchor" id="autotoc_md209"></a>
+<h2><a class="anchor" id="autotoc_md210"></a>
 Returns</h2>
 <p>s_nm : ndarray, shape (d x 1) combined sample variance of both blocks of data described by input parameters </p>
 
@@ -1015,7 +1015,7 @@ Returns</h2>
 </div><div class="memdoc">
 
 <p>Updates current V with shape (n x q) to shape (n + m, q) based on the previous and updated U and S. </p>
-<h2><a class="anchor" id="autotoc_md210"></a>
+<h2><a class="anchor" id="autotoc_md211"></a>
 Parameters</h2>
 <p>X : ndarray, shape (_ x m) sliced image batch on self.rank S : ndarray, shape (q,) singular values of the updated model </p>
 
@@ -1378,7 +1378,7 @@ Parameters</h2>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri May 31 2024 18:19:53 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Wed Jun 12 2024 05:23:06 for btx by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
