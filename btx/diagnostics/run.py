@@ -35,6 +35,17 @@ class RunDiagnostics:
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size() 
 
+    def init_base_powders(self):
+        """
+        Initialize the base powders: sum, sum of squares, max, and min.
+        Parameters
+        ----------
+        img_shape : tuple, 3d
+            The shape of unassembled, calibrated images: (n_panels, n_x, n_y)
+        """
+        for key in ['sum', 'sqr', 'max', 'min']:
+            self.powders[key] = np.zeros(self.psi.det.shape())
+
     def compute_base_powders(self, img):
         """
         Compute the base powders: max, sum, sum of squares.
@@ -60,19 +71,20 @@ class RunDiagnostics:
         max, avg, and std dev (and gain mode counts if applicable).
         """
         self.powders_final = dict()
+        total_n_proc = self.comm.reduce(self.n_proc, MPI.SUM)
         powder_max = np.array(self.comm.gather(self.powders['max'], root=0))
         powder_min = np.array(self.comm.gather(self.powders['min'], root=0))
         powder_sum = np.array(self.comm.gather(self.powders['sum'], root=0))
         powder_sqr = np.array(self.comm.gather(self.powders['sqr'], root=0))
-        total_n_proc = self.comm.reduce(self.n_proc, MPI.SUM)
         if self.gain_map is not None:
             powder_gain = np.array(self.comm.gather(self.gain_map, root=0))
 
         if self.rank == 0:
             self.powders_final['max'] = np.max(powder_max, axis=0)
             self.powders_final['min'] = np.min(powder_min, axis=0)
-            self.powders_final['avg'] = np.sum(powder_sum, axis=0) / float(total_n_proc)
-            self.powders_final['std'] = np.sqrt(np.sum(powder_sqr, axis=0) / float(total_n_proc) - np.square(self.powders_final['avg']))
+            if total_n_proc > 0:
+                self.powders_final['avg'] = np.sum(powder_sum, axis=0) / float(total_n_proc)
+                self.powders_final['std'] = np.sqrt(np.sum(powder_sqr, axis=0) / float(total_n_proc) - np.square(self.powders_final['avg']))
             if self.gain_map is not None:
                 self.powders_final['gain_mode_counts'] = np.sum(powder_gain, axis=0)
             if self.psi.det_type.lower() != 'rayonix':
@@ -229,7 +241,7 @@ class RunDiagnostics:
         evt_map = map_pixel_gain_mode_for_raw(self.psi.det, raw)
         self.gain_map[evt_map==[self.modes[gain_mode]]] += 1
             
-    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, total_intensity=False, gain_mode=None, raw_img=False):
+    def compute_run_stats(self, max_events=-1, mask=None, events_mask=None, powder_only=False, threshold=None, total_intensity=False, gain_mode=None, raw_img=False):
         """
         Compute powders and per-image statistics. If a mask is provided, it is 
         only applied to the stats trajectories, not in computing the powder.
@@ -240,6 +252,8 @@ class RunDiagnostics:
             number of images to process; if -1, process entire run
         mask : str or np.ndarray, shape (n_panels, n_x, n_y)
             binary mask file or array in unassembled psana shape, optional 
+        events_mask : np.ndarray, shape (n_events,)
+            a Boolean mask of events considered for computing the statistics
         powder_only : bool
             if True, only compute the powder pattern
         threshold : float
@@ -266,7 +280,12 @@ class RunDiagnostics:
                     print("First image of the run is an outlier and will be excluded")
                     start_idx += 1
                     
+        self.init_base_powders()
+        self.comm.Barrier()
         for idx in np.arange(start_idx, end_idx):
+            if events_mask is not None and not events_mask[idx]:
+                continue
+
             evt = self.psi.runner.event(self.psi.times[idx])
             self.psi.get_timestamp(evt.get(EventId))
             if raw_img:
