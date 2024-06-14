@@ -7,14 +7,6 @@ processes data in smaller chunks or batches.
 import os
 import torch
 import torch.distributed as dist
-import dask.array as da
-from dask_cuda import LocalCUDACluster
-from dask.distributed import Client
-from dask_cuda.initialize import initialize
-from dask.utils import parse_bytes
-import cupy as cp
-import rmm
-import cudf
 import logging
 import subprocess
 
@@ -273,15 +265,6 @@ class IncrementalPCAonGPU():
         X = X.to(self.device)
         X -= self.mean_
         return torch.mm(X, self.components_.T)
-
-    def set_up_client(self):
-        # Création du client Dask
-        os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3"
-        cluster = LocalCUDACluster(n_workers=3, threads_per_worker=1, memory_limit="35GB")
-        client = Client(cluster)
-        print(client)
-
-        return client,cluster
 
     def print_gpu_memory(self):
         num_gpus = torch.cuda.device_count()
