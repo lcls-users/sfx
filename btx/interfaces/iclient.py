@@ -175,7 +175,7 @@ if __name__ == "__main__":
 
         server_address = ('localhost', 5000)
         dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-        dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = 0)
+        dataloader = DataLoader(dataset, batch_size=20, num_workers=10, prefetch_factor = None)
         dataloader_iter = iter(dataloader)
 
         for batch in dataloader_iter:
