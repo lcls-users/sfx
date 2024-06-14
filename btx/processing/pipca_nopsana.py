@@ -3,7 +3,6 @@ import math
 import logging
 import numpy as np
 import time
-from mpi4py import MPI
 
 from matplotlib import pyplot as plt
 from matplotlib import colors
