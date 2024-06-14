@@ -8,8 +8,6 @@ from matplotlib import pyplot as plt
 from matplotlib import colors
 from scipy.linalg import qr
 
-import panel as pn
-import panel.widgets as pnw
 import statistics
 
 import torch
