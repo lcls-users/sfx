@@ -254,25 +254,26 @@ class IncrementalPCAonGPU():
         X -= self.mean_
         return torch.mm(X, self.components_.T)
 
-    def print_gpu_memory(self):
+    def print_gpu_memory(self, rank_to_print=[0,1,2,3]):
         num_gpus = torch.cuda.device_count()
         if num_gpus == 0:
             print("No GPU available")
         else:
             print("Available GPUs:")
             for i in range(num_gpus):
-                print(f"GPU {i}:")
-                print(f"  Name: {torch.cuda.get_device_name(i)}")
+                if i in rank_to_print:
+                    print(f"GPU {i}:")
+                    print(f"  Name: {torch.cuda.get_device_name(i)}")
 
-                # Using torch.cuda.memory_allocated() and torch.cuda.memory_reserved()
-                allocated_memory = torch.cuda.memory_allocated(i)
-                reserved_memory = torch.cuda.memory_reserved(i)
-                print(f"  Memory Allocated: {allocated_memory / (1024 ** 2):.2f} MB")
-                print(f"  Memory Reserved: {reserved_memory / (1024 ** 2):.2f} MB")
+                    # Using torch.cuda.memory_allocated() and torch.cuda.memory_reserved()
+                    allocated_memory = torch.cuda.memory_allocated(i)
+                    reserved_memory = torch.cuda.memory_reserved(i)
+                    print(f"  Memory Allocated: {allocated_memory / (1024 ** 2):.2f} MB")
+                    print(f"  Memory Reserved: {reserved_memory / (1024 ** 2):.2f} MB")
 
-                # Using nvidia-smi
-                result = subprocess.run(['nvidia-smi', '--id='+str(i), '--query-gpu=memory.used,memory.free', '--format=csv,nounits,noheader'], stdout=subprocess.PIPE)
-                used_memory, free_memory = result.stdout.decode().strip().split(',')
-                print(f"  Memory Used: {used_memory} MB")
-                print(f"  Memory Free: {free_memory} MB")
+                    # Using nvidia-smi
+                    result = subprocess.run(['nvidia-smi', '--id='+str(i), '--query-gpu=memory.used,memory.free', '--format=csv,nounits,noheader'], stdout=subprocess.PIPE)
+                    used_memory, free_memory = result.stdout.decode().strip().split(',')
+                    print(f"  Memory Used: {used_memory} MB")
+                    print(f"  Memory Free: {free_memory} MB")
 
