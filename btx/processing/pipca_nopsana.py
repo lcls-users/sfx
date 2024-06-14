@@ -8,10 +8,6 @@ from matplotlib import pyplot as plt
 from matplotlib import colors
 from scipy.linalg import qr
 
-import holoviews as hv
-hv.extension('bokeh')
-from holoviews.streams import Params
-
 import panel as pn
 import panel.widgets as pnw
 import statistics
