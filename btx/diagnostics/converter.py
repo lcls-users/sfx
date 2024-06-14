@@ -1,6 +1,7 @@
 import numpy as np
 from pyFAI.detectors import Detector
-from PSCalib.UtilsConvert import geometry_to_crystfel, header_crystfel ,panel_constants_to_crystfel
+from PSCalib.UtilsConvert import geometry_to_crystfel, header_crystfel, panel_constants_to_crystfel
+from PSCalib.UtilsConvertCrystFEL import convert_crystfel_to_geometry
 from PSCalib.GlobalUtils import CFRAME_LAB, CFRAME_PSANA
 from PSCalib.GeometryAccess import GeometryAccess, SEGNAME_TO_PARS
 
@@ -129,7 +130,7 @@ class PsanatoCrystFEL:
             f = open(output_file,'w')
             f.write(txt)
             f.close()
-        
+
 class CrystFELtoPyFAI:
     """
     Class to convert CrystFEL .geom geometry files from a given reference frame to PyFAI corner arrays
@@ -383,7 +384,7 @@ class CrystFELtoPyFAI:
                     pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
                     pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
         return pyfai_fmt
-    
+
 class PyFAItoCrystFEL:
     """
     Class to write CrystFEL .geom geometry files from PyFAI SingleGeometry instance
@@ -492,4 +493,10 @@ class PyFAItoCrystFEL:
             f.write(txt)
             f.close()
 
+class CrystFELtoPsana:
+    """
+    Write a psana .data file from a CrystFEL .geom file and a detector
+    """
 
+    def __init__(self, geom_file, det_type, output_file):
+        convert_crystfel_to_geometry(fname=geom_file, ofname=output_file, dettype=det_type)
