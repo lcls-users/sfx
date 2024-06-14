@@ -165,7 +165,6 @@ class IncrementalPCAonGPU():
             self.print_gpu_memory()
             X_batch = X[start:end]
             self.partial_fit(X_batch, check_input=True)
-            cp._default_memory_pool.free_all_blocks()
         return self
 
     def partial_fit(self, X, check_input=True):
