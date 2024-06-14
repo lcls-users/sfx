@@ -192,7 +192,7 @@ class IncrementalPCAonGPU():
         col_mean, col_var, n_total_samples = self._incremental_mean_and_var(
             X, self.mean_, self.var_, torch.tensor([self.n_samples_seen_], device=self.device)
         )
-
+        print("X before augmentation:",X.shape)
         # Whitening
         if self.n_samples_seen_ == 0:
             X -= col_mean
@@ -214,7 +214,7 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        print("X:",X.shape)
+        print("X after augmentation:",X.shape)
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)
 
         U, Vt = self._svd_flip(U, Vt)
