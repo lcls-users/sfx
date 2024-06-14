@@ -55,16 +55,6 @@ class IncrementalPCAonGPU():
         self.n_samples_seen_ = 0
 
         self.components = []  # Liste pour stocker les composants
-
-        self.client= None
-        self.cluster = None
-        self.rank = int(os.environ.get('RANK', 0))
-        self.size = int(os.environ.get('WORLD_SIZE', 4))
-        self.master_addr = os.environ.get('MASTER_ADDR', '127.0.0.1')
-        self.master_port = os.environ.get('MASTER_PORT', '29500')
-        self.init_process()
-        self.rank = dist.get_rank()
-        self.size = dist.get_world_size()
     
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
@@ -171,12 +161,10 @@ class IncrementalPCAonGPU():
 
         for start in range(0, n_samples, self.batch_size_):
             end = min(start + self.batch_size_, n_samples)
+            self.print_gpu_memory()
             X_batch = X[start:end]
             self.partial_fit(X_batch, check_input=True)
             cp._default_memory_pool.free_all_blocks()
-        
-        #self.client.close()
-        #self.cluster.close()
         return self
 
     def partial_fit(self, X, check_input=True):
