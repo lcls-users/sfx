@@ -9,6 +9,7 @@ import torch
 import torch.distributed as dist
 import logging
 import subprocess
+import cupy as cp
 
 class IncrementalPCAonGPU():
     """
