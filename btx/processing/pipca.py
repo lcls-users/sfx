@@ -20,7 +20,6 @@ import statistics
 from btx.misc.shortcuts import TaskTimer
 
 from btx.misc.pipca_visuals import compute_compression_loss
-from btx.processing.PCAonGPU.gpu_pca.pca_module import IncrementalPCAonGPU
 
 from btx.interfaces.ipsana import (
     PsanaInterface,
@@ -985,6 +984,7 @@ class iPCA_Pytorch:
         import torch
         import torch.nn as nn
         import torch.multiprocessing as mp
+        from btx.processing.PCAonGPU.gpu_pca.pca_module import IncrementalPCAonGPU
         
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
         self.psi.counter = start_offset
