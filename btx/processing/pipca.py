@@ -17,10 +17,6 @@ import panel as pn
 import panel.widgets as pnw
 import statistics
 
-import torch
-import torch.nn as nn
-import torch.multiprocessing as mp
-
 from btx.misc.shortcuts import TaskTimer
 
 from btx.misc.pipca_visuals import compute_compression_loss
@@ -986,6 +982,10 @@ class iPCA_Pytorch:
         filename='pipca.model_h5',
     ):
 
+        import torch
+        import torch.nn as nn
+        import torch.multiprocessing as mp
+        
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
         self.psi.counter = start_offset
         self.start_offset = start_offset
