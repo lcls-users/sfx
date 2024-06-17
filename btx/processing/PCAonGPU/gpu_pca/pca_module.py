@@ -197,6 +197,7 @@ class IncrementalPCAonGPU():
             print("Size components:",self.components_.shape)
             print("Size singular values:",self.singular_values_.shape)
             print("Size matrix on top :",(self.singular_values_.view((-1, 1)) * self.components_).shape)
+        
         # Whitening
         if self.n_samples_seen_ == 0:
             X -= col_mean
