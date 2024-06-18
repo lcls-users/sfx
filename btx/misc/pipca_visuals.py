@@ -576,8 +576,8 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     
         num_training_images = math.ceil(len(reconstructed_images) * training_percentage)
         print(f"Number of training images: {num_training_images}")
-        print(f"Number of validation images: {len(reconstructed_images)-num_training_images}"
-        if num_training_images <= max(num_components):
+        print(f"Number of validation images: {len(reconstructed_images)-num_training_images}")
+        if num_training_images <= num_components[-1]:
             num_training_images = max(num_components)
 
         training_image_indices = random.sample(range(num_training_images), num_images) if random_images else range(num_training_images)
