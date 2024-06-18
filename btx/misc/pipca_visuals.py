@@ -602,7 +602,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
                 compression_loss = norm / original_norm * 100
                 training_compression_losses[count_compo].append(compression_loss)
                 if count_compo % 3 == 0:
-                    print(f"Computed compression loss for {count_compo} different numbers of components")
+                    print(f"Computed compression loss for {count_compo+1} different numbers of components")
                 count_compo+=1
 
             nb_images_treated+=1
@@ -631,7 +631,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
                     compression_loss = norm / original_norm * 100
                     eval_compression_losses[count_compo].append(compression_loss)
                     if count_compo % 3 == 0:
-                        print(f"Computed compression loss for {count_compo} different numbers of components")
+                        print(f"Computed compression loss for {count_compo+1} different numbers of components")
                     count_compo+=1
 
                 nb_images_treated+=1
