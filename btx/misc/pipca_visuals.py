@@ -581,7 +581,6 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
             num_training_images = max(num_components)
 
         training_image_indices = random.sample(range(num_training_images), num_images) if random_images else range(num_training_images)
-        eval_image_indices = random.sample(range(num_training_images, len(reconstructed_images)), num_images) if random_images else range(num_training_images, len(reconstructed_images))
 
         nb_images_treated = 0
         
@@ -610,30 +609,32 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
             
             psi.counter = counter
         
-        for img_source in eval_image_indices:
-            counter = psi.counter
-            psi.counter = start_img + img_source
-            img = psi.get_images(1).squeeze()
+        if num_training_images < (len(reconstructed_images)-num_images):
+            eval_image_indices = random.sample(range(num_training_images, len(reconstructed_images)), num_images) if random_images else range(num_training_images, len(reconstructed_images))
+            for img_source in eval_image_indices:
+                counter = psi.counter
+                psi.counter = start_img + img_source
+                img = psi.get_images(1).squeeze()
 
-            count_compo=0
-            for k in num_components:
-                reconstructed_img = np.dot(reconstructed_images[:,:k], V[:,:k].T)[img_source]+mu
-                reconstructed_img = reconstructed_img.reshape((p, x, y))
-                reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
-                # Compute the Frobenius norm of the difference between the original image and the reconstructed image
-                difference = np.subtract(img, reconstructed_img)
-                norm = np.linalg.norm(difference, 'fro')
-                original_norm = np.linalg.norm(img, 'fro')
+                count_compo=0
+                for k in num_components:
+                    reconstructed_img = np.dot(reconstructed_images[:,:k], V[:,:k].T)[img_source]+mu
+                    reconstructed_img = reconstructed_img.reshape((p, x, y))
+                    reconstructed_img = assemble_image_stack_batch(reconstructed_img, pixel_index_map)
+                    # Compute the Frobenius norm of the difference between the original image and the reconstructed image
+                    difference = np.subtract(img, reconstructed_img)
+                    norm = np.linalg.norm(difference, 'fro')
+                    original_norm = np.linalg.norm(img, 'fro')
 
-                compression_loss = norm / original_norm * 100
-                eval_compression_losses[count_compo].append(compression_loss)
-                count_compo+=1
+                    compression_loss = norm / original_norm * 100
+                    eval_compression_losses[count_compo].append(compression_loss)
+                    count_compo+=1
 
-            nb_images_treated+=1
-            if nb_images_treated % 1 == 0:
-                print(f"Processed {nb_images_treated} validation images out of {len(image_indices)}")
-            
-            psi.counter = counter
+                nb_images_treated+=1
+                if nb_images_treated % 1 == 0:
+                    print(f"Processed {nb_images_treated} validation images out of {len(image_indices)}")
+                
+                psi.counter = counter
         average_loss = ([np.mean(training_compression_losses[k]) for k in range(len(training_compression_losses))],[np.mean(eval_compression_losses[k]) for k in range(len(eval_compression_losses))])
 
     elif type_of_pca == 'sklearn':
