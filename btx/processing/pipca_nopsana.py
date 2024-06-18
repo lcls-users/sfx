@@ -33,7 +33,8 @@ class iPCA_Pytorch_without_Psana:
         batch_size=10,
         output_dir="",
         filename='pipca.model_h5',
-        images=np.array([])
+        images=np.array([]),
+        training_percentage=None
     ):
 
         self.start_offset = start_offset
@@ -50,6 +51,15 @@ class iPCA_Pytorch_without_Psana:
         self.run = run
         self.exp = exp
         self.det_type = det_type
+
+        if training_percentage is None:
+            training_percentage = 1
+
+        self.training_percentage = training_percentage
+        self.num_training_images = math.ceil(self.num_images * self.training_percentage)
+        if self.num_training_images <= self.num_components:
+            self.num_training_images = self.num_components
+
 
     def run_model(self):
         """
@@ -70,8 +80,8 @@ class iPCA_Pytorch_without_Psana:
         logging.info("Images loaded and formatted and model initialized")
 
         with TaskTimer(self.task_durations, "Fitting model"):
-            ipca.fit(self.images.reshape(self.num_images, -1))
-
+            ipca.fit(self.images.reshape(self.num_images, -1)[:self.num_training_images])
+    
         logging.info("Model fitted")
 
         end_time = time.time()
@@ -80,13 +90,14 @@ class iPCA_Pytorch_without_Psana:
 
         reconstructed_images = np.empty((0, self.num_components))
         
-        for start in range(0, self.num_images, self.batch_size):
-            end = min(start + self.batch_size, self.num_images)
-            batch_imgs = self.images[start:end]
-            reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
-            reconstructed_batch = ipca.transform(reconstructed_batch)
-            reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
-            reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
+        with TaskTimer(self.task_durations, "Reconstructing images"):
+            for start in range(0, self.num_images, self.batch_size):
+                end = min(start + self.batch_size, self.num_images)
+                batch_imgs = self.images[start:end]
+                reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
+                reconstructed_batch = ipca.transform(reconstructed_batch)
+                reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
+                reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
 
         logging.info("Images reconstructed")
 
