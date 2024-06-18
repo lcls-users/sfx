@@ -103,11 +103,11 @@ class iPCA_Pytorch_without_Psana:
                 if self.num_training_images < self.num_images:
                     average_training_loss= ipca.compute_loss_pytorch(self.images.reshape(self.num_images, -1)[:self.num_training_images])
                     average_evaluation_loss = ipca.compute_loss_pytorch(self.images.reshape(self.num_images, -1)[self.num_training_images:])
-                    logging.info(f"Average training loss: {average_training_loss}")
-                    logging.info(f"Average evaluation loss: {average_evaluation_loss}")
+                    logging.info(f"Average training loss: {average_training_loss*100:.3f} (in %)")
+                    logging.info(f"Average evaluation loss: {average_evaluation_loss*100:.3f} (in %)")
                 else:
                     average_loss = ipca.compute_loss_pytorch(self.images.reshape(self.num_images, -1))
-                    logging.info(f"Average loss: {average_loss}")
+                    logging.info(f"Average loss: {average_loss*100:.3f} (in %)")
         
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
