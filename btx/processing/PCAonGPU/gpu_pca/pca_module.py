@@ -281,4 +281,19 @@ class IncrementalPCAonGPU():
                     used_memory, free_memory = result.stdout.decode().strip().split(',')
                     print(f"  Memory Used: {used_memory} MB")
                     print(f"  Memory Free: {free_memory} MB")
+    
+    def compute_loss_pytorch(self, X):
+        """
+        Compute the loss of the model on the input data `X`.
+
+        Args:
+            X (torch.Tensor): The input data tensor with shape (n_samples, n_features).
+
+        Returns:
+            torch.Tensor: The loss value of the model on the input data.
+        """
+        X = self._validate_data(X)
+        X_transformed = self.transform(X)
+        X_reconstructed = torch.mm(X_transformed, self.components_)
+        return torch.mean((X - X_reconstructed) ** 2)
 
