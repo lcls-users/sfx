@@ -631,7 +631,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
                 print(f"Processed {nb_images_treated} validation images out of {len(image_indices)}")
             
             psi.counter = counter
-        average_loss = [np.mean(training_compression_losses[k]) for k in range(len(training_compression_losses)), np.mean(eval_compression_losses[k]) for k in range(len(eval_compression_losses))]
+        average_loss = ([np.mean(training_compression_losses[k]) for k in range(len(training_compression_losses))],[np.mean(eval_compression_losses[k]) for k in range(len(eval_compression_losses))])
 
     elif type_of_pca == 'sklearn':
         raise NotImplementedError("Error: Sklearn PCA is not yet implemented.")
