@@ -572,9 +572,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
 
         p, x, y = psi.det.shape()
         pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-
-        if training_percentage is None:
-            training_percentage = 1
+    
         num_training_images = math.ceil(len(reconstructed_images) * training_percentage)
         if num_training_images <= max(num_components):
             num_training_images = max(num_components)
