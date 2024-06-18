@@ -661,7 +661,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     
     print("Loss computation done")
 
-    return average_loss, compression_losses, run
+    return average_loss, training_compression_losses, eval_compression_losses, run
 
 def classic_pca_test(filename, num_components):
     """
