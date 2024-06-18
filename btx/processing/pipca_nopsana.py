@@ -99,26 +99,47 @@ class iPCA_Pytorch_without_Psana:
         logging.info("Images reconstructed")
 
         with TaskTimer(self.task_durations, "Computing compression loss"):
-            if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
-                if self.num_training_images < self.num_images:
-                    average_training_loss= ipca.compute_loss_pytorch(self.images.reshape(self.num_images, -1)[:self.num_training_images])
-                    average_evaluation_loss = ipca.compute_loss_pytorch(self.images.reshape(self.num_images, -1)[self.num_training_images:])
-                    logging.info(f"Average training loss: {average_training_loss*100:.3f} (in %)")
-                    logging.info(f"Average evaluation loss: {average_evaluation_loss*100:.3f} (in %)")
-                else:
-                    average_loss = ipca.compute_loss_pytorch(self.images.reshape(self.num_images, -1))
-                    logging.info(f"Average loss: {average_loss*100:.3f} (in %)")
-        
+            if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda" and self.num_training_images < self.num_images:
+                average_training_losses = []
+                for start in range(0, self.num_training_images, self.batch_size):
+                    end = min(start + self.batch_size, self.num_training_images)
+                    batch_imgs = self.images[start:end]
+                    average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
+                    average_training_losses.append(average_training_loss.cpu().detach().numpy())
+                average_training_loss = np.mean(average_training_losses)
+                logging.info(f"Average training loss: {average_training_loss*100:.3f} (in %)")
+                average_evaluation_losses = []
+                for start in range(self.num_training_images, self.num_images, self.batch_size):
+                    end = min(start + self.batch_size, self.num_images)
+                    batch_imgs = self.images[start:end]
+                    average_evaluation_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
+                    average_evaluation_losses.append(average_evaluation_loss.cpu().detach().numpy())
+                average_evaluation_loss = np.mean(average_evaluation_losses)
+                logging.info(f"Average evaluation loss: {average_evaluation_loss*100:.3f} (in %)")
+            elif str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
+                average_losses = []
+                for start in range(0, self.num_images, self.batch_size):
+                    end = min(start + self.batch_size, self.num_images)
+                    batch_imgs = self.images[start:end]
+                    average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
+                    average_losses.append(average_loss.cpu().detach().numpy())
+                average_loss = np.mean(average_losses)
+                logging.info(f"Average loss: {average_loss*100:.3f} (in %)")
+            else:
+                RaiseError("Too long not to compute on GPU")
+                        
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
             V = ipca.components_.cpu().detach().numpy().T
             mu = ipca.mean_.cpu().detach().numpy()
             total_variance = ipca.explained_variance_.cpu().detach().numpy()
+            losses = average_training_losses, average_evaluation_losses
         else:
             S = ipca.singular_values_
             V = ipca.components_.T
             mu = ipca.mean_
             total_variance = ipca.explained_variance_
+            losses = average_loss
 
         # save model to an hdf5 file
         with TaskTimer(self.task_durations, "save inputs file h5"):
