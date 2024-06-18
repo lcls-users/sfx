@@ -605,7 +605,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
 
             nb_images_treated+=1
             if nb_images_treated % 1 == 0:
-                print(f"Processed {nb_images_treated} training images out of {len(image_indices)}")
+                print(f"Processed {nb_images_treated} training images out of {len(training_image_indices)}")
             
             psi.counter = counter
         
@@ -632,7 +632,7 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
 
                 nb_images_treated+=1
                 if nb_images_treated % 1 == 0:
-                    print(f"Processed {nb_images_treated} validation images out of {len(image_indices)}")
+                    print(f"Processed {nb_images_treated} validation images out of {len(eval_image_indices)}")
                 
                 psi.counter = counter
         average_loss = ([np.mean(training_compression_losses[k]) for k in range(len(training_compression_losses))],[np.mean(eval_compression_losses[k]) for k in range(len(eval_compression_losses))])
