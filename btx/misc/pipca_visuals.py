@@ -487,7 +487,7 @@ def construct_heatmap_data(img, max_pixels):
 
     return hm_data
 
-def compute_compression_loss(filename, num_components, random_images=False, num_images=10, type_of_pca='pipca', write_results=False,training_percentage=None):
+def compute_compression_loss(filename, num_components, random_images=False, num_images=10, type_of_pca='pipca', write_results=False,training_percentage=1.0):
     """
     Compute the average frobenius norm between images in an experiment run and their reconstruction. 
     The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA."

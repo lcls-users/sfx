@@ -34,7 +34,7 @@ class iPCA_Pytorch_without_Psana:
         output_dir="",
         filename='pipca.model_h5',
         images=np.array([]),
-        training_percentage=None
+        training_percentage=1.0
     ):
 
         self.start_offset = start_offset
@@ -51,9 +51,6 @@ class iPCA_Pytorch_without_Psana:
         self.run = run
         self.exp = exp
         self.det_type = det_type
-
-        if training_percentage is None:
-            training_percentage = 1
 
         self.training_percentage = training_percentage
         self.num_training_images = math.ceil(self.num_images * self.training_percentage)
