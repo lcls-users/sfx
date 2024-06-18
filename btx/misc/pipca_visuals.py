@@ -635,6 +635,12 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
                     print(f"Processed {nb_images_treated} validation images out of {len(eval_image_indices)}")
                 
                 psi.counter = counter
+        
+        if len(training_image_indices) == 0:
+            training_compression_losses = [0]
+        if len(eval_image_indices) == 0:
+            eval_compression_losses = [0]
+        
         average_loss = ([np.mean(training_compression_losses[k]) for k in range(len(training_compression_losses))],[np.mean(eval_compression_losses[k]) for k in range(len(eval_compression_losses))])
 
     elif type_of_pca == 'sklearn':
