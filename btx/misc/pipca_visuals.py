@@ -649,8 +649,10 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
             f.write("\n============================================\nNUMBER OF COMPONENTS:\n============================================\n" + str(num_components) + "\n")
             f.write("Average Loss:\n")
             f.write(str(average_loss) + "\n")
-            f.write("Compression Losses:\n")
-            f.write(str(compression_losses) + "\n")
+            f.write("Training Compression Losses:\n")
+            f.write(str(training_compression_losses) + "\n")
+            f.write("Eval Compression Losses:\n")
+            f.write(str(eval_compression_losses) + "\n")
             f.write("Run:\n")
             f.write(str(run) + "\n")
         
