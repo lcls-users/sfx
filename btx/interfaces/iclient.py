@@ -54,8 +54,14 @@ class IPCRemotePsanaDataset(Dataset):
 
             # Receive and process response
             response_data = sock.recv(4096).decode('utf-8')
-            response_json = json.loads(response_data)
+            print("Response data:",response_data)
+            try:
+                response_json = json.loads(response_data)
 
+            except json.JSONDecodeError as e:
+                print("JSON decoding failed:", e)
+                return None
+                
             # Use the JSON data to access the shared memory
             shm_name = response_json['name']
             shape    = response_json['shape']
@@ -171,9 +177,7 @@ if __name__ == "__main__":
     loading_batch_size = params.loading_batch_size
 
     for event in range(start_offset, start_offset + num_images, loading_batch_size):
-        if event == 8000:
-            continue 
-        print(event)
+
         requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
         server_address = ('localhost', 5000)
