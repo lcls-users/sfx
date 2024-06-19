@@ -255,7 +255,7 @@ class IncrementalPCAonGPU():
         Returns:
             torch.Tensor: Transformed data tensor with shape (n_samples, n_components).
         """
-        X = X.to(self.device)
+        X = self._validate_data(X)
         X -= self.mean_
         return torch.mm(X, self.components_.T)
 
