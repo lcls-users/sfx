@@ -785,7 +785,7 @@ def test_serv_client(config):
 
     command = "which python;"
     command += f"python {server_path} & echo 'Server is running'"
-    command += f"; echo 'Number of images:'+ ${num_images}; echo 'Max number of events :' + ${max_events}"
+    command += f"; echo 'Number of images: {num_images}'; echo 'Max number of events: {max_events}'"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/env_nath; which python; echo 'Client environment activated'"
