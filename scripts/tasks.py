@@ -758,7 +758,7 @@ def ipca_pytorch(config):
 def test_serv_client(config):
     print("TESTING SERVER AND CLIENT COMMUNICATION")
     from btx.interfaces.ischeduler import JobScheduler
-    from btx.misc.get_max_events import main
+    from btx.misc.get_max_events import main as compute_max_events
 
     setup = config.setup
     task = config.test_serv_client
@@ -767,7 +767,7 @@ def test_serv_client(config):
     det_type = setup.det_type
     start_offset = task.start_offset
     num_images = task.num_images
-    max_events = main(exp, run, det_type)
+    max_events = compute_max_events(exp, run, det_type)
     num_components = task.num_components
     batch_size = task.batch_size
     path = task.path
