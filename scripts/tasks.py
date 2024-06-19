@@ -767,7 +767,7 @@ def test_serv_client(config):
     det_type = setup.det_type
     start_offset = task.start_offset
     num_images = task.num_images
-    num_images = main(exp, run, det_type, num_images)
+    max_events = main(exp, run, det_type)
     num_components = task.num_components
     batch_size = task.batch_size
     path = task.path
@@ -785,6 +785,7 @@ def test_serv_client(config):
 
     command = "which python;"
     command += f"python {server_path} & echo 'Server is running'"
+    command += "; echo 'Number of images :' + $num_images + '  Max events :' + $max_events"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/env_nath; which python; echo 'Client environment activated'"
