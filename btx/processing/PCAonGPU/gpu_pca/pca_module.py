@@ -256,8 +256,7 @@ class IncrementalPCAonGPU():
             torch.Tensor: Transformed data tensor with shape (n_samples, n_components).
         """
         X = X.to(self.device)
-        #X -= self.mean_
-        X -= torch.mean(X, dim = 0)
+        X -= self.mean_
         return torch.mm(X, self.components_.T)
 
     def print_gpu_memory(self, rank_to_print=[0,1,2,3]):
@@ -297,7 +296,6 @@ class IncrementalPCAonGPU():
         initial_norm = torch.norm(X, dim = 1, p = 'fro')
         X_transformed = self.transform(X)
         X_reconstructed = torch.mm(X_transformed, self.components_) + self.mean_
-        print(torch.mean(self.mean_))
         diff = X - X_reconstructed
         norm_batch = torch.norm(diff, dim = 1, p = 'fro')
         norm_batch = norm_batch / initial_norm
