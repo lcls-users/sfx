@@ -54,7 +54,7 @@ class IPCRemotePsanaDataset(Dataset):
 
             # Receive and process response
             response_data = sock.recv(4096).decode('utf-8')
-            print("Response data:",response_data)
+            print("Response data:",response_data,'and type :', type(response_data))
             try:
                 response_json = json.loads(response_data)
 
