@@ -79,7 +79,7 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Fitting model"):
             ipca.fit(self.images.reshape(self.num_images, -1)[:self.num_training_images])
     
-        logging.info("Model fitted")
+        logging.info("Model fitted on {self.num_training_images}")
 
         end_time = time.time()
         execution_time = end_time - start_time  # Calculate the execution time
@@ -99,7 +99,7 @@ class iPCA_Pytorch_without_Psana:
         logging.info("Images reconstructed")
 
         with TaskTimer(self.task_durations, "Computing compression loss"):
-            if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda" and self.num_training_images < self.num_images:
+            if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda" and self.num_training_images < self.num_components:
                 average_training_losses = []
                 for start in range(0, self.num_training_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_training_images)
