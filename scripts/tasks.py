@@ -767,7 +767,7 @@ def test_serv_client(config):
     det_type = setup.det_type
     start_offset = task.start_offset
     num_images = task.num_images
-    num_images = main(exp, run, det_type, start_offset, num_images)
+    num_images = main(exp, run, det_type, num_images)
     num_components = task.num_components
     batch_size = task.batch_size
     path = task.path
