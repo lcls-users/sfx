@@ -391,7 +391,6 @@ class PsanaImg:
         self.datasource    = psana.DataSource( self.datasource_id )
         self.run_current   = next(self.datasource.runs())
         self.timestamps    = self.run_current.times()
-
         # Set up detector
         self.detector = psana.Detector(detector_name)
         self.detector_name = detector_name
@@ -402,12 +401,15 @@ class PsanaImg:
                       "image" : self.detector.image,
                       "mask"  : self.detector.mask, }
 
-
     def __len__(self):
         return len(self.timestamps)
 
 
     def get(self, event_num, id_panel = None, mode = "calib"): 
+
+        if event_num >= self.__len__():
+            raise ValueError(f"Event number {event_num} is out of range!!!")
+        
         # Fetch the timestamp according to event number...
         timestamp = self.timestamps[event_num]
 

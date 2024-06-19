@@ -182,7 +182,7 @@ if __name__ == "__main__":
             all_data.append(batch)
         print(f"Loaded {event+loading_batch_size} images.")
     
-    all_data = np.concatenate(all_data, axis=0)
+    all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING
 
     print(all_data.shape)
     print('Images are loaded!')
