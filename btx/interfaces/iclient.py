@@ -60,8 +60,8 @@ class IPCRemotePsanaDataset(Dataset):
 
             except json.JSONDecodeError as e:
                 print("JSON decoding failed:", e)
-                return None
-                
+                return np.array([])
+
             # Use the JSON data to access the shared memory
             shm_name = response_json['name']
             shape    = response_json['shape']
