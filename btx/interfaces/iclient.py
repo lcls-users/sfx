@@ -171,6 +171,9 @@ if __name__ == "__main__":
     loading_batch_size = params.loading_batch_size
 
     for event in range(start_offset, start_offset + num_images, loading_batch_size):
+        if event == 8000:
+            continue 
+        
         requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
         server_address = ('localhost', 5000)
@@ -179,8 +182,7 @@ if __name__ == "__main__":
         dataloader_iter = iter(dataloader)
 
         for batch in dataloader_iter:
-            #all_data.append(batch)
-            print('checkpoint')
+            all_data.append(batch)
         print(f"Loaded {event+loading_batch_size} images.")
     
     all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING
