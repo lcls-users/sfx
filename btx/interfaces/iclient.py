@@ -173,7 +173,7 @@ if __name__ == "__main__":
     for event in range(start_offset, start_offset + num_images, loading_batch_size):
         if event == 8000:
             continue 
-        
+        print(event)
         requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
         server_address = ('localhost', 5000)
