@@ -55,12 +55,7 @@ class IPCRemotePsanaDataset(Dataset):
             # Receive and process response
             response_data = sock.recv(4096).decode('utf-8')
             print("Response data:",response_data,'and type :', type(response_data))
-            try:
-                response_json = json.loads(response_data)
-
-            except json.JSONDecodeError as e:
-                print("JSON decoding failed:", e)
-                return np.zeros((16,352,384))
+            response_json = json.loads(response_data)
 
             # Use the JSON data to access the shared memory
             shm_name = response_json['name']

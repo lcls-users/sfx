@@ -45,9 +45,9 @@ def worker_process(server_socket):
             # Fetch psana image data
             psana_img = get_psana_img(exp, run, access_mode, detector_name)
             data = psana_img.get(event, None, mode)
-            
+
             if data is None:
-                data = np.zeros((16, 352, 384), dtype=np.float32)
+                data = np.full((16, 352, 384), np.nan, dtype=np.float32)
 
             # Keep numpy array in a shared memory
             shm = shared_memory.SharedMemory(create=True, size=data.nbytes)
