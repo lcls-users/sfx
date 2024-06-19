@@ -396,11 +396,9 @@ class PyFAItoCrystFEL:
         self.output_dir = output_dir
         self.detector = sg.detector
         self.geom = GeometryAccess(psana_file)
-        self.X = None
-        self.Y = None
-        self.Z = None
-            
-    def get_pixel_coords(self, oname=None, oindex=0, do_tilt=True, cframe=CFRAME_PSANA):
+        self.get_pixel_coords()
+
+    def get_pixel_coords(self):
         """
         Get pixel coordinates for a given detector object
 
@@ -415,7 +413,9 @@ class PyFAItoCrystFEL:
         cframe : int
             Reference frame
         """
-        X, Y, Z = self.geom.get_pixel_coords(oname, oindex, do_tilt, cframe)
+        top = self.geom.get_top_geo()
+        children = top.get_list_of_children()[0]
+        X, Y, Z = self.geom.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
         self.X = X
         self.Y = Y
         self.Z = Z
@@ -452,7 +452,7 @@ class PyFAItoCrystFEL:
         self.Y =+ dy
         self.Z =+ dz
     
-    def correct_geom(self, poni1, poni2, dist, rot1, rot2, rot3):
+    def correct_geom(self, poni1, poni2, dist, rot1, rot2, rot3=0):
         """
         Correct the geometry based on the given parameters
         """
