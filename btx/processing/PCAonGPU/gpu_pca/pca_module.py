@@ -296,6 +296,7 @@ class IncrementalPCAonGPU():
         initial_norm = torch.norm(X, dim = 1, p = 'fro')
         X_transformed = self.transform(X)
         X_reconstructed = torch.mm(X_transformed, self.components_) + self.mean_
-        norm_batch = torch.norm(X - X_reconstructed, dim = 1, p = 'fro')
+        diff = X - X_reconstructed
+        norm_batch = torch.norm(diff, dim = 1, p = 'fro')
         norm_batch = norm_batch / initial_norm
         return torch.mean(norm_batch)
