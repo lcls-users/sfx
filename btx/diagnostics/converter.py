@@ -396,8 +396,10 @@ class PyFAItoCrystFEL:
         self.output_dir = output_dir
         self.detector = sg.detector
         self.geom = GeometryAccess(psana_file)
-        self.get_pixel_coords(psana_file)
-    
+        self.X = None
+        self.Y = None
+        self.Z = None
+            
     def get_pixel_coords(self, oname=None, oindex=0, do_tilt=True, cframe=CFRAME_PSANA):
         """
         Get pixel coordinates for a given detector object
