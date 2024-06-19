@@ -79,7 +79,7 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Fitting model"):
             ipca.fit(self.images.reshape(self.num_images, -1)[:self.num_training_images])
     
-        logging.info("Model fitted on {self.num_training_images}")
+        logging.info(f"Model fitted on {self.num_training_images}")
 
         end_time = time.time()
         execution_time = end_time - start_time  # Calculate the execution time
