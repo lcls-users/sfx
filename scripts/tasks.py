@@ -758,6 +758,7 @@ def ipca_pytorch(config):
 def test_serv_client(config):
     print("TESTING SERVER AND CLIENT COMMUNICATION")
     from btx.interfaces.ischeduler import JobScheduler
+    from btx.misc.get_max_events import main
 
     setup = config.setup
     task = config.test_serv_client
@@ -766,6 +767,7 @@ def test_serv_client(config):
     det_type = setup.det_type
     start_offset = task.start_offset
     num_images = task.num_images
+    num_images = main(exp, run, det_type, start_offset, num_images)
     num_components = task.num_components
     batch_size = task.batch_size
     path = task.path
@@ -780,11 +782,9 @@ def test_serv_client(config):
 
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
-    get_max_events_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/misc/get_max_events.py")
 
     command = "which python;"
     command += f"python {server_path} & echo 'Server is running'"
-    command += f"; num_images = $(python ${get_max_events_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images {num_images})"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/env_nath; which python; echo 'Client environment activated'"
