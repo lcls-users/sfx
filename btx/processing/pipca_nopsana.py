@@ -106,6 +106,7 @@ class iPCA_Pytorch_without_Psana:
                     batch_imgs = self.images[start:end]
                     average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                     average_training_losses.append(average_training_loss.cpu().detach().numpy())
+                    logging.info(f"Blablabl: {average_training_loss.cpu().detach().numpy()}")
                 average_training_loss = np.mean(average_training_losses)
                 logging.info(f"Average training loss: {average_training_loss*100:.3f} (in %)")
                 average_evaluation_losses = []
