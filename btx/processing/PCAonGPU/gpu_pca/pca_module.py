@@ -293,9 +293,9 @@ class IncrementalPCAonGPU():
             torch.Tensor: The loss value of the model on the input data.
         """
         X = self._validate_data(X)
+        initial_norm = torch.norm(X, dim = 1, p = 'fro')
         X_transformed = self.transform(X)
         X_reconstructed = torch.mm(X_transformed, self.components_) + self.mean_
         norm_batch = torch.norm(X - X_reconstructed, dim = 1, p = 'fro')
-        initial_norm = torch.norm(X, dim = 1, p = 'fro')
         norm_batch = norm_batch / initial_norm
         return torch.mean(norm_batch)
