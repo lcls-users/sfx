@@ -784,7 +784,7 @@ def test_serv_client(config):
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
 
-    command = "which python;"
+    command = "which python; ulimit -n 4096;"
     command += f"python {server_path} & echo 'Server is running'"
     command += f"; echo 'Number of images: {num_images}'; echo 'Max number of events: {max_events}'"
     command += "; sleep 10"
