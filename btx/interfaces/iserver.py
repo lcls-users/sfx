@@ -47,7 +47,7 @@ def worker_process(server_socket):
             data = psana_img.get(event, None, mode)
 
             if data is None:
-                data = np.full((16, 352, 384), np.nan, dtype=np.float32)
+                data = np.full((16, 352, 384), np.nan, dtype=np.float32) # Return a dummy array if data is None, shape is based on observation and doesn't adapt to all images
 
             # Keep numpy array in a shared memory
             shm = shared_memory.SharedMemory(create=True, size=data.nbytes)

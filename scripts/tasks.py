@@ -768,6 +768,7 @@ def test_serv_client(config):
     start_offset = task.start_offset
     num_images = task.num_images
     max_events = compute_max_events(exp, run, det_type)
+    num_images = min(num_images, max_events)
     num_components = task.num_components
     batch_size = task.batch_size
     path = task.path

@@ -71,9 +71,9 @@ class iPCA_Pytorch_without_Psana:
                 [i for i in range(self.num_images) if not np.isnan(self.images[i : i + 1]).any()]
             ]
         
-        self.num_images = self.images.shape[0] #Test 
+        self.num_images = self.images.shape[0]
         logging.info(f"Number of non-none images: {self.num_images}")
-        
+
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
 
@@ -109,7 +109,6 @@ class iPCA_Pytorch_without_Psana:
                     batch_imgs = self.images[start:end]
                     average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                     average_training_losses.append(average_training_loss.cpu().detach().numpy())
-                    logging.info(f"Blablabla: {average_training_loss.cpu().detach().numpy()}")
                 average_training_loss = np.mean(average_training_losses)
                 logging.info(f"Average training loss: {average_training_loss*100:.3f} (in %)")
                 average_evaluation_losses = []
