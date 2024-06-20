@@ -416,50 +416,65 @@ class PyFAItoCrystFEL:
         top = self.geom.get_top_geo()
         children = top.get_list_of_children()[0]
         X, Y, Z = self.geom.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
+        self.shape = X.shape
         self.X = X
         self.Y = Y
         self.Z = Z
 
-    def Rz(self, angle_z):
+    def Rz(self, X, Y, Z, angle_z):
         """
         Return the X, Y, Z coordinates rotated around z-axis by angel_z
         """
         c, s = np.cos(angle_z), np.sin(angle_z)
         Rz = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-        self.X, self.Y, self.Z = np.dot(Rz, np.array([self.X, self.Y, self.Z]))
+        X, Y, Z = np.dot(Rz, np.array([X, Y, Z]))
+        return X, Y, Z
     
-    def Ry(self, angle_y):
+    def Ry(self, X, Y, Z, angle_y):
         """
         Return the X, Y, Z coordinates rotated around y-axis by angel_y
         """
         c, s = np.cos(angle_y), np.sin(angle_y)
         Ry = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
-        self.X, self.Y, self.Z = np.dot(Ry, np.array([self.X, self.Y, self.Z]))
+        X, Y, Z = np.dot(Ry, np.array([X, Y, Z]))
+        return X, Y, Z
     
-    def Rx(self, angle_x):
+    def Rx(self, X, Y, Z, angle_x):
         """
         Return the X, Y, Z coordinates rotated around x-axis by angel_x
         """
         c, s = np.cos(angle_x), np.sin(angle_x)
         Rx = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
-        self.X, self.Y, self.Z = np.dot(Rx, np.array([self.X, self.Y, self.Z]))
+        X, Y, Z = np.dot(Rx, np.array([X, Y, Z]))
+        return X, Y, Z
     
-    def translation(self, dx, dy, dz):
+    def translation(self, X, Y, Z, dx, dy, dz):
         """
         Return the X, Y, Z coordinates translated by dx, dy, dz
         """
-        self.X =+ dx
-        self.Y =+ dy
-        self.Z =+ dz
+        X =+ dx
+        Y =+ dy
+        Z =+ dz
+        return X, Y, Z
     
     def correct_geom(self, poni1, poni2, dist, rot1, rot2, rot3=0):
         """
         Correct the geometry based on the given parameters
         """
-        self.translation(-poni1*1e6, -poni2*1e6, np.mean(self.Z)-dist*1e3)
-        self.Rx(-rot1)
-        self.Ry(-rot2)
-        self.Rz(rot3) 
+        X, Y, Z = self.X, self.Y, self.Z
+        X = X.reshape(-1)
+        Y = Y.reshape(-1)
+        Z = Z.reshape(-1)
+        X, Y, Z = self.translation(X, Y, Z, -poni1*1e6, -poni2*1e6, np.mean(self.Z)-dist*1e3)
+        X, Y, Z = self.Rx(X, Y, Z, -rot1)
+        X, Y, Z = self.Ry(X, Y, Z, -rot2)
+        X, Y, Z = self.Rz(X, Y, Z, rot3)
+        X = X.reshape(self.shape)
+        Y = Y.reshape(self.shape)
+        Z = Z.reshape(self.shape)
+        self.X = X
+        self.Y = Y
+        self.Z = Z
     
     def geometry_to_crystfel(self, psana_file, output_file, cframe=CFRAME_LAB, zcorr_um=None):
         """
