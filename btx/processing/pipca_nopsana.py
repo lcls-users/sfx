@@ -231,7 +231,7 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
     batch_size=batch_size,
     filename = filename_with_tag,
     images = images,
-    training_percentage=0.045 # 4.5% of the images are used for training, totals to 900 images when used on 20k images
+    training_percentage=0.2
     )
     
     ipca_instance.run_model()
