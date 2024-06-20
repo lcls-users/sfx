@@ -70,7 +70,10 @@ class iPCA_Pytorch_without_Psana:
         self.images = self.images[
                 [i for i in range(self.num_images) if not np.isnan(self.images[i : i + 1]).any()]
             ]
-
+        
+        self.num_images = self.images.shape[0] #Test 
+        logging.info(f"Number of non-none images: {self.num_images}")
+        
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
 
