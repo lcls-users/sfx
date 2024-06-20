@@ -417,6 +417,7 @@ class PyFAItoCrystFEL:
         children = top.get_list_of_children()[0]
         X, Y, Z = self.geom.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
         self.shape = X.shape
+        print(self.shape)
         self.X = X
         self.Y = Y
         self.Z = Z
