@@ -417,7 +417,6 @@ class PyFAItoCrystFEL:
         children = top.get_list_of_children()[0]
         X, Y, Z = self.geom.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
         self.shape = X.shape
-        print(self.shape)
         self.X = X
         self.Y = Y
         self.Z = Z
@@ -453,9 +452,9 @@ class PyFAItoCrystFEL:
         """
         Return the X, Y, Z coordinates translated by dx, dy, dz
         """
-        X =+ dx
-        Y =+ dy
-        Z =+ dz
+        X += dx
+        Y += dy
+        Z += dz
         return X, Y, Z
     
     def correct_geom(self, poni1, poni2, dist, rot1, rot2, rot3=0):
@@ -466,15 +465,10 @@ class PyFAItoCrystFEL:
         X = X.reshape(-1)
         Y = Y.reshape(-1)
         Z = Z.reshape(-1)
-        print(X.shape)
         X, Y, Z = self.translation(X, Y, Z, -poni1*1e6, -poni2*1e6, np.mean(self.Z)-dist*1e3)
-        print(X.shape)
         X, Y, Z = self.Rx(X, Y, Z, -rot1)
-        print(X.shape)
         X, Y, Z = self.Ry(X, Y, Z, -rot2)
-        print(X.shape)
         X, Y, Z = self.Rz(X, Y, Z, rot3)
-        print(X.shape)
         X = X.reshape(self.shape)
         Y = Y.reshape(self.shape)
         Z = Z.reshape(self.shape)
