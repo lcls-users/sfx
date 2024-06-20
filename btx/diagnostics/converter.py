@@ -476,7 +476,7 @@ class PyFAItoCrystFEL:
         self.Y = Y
         self.Z = Z
     
-    def geometry_to_crystfel(self, psana_file, output_file, cframe=CFRAME_LAB, zcorr_um=None):
+    def geometry_to_crystfel(self, output_file, zcorr_um=None):
         """
         From corrected X, Y, Z coordinates, write a CrystFEL .geom file
         """
@@ -516,4 +516,4 @@ class CrystFELtoPsana:
     """
 
     def __init__(self, geom_file, det_type, output_file):
-        convert_crystfel_to_geometry(fname=geom_file, ofname=output_file, dettype=det_type)
+        convert_crystfel_to_geometry(geom_file, output_file, det_type)
