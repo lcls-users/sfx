@@ -510,10 +510,16 @@ class PyFAItoCrystFEL:
             f.write(txt)
             f.close()
 
+class Args:
+    def __init__(self, geom_file, det_type, output_file):
+        self.fname = geom_file
+        self.dettype = det_type
+        self.ofname = output_file
+
 class CrystFELtoPsana:
     """
     Write a psana .data file from a CrystFEL .geom file and a detector
     """
-
     def __init__(self, geom_file, det_type, output_file):
-        convert_crystfel_to_geometry(geom_file, output_file, det_type)
+        args = Args(geom_file=geom_file, det_type=det_type, output_file=output_file)
+        convert_crystfel_to_geometry(args)
