@@ -162,7 +162,6 @@ class IncrementalPCAonGPU():
 
         for start in range(0, n_samples, self.batch_size_):
             end = min(start + self.batch_size_, n_samples)
-            self.print_gpu_memory([0])
             X_batch = X[start:end]
             self.partial_fit(X_batch, check_input=True)
         return self
@@ -192,11 +191,6 @@ class IncrementalPCAonGPU():
         col_mean, col_var, n_total_samples = self._incremental_mean_and_var(
             X, self.mean_, self.var_, torch.tensor([self.n_samples_seen_], device=self.device)
         )
-        print("X before augmentation:",X.shape)
-        if self.components_ is not None:
-            print("Size components:",self.components_.shape)
-            print("Size singular values:",self.singular_values_.shape)
-            print("Size matrix on top :",(self.singular_values_.view((-1, 1)) * self.components_).shape)
         
         # Whitening
         if self.n_samples_seen_ == 0:
@@ -219,11 +213,9 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        print("X after augmentation:",X.shape)
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)
 
         U, Vt = self._svd_flip(U, Vt)
-        print("U:",U.shape,"S:",S.shape,"Vt:", Vt.shape)
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
 
