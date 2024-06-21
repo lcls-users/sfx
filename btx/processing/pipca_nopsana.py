@@ -220,7 +220,7 @@ def remove_file_with_timeout(filename_with_tag, overwrite=True, timeout=10):
         except FileNotFoundError:
             break  # Exit the loop
 
-def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images):
+def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images,training_percentage):
 
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,

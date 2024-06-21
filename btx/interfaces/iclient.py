@@ -139,6 +139,12 @@ def parse_input():
         required=False,
         type=str,
     )
+    parser.add_argument(
+        "--training_percentage",
+        help="Percentage of the data to be used for training.",
+        required=True,
+        type=float,
+    )
 
     return parser.parse_args()
 
@@ -160,6 +166,7 @@ if __name__ == "__main__":
     batch_size = params.batch_size
     path = params.path
     tag = params.tag
+    training_percentage = params.training_percentage
     overwrite = True
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
@@ -194,7 +201,7 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
-    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data)
+    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data,training_percentage)
     print('Pipca is done!')
 
     end_time = time.time()
