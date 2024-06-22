@@ -207,6 +207,35 @@ if __name__ == "__main__":
     end_time = time.time()
     print(f"Time elapsed: {end_time - start_time} seconds.")
 
-    
+    """last_batch = False
+
+    for event in range(start_offset, start_offset + num_images, loading_batch_size):
+
+        requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
+
+        server_address = ('localhost', 5000)
+        dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
+        dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
+        dataloader_iter = iter(dataloader)
+
+        print(f"Loaded {event+loading_batch_size} images.")
+
+        for batch in dataloader_iter:
+            if dataloader.batch_idx == (len(dataloader) - 1) and event + loading_batch_size >= num_images + start_offset:
+                last_batch = True
+                print('Images are loaded, last batch is processing!')
+            run_client_task(exp,run,det_type,batch_size,num_components,batch_size,
+                            filename_with_tag,batch,training_percentage,last_batch) #there will be issues with the training percentage if we do it batch by batch
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.connect(server_address)
+        sock.sendall("DONE".encode('utf-8'))
+
+    print('Server is shut down!')
+
+    print('Pipca is done!')
+
+    end_time = time.time()
+    print(f"Time elapsed: {end_time - start_time} seconds.")"""
 
 

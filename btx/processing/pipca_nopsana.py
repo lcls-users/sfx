@@ -231,7 +231,7 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
     batch_size=batch_size,
     filename = filename_with_tag,
     images = images,
-    training_percentage=1.0
+    training_percentage=training_percentage
     )
     
     ipca_instance.run_model()
