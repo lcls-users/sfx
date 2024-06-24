@@ -107,7 +107,7 @@ class iPCA_Pytorch_without_Psana:
                 for start in range(0, self.num_training_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_training_images)
                     batch_imgs = self.images[start:end]
-                    average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
+                    average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1), 'sqrt')
                     average_training_losses.append(average_training_loss.cpu().detach().numpy())
                 average_training_loss = np.mean(average_training_losses)
                 logging.info(f"Average training loss: {average_training_loss*100:.3f} (in %)")
@@ -115,7 +115,7 @@ class iPCA_Pytorch_without_Psana:
                 for start in range(self.num_training_images, self.num_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_images)
                     batch_imgs = self.images[start:end]
-                    average_evaluation_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
+                    average_evaluation_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1), 'sqrt')
                     average_evaluation_losses.append(average_evaluation_loss.cpu().detach().numpy())
                 average_evaluation_loss = np.mean(average_evaluation_losses)
                 logging.info(f"Average evaluation loss: {average_evaluation_loss*100:.3f} (in %)")
@@ -124,7 +124,7 @@ class iPCA_Pytorch_without_Psana:
                 for start in range(0, self.num_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_images)
                     batch_imgs = self.images[start:end]
-                    average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
+                    average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1), 'sqrt')
                     average_losses.append(average_loss.cpu().detach().numpy())
                 average_loss = np.mean(average_losses)
                 logging.info(f"Average loss: {average_loss*100:.3f} (in %)")
