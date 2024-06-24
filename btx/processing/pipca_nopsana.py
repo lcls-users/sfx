@@ -255,7 +255,7 @@ def mapping_function(images, type_mapping = "id"):
 
 def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images,training_percentage,smoothing_function):
 
-    images = mapping_function(images, type = smoothing_function)
+    images = mapping_function(images, type_mapping = smoothing_function)
 
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,
