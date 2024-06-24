@@ -290,11 +290,11 @@ class IncrementalPCAonGPU():
         X_reconstructed = torch.mm(X_transformed, self.components_) + self.mean_
         diff = X - X_reconstructed
         if f == 'sqrt':
-            diff = torch.sqrt(diff)
-            initial_norm = torch.norm(torch.sqrt(X), dim = 1, p = 'fro')
+            diff = torch.sqrt(torch.abs(diff))
+            initial_norm = torch.norm(torch.sqrt(torch.abs(X)), dim = 1, p = 'fro')
         elif f == 'log':
-            diff = torch.log(diff)
-            initial_norm = torch.norm(torch.log(X), dim = 1, p = 'fro')
+            diff = torch.log(torch.abs(diff))
+            initial_norm = torch.norm(torch.log(torch.abs(X)), dim = 1, p = 'fro')
         
         norm_batch = torch.norm(diff, dim = 1, p = 'fro')
         norm_batch = norm_batch / initial_norm
