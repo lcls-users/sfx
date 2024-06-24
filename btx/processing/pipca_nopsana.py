@@ -231,7 +231,7 @@ def mapping_function(images, type_mapping = "id"):
     Returns:
         np.array or torch.tensor : The mapped images.
     """
-    if type(images)==np.array:
+    if isinstance(images, np.ndarray):
         if type_mapping == "id":
             return images
         elif type_mapping == "sqrt":
@@ -240,7 +240,7 @@ def mapping_function(images, type_mapping = "id"):
             return np.sign(images) * np.log(np.abs(images)+10**(-6))
         else:
             return images
-    elif type(images)==torch.tensor:
+    elif isinstance(images, torch.Tensor):
         if type_mapping == "id":
             return images
         elif type_mapping == "sqrt":
