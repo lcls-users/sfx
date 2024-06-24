@@ -107,7 +107,7 @@ class iPCA_Pytorch_without_Psana:
                 for start in range(0, self.num_training_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_training_images)
                     batch_imgs = self.images[start:end]
-                    average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1), 'sqrt')
+                    average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                     average_training_losses.append(average_training_loss.cpu().detach().numpy())
                 average_training_loss = np.mean(average_training_losses)
                 logging.info(f"Average training loss: {average_training_loss*100:.3f} (in %)")
@@ -115,7 +115,7 @@ class iPCA_Pytorch_without_Psana:
                 for start in range(self.num_training_images, self.num_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_images)
                     batch_imgs = self.images[start:end]
-                    average_evaluation_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1), 'sqrt')
+                    average_evaluation_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                     average_evaluation_losses.append(average_evaluation_loss.cpu().detach().numpy())
                 average_evaluation_loss = np.mean(average_evaluation_losses)
                 logging.info(f"Average evaluation loss: {average_evaluation_loss*100:.3f} (in %)")
@@ -124,7 +124,7 @@ class iPCA_Pytorch_without_Psana:
                 for start in range(0, self.num_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_images)
                     batch_imgs = self.images[start:end]
-                    average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1), 'sqrt')
+                    average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                     average_losses.append(average_loss.cpu().detach().numpy())
                 average_loss = np.mean(average_losses)
                 logging.info(f"Average loss: {average_loss*100:.3f} (in %)")
@@ -220,7 +220,42 @@ def remove_file_with_timeout(filename_with_tag, overwrite=True, timeout=10):
         except FileNotFoundError:
             break  # Exit the loop
 
-def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images,training_percentage):
+def mapping_function(images, type_mapping = "id"):
+    """
+    Map the images to a different type.
+    
+    Parameters:
+        images (np.array or torch.tensor): The images to map.
+        type (str): The type to map to (default is "id").
+        
+    Returns:
+        np.array or torch.tensor : The mapped images.
+    """
+    if type(images)==np.array:
+        if type_mapping == "id":
+            return images
+        elif type_mapping == "sqrt":
+            return np.sign(images) * np.sqrt(np.abs(images))
+        elif type_mapping == "log":
+            return np.sign(images) * np.log(np.abs(images)+10**(-6))
+        else:
+            return images
+    elif type(images)==torch.tensor:
+        if type_mapping == "id":
+            return images
+        elif type_mapping == "sqrt":
+            return torch.sign(images) * torch.sqrt(torch.abs(images))
+        elif type_mapping == "log":
+            return torch.sign(images) * torch.log(torch.abs(images)+10**(-6))
+        else:
+            return images
+    else:
+        raise ValueError("The input type is not supported")
+
+
+def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images,training_percentage,smoothing_function):
+
+    images = mapping_function(images, type = smoothing_function)
 
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,

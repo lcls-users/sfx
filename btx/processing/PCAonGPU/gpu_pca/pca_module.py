@@ -274,7 +274,7 @@ class IncrementalPCAonGPU():
                     print(f"  Memory Used: {used_memory} MB")
                     print(f"  Memory Free: {free_memory} MB")
     
-    def compute_loss_pytorch(self, X, f = 'id'):
+    def compute_loss_pytorch(self, X):
         """
         Compute the loss of the model on the input data `X`.
 
@@ -289,13 +289,6 @@ class IncrementalPCAonGPU():
         X_transformed = self.transform(X)
         X_reconstructed = torch.mm(X_transformed, self.components_) + self.mean_
         diff = X - X_reconstructed
-        if f == 'sqrt':
-            diff = torch.sqrt(torch.abs(diff))
-            initial_norm = torch.norm(torch.sqrt(torch.abs(X)), dim = 1, p = 'fro')
-        elif f == 'log':
-            diff = torch.log(torch.abs(diff))
-            initial_norm = torch.norm(torch.log(torch.abs(X)), dim = 1, p = 'fro')
-        
         norm_batch = torch.norm(diff, dim = 1, p = 'fro')
         norm_batch = norm_batch / initial_norm
 

@@ -145,6 +145,12 @@ def parse_input():
         required=True,
         type=float,
     )
+    parser.add_argument(
+        "--smoothing_function",
+        help="Can be used to apply a smoothing function to the data.",
+        required=True,
+        type=str,
+    )
 
     return parser.parse_args()
 
@@ -167,6 +173,7 @@ if __name__ == "__main__":
     path = params.path
     tag = params.tag
     training_percentage = params.training_percentage
+    smoothing_function = params.smoothing_function
     overwrite = True
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
@@ -201,7 +208,7 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
-    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data,training_percentage)
+    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data,training_percentage,smoothing_function)
     print('Pipca is done!')
 
     end_time = time.time()
