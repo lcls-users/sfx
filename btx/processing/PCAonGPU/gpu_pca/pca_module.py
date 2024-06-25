@@ -222,15 +222,17 @@ class IncrementalPCAonGPU():
         # SVD of the augmented data
         X_cp = cp.asarray(X)
         print("X_cp type:", type(X_cp))
-        
+        X_cudf = cudf.DataFrame.from_gpu_matrix(X_cp)
+        print("X_cudf type:", type(X_cudf))
+
         # Perform Truncated SVD
         svd = TruncatedSVD(n_components=self.n_components)  # Adjust n_components as needed
-        svd.fit(X_cp)
+        svd.fit(X_cudf)
 
         # Get U, S, V matrices
-        U = svd.U
-        S = svd.singular_values_
-        Vt = svd.components_.T
+        U = torch.tensor(svd.U)
+        S = torch.tensor(svd.singular_values_)
+        Vt = torch.tensor(svd.components_).T
 
         U, Vt = self._svd_flip(U, Vt)
         explained_variance = S**2 / (n_total_samples.item() - 1)
