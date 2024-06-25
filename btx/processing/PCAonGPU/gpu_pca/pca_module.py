@@ -14,6 +14,7 @@ import cuml
 from cuml.dask.decomposition import TruncatedSVD
 from dask_cuda import LocalCUDACluster
 from dask.distributed import Client
+import cudf
 
 class IncrementalPCAonGPU():
     """
