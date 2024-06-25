@@ -76,7 +76,8 @@ class iPCA_Pytorch_without_Psana:
 
         test = np.split(self.images, 16, axis=1)
         test = [np.squeeze(t,axis=1) for t in test]
-        logging.info(test.shape)
+        logging.info(len(test))
+        logging.info(test[0].shape)
 
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
