@@ -34,18 +34,19 @@ class iPCA_Pytorch_without_Psana:
         output_dir="",
         filename='pipca.model_h5',
         images=np.array([]),
-        training_percentage=1.0
+        training_percentage=1.0,
+        num_gpus=4
     ):
 
         self.start_offset = start_offset
         self.images = images
         self.output_dir = output_dir
         self.filename = filename
-
+        
         self.num_images = num_images
         self.num_components = num_components
         self.batch_size = batch_size
-
+        self.num_gpus = num_gpus
         self.task_durations = dict({})
 
         self.run = run
@@ -74,7 +75,7 @@ class iPCA_Pytorch_without_Psana:
         self.num_images = self.images.shape[0]
         logging.info(f"Number of non-none images: {self.num_images}")
 
-        test = np.split(self.images, 16, axis=1)
+        test = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
         test = [np.squeeze(t,axis=1) for t in test]
         logging.info(len(test))
         logging.info(test[0].shape)
@@ -258,7 +259,7 @@ def mapping_function(images, type_mapping = "id"):
         raise ValueError("The input type is not supported")
 
 
-def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images,training_percentage,smoothing_function):
+def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images,training_percentage,smoothing_function,num_gpus):
 
     images = mapping_function(images, type_mapping = smoothing_function)
     print("Mapping done")
@@ -272,7 +273,8 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
     batch_size=batch_size,
     filename = filename_with_tag,
     images = images,
-    training_percentage=training_percentage
+    training_percentage=training_percentage,
+    num_gpus=num_gpus
     )
     
     ipca_instance.run_model()
