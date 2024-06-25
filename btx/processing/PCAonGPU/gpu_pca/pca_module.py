@@ -32,12 +32,11 @@ class IncrementalPCAonGPU():
         self.whiten = whiten
         self.copy = copy
         self.batch_size = batch_size
-        # Determine if there's a GPU available
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        torch.cuda.init()
-        print("PyTorch is using:", device)
-        print("PyTorch version:", torch.__version__)
         self.device = device
+        
+        # Determine if there's a GPU available
+        print("PyTorch is using:", self.device)
+        print("PyTorch version:", torch.__version__)
 
         logging.basicConfig(level=logging.INFO)
 
@@ -212,9 +211,7 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        self.print_gpu_memory([0])
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)
-        self.print_gpu_memory([0])
 
         U, Vt = self._svd_flip(U, Vt)
         explained_variance = S**2 / (n_total_samples.item() - 1)
