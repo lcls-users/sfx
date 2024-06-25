@@ -52,7 +52,7 @@ class iPCA_Pytorch_without_Psana:
         self.run = run
         self.exp = exp
         self.det_type = det_type
-
+        self.start_time = None
         self.device_list = []
 
         self.training_percentage = training_percentage
@@ -66,7 +66,7 @@ class iPCA_Pytorch_without_Psana:
         Run the iPCA algorithm on the given data.
         """
 
-        start_time = time.time()
+        self.start_time = time.time()
 
         logging.basicConfig(level=logging.DEBUG)
 
@@ -221,7 +221,7 @@ class iPCA_Pytorch_without_Psana:
         logging.info(f"GPU {rank}: Model fitted on {self.num_training_images} images")
 
         end_time = time.time()
-        execution_time = end_time - start_time  # Calculate the execution time
+        execution_time = end_time - self.start_time  # Calculate the execution time
         frequency = self.num_images/execution_time
 
         reconstructed_images = np.empty((0, self.num_components))
