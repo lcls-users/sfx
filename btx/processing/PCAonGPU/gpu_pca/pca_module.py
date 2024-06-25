@@ -213,6 +213,7 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
+        print(torch.any(torch.isnan(X)))
         U, S, Vt = torch.linalg.svd(X, full_matrices=False,driver = 'gesvda')
 
         U, Vt = self._svd_flip(U, Vt)
