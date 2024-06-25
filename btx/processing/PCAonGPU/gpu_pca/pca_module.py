@@ -223,7 +223,9 @@ class IncrementalPCAonGPU():
         # SVD of the augmented data
         X_cp = cp.asarray(X)
         print("X_cp type:", type(X_cp))
-        X_cudf = cudf.DataFrame.from_gpu_matrix(X_cp)
+        X_cudf = cudf.DataFrame()
+        for i in range(X_cupy.shape[1]):
+            X_cudf[str(i)] = cudf.Series(X_cupy[:, i])
         print("X_cudf type:", type(X_cudf))
 
         # Perform Truncated SVD
