@@ -213,7 +213,7 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False)
+        U, S, Vt = torch.linalg.svd(X, full_matrices=False,driver = 'gesvda')
 
         U, Vt = self._svd_flip(U, Vt)
         explained_variance = S**2 / (n_total_samples.item() - 1)
