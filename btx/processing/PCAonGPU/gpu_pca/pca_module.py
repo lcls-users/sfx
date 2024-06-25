@@ -220,11 +220,12 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        X_cudf = cp.asarray(X)
-
+        X_cp = cp.asarray(X)
+        print("X_cp type:", type(X_cp))
+        
         # Perform Truncated SVD
         svd = TruncatedSVD(n_components=self.n_components)  # Adjust n_components as needed
-        svd.fit(X_cudf)
+        svd.fit(X_cp)
 
         # Get U, S, V matrices
         U = svd.U
