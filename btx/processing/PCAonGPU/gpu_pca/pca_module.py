@@ -307,7 +307,7 @@ class IncrementalPCAonGPU():
 
         return torch.mean(norm_batch)
 
-    def setup_dask_cluster():
+    def setup_dask_cluster(self):
         # Specify the address for the Dask dashboard (optional)
         dashboard_address = ":8787"  # Change port number as needed
 
