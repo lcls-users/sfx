@@ -9,7 +9,8 @@ import torch
 import torch.distributed as dist
 import logging
 import subprocess
-import cupy as cp
+from dask_cuda import LocalCUDACluster
+from dask.distributed import Client
 
 class IncrementalPCAonGPU():
     """
@@ -161,9 +162,12 @@ class IncrementalPCAonGPU():
             self.batch_size_ = self.batch_size
 
         for start in range(0, n_samples, self.batch_size_):
+            client,cluster = self.setup_dask_cluster()
             end = min(start + self.batch_size_, n_samples)
             X_batch = X[start:end]
             self.partial_fit(X_batch, check_input=True)
+            client.close()
+            cluster.close()
         return self
 
     def partial_fit(self, X, check_input=True):
@@ -213,8 +217,16 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        print(torch.any(torch.isnan(X)))
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False,driver = 'gesvda')
+        X_cudf = cudf.DataFrame.from_gpu_matrix(X)
+
+        # Perform Truncated SVD
+        svd = TruncatedSVD(n_components=self.n_components)  # Adjust n_components as needed
+        svd.fit(X_cudf)
+
+        # Get U, S, V matrices
+        U = svd.U
+        S = svd.singular_values_
+        Vt = svd.components_.T
 
         U, Vt = self._svd_flip(U, Vt)
         explained_variance = S**2 / (n_total_samples.item() - 1)
@@ -294,3 +306,25 @@ class IncrementalPCAonGPU():
         norm_batch = norm_batch / initial_norm
 
         return torch.mean(norm_batch)
+
+    def setup_dask_cluster():
+        # Specify the address for the Dask dashboard (optional)
+        dashboard_address = ":8787"  # Change port number as needed
+
+        # Set CUDA_VISIBLE_DEVICES to exclude GPU 0 and include GPUs 1, 2, 3
+        os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3"
+
+        # Initialize a local CUDA cluster
+        cluster = LocalCUDACluster(
+            n_workers=3,                # Number of Dask workers (one per GPU)
+            threads_per_worker=1,       # Threads per worker
+            memory_limit="30GB",        # Memory limit per worker
+            CUDA_VISIBLE_DEVICES="1,2,3",  # Limit to GPUs 1, 2, 3
+            dashboard_address=dashboard_address  # Dashboard address
+        )
+
+        # Connect a Dask client to the cluster
+        client = Client(cluster)
+
+        return client,cluster
+        
