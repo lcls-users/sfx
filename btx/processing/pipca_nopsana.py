@@ -100,6 +100,8 @@ class iPCA_Pytorch_without_Psana:
         logging.info("All processes completed")
         logging.info(len(results))
         logging.info(results[0])
+        reconstructed_images, S, V, mu, total_variance, losses = results[0]
+
 
         """with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
@@ -216,7 +218,7 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Fitting model"):
             ipca.fit(self.images[rank].reshape(self.num_images, -1)[:self.num_training_images])
 
-        logging.info(f"GPU {rank}: Model fitted on {num_training_images} images")
+        logging.info(f"GPU {rank}: Model fitted on {self.num_training_images} images")
 
         end_time = time.time()
         execution_time = end_time - start_time  # Calculate the execution time
