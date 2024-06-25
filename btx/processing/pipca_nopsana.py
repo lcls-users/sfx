@@ -76,7 +76,6 @@ class iPCA_Pytorch_without_Psana:
         logging.info(f"Number of non-none images: {self.num_images}")
 
         test = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
-        test = [np.squeeze(t,axis=1) for t in test]
         logging.info(len(test))
         logging.info(test[0].shape)
 
