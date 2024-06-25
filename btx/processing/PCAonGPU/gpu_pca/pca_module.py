@@ -27,7 +27,7 @@ class IncrementalPCAonGPU():
                                     the data and set to `5 * n_features`. Defaults to None.
     """
 
-    def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None):
+    def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None, device='cuda'):
         self.n_components = n_components
         self.whiten = whiten
         self.copy = copy
