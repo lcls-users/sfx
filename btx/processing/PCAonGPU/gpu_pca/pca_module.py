@@ -212,8 +212,10 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
+        self.print_gpu_memory([0])
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)
-
+        self;print_gpu_memory([0])
+        
         U, Vt = self._svd_flip(U, Vt)
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())

@@ -74,6 +74,11 @@ class iPCA_Pytorch_without_Psana:
         self.num_images = self.images.shape[0]
         logging.info(f"Number of non-none images: {self.num_images}")
 
+        test1 = np.split(self.images, 16, axis=1)
+        logging.info(test1.shape)
+        test2 = np.concatenate(test, axis=0)
+        logging.info(test2.shape)
+
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
 
@@ -257,7 +262,7 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
 
     images = mapping_function(images, type_mapping = smoothing_function)
     print("Mapping done")
-    
+
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,
     run=run,
