@@ -79,7 +79,7 @@ class iPCA_Pytorch_without_Psana:
 
         self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
 
-        self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+        self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(self.num_gpus)]
         torch.cuda.init()
 
         mp.set_start_method('spawn', force=True)  # Ensure the start method is 'spawn'
@@ -100,7 +100,7 @@ class iPCA_Pytorch_without_Psana:
         logging.info("All processes completed")
         logging.info(len(results))
         logging.info(results[0])
-        
+
         """with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
 
