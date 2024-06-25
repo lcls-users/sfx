@@ -9,7 +9,7 @@ import torch
 import torch.distributed as dist
 import logging
 import subprocess
-import cudf
+import cupy as cp
 import cuml
 from cuml.dask.decomposition import TruncatedSVD
 from dask_cuda import LocalCUDACluster
@@ -220,7 +220,7 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        X_cudf = cudf.DataFrame.from_gpu_matrix(X)
+        X_cudf = cp.asarray(X)
 
         # Perform Truncated SVD
         svd = TruncatedSVD(n_components=self.n_components)  # Adjust n_components as needed
