@@ -88,7 +88,7 @@ class iPCA_Pytorch_without_Psana:
         processes = []
 
         for rank in range(self.num_gpus):
-            p = mp.Process(target=self.process_on_gpu, args=(rank, task_durations, return_list))
+            p = mp.Process(target=self.process_on_gpu, args=(rank, return_list))
             p.start()
             processes.append(p)
 
@@ -205,7 +205,7 @@ class iPCA_Pytorch_without_Psana:
     
         logging.info(f"Model complete in {end_time - start_time} seconds")
     
-    def process_on_gpu(self,rank,task_durations,return_list):
+    def process_on_gpu(self,rank,return_list):
         device = self.device_list[rank]
 
         with TaskTimer(self.task_durations, "Initializing model"):
