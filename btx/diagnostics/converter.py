@@ -438,12 +438,22 @@ class PyFAItoCrystFEL:
         Z += dz
         return X, Y, Z
     
+    def PONI_to_center(self, poni1, poni2, dist, rot1, rot2, rot3=0):
+        """
+        Relate the Point of Normal Incidence (PONI) coordinates to the center of the detector
+        """
+        dx, dy, dz = self.rotation(poni2, dist, poni1, rot1)
+        dx, dy, dz = self.rotation(dz, dx, dy, rot2)
+        dx, dy, dz = self.rotation(dy, dz, dx, rot3)
+        return dx, dy, dz
+    
     def correct_geom(self, poni1, poni2, dist, rot1, rot2, rot3=0):
         """
         Correct the geometry based on the given parameters
         """
         X, Y, Z = self.X, self.Y, self.Z
-        X, Y, Z = self.translation(X, Y, Z, -poni1*1e6, -poni2*1e6, -np.mean(self.Z)-dist*1e6)
+        dx, dy, dz = self.PONI_to_center(-poni1*1e6, -np.mean(self.Z)-dist*1e6, dist, -rot1, -rot2, rot3)
+        X, Y, Z = self.translation(X, Y, Z, dx, dy, dz)
         X, Y, Z = self.rotation(Y, Z, X, -rot1)
         X, Y, Z = self.rotation(Z, X, Y, -rot2)
         X, Y, Z = self.rotation(X, Y, Z, rot3)
