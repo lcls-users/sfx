@@ -81,8 +81,8 @@ class iPCA_Pytorch_without_Psana:
 
         self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
 
-        logging.info('Checkpoint')
-        
+        logging.info('Images split on GPUs')
+
         self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(self.num_gpus)]
         torch.cuda.init()
 
@@ -214,17 +214,22 @@ class iPCA_Pytorch_without_Psana:
         logging.info(f"Model complete in {end_time - self.start_time} seconds")
     
     def process_on_gpu(self,rank,return_list):
+
         device = self.device_list[rank]
 
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device)
 
+        logger.info(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes")
+        logger.info(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes")
         logging.info(f"GPU {rank}: Images loaded and formatted and model initialized")
 
         with TaskTimer(self.task_durations, "Fitting model"):
             ipca.fit(self.images[rank].reshape(self.num_images, -1)[:self.num_training_images])
 
         logging.info(f"GPU {rank}: Model fitted on {self.num_training_images} images")
+        logger.info(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes")
+        logger.info(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes")
 
         end_time = time.time()
         execution_time = end_time - self.start_time  # Calculate the execution time
