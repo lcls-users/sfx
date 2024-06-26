@@ -100,6 +100,8 @@ class iPCA_Pytorch_without_Psana:
         results = list(return_list)
 
         logging.info("All processes completed")
+        end_time = time.time()
+        
         [reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time] = zip(*results)
         
 
