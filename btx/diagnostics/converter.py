@@ -421,32 +421,13 @@ class PyFAItoCrystFEL:
         self.Y = Y
         self.Z = Z
 
-    def Rz(self, X, Y, Z, angle_z):
+    def rotation(self, X, Y, Z, angle):
         """
-        Return the X, Y, Z coordinates rotated around z-axis by angel_z
+        Return the X, Y, Z coordinates rotated by angle
         """
-        c, s = np.cos(angle_z), np.sin(angle_z)
-        Rz = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-        X, Y, Z = np.dot(Rz, np.array([X, Y, Z]))
-        return X, Y, Z
-    
-    def Ry(self, X, Y, Z, angle_y):
-        """
-        Return the X, Y, Z coordinates rotated around y-axis by angel_y
-        """
-        c, s = np.cos(angle_y), np.sin(angle_y)
-        Ry = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
-        X, Y, Z = np.dot(Ry, np.array([X, Y, Z]))
-        return X, Y, Z
-    
-    def Rx(self, X, Y, Z, angle_x):
-        """
-        Return the X, Y, Z coordinates rotated around x-axis by angel_x
-        """
-        c, s = np.cos(angle_x), np.sin(angle_x)
-        Rx = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
-        X, Y, Z = np.dot(Rx, np.array([X, Y, Z]))
-        return X, Y, Z
+        Xr = X * np.cos(angle) - Y * np.sin(angle)
+        Yr = X * np.sin(angle) + Y * np.cos(angle)
+        return Xr, Yr, Z
     
     def translation(self, X, Y, Z, dx, dy, dz):
         """
@@ -462,10 +443,10 @@ class PyFAItoCrystFEL:
         Correct the geometry based on the given parameters
         """
         X, Y, Z = self.X, self.Y, self.Z
-        X, Y, Z = self.translation(X, Y, Z, -poni1*1e6, -poni2*1e6, np.mean(self.Z)-dist*1e3)
-        X, Y, Z = self.Rx(X, Y, Z, -rot1)
-        X, Y, Z = self.Ry(X, Y, Z, -rot2)
-        X, Y, Z = self.Rz(X, Y, Z, rot3)
+        X, Y, Z = self.translation(X, Y, Z, -poni1*1e6, -poni2*1e6, -np.mean(self.Z)-dist*1e3)
+        X, Y, Z = self.rotation(Y, Z, X, -rot1)
+        X, Y, Z = self.rotation(Z, X, Y, -rot2)
+        X, Y, Z = self.rotation(X, Y, Z, rot3)
         self.X = X
         self.Y = Y
         self.Z = Z
