@@ -75,6 +75,8 @@ class iPCA_Pytorch_without_Psana:
             ]
         
         self.num_images = self.images.shape[0]
+        initial_shape = self.images.shape[1], self.images.shape[2], self.images.shape[3]
+
         logging.info(f"Number of non-none images: {self.num_images}")
 
         self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
@@ -98,10 +100,8 @@ class iPCA_Pytorch_without_Psana:
         results = list(return_list)
 
         logging.info("All processes completed")
-        logging.info(len(results))
-        logging.info(results[0])
-        reconstructed_images, S, V, mu, total_variance, losses = results[0]
-
+        [reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time] = zip(*results)
+        
 
         """with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
@@ -194,6 +194,8 @@ class iPCA_Pytorch_without_Psana:
 
                 append_to_dataset(f, 'frequency', data=frequency)
                 append_to_dataset(f, 'execution_times', data=execution_time)
+                append_to_dataset(f, 'initial_shape', data=initial_shape)
+
                 logging.info(f'Model saved to {self.filename}')
         
         for task, durations in self.task_durations.items():
@@ -205,7 +207,7 @@ class iPCA_Pytorch_without_Psana:
                 std_deviation = statistics.stdev(durations)
                 logging.debug(f"Task: {task}, Mean Duration: {mean_duration:.2f}, Standard Deviation: {std_deviation:.2f}")
     
-        logging.info(f"Model complete in {end_time - start_time} seconds")
+        logging.info(f"Model complete in {end_time - self.start_time} seconds")
     
     def process_on_gpu(self,rank,return_list):
         device = self.device_list[rank]
@@ -283,7 +285,7 @@ class iPCA_Pytorch_without_Psana:
             total_variance = ipca.explained_variance_
             losses = average_loss
 
-        return_list.append((reconstructed_images, S, V, mu, total_variance, losses))
+        return_list.append((reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time))
 
 def append_to_dataset(f, dataset_name, data):
     if dataset_name not in f:
