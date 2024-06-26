@@ -452,7 +452,7 @@ class PyFAItoCrystFEL:
         Correct the geometry based on the given parameters
         """
         X, Y, Z = self.X, self.Y, self.Z
-        dx, dy, dz = self.PONI_to_center(-poni1*1e6, -np.mean(self.Z)-dist*1e6, dist, -rot1, -rot2, rot3)
+        dx, dy, dz = self.PONI_to_center(-poni1*1e6, -poni2*1e6, -np.mean(self.Z)-dist*1e6, -rot1, -rot2, rot3)
         X, Y, Z = self.translation(X, Y, Z, dx, dy, dz)
         X, Y, Z = self.rotation(Y, Z, X, -rot1)
         X, Y, Z = self.rotation(Z, X, Y, -rot2)
