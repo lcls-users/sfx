@@ -112,11 +112,11 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 if [ ${RUN_NUM} != 'None' ]; then
   while [ $RUN_NUM -le $RUN_NUM_STOP ]
   do
-    echo "${SCRIPT_DIR}/elog_submit.sh -f $FACILITY -q $QUEUE -n $CORES -c $CONFIGFILE -e $EXPERIMENT -r $RUN_NUM -t $TASK"
-    ${SCRIPT_DIR}/elog_submit.sh -f $FACILITY -q $QUEUE -n $CORES -c $CONFIGFILE -e $EXPERIMENT -r $RUN_NUM -t $TASK
+    echo "${SCRIPT_DIR}/elog_submit.sh -f $FACILITY -a $SLURM_ACCOUNT -q $QUEUE -n $CORES -c $CONFIGFILE -e $EXPERIMENT -r $RUN_NUM -t $TASK"
+    ${SCRIPT_DIR}/elog_submit.sh -f $FACILITY -a $SLURM_ACCOUNT -q $QUEUE -n $CORES -c $CONFIGFILE -e $EXPERIMENT -r $RUN_NUM -t $TASK
     RUN_NUM=$(( $RUN_NUM + 1 ))
   done
 else
-  echo "${SCRIPT_DIR}/elog_submit.sh -f $FACILITY -q $QUEUE -n $CORES -c $CONFIGFILE -e $EXPERIMENT -r $RUN_NUM -t $TASK"
-  ${SCRIPT_DIR}/elog_submit.sh -f $FACILITY -q $QUEUE -n $CORES -c $CONFIGFILE -e $EXPERIMENT -r $RUN_NUM -t $TASK
+  echo "${SCRIPT_DIR}/elog_submit.sh -f $FACILITY -a $SLURM_ACCOUNT -q $QUEUE -n $CORES -c $CONFIGFILE -e $EXPERIMENT -r $RUN_NUM -t $TASK"
+  ${SCRIPT_DIR}/elog_submit.sh -f $FACILITY -a $SLURM_ACCOUNT -q $QUEUE -n $CORES -c $CONFIGFILE -e $EXPERIMENT -r $RUN_NUM -t $TASK
 fi
