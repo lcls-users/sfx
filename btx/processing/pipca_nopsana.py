@@ -81,6 +81,8 @@ class iPCA_Pytorch_without_Psana:
 
         self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
 
+        logging.info('Checkpoint')
+        
         self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(self.num_gpus)]
         torch.cuda.init()
 
@@ -101,7 +103,7 @@ class iPCA_Pytorch_without_Psana:
 
         logging.info("All processes completed")
         end_time = time.time()
-        
+
         [reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time] = zip(*results)
         
 
@@ -368,7 +370,7 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
 
     images = mapping_function(images, type_mapping = smoothing_function)
     print("Mapping done")
-
+    
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,
     run=run,
