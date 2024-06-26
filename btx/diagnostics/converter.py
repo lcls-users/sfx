@@ -444,8 +444,8 @@ class PyFAItoCrystFEL:
         """
         X, Y, Z = self.X, self.Y, self.Z
         X, Y, Z = self.translation(X, Y, Z, -poni1*1e6, -poni2*1e6, -np.mean(self.Z)-dist*1e6)
-        X, Y, Z = self.rotation(Y, Z, X, rot1)
-        X, Y, Z = self.rotation(Z, X, Y, rot2)
+        X, Y, Z = self.rotation(Y, Z, X, -rot1)
+        X, Y, Z = self.rotation(Z, X, Y, -rot2)
         X, Y, Z = self.rotation(X, Y, Z, rot3)
         self.X = X
         self.Y = Y
