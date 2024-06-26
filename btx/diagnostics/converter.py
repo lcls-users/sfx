@@ -451,11 +451,21 @@ class PyFAItoCrystFEL:
         self.Y = Y
         self.Z = Z
     
+    def coords_psana_to_lab_frame(self, X, Y, Z):
+        """ 
+        Switches arrays of pixel coordinates between psana <-(symmetric transformation)-> lab frame
+        returns x,y,z pixel arrays in the lab coordinate frame.
+        cframe [int]= 0 - default psana frame for image-matrix from open panel side X-rows, Y-columns, Z-opposite the beam
+                    = 1 - LAB frame - Y-top (-g - opposite to gravity) Z-along the beam, X=[YxZ]
+        """
+        return np.array(-Y), np.array(-X), np.array(-Z)
+    
     def geometry_to_crystfel(self, output_file, zcorr_um=None):
         """
         From corrected X, Y, Z coordinates, write a CrystFEL .geom file
         """
         X, Y, Z = self.X, self.Y, self.Z
+        X, Y, Z = self.coords_psana_to_lab_frame(X, Y, Z)
         geom = self.geom
         geom1 = geom.get_seg_geo() # GeometryObject
         seg = geom1.algo # object of the SegmentGeometry subclass
