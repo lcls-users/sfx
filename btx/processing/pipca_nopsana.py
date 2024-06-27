@@ -3,6 +3,7 @@ import math
 import logging
 import numpy as np
 import time
+import psutil
 
 from matplotlib import pyplot as plt
 from matplotlib import colors
@@ -234,6 +235,13 @@ class iPCA_Pytorch_without_Psana:
             et = time.time()
             logging.info(f"GPU {rank}: Model fitted in {et-st} seconds")
 
+        mem = psutil.virtual_memory()
+        loggin.info("=====================================")
+        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
+        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
+        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
+        logging.info("=====================================")
+        
         logging.info(f"GPU {rank}: Model fitted on {self.num_training_images} images")
         logging.info(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes")
         logging.info(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes")
@@ -303,7 +311,7 @@ class iPCA_Pytorch_without_Psana:
 
         # Clear cache
         torch.cuda.empty_cache()
-        
+
         return_list.append((reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time))
 
 def append_to_dataset(f, dataset_name, data):
