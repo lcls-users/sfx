@@ -143,7 +143,7 @@ def run_resonet(config):
                       account=setup.account,
                       reservation=setup.reservation)
     js.write_header()
-    js.write_main(f"{command}\n", dependencies=['psana'])
+    js.write_main(f"{command}\n", dependencies=['psana,resonet'])
     js.clean_up()
     js.submit()
     logger.debug('Resonet analysis launched!')

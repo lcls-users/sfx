@@ -124,6 +124,8 @@ class JobScheduler:
         if "xgandalf" in dependencies:
             dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/:$PATH\n"
             dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/eigen3/Eigen/:$PATH"
+        if "resonet" in dependencies:
+            dep_paths += f"conda activate {self.ana_tools_dir}/conda_envs/resonet_conda \n"
         dep_paths += "\n"
         
         with open(self.jobfile, 'a') as jfile:
