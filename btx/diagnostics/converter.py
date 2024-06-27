@@ -438,22 +438,29 @@ class PyFAItoCrystFEL:
         Z += dz
         return X, Y, Z
     
-    def PONI_to_center(self, poni1, poni2, dist, rot1, rot2, rot3=0):
+    def PONI_to_center(self, poni1, poni2, dist, rot1, rot2):
         """
-        Relate the Point of Normal Incidence (PONI) coordinates to the center of the detector
+        Relate the Point of Normal Incidence (PONI) to the center of the beam 
         """
-        dx, dy, dz = self.rotation(poni2, dist, poni1, rot1)
-        dx, dy, dz = self.rotation(dz, dx, dy, rot2)
-        dx, dy, dz = self.rotation(dy, dz, dx, rot3)
-        return dx, dy, dz
+        dy = -dist*(np.tan(rot1))
+        dx = dist*(np.tan(rot2)/np.cos(rot1))
+        dz = dist/(np.cos(rot1)*np.cos(rot2))
+        return poni1+dx, poni2+dy, dz
+    
+    def scale_to_µm(self, dx, dy, dz):
+        """
+        Scale shifts from meter m to micrometer µm
+        """
+        return dx*1e6, dy*1e6, dz*1e6
     
     def correct_geom(self, poni1, poni2, dist, rot1, rot2, rot3=0):
         """
         Correct the geometry based on the given parameters
         """
         X, Y, Z = self.X, self.Y, self.Z
-        dx, dy, dz = self.PONI_to_center(-poni1*1e6, -poni2*1e6, -np.mean(self.Z)-dist*1e6, -rot1, -rot2, rot3)
-        X, Y, Z = self.translation(X, Y, Z, dx, dy, dz)
+        dx, dy, dz = self.PONI_to_center(poni1, poni2, dist, rot1, rot2)
+        dx, dy, dz = self.scale_to_μm(dx, dy, dz)
+        X, Y, Z = self.translation(X, Y, Z, -dx, -dy, -np.mean(Z)-dz)
         X, Y, Z = self.rotation(Y, Z, X, -rot1)
         X, Y, Z = self.rotation(Z, X, Y, -rot2)
         X, Y, Z = self.rotation(X, Y, Z, rot3)
