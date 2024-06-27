@@ -123,7 +123,7 @@ def run_resonet(config):
     os.makedirs(taskdir, exist_ok=True)
     os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
 
-    command = f"resonet-mfx --expt {setup.expt} --run {setup.run}"
+    command = f"resonet-mfx --expt {setup.exp} --run {setup.run}"
     extra_args = {"--aduPerPhoton": "adu_per_photon", "--ndevPerNode": "ndevs_per_node",
               "--maxImg": "max_imgs", "--detzAddr": "detz_address", "--rayonixAddr": "rayonix_addr",
               "--centerMM": "center_mm", "--detzOffset": "detz_offset"}
