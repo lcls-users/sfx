@@ -236,12 +236,12 @@ class iPCA_Pytorch_without_Psana:
             logging.info(f"GPU {rank}: Model fitted in {et-st} seconds")
 
         mem = psutil.virtual_memory()
-        loggin.info("=====================================")
+        logging.info("=====================================")
         logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
         logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
         logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
         logging.info("=====================================")
-        
+
         logging.info(f"GPU {rank}: Model fitted on {self.num_training_images} images")
         logging.info(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes")
         logging.info(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes")
