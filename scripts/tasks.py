@@ -123,7 +123,7 @@ def run_resonet(config):
     os.makedirs(taskdir, exist_ok=True)
     os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
 
-    command = f"resonet-mfx --expt {setup.exp} --run {setup.run}"
+    command = f"mpirun resonet-mfx --expt {setup.exp} --run {setup.run}"
     extra_args = {"--aduPerPhoton": "adu_per_photon", "--ndevPerNode": "ndevs_per_node",
               "--maxImg": "max_imgs", "--detzAddr": "detz_address", "--rayonixAddr": "rayonix_addr",
               "--centerMM": "center_mm", "--detzOffset": "detz_offset"}
@@ -137,7 +137,8 @@ def run_resonet(config):
     sbatch -p ampere -t60 -N2 --gpus-per-node={config.ndevs_per_node} --cpus-per-gpu={config.cpus_per_gpu} --wrap="mpirun resonet-mfx --expt mfxl1032222 --run 20 --aduPerPhoton 0.7"
     """
     js = JobScheduler(os.path.join(".", f'ra_{setup.run:04}.sh'),
-                      queue=setup.queue,
+                      queue=task.queue,
+                      account=task.account,
                       ncores=task.ncores,
                       jobname=f'ra_{setup.run:04}',
                       account=setup.account,
