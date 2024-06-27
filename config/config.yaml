@@ -25,7 +25,7 @@ run_analysis:
   max_events: -1
   ncores: 2
 
-resonet:
+run_resonet:
   adu_per_photon: 0.7
   detz_address: detector_z
   rayonix_address: Rayonix
