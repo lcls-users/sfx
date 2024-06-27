@@ -198,11 +198,11 @@ if __name__ == "__main__":
             all_data.append(batch)
         print(f"Loaded {event+loading_batch_size} images.")
         mem = psutil.virtual_memory()
-        logging.info("================LOADING STEP=====================")
-        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
-        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
-        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
-        logging.info("=====================================")
+        print("================LOADING STEP=====================")
+        print(f"System total memory: {mem.total / 1024**3:.2f} GB")
+        print(f"System available memory: {mem.available / 1024**3:.2f} GB")
+        print(f"System used memory: {mem.used / 1024**3:.2f} GB")
+        print("=====================================")
     
     all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING
 
