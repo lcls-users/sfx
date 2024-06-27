@@ -84,6 +84,9 @@ class iPCA_Pytorch_without_Psana:
         logging.info('Images split on GPUs')
 
         self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(self.num_gpus)]
+        logging.info(f"Device list: {self.device_list}")
+        logging.info(f"Number of available GPUs: {torch.cuda.device_count()}")
+
         torch.cuda.init()
 
         mp.set_start_method('spawn', force=True)  # Ensure the start method is 'spawn'
@@ -217,14 +220,14 @@ class iPCA_Pytorch_without_Psana:
 
         device = self.device_list[rank]
 
-        with TaskTimer(self.task_durations, "Initializing model"):
+        with TaskTimer(self.task_durations, f"Initializing model on GPU {rank}"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device)
 
         logging.info(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes")
         logging.info(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes")
         logging.info(f"GPU {rank}: Images loaded and formatted and model initialized")
 
-        with TaskTimer(self.task_durations, "Fitting model"):
+        with TaskTimer(self.task_durations, f"Fitting model on GPU {rank}"):
             ipca.fit(self.images[rank].reshape(self.num_images, -1)[:self.num_training_images])
 
         logging.info(f"GPU {rank}: Model fitted on {self.num_training_images} images")
@@ -237,7 +240,7 @@ class iPCA_Pytorch_without_Psana:
 
         reconstructed_images = np.empty((0, self.num_components))
         
-        with TaskTimer(self.task_durations, "Reconstructing images"):
+        with TaskTimer(self.task_durations, f"Reconstructing images on GPU {rank}"):
             for start in range(0, self.num_images, self.batch_size):
                 end = min(start + self.batch_size, self.num_images)
                 batch_imgs = self.images[rank][start:end]
@@ -248,7 +251,7 @@ class iPCA_Pytorch_without_Psana:
 
         logging.info(f"GPU {rank}: Images reconstructed")
 
-        with TaskTimer(self.task_durations, "Computing compression loss"):
+        with TaskTimer(self.task_durations, f"Computing compression loss on GPU {rank}"):
             if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda" and self.num_training_images < self.num_images:
                 average_training_losses = []
                 for start in range(0, self.num_training_images, self.batch_size):
