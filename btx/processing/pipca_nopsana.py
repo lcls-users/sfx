@@ -108,7 +108,7 @@ class iPCA_Pytorch_without_Psana:
         end_time = time.time()
 
         [reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time] = zip(*results)
-        
+        logging.info("Fused results from GPUs")
 
         """with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
