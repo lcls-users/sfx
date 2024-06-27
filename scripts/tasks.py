@@ -138,10 +138,9 @@ def run_resonet(config):
     """
     js = JobScheduler(os.path.join(".", f'ra_{setup.run:04}.sh'),
                       queue=task.queue,
-                      account=task.account,
                       ncores=task.ncores,
                       jobname=f'ra_{setup.run:04}',
-                      account=setup.account,
+                      account=task.account,
                       reservation=setup.reservation)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana','resonet'])
