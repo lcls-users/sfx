@@ -205,7 +205,12 @@ if __name__ == "__main__":
         print("=====================================")
     
     all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING
-
+    mem = psutil.virtual_memory()
+    print("================LOADING DONE=====================")
+    print(f"System total memory: {mem.total / 1024**3:.2f} GB")
+    print(f"System available memory: {mem.available / 1024**3:.2f} GB")
+    print(f"System used memory: {mem.used / 1024**3:.2f} GB")
+    print("=====================================")
     print(all_data.shape)
     print('Images are loaded!')
 
