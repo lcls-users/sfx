@@ -301,6 +301,9 @@ class iPCA_Pytorch_without_Psana:
             total_variance = ipca.explained_variance_
             losses = average_loss
 
+        # Clear cache
+        torch.cuda.empty_cache()
+        
         return_list.append((reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time))
 
 def append_to_dataset(f, dataset_name, data):
