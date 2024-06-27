@@ -79,7 +79,8 @@ class iPCA_Pytorch_without_Psana:
 
         logging.info(f"Number of non-none images: {self.num_images}")
 
-        self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
+        with TaskTimer(self.task_durations, "Splitting images on GPUs"):
+            self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
 
         logging.info('Images split on GPUs')
 
@@ -232,7 +233,7 @@ class iPCA_Pytorch_without_Psana:
             ipca.fit(self.images[rank].reshape(self.num_images, -1)[:self.num_training_images])
             et = time.time()
             logging.info(f"GPU {rank}: Model fitted in {et-st} seconds")
-            
+
         logging.info(f"GPU {rank}: Model fitted on {self.num_training_images} images")
         logging.info(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes")
         logging.info(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes")
