@@ -79,10 +79,22 @@ class iPCA_Pytorch_without_Psana:
         initial_shape = self.images.shape[1], self.images.shape[2], self.images.shape[3]
 
         logging.info(f"Number of non-none images: {self.num_images}")
+        mem = psutil.virtual_memory()
+        logging.info("==================BEFORE SPLIT===================")
+        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
+        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
+        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
+        logging.info("=====================================")
 
         with TaskTimer(self.task_durations, "Splitting images on GPUs"):
             self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
 
+        mem = psutil.virtual_memory()
+        logging.info("===============AFTER SPLIT======================")
+        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
+        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
+        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
+        logging.info("=====================================")
         logging.info('Images split on GPUs')
 
         self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(self.num_gpus)]
