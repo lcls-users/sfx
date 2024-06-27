@@ -101,8 +101,6 @@ class iPCA_Pytorch_without_Psana:
         self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(self.num_gpus)]
         logging.info(f"Device list: {self.device_list}")
         logging.info(f"Number of available GPUs: {torch.cuda.device_count()}")
-        
-        torch.cuda.init()
 
         mp.set_start_method('spawn', force=True)  # Ensure the start method is 'spawn'
         manager = mp.Manager()
