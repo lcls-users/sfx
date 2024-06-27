@@ -73,7 +73,7 @@ class JobScheduler:
                         "#SBATCH --error={error}\n"
                         "#SBATCH --ntasks={ncores}\n"
                         "#SBATCH --time={time}\n"
-                        "#SBATCH --exclusive\n\n")
+                        "#SBATCH --exclusive\n")
         else:
             raise NotImplementedError('JobScheduler not implemented.')
 
@@ -101,7 +101,7 @@ class JobScheduler:
         if self.ngpus:
             with open(self.jobfile, 'a') as jfile:
                 jfile.write(f"#SBATCH -N 1 \n")
-                jfile.write(f"#SBATCH --gpus-per-node={self.ngpus}\n\n")
+                jfile.write(f"#SBATCH --gpus-per-node={self.ngpus}\n")
 
     def _write_dependencies(self, dependencies):
         """ Source dependencies."""
