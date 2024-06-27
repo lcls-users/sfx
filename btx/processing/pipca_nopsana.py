@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import time
 import psutil
+import gc
 
 from matplotlib import pyplot as plt
 from matplotlib import colors
@@ -323,6 +324,7 @@ class iPCA_Pytorch_without_Psana:
 
         # Clear cache
         torch.cuda.empty_cache()
+        gc.collect()
 
         return_list.append((reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time))
 
