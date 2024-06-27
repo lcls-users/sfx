@@ -159,6 +159,8 @@ class IncrementalPCAonGPU():
             self.batch_size_ = self.batch_size
 
         for start in range(0, n_samples, self.batch_size_):
+            if self.device == 'cuda:0':
+                self.print_gpu_memory([0])
             end = min(start + self.batch_size_, n_samples)
             X_batch = X[start:end]
             self.partial_fit(X_batch, check_input=True)
