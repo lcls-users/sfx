@@ -141,7 +141,8 @@ def run_resonet(config):
                       ncores=task.ncores,
                       jobname=f'ra_{setup.run:04}',
                       account=task.account,
-                      reservation=setup.reservation)
+                      reservation=setup.reservation,
+                      ngpus=task.ngpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana','resonet'])
     #js.clean_up()

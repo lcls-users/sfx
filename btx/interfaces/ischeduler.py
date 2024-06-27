@@ -10,7 +10,7 @@ class JobScheduler:
 
     def __init__(self, jobfile, logdir='./', jobname='btx',
                  account='lcls', queue='ffbh3q', ncores=1, time='0:30:00',
-                 reservation=""):
+                 reservation="", ngpus=""):
         self.manager = 'SLURM'
         self.jobfile = jobfile
         self.logdir = logdir
@@ -20,6 +20,7 @@ class JobScheduler:
         self.ncores = ncores
         self.time = time
         self.reservation = reservation
+        self.ngpus = ngpus
         self._data_systems_management()
 
     def _data_systems_management(self):
@@ -96,6 +97,11 @@ class JobScheduler:
         if self.reservation and facility == "S3DF":
             with open(self.jobfile, 'a') as jfile:
                 jfile.write(f"#SBATCH --reservation {self.reservation}\n\n")
+
+        if self.ngpus:
+            with open(self.jobfile, 'a') as jfile:
+                jfile.write(f"#SBATCH -N 1 \n\n")
+                jfile.write(f"#SBATCH --gpus-per-node={self.ngpus}\n\n")
 
     def _write_dependencies(self, dependencies):
         """ Source dependencies."""

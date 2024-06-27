@@ -28,6 +28,8 @@ run_analysis:
 run_resonet:
   queue: 'ampere'
   account: 'lcls:default'
+  ncores: 120
+  ngpus: 1
   adu_per_photon: 0.7
   detz_address: detector_z
   rayonix_address: Rayonix
