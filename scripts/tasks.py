@@ -118,7 +118,7 @@ def run_resonet(config):
     """ Predict resolution for individual diffraction patterns """
     from btx.interfaces.ischeduler import JobScheduler
     setup = config.setup
-    task = config.run_analysis
+    task = config.run_resonet
     taskdir = os.path.join(setup.root_dir, 'resonet')
     os.makedirs(taskdir, exist_ok=True)
     os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
