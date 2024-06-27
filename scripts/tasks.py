@@ -145,7 +145,7 @@ def run_resonet(config):
                       ngpus=task.ngpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana','resonet'])
-    js.clean_up()
+    #js.clean_up()
     js.submit()
     logger.debug('Resonet analysis launched!')
 
