@@ -131,7 +131,7 @@ def run_resonet(config):
         if task.get(confname) is not None:
             argval = task.get(confname)
             command += f" {argname} {argval}"
-    command += f"cat resonet_{setup.run:04}.out | grep 'Resolution is' | awk '{print $3}' > _temp.reso;python -c "import numpy as np;import sys;np.save(sys.argv[1], np.loadtxt('_temp.reso'))" test.npy"
+    command += f"cat resonet_{setup.run:04}.out | grep 'Resolution is' | awk '{print $3}' > {taskdir}/{setup.run:04}.txt"
 
     """
     Note, the command is run like this:
