@@ -92,15 +92,15 @@ class JobScheduler:
         facility = os.environ['FACILITY']
         if self.account is not None and facility == 'S3DF':
             with open(self.jobfile, 'a') as jfile:
-                jfile.write(f"#SBATCH -A {self.account}\n\n")
+                jfile.write(f"#SBATCH -A {self.account}\n")
 
         if self.reservation and facility == "S3DF":
             with open(self.jobfile, 'a') as jfile:
-                jfile.write(f"#SBATCH --reservation {self.reservation}\n\n")
+                jfile.write(f"#SBATCH --reservation {self.reservation}\n")
 
         if self.ngpus:
             with open(self.jobfile, 'a') as jfile:
-                jfile.write(f"#SBATCH -N 1 \n\n")
+                jfile.write(f"#SBATCH -N 1 \n")
                 jfile.write(f"#SBATCH --gpus-per-node={self.ngpus}\n\n")
 
     def _write_dependencies(self, dependencies):
@@ -132,6 +132,7 @@ class JobScheduler:
             dep_paths += "export PATH=/reg/g/cfel/crystfel/indexers/xgandalf/include/eigen3/Eigen/:$PATH"
         if "resonet" in dependencies:
             dep_paths += f"conda activate {self.ana_tools_dir}/conda_envs/resonet_conda \n"
+            dep_paths += f"cp {self.ana_tools_dir}/resonet/models/reso_retrained.nn . \n"
         dep_paths += "\n"
         
         with open(self.jobfile, 'a') as jfile:
