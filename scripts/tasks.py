@@ -131,15 +131,16 @@ def run_resonet(config):
         if task.get(confname) is not None:
             argval = task.get(confname)
             command += f" {argname} {argval}"
+    command += f"cat resonet_{setup.run:04}.out | grep 'Resolution is' | awk '{print $3}' > _temp.reso;python -c "import numpy as np;import sys;np.save(sys.argv[1], np.loadtxt('_temp.reso'))" test.npy"
 
     """
     Note, the command is run like this:
     sbatch -p ampere -t60 -N2 --gpus-per-node={config.ndevs_per_node} --cpus-per-gpu={config.cpus_per_gpu} --wrap="mpirun resonet-mfx --expt mfxl1032222 --run 20 --aduPerPhoton 0.7"
     """
-    js = JobScheduler(os.path.join(".", f'ra_{setup.run:04}.sh'),
+    js = JobScheduler(os.path.join(".", f'resonet_{setup.run:04}.sh'),
                       queue=task.queue,
                       ncores=task.ncores,
-                      jobname=f'ra_{setup.run:04}',
+                      jobname=f'resonet_{setup.run:04}',
                       account=task.account,
                       reservation=setup.reservation,
                       ngpus=task.ngpus)
