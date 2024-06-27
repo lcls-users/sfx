@@ -104,7 +104,7 @@ class iPCA_Pytorch_without_Psana:
         
         torch.cuda.init()
 
-        mp.set_start_method('spawn', force=True)  # Ensure the start method is 'spawn'
+        mp.set_start_method('fork', force=True)  # Ensure the start method is 'spawn'
         manager = mp.Manager()
         return_list = manager.list()  # Shared list to store results from each process
         processes = []
