@@ -89,7 +89,7 @@ class iPCA_Pytorch_without_Psana:
         logging.info("=====================================")
 
         with TaskTimer(self.task_durations, "Splitting images on GPUs"):
-            self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
+            self.images = np.split(self.images, self.num_gpus, axis=1)
 
         gc.collect()
         mem = psutil.virtual_memory()
