@@ -129,8 +129,6 @@ class iPCA_Pytorch_without_Psana:
 
         logging.info("All processes completed")
         end_time = time.time()
-        logging.info(type(results))
-        logging.info(results)
 
         with TaskTimer(self.task_durations, "Fusing results"):
             (reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time) = results[0]
@@ -341,7 +339,7 @@ class iPCA_Pytorch_without_Psana:
 
         return_list.append((reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time))
         return reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time
-        
+
 def append_to_dataset(f, dataset_name, data):
     if dataset_name not in f:
         f.create_dataset(dataset_name, data=np.array(data))
