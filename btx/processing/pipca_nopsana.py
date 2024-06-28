@@ -129,6 +129,8 @@ class iPCA_Pytorch_without_Psana:
 
         logging.info("All processes completed")
         end_time = time.time()
+        logging.info(type(results))
+        logging.info(results)
 
         with TaskTimer(self.task_durations, "Fusing results"):
             (reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time) = results[0]
