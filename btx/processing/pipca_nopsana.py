@@ -91,6 +91,7 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Splitting images on GPUs"):
             self.images = np.split(self.images, self.images.shape[1]/self.num_gpus, axis=1)
 
+        gc.collect()
         mem = psutil.virtual_memory()
         logging.info("===============AFTER SPLIT======================")
         logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
