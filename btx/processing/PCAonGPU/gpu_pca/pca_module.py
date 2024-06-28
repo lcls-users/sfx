@@ -154,6 +154,7 @@ class IncrementalPCAonGPU():
         if check_input:
             X = self._validate_data(X)
         n_samples, n_features = X.shape
+        logging.info(f"X shape: {X.shape}")
         if self.batch_size is None:
             self.batch_size_ = 5 * n_features
         else:
