@@ -232,7 +232,10 @@ class IncrementalPCAonGPU():
         else:
             self.noise_variance_ = 0.0
 
-        torch.cuda.empty_cache() #TEST
+        del U, S, Vt
+        del X
+        torch.cuda.empty_cache()
+        gc.collect()
 
         return self
 
