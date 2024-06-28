@@ -166,6 +166,14 @@ class IncrementalPCAonGPU():
             end = min(start + self.batch_size_, n_samples)
             X_batch = X[start:end]
             self.partial_fit(X_batch, check_input=True)
+            del X_batch
+            torch.cuda.empty_cache()
+            gc.collect()
+        
+        del X
+        torch.cuda.empty_cache()
+        gc.collect()
+        
         return self
 
     def partial_fit(self, X, check_input=True):
