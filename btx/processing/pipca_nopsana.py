@@ -120,7 +120,9 @@ class iPCA_Pytorch_without_Psana:
         logging.info("All processes completed")
         end_time = time.time()
 
-        [reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time] = zip(*results)
+        with TaskTimer(self.task_durations, "Fusing results"):
+            [reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time] = zip(*results)
+
         logging.info("Fused results from GPUs")
 
         """with TaskTimer(self.task_durations, "Initializing model"):
