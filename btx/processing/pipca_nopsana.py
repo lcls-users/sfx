@@ -321,7 +321,10 @@ class iPCA_Pytorch_without_Psana:
                 logging.info(f"GPU {rank}: Average loss: {average_loss * 100:.3f} (in %)")
             else:
                 RaiseError("Too long not to compute on GPU")
-                        
+        
+        #Deletes initial images to free up memory
+        self.images[rank] = None
+
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
             V = ipca.components_.cpu().detach().numpy().T
