@@ -340,7 +340,8 @@ class iPCA_Pytorch_without_Psana:
         gc.collect()
 
         return_list.append((reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time))
-
+        return reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time
+        
 def append_to_dataset(f, dataset_name, data):
     if dataset_name not in f:
         f.create_dataset(dataset_name, data=np.array(data))
