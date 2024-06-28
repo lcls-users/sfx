@@ -214,7 +214,7 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
-    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data,training_percentage,smoothing_function,1) # 4 is the number of gpus, will be changed to a parameter
+    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data,training_percentage,smoothing_function,4) # 4 is the number of gpus, will be changed to a parameter
     print('Pipca is done!')
 
     end_time = time.time()
