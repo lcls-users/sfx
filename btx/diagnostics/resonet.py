@@ -1,4 +1,7 @@
 import argparse
+import os
+import numpy as np
+from matplotlib import pyplot as plt
 
 
 class ResoNet:
@@ -14,27 +17,28 @@ class ResoNet:
         with open(self.input_file, 'r') as f:
             evt_list = []
             reso_list = []
-            for ln in fi:
+            for ln in f:
                 if ln.startswith("Resolution"):
                     evt_list.append(ln[0:].split()[6].split('/')[0])
                     reso_list.append(ln[0:].split()[2])
         self.reso = np.column_stack((np.array(evt_list).astype('int'),
-                                np.array(reso_list).astype('float')))
+                                     np.array(reso_list).astype('float')))
         np.save(os.path.join(self.output_dir, f"{self.output_name}.npy"), self.reso)
 
     def visualize_resolution(self, savefig=False):
         fig = plt.figure(figsize=(6, 3), dpi=180, )
         gs = fig.add_gridspec(1, 3)
         ax1 = fig.add_subplot(gs[0, :2])
-        ax1.scatter(data[:, 0], data[:, 1], s=1, c='gray')
+        ax1.scatter(self.reso[:, 0], self.reso[:, 1], s=1, c='gray')
         ax1.set_xlabel('event #')
         ax1.set_ylabel('Resolution (A)')
         ax1.set_title('ResoNet inference')
         ax2 = fig.add_subplot(gs[0, 2], sharey=ax1)
-        ax2.hist(data[:, 1], bins=50, log=True, orientation='horizontal', color='gray')
+        ax2.hist(self.reso[:, 1], bins=50, log=True, orientation='horizontal', color='gray')
         ax2.set_xlabel('# of events')
         if savefig:
             plt.savefig(os.path.join(self.output_dir, f"{self.output_name}.png"))
+
 
 def main():
     """
@@ -46,6 +50,7 @@ def main():
     resonet.save_trace()
     resonet.visualize_resolution(savefig=True)
 
+
 def parse_input():
     """
     Parse command line input.
@@ -54,6 +59,7 @@ def parse_input():
     parser.add_argument('-i', '--infile', help="Input file", required=True, type=str)
     parser.add_argument('-o', '--outdir', help='Output directory', required=True, type=str)
     return parser.parse_args()
+
 
 if __name__ == '__main__':
     main()
