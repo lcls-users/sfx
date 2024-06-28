@@ -15,6 +15,7 @@ import statistics
 import torch
 import torch.nn as nn
 import torch.multiprocessing as mp
+from multiprocessing import Pool
 
 from btx.misc.shortcuts import TaskTimer
 
@@ -102,7 +103,7 @@ class iPCA_Pytorch_without_Psana:
         logging.info(f"Device list: {self.device_list}")
         logging.info(f"Number of available GPUs: {torch.cuda.device_count()}")
 
-        mp.set_start_method('spawn', force=True)  # Ensure the start method is 'spawn'
+        """mp.set_start_method('spawn', force=True)  # Ensure the start method is 'spawn'
         manager = mp.Manager()
         return_list = manager.list()  # Shared list to store results from each process
         processes = []
@@ -115,7 +116,15 @@ class iPCA_Pytorch_without_Psana:
         for p in processes:
             p.join()
 
-        results = list(return_list)
+        results = list(return_list)"""
+
+        manager = mp.Manager()
+        return_list = manager.list()  # Shared list to store results
+
+        with Pool(processes=self.num_gpus) as pool:
+            # Use starmap to unpack arguments for each process
+            results = pool.starmap(self.process_on_gpu, [(rank, return_list) for rank in range(self.num_gpus)])
+
 
         logging.info("All processes completed")
         end_time = time.time()
