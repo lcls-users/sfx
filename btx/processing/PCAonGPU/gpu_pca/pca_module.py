@@ -56,7 +56,7 @@ class IncrementalPCAonGPU():
 
         self.components = []  # Liste pour stocker les composants
     
-    def _validate_data(self, X, dtype=torch.float32, copy=False):
+    def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
         Validates and converts the input data `X` to the appropriate tensor format.
 
@@ -237,7 +237,7 @@ class IncrementalPCAonGPU():
         for obj in dir():
             if isinstance(globals()[obj], torch.Tensor):
                     print(obj, globals()[obj].device, globals()[obj].shape)
-                    
+
         return self
 
     def transform(self, X):
