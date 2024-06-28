@@ -119,7 +119,6 @@ class iPCA_Pytorch_without_Psana:
         results = list(return_list)"""
 
         mp.set_start_method('spawn', force=True)
-        manager = mp.Manager()
 
         with Pool(processes=self.num_gpus) as pool:
             # Use starmap to unpack arguments for each process
