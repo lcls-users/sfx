@@ -131,7 +131,7 @@ def run_resonet(config):
             argval = task.get(confname)
             command += f" {argname} {argval}"
     script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../btx/diagnostics/resonet.py")
-    command += f"\n python-really {script_path}"
+    command += f"\n pytuna {script_path}"
     command += f" -i resonet_{setup.run:04}.out -o {taskdir}"
 
 
