@@ -234,6 +234,10 @@ class IncrementalPCAonGPU():
 
         torch.cuda.empty_cache() #TEST
 
+        for obj in dir():
+            if isinstance(globals()[obj], torch.Tensor):
+                    print(obj, globals()[obj].device, globals()[obj].shape)
+                    
         return self
 
     def transform(self, X):
