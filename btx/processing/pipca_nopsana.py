@@ -120,11 +120,10 @@ class iPCA_Pytorch_without_Psana:
 
         mp.set_start_method('spawn', force=True)
         manager = mp.Manager()
-        return_list = manager.list()  # Shared list to store results
 
         with Pool(processes=self.num_gpus) as pool:
             # Use starmap to unpack arguments for each process
-            results = pool.starmap(self.process_on_gpu, [(rank, return_list) for rank in range(self.num_gpus)])
+            results = pool.starmap(self.process_on_gpu, [rank for rank in range(self.num_gpus)])
 
 
         logging.info("All processes completed")
@@ -242,7 +241,7 @@ class iPCA_Pytorch_without_Psana:
     
         logging.info(f"Model complete in {end_time - self.start_time} seconds")
     
-    def process_on_gpu(self,rank,return_list):
+    def process_on_gpu(self,rank):
 
         device = self.device_list[rank]
         
@@ -259,7 +258,7 @@ class iPCA_Pytorch_without_Psana:
         logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
         logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
         logging.info("=====================================")
-        
+
         with TaskTimer(self.task_durations, "Fitting model"):
             st = time.time()
             ipca.fit(self.images[rank].reshape(self.num_images, -1)[:self.num_training_images])
@@ -344,7 +343,6 @@ class iPCA_Pytorch_without_Psana:
         torch.cuda.empty_cache()
         gc.collect()
 
-        return_list.append((reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time))
         return reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time
 
 def append_to_dataset(f, dataset_name, data):
@@ -424,8 +422,8 @@ def mapping_function(images, type_mapping = "id"):
 
 def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images,training_percentage,smoothing_function,num_gpus):
 
-    images = mapping_function(images, type_mapping = smoothing_function)
-    print("Mapping done")
+    #images = mapping_function(images, type_mapping = smoothing_function)
+    #print("Mapping done")
     
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,
