@@ -118,10 +118,11 @@ class iPCA_Pytorch_without_Psana:
 
         results = list(return_list)"""
 
+        mp.set_start_method('spawn', force=True)
         manager = mp.Manager()
         return_list = manager.list()  # Shared list to store results
 
-        with Pool(processes=self.num_gpus,start_method='spawn') as pool:
+        with Pool(processes=self.num_gpus) as pool:
             # Use starmap to unpack arguments for each process
             results = pool.starmap(self.process_on_gpu, [(rank, return_list) for rank in range(self.num_gpus)])
 
