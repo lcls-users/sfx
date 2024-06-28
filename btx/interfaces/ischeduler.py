@@ -140,15 +140,17 @@ class JobScheduler:
             if 'SIT_PSDM_DATA' in os.environ:
                 jfile.write(f"export SIT_PSDM_DATA={os.environ['SIT_PSDM_DATA']}\n")
 
-    def write_main(self, application, dependencies=[]):
+    def write_main(self, application, dependencies=[], find_pythonpath=True):
         """ Write application and source requested dependencies. """
         if dependencies:
             self._write_dependencies(dependencies)
 
-        pythonpath = self._find_python_path()
+        if find_pythonpath:
+            pythonpath = self._find_python_path()
+        else:
+            pythonpath = "python"
         with open(self.jobfile, 'a') as jfile:
             jfile.write(application.replace("python", pythonpath))
-            jfile.write(application.replace("pytuna", "python"))
 
     def submit(self):
         """ Submit to queue. """
