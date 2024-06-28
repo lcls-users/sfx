@@ -76,13 +76,14 @@ class eLogInterface:
         os.makedirs(self.target_dir(subdir=f"runs/{run}"), exist_ok=True)
         self.update_img(run, 'geom', 'geom')
         self.update_img(run, 'powder', 'powder')
+        self.update_img(run, 'resonet', 'resonet')
 
         if plot_type == 'pyplot':
             self.update_img(run, 'powder', 'stats')
-            self.update_html(['geom', 'powder', 'stats'], f"runs/{run}/")
+            self.update_html(['geom', 'powder', 'stats', 'resonet'], f"runs/{run}/")
         elif plot_type == 'holoviews':
             self.update_img(run, 'powder', 'stats', ext='html')
-            self.update_html(['geom', 'powder', 'stats'],
+            self.update_html(['geom', 'powder', 'stats', 'resonet'],
                              f"runs/{run}/",
                              merge_html=True)
 
@@ -143,6 +144,10 @@ class eLogInterface:
     def update_img(self, item, task, image, ext: str = 'png'):
         if task == 'powder':
             source_subdir = 'powder/figs/'
+            target_subdir = f'runs/{item}/'
+            source_filename = f'{image}_{item}.{ext}'
+        elif task == 'resonet':
+            source_subdir = 'resonet/figs/'
             target_subdir = f'runs/{item}/'
             source_filename = f'{image}_{item}.{ext}'
         elif task == 'geom':

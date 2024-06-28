@@ -121,7 +121,6 @@ def run_resonet(config):
     task = config.run_resonet
     taskdir = os.path.join(setup.root_dir, 'resonet')
     os.makedirs(taskdir, exist_ok=True)
-    os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
 
     command = f"resonet-mfx --expt {setup.exp} --run {setup.run}"
     extra_args = {"--aduPerPhoton": "adu_per_photon", "--ndevPerNode": "ndevs_per_node",
@@ -131,7 +130,10 @@ def run_resonet(config):
         if task.get(confname) is not None:
             argval = task.get(confname)
             command += f" {argname} {argval}"
-    command += f"cat resonet_{setup.run:04}.out | grep 'Resolution is' | awk '{print $3}' > {taskdir}/{setup.run:04}.txt"
+    script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../btx/diagnostics/resonet.py")
+    command += f"python {script_path}"
+    command += f" -i resonet_{setup.run:04}.out -o {taskdir}"
+
 
     """
     Note, the command is run like this:
