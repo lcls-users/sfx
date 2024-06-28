@@ -253,6 +253,13 @@ class iPCA_Pytorch_without_Psana:
         logging.info(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes")
         logging.info(f"GPU {rank}: Images loaded and formatted and model initialized")
 
+        mem = psutil.virtual_memory()
+        logging.info("=====================================")
+        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
+        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
+        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
+        logging.info("=====================================")
+        
         with TaskTimer(self.task_durations, "Fitting model"):
             st = time.time()
             ipca.fit(self.images[rank].reshape(self.num_images, -1)[:self.num_training_images])
