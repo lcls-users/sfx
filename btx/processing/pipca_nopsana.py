@@ -381,6 +381,7 @@ class iPCA_Pytorch_without_Psana:
             shm_images = np.ndarray(sub_imgs.shape, dtype=sub_imgs.dtype, buffer=self.shm.buf, offset=offset)
             np.copyto(shm_images, sub_imgs)
             offset += sub_imgs.nbytes
+            sub_imgs = None  # Delete the original images to free up memory
 
         self.images = None  # Delete the original images to free up memory
 
