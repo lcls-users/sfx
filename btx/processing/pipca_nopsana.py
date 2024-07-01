@@ -79,7 +79,6 @@ class iPCA_Pytorch_without_Psana:
             ]
         
         self.num_images = self.images.shape[0]
-        dtype = self.images.dtype
 
         logging.info(f"Number of non-none images: {self.num_images}")
         mem = psutil.virtual_memory()
@@ -91,9 +90,9 @@ class iPCA_Pytorch_without_Psana:
 
         with TaskTimer(self.task_durations, "Splitting images on GPUs"):
             self.images = np.split(self.images, self.num_gpus, axis=1)
-
-        shape = self.images.shape
-
+            shape = self.images[0].shape
+            dtype = self.images[0].dtype
+            
         gc.collect()
         mem = psutil.virtual_memory()
         logging.info("===============AFTER SPLIT======================")
@@ -259,7 +258,8 @@ class iPCA_Pytorch_without_Psana:
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm.name)
-            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
+            offset = rank * np.prod(images_shape) * images_dtype.itemsize
+            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf, offset=offset)
             self.images = images
         
         with TaskTimer(self.task_durations, "Initializing model"):
@@ -341,7 +341,8 @@ class iPCA_Pytorch_without_Psana:
                 RaiseError("Too long not to compute on GPU")
         
         #Deletes initial images to free up memory
-        self.images[rank] = None
+        existing_shm.close()
+        self.images = None
 
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
@@ -366,11 +367,16 @@ class iPCA_Pytorch_without_Psana:
         return reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time
 
     def create_shared_images(self):
+        total_size = len(self.images) * np.prod(self.images[0].shape) * self.images[0].dtype.itemsize
         # Create a shared memory block for images
-        self.shm = shared_memory.SharedMemory(create=True, size=self.images.nbytes)
+        self.shm = shared_memory.SharedMemory(create=True, size=total_size)
+        offset = 0
         # Copy images to the shared memory block
-        shm_images = np.ndarray(self.images.shape, dtype=self.images.dtype, buffer=self.shm.buf)
-        np.copyto(shm_images, self.images)
+        for sub_imgs in self.images:
+            shm_images = np.ndarray(sub_imgs.shape, dtype=sub_imgs.dtype, buffer=self.shm.buf, offset=offset)
+            np.copyto(shm_images, sub_imgs)
+            offset += sub_imgs.nbytes
+
         self.images = None  # Delete the original images to free up memory
 
 
