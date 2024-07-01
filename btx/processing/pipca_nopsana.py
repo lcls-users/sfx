@@ -138,6 +138,9 @@ class iPCA_Pytorch_without_Psana:
             # Use starmap to unpack arguments for each process
             results = pool.starmap(self.process_on_gpu, [(rank,shape,dtype) for rank in range(self.num_gpus)])
 
+        self.shm.close()
+        self.shm.unlink()
+
         logging.info("All processes completed")
         end_time = time.time()
 
@@ -262,7 +265,7 @@ class iPCA_Pytorch_without_Psana:
             offset = rank * np.prod(images_shape) * images_dtype.itemsize
             images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf, offset=offset)
             self.images = images
-            logging.info(self.images.shape)
+            print(self.images.shape)
         
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device)
