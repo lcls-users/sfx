@@ -152,6 +152,12 @@ def parse_input():
         required=True,
         type=str,
     )
+    parser.add_argument(
+        "--num_gpus",
+        help="Number of GPUs to use.",
+        required=True,
+        type=int,
+    )
 
     return parser.parse_args()
 
@@ -175,6 +181,7 @@ if __name__ == "__main__":
     tag = params.tag
     training_percentage = params.training_percentage
     smoothing_function = params.smoothing_function
+    num_gpus = params.num_gpus
     overwrite = True
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
@@ -214,7 +221,7 @@ if __name__ == "__main__":
 
     print('Server is shut down!')
 
-    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data,training_percentage,smoothing_function,4) # 4 is the number of gpus, will be changed to a parameter
+    run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data,training_percentage,smoothing_function,num_gpus) # 4 is the number of gpus, will be changed to a parameter
     print('Pipca is done!')
 
     end_time = time.time()

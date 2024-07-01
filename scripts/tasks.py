@@ -773,6 +773,7 @@ def test_serv_client(config):
     batch_size = task.batch_size
     path = task.path
     tag = task.tag
+    num_gpus = task.num_gpus
     training_percentage = task.training_percentage
     smoothing_function = task.smoothing_function
     comm = MPI.COMM_WORLD
@@ -792,7 +793,7 @@ def test_serv_client(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
-    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images {num_images} --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function}"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images {num_images} --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus}"
 
     js = JobScheduler(os.path.join(".", f'test_serv_client_{num_components}_{num_images}.sh'),queue = 'ampere', ncores=1, jobname=f'test_serv_client_{num_components}_{num_images}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls')
     js.write_header()
