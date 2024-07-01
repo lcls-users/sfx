@@ -45,6 +45,7 @@ class iPCA_Pytorch_without_Psana:
         self.images = images
         self.output_dir = output_dir
         self.filename = filename
+        self.shm = None
         
         self.num_images = num_images
         self.num_components = num_components
@@ -78,7 +79,7 @@ class iPCA_Pytorch_without_Psana:
             ]
         
         self.num_images = self.images.shape[0]
-        initial_shape = self.images.shape[1], self.images.shape[2], self.images.shape[3]
+        dtype = self.images.dtype
 
         logging.info(f"Number of non-none images: {self.num_images}")
         mem = psutil.virtual_memory()
@@ -91,6 +92,8 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Splitting images on GPUs"):
             self.images = np.split(self.images, self.num_gpus, axis=1)
 
+        shape = self.images.shape
+
         gc.collect()
         mem = psutil.virtual_memory()
         logging.info("===============AFTER SPLIT======================")
@@ -99,6 +102,16 @@ class iPCA_Pytorch_without_Psana:
         logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
         logging.info("=====================================")
         logging.info('Images split on GPUs')
+
+        with TaskTimer(self.task_durations, "Creating shared memory blocks"):
+            self.create_shared_images()
+
+        mem = psutil.virtual_memory()
+        logging.info("===============AFTER SHARED MEMORY======================")
+        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
+        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
+        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
+        logging.info("=====================================")
 
         self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(self.num_gpus)]
         logging.info(f"Device list: {self.device_list}")
@@ -123,7 +136,7 @@ class iPCA_Pytorch_without_Psana:
 
         with Pool(processes=self.num_gpus) as pool:
             # Use starmap to unpack arguments for each process
-            results = pool.starmap(self.process_on_gpu, [(rank,) for rank in range(self.num_gpus)])
+            results = pool.starmap(self.process_on_gpu, [(rank,shape,dtype) for rank in range(self.num_gpus)])
 
         logging.info("All processes completed")
         end_time = time.time()
@@ -240,9 +253,14 @@ class iPCA_Pytorch_without_Psana:
     
         logging.info(f"Model complete in {end_time - self.start_time} seconds")
     
-    def process_on_gpu(self,rank):
+    def process_on_gpu(self,rank,images_shape,images_dtype):
 
         device = self.device_list[rank]
+
+        with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
+            existing_shm = shared_memory.SharedMemory(name=self.shm.name)
+            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
+            self.images = images
         
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device)
@@ -346,6 +364,18 @@ class iPCA_Pytorch_without_Psana:
         gc.collect()
 
         return reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time
+
+    def create_shared_images(self):
+        # Create a shared memory block for images
+        self.shm = shared_memory.SharedMemory(create=True, size=self.images.nbytes)
+        # Copy images to the shared memory block
+        shm_images = np.ndarray(self.images.shape, dtype=self.images.dtype, buffer=self.shm.buf)
+        np.copyto(shm_images, self.images)
+        self.images = None  # Delete the original images to free up memory
+
+
+
+
 
 def append_to_dataset(f, dataset_name, data):
     if dataset_name not in f:
