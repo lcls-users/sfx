@@ -72,6 +72,7 @@ class JobScheduler:
                         "#SBATCH --error={error}\n"
                         "#SBATCH --ntasks={ncores}\n"
                         "#SBATCH --time={time}\n"
+                        "#SBATCH --mem=0\n"
                         "#SBATCH --exclusive\n\n")
         else:
             raise NotImplementedError('JobScheduler not implemented.')
