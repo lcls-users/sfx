@@ -79,6 +79,7 @@ class iPCA_Pytorch_without_Psana:
             ]
         
         self.num_images = self.images.shape[0]
+        initial_shape = self.images.shape
 
         logging.info(f"Number of non-none images: {self.num_images}")
         mem = psutil.virtual_memory()
