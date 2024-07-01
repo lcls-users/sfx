@@ -138,10 +138,6 @@ class iPCA_Pytorch_without_Psana:
             # Use starmap to unpack arguments for each process
             results = pool.starmap(self.process_on_gpu, [(rank,shape,dtype) for rank in range(self.num_gpus)])
 
-        for shm in self.shm:
-            shm.close()
-            shm.unlink()
-
         logging.info("All processes completed")
         end_time = time.time()
 
