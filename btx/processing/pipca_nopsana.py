@@ -45,7 +45,7 @@ class iPCA_Pytorch_without_Psana:
         self.images = images
         self.output_dir = output_dir
         self.filename = filename
-        self.shm = None
+        self.shm = []
         
         self.num_images = num_images
         self.num_components = num_components
@@ -138,8 +138,9 @@ class iPCA_Pytorch_without_Psana:
             # Use starmap to unpack arguments for each process
             results = pool.starmap(self.process_on_gpu, [(rank,shape,dtype) for rank in range(self.num_gpus)])
 
-        self.shm.close()
-        self.shm.unlink()
+        for shm in self.shm:
+            shm.close()
+            shm.unlink()
 
         logging.info("All processes completed")
         end_time = time.time()
@@ -261,11 +262,10 @@ class iPCA_Pytorch_without_Psana:
         device = self.device_list[rank]
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
-            existing_shm = shared_memory.SharedMemory(name=self.shm.name)
-            offset = rank * np.prod(images_shape) * images_dtype.itemsize
-            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf, offset=offset)
+            existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
+            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
             self.images = images
-            print(self.images.shape)
+            print("Test:",images.shape)
         
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device)
@@ -347,6 +347,7 @@ class iPCA_Pytorch_without_Psana:
         
         #Deletes initial images to free up memory
         existing_shm.close()
+        existing_shm.unlink()
         self.images = None
 
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
@@ -372,15 +373,12 @@ class iPCA_Pytorch_without_Psana:
         return reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time
 
     def create_shared_images(self):
-        total_size = len(self.images) * np.prod(self.images[0].shape) * self.images[0].dtype.itemsize
-        # Create a shared memory block for images
-        self.shm = shared_memory.SharedMemory(create=True, size=total_size)
-        offset = 0
-        # Copy images to the shared memory block
         for sub_imgs in self.images:
-            shm_images = np.ndarray(sub_imgs.shape, dtype=sub_imgs.dtype, buffer=self.shm.buf, offset=offset)
+            chunk_size = np.prod(self.images[0].shape) * self.images[0].dtype.itemsize
+            shm = shared_memory.SharedMemory(create=True, size=chunk_size)
+            shm_images = np.ndarray(sub_imgs.shape, dtype=sub_imgs.dtype, buffer=shm.buf)
             np.copyto(shm_images, sub_imgs)
-            offset += sub_imgs.nbytes
+            self.shm.append(shm)
             sub_imgs = None  # Delete the original images to free up memory
 
         self.images = None  # Delete the original images to free up memory
