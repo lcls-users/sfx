@@ -261,6 +261,7 @@ class iPCA_Pytorch_without_Psana:
             offset = rank * np.prod(images_shape) * images_dtype.itemsize
             images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf, offset=offset)
             self.images = images
+            logging.info(self.images.shape)
         
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device)
@@ -278,7 +279,7 @@ class iPCA_Pytorch_without_Psana:
 
         with TaskTimer(self.task_durations, "Fitting model"):
             st = time.time()
-            ipca.fit(self.images[rank].reshape(self.num_images, -1)[:self.num_training_images])
+            ipca.fit(self.images.reshape(self.num_images, -1)[:self.num_training_images]) ##CHANGED THIS TO USE THE SHARED MEMORY
             et = time.time()
             logging.info(f"GPU {rank}: Model fitted in {et-st} seconds")
 
@@ -302,7 +303,7 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Reconstructing images"):
             for start in range(0, self.num_images, self.batch_size):
                 end = min(start + self.batch_size, self.num_images)
-                batch_imgs = self.images[rank][start:end]
+                batch_imgs = self.images[start:end] ####
                 reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
                 reconstructed_batch = ipca.transform(reconstructed_batch)
                 reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
@@ -315,7 +316,7 @@ class iPCA_Pytorch_without_Psana:
                 average_training_losses = []
                 for start in range(0, self.num_training_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_training_images)
-                    batch_imgs = self.images[rank][start:end]
+                    batch_imgs = self.images[start:end] ###
                     average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                     average_training_losses.append(average_training_loss.cpu().detach().numpy())
                 average_training_loss = np.mean(average_training_losses)
@@ -323,7 +324,7 @@ class iPCA_Pytorch_without_Psana:
                 average_evaluation_losses = []
                 for start in range(self.num_training_images, self.num_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_images)
-                    batch_imgs = self.images[rank][start:end]
+                    batch_imgs = self.images[start:end] ###
                     average_evaluation_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                     average_evaluation_losses.append(average_evaluation_loss.cpu().detach().numpy())
                 average_evaluation_loss = np.mean(average_evaluation_losses)
@@ -332,7 +333,7 @@ class iPCA_Pytorch_without_Psana:
                 average_losses = []
                 for start in range(0, self.num_images, self.batch_size):
                     end = min(start + self.batch_size, self.num_images)
-                    batch_imgs = self.images[rank][start:end]
+                    batch_imgs = self.images[start:end] ###
                     average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                     average_losses.append(average_loss.cpu().detach().numpy())
                 average_loss = np.mean(average_losses)
