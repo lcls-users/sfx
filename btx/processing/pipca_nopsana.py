@@ -15,7 +15,7 @@ import statistics
 import torch
 import torch.nn as nn
 import torch.multiprocessing as mp
-from multiprocessing import Pool
+from multiprocessing import Pool, shared_memory
 
 from btx.misc.shortcuts import TaskTimer
 
@@ -92,7 +92,7 @@ class iPCA_Pytorch_without_Psana:
             self.images = np.split(self.images, self.num_gpus, axis=1)
             shape = self.images[0].shape
             dtype = self.images[0].dtype
-            
+
         gc.collect()
         mem = psutil.virtual_memory()
         logging.info("===============AFTER SPLIT======================")
