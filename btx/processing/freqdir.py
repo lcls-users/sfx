@@ -40,11 +40,13 @@ from bokeh.util.hex import hexbin
 from bokeh.plotting import figure, show, output_file, save
 from bokeh.models import HoverTool, CategoricalColorMapper, LinearColorMapper, ColumnDataSource, CustomJS, Slider, RangeSlider, Toggle, RadioButtonGroup, Range1d, Label
 from bokeh.models import CustomJS, ColumnDataSource, Span, PreText
-from bokeh.palettes import Viridis256, Cividis256, Turbo256, Category20, Plasma3, Plasma256, Plasma11
+from bokeh.palettes import Viridis256, Cividis256, Turbo256, Category20, Plasma3, Plasma256, Plasma11, Plasma10, Inferno256
 from bokeh.layouts import column, row
 
 import cProfile
 import string
+
+import pickle
 
 import cv2
 
@@ -861,7 +863,7 @@ class visualizeFD:
     """
     def __init__(self, inputFile, outputFile, numImgsToUse, nprocs, includeABOD, userGroupings, 
             skipSize, umap_n_neighbors, umap_random_state, hdbscan_min_samples, hdbscan_min_cluster_size,
-            optics_min_samples, optics_xi, optics_min_cluster_size, outlierQuantile):
+            optics_min_samples, optics_xi, optics_min_cluster_size, outlierQuantile, ):
         self.inputFile = inputFile
         self.outputFile = outputFile
         output_file(filename=outputFile, title="Static HTML file")
@@ -1113,27 +1115,58 @@ class visualizeFD:
 
 
     def genUMAP(self):
-
-
         imgs = None
         projections = None
         trueIntensities = None
-        for currRank in range(self.nprocs):
-            with h5py.File(self.inputFile+"_"+str(currRank)+".h5", 'r') as hf:
-                if imgs is None:
-                    imgs = hf["SmallImages"][:]
-                    projections = hf["ProjectedData"][:]
-                    trueIntensities = hf["TrueIntensities"][:]
-                else:
-                    imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
-                    projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
-                    trueIntensities = np.concatenate((trueIntensities, hf["TrueIntensities"][:]), axis=0)
-        print(len(imgs))
+        
+        runlbs = []
+        currlb = 0
+        currLen = 0
 
-        for intensMe in trueIntensities:
-            print(intensMe)
-            if(np.isnan(intensMe)):
-                print("This is NAN")
+        skipNums = [229, 231, 232, 248, 275, 305, 306, 309]
+        for iirun in range(214, 215, 1):
+            if iirun in skipNums:
+                print(f"SKIPPING RUN {iirun}")
+                continue
+            else:
+                for currRank in range(self.nprocs):
+                    with h5py.File(self.inputFile+f"{iirun:04}_ProjectedData" + "_"+str(currRank)+".h5", 'r') as hf:
+                        print(f"PROCESSING: " + self.inputFile+f"{iirun:04}_ProjectedData" + "_"+str(currRank)+".h5")
+                        if imgs is None:
+                            imgs = hf["SmallImages"][:]
+                            projections = hf["ProjectedData"][:]
+                            trueIntensities = hf["TrueIntensities"][:]
+                        else:
+                            imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
+                            projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
+                            trueIntensities = np.concatenate((trueIntensities, hf["TrueIntensities"][:]), axis=0)
+                        currLen += len(hf["TrueIntensities"][:])
+                for currInd in range(currLen):
+                    runlbs.append(currlb)
+                currlb += 1
+                currLen = 0
+
+        self.numFiles = currlb
+
+        # colorRunLbs = [int(x/len(set(runlbs))*255) for x in runlbs]
+        # print(colorRunLbs)
+        # trueIntensities = None
+        # for currRank in range(self.nprocs):
+        #     with h5py.File(self.inputFile+"_"+str(currRank)+".h5", 'r') as hf:
+        #         if imgs is None:
+        #             imgs = hf["SmallImages"][:]
+        #             projections = hf["ProjectedData"][:]
+        #             trueIntensities = hf["TrueIntensities"][:]
+        #         else:
+        #             imgs = np.concatenate((imgs, hf["SmallImages"][:]), axis=0)
+        #             projections = np.concatenate((projections, hf["ProjectedData"][:]), axis=0)
+        #             trueIntensities = np.concatenate((trueIntensities, hf["TrueIntensities"][:]), axis=0)
+        print(f"PROCESSING {len(imgs)} BEAM PROFILES")
+
+        # for intensMe in trueIntensities:
+        #     print(intensMe)
+        #     if(np.isnan(intensMe)):
+        #         print("This is NAN")
 
         intensities = []
         for img in imgs:
@@ -1148,6 +1181,9 @@ class visualizeFD:
         self.projections = projections[:self.numImgsToUse:self.skipSize]
         self.intensities = intensities[:self.numImgsToUse:self.skipSize]
 
+        trueIntensities = trueIntensities[:self.numImgsToUse:self.skipSize]
+        runlbs = np.array(runlbs[:self.numImgsToUse:self.skipSize])
+
         self.numImgsToUse = int(self.numImgsToUse/self.skipSize)
 
         if len(self.imgs)!= self.numImgsToUse:
@@ -1160,10 +1196,14 @@ class visualizeFD:
             min_dist=0,
         ).fit_transform(self.projections)
 
-        self.labels = hdbscan.HDBSCAN(
-            min_samples = self.hdbscan_min_samples,
-            min_cluster_size = self.hdbscan_min_cluster_size
-        ).fit_predict(self.clusterable_embedding)
+        ##################### JOHN 05/18/2024
+        np.save('clusteringSave.npy', self.clusterable_embedding)
+
+        # self.labels = hdbscan.HDBSCAN(
+        #     min_samples = self.hdbscan_min_samples,
+        #     min_cluster_size = self.hdbscan_min_cluster_size
+        # ).fit_predict(self.clusterable_embedding)
+        self.labels = runlbs
 
         exclusionList = np.array([])
         self.clustered = np.isin(self.labels, exclusionList, invert=True)
@@ -1218,8 +1258,13 @@ class visualizeFD:
         self.newLabels = np.array(self.relabel_to_closest_zero(newLabels))
         self.experData_df['cluster'] = [str(x) for x in self.newLabels[self.clustered]]
         self.experData_df['ptColor'] = [x for x in self.experData_df['cluster']]
-        self.experData_df['dbscan_backgroundColor'] = [Category20[20][x] for x in self.newLabels]
-        self.experData_df['backgroundColor'] = [Category20[20][x] for x in self.newLabels]
+
+        ################# JOHN CHANGE 05/14/2024
+        self.experData_df['dbscan_backgroundColor'] = [Inferno256[::(int(256/self.numFiles))][x] for x in self.newLabels]
+        self.experData_df['backgroundColor'] = [Inferno256[::(int(256/self.numFiles))][x] for x in self.newLabels]
+        # self.experData_df['dbscan_backgroundColor'] = [Category20[20][x] for x in self.newLabels]
+        # self.experData_df['backgroundColor'] = [Category20[20][x] for x in self.newLabels]
+
         medoid_lst = self.genMedoids(self.newLabels, self.clusterable_embedding)
         self.medoidInds = [x[1] for x in medoid_lst]
         medoidBold = []
@@ -1245,8 +1290,10 @@ class visualizeFD:
 
     def genHTML(self):
         datasource = ColumnDataSource(self.experData_df)
+        ####################################### JOHN CHANGE 05/14/2024
+        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Inferno256[::(int(256/self.numFiles))])
         #JOHN CHANGE 20231020
-        color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Category20[20])
+        # color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Category20[20])
         # color_mapping = CategoricalColorMapper(factors=[str(x) for x in list(set(self.newLabels))],palette=Plasma256[::16])
         plot_figure = figure(
             title='UMAP projection with DBSCAN clustering of the LCLS dataset',
@@ -1573,7 +1620,7 @@ class WrapperFullFD:
     """
 #    from btx.interfaces.ipsana import PsanaInterface
     btx = __import__('btx')
-    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, unitVar=False, usePSI=True):
+    def __init__(self, exp, run, det_type, start_offset, num_imgs, writeToHere, grabImgSteps, num_components, alpha, rankAdapt, rankAdaptMinError, downsample, bin_factor, threshold, eluThreshold, eluAlpha, normalizeIntensity, noZeroIntensity, minIntensity, samplingFactor, divBy, thresholdQuantile, unitVar=False, usePSI=True, downsampleImg=150, roiLen=800, thumbLen=64, centerImg=True):
         self.start_offset = start_offset
         self.num_imgs = num_imgs
         self.exp = exp
@@ -1597,12 +1644,18 @@ class WrapperFullFD:
         self.thresholdQuantile = thresholdQuantile
         self.unitVar = unitVar
 
+        self.downsampleImg = downsampleImg
+        self.roiLen = roiLen
+        self.thumbLen = thumbLen
+
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
 
         self.imgsTracked = []
         self.grabImgSteps = grabImgSteps
+
+        self.centerImg = centerImg
 
         self.usePSI = usePSI
         if usePSI:
@@ -1619,9 +1672,9 @@ class WrapperFullFD:
 
         self.newBareTime = 0
 
-        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = True, roi_w=200, roi_h = 200)
+        self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = self.centerImg, roiLen=self.roiLen, downsampleImg=self.downsampleImg)
         # self.imageProcessor = FD_ImageProcessing(threshold = self.threshold, eluThreshold = self.eluThreshold, eluAlpha = self.eluAlpha, noZeroIntensity = self.noZeroIntensity, normalizeIntensity=self.normalizeIntensity, minIntensity=self.minIntensity, thresholdQuantile=self.thresholdQuantile, unitVar = self.unitVar, centerImg = False, roi_w=500, roi_h = 500)
-        self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbnailHeight = 64, thumbnailWidth = 64)
+        self.imgRetriever = SinglePanelDataRetriever(exp=exp, det_type=det_type, run=run, downsample=downsample, bin_factor=bin_factor, imageProcessor = self.imageProcessor, thumbLen=self.thumbLen)
 
     def oldLowMemoryReconstructionErrorScaled1(self, matrixCentered, matSketch):
         """ 
@@ -1713,7 +1766,8 @@ class WrapperFullFD:
 
     def retrieveImages(self):
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
-        self.fullImgData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=False)
+        # self.fullImgData, self.imgsTracked = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=False)
+        self.fullImgData, self.imgsTracked = self.imgRetriever.get_fake_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=False)
 
     def genSynthData(self):
         self.fullImgData = np.random.rand(70000, 100000//self.size)
@@ -1745,6 +1799,7 @@ class WrapperFullFD:
             print(f"COMPUTED VECTOR {j}/{num_vecs}")
         return Q
     
+    #JOHN COMMENT 06/27/2024: This is the code you should use for testing speed in parallelization. 
     def compDecayingSVD(self, seedMe, a, b):
         numFeats = a
         numSamps = b//self.size
@@ -1770,6 +1825,7 @@ class WrapperFullFD:
         self.fullImgData = (Q1 @ np.diag(S) @ Q2).T
         self.imgsTracked = [(0, numSamps)]
 
+    #JOHN COMMENT 06/27/2024: This is the code you should use for testing performance. It generates synthetic data for error. 
     def oldCompDecayingSVD2(self, seedMe, a, b):
         #JOHN COMMENT 01/09/2024: YOU MUST HAVE GREATER NUMBER OF COMPONENTS VERSUS NUMBER OF SAMPLES. 
         numFeats = a
@@ -1852,7 +1908,8 @@ class WrapperFullFD:
 
     def addThumbnailsToProjectH5(self):
         startingPoint = self.start_offset + self.num_imgs*self.rank//self.size
-        _,self.fullThumbnailData,_,self.trueIntensitiesData = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
+        # _,self.fullThumbnailData,_,self.trueIntensitiesData = self.imgRetriever.get_formatted_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
+        _,self.fullThumbnailData,_,self.trueIntensitiesData = self.imgRetriever.get_fake_images(startInd=startingPoint, n=self.num_imgs//self.size, num_steps=self.grabImgSteps, getThumbnails=True)
         file_name = self.writeToHere+f"{self.currRun:04}_ProjectedData_{self.rank}.h5"
         f1 = h5py.File(file_name, 'r+')
         f1.create_dataset("SmallImages",  data=self.fullThumbnailData)
@@ -1861,7 +1918,7 @@ class WrapperFullFD:
         self.comm.barrier()
 
 class FD_ImageProcessing:
-    def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile, unitVar, centerImg, roi_w, roi_h):
+    def __init__(self, threshold, eluThreshold, eluAlpha, noZeroIntensity, normalizeIntensity, minIntensity, thresholdQuantile, unitVar, centerImg, roiLen, downsampleImg):
         self.threshold = threshold
         self.eluThreshold = eluThreshold
         self.eluAlpha = eluAlpha
@@ -1871,8 +1928,8 @@ class FD_ImageProcessing:
         self.thresholdQuantile = thresholdQuantile
         self.unitVar = unitVar
         self.centerImg = centerImg
-        self.roi_w = roi_w
-        self.roi_h = roi_h
+        self.roiLen = roiLen
+        self.downsampleImg = downsampleImg
 
     def processImg(self, nimg, ncurrIntensity):
         if self.threshold:
@@ -1880,6 +1937,7 @@ class FD_ImageProcessing:
         if self.eluThreshold:
             nimg = self.eluThresholdFunc(nimg)
         if self.centerImg:
+            # print("CENTERING IMAGE")
             nimg = self.centerImgFunc(nimg)
 
         if nimg is not None:
@@ -1893,6 +1951,8 @@ class FD_ImageProcessing:
             nimg = self.normalizeIntensityFunc(nimg, currIntensity)
         if self.unitVar:
             nimg = self.unitVarFunc(nimg, currIntensity)
+        if self.downsampleImg!=-1:
+            nimg = self.downsampleFunc(nimg)
         return nimg
 
     def elu(self,x):
@@ -1937,30 +1997,69 @@ class FD_ImageProcessing:
             return img/img.std(axis=0)
 
     def centerImgFunc(self, img):
-        if img is None: 
+        def find_center_of_gravity(image):
+            moments = cv2.moments(image)
+            if moments["m00"] != 0:
+                cX = int(moments["m10"] / moments["m00"])
+                cY = int(moments["m01"] / moments["m00"])
+            else:
+                cX, cY = 0, 0
+            return int(cX), int(cY)
+        def find_bounding_box(array, box_size):
+            center_y, center_x = find_center_of_gravity(array)
+            return (center_y-box_size//2, center_x-box_size//2, box_size, box_size)
+        if img is None:
             return img
         else:
-            nimg = img
-            rampingFact = 1
-            while rampingFact>=1:
-                curr_roi_w = int(self.roi_w*rampingFact)
-                curr_roi_h = int(self.roi_h*rampingFact)
-                nimg = np.pad(img, max(2*curr_roi_w, 2*curr_roi_h)+1)
-                if  np.sum(img.flatten(), dtype=np.double)<10000:
-                    cogx, cogy = (curr_roi_w, curr_roi_h)
-                else:
-                    cogx, cogy  = self.calcCenterGrav(nimg)
-                nimg = nimg[cogx-(curr_roi_w//2):cogx+(curr_roi_w//2), cogy-(curr_roi_h//2):cogy+(curr_roi_h//2)]
-                rampingFact -= 0.5
+            nimg = np.pad(img, self.roiLen//2, mode='constant', constant_values=0)
+            bounding_box = find_bounding_box(nimg, self.roiLen)
+            nimg = nimg[bounding_box[1]:bounding_box[1]+bounding_box[3], bounding_box[0]:bounding_box[0]+bounding_box[2]]
             return nimg
+    
+    def downsampleFunc(self, img):
+        if img is None:
+            return img
+        else:
+            normalized_array = (255 * (img - np.min(img)) / np.ptp(img)).astype(np.uint8)
+            image = Image.fromarray(normalized_array)
+            nimg = image.resize((self.downsampleImg, self.downsampleImg), Image.Resampling.LANCZOS)
+            return np.array(nimg)
+        
 
-    def calcCenterGrav(self, grid):
-        M_total = np.sum(grid)
-        row_indices, col_indices = np.indices(grid.shape)
-        X_c = np.sum(row_indices * grid) / M_total
-        Y_c = np.sum(col_indices * grid) / M_total
-#        print(M_total, X_c, Y_c, grid)
-        return (round(X_c), round(Y_c))
+    # def centerImgFunc(self, img):
+    #     if img is None: 
+    #         return img
+    #     else:
+    #         nimg = img
+    #         rampingFact = 1
+    #         while rampingFact>=1:
+    #             curr_roi_w = int(self.roi_w*rampingFact)
+    #             curr_roi_h = int(self.roi_h*rampingFact)
+    #             nimg = np.pad(img, max(2*curr_roi_w, 2*curr_roi_h)+1)
+    #             if  np.sum(img.flatten(), dtype=np.double)<10000:
+    #                 cogx, cogy = (curr_roi_w, curr_roi_h)
+    #             else:
+    #                 cogx, cogy  = self.calcCenterGrav(nimg)
+    #             nimg = nimg[cogx-(curr_roi_w//2):cogx+(curr_roi_w//2), cogy-(curr_roi_h//2):cogy+(curr_roi_h//2)]
+    #             rampingFact -= 0.5
+    #         return nimg
+
+#     def calcCenterGrav(self, grid):
+#         M_total = np.sum(grid)
+#         row_indices, col_indices = np.indices(grid.shape)
+#         X_c = np.sum(row_indices * grid) / M_total
+#         Y_c = np.sum(col_indices * grid) / M_total
+# #        print(M_total, X_c, Y_c, grid)
+#         return (round(X_c), round(Y_c))
+    # def find_center_of_gravity(image):
+    #     moments = cv2.moments(image)
+    #     if moments["m00"] != 0:
+    #         cX = int(moments["m10"] / moments["m00"])
+    #         cY = int(moments["m01"] / moments["m00"])
+    #     else:
+    #         cX, cY = 0, 0
+
+    #     return cX, cY
 
 
 
@@ -2096,12 +2195,11 @@ class DataRetriever:
 
 class SinglePanelDataRetriever:
     btx = __import__('btx')
-    def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbnailHeight, thumbnailWidth):
+    def __init__(self, exp, det_type, run, downsample, bin_factor, imageProcessor, thumbLen):
         self.exp = exp
         self.det_type = det_type
         self.run = run
-        self.thumbnailHeight = thumbnailHeight
-        self.thumbnailWidth = thumbnailWidth
+        self.thumbLen = thumbLen
 
         self.psi = self.btx.interfaces.ipsana.PsanaInterface(exp=exp, run=run, det_type=det_type)
 
@@ -2125,136 +2223,249 @@ class SinglePanelDataRetriever:
         tuples.append((last_batch_start, last_batch_end))
         return tuples    
 
-    def get_formatted_images(self, startInd, n, num_steps, getThumbnails):
-        """
-        Fetch n - x image segments from run, where x is the number of 'dead' images.
+    # def get_formatted_images(self, startInd, n, num_steps, getThumbnails):
+    #     """
+    #     Fetch n - x image segments from run, where x is the number of 'dead' images.
 
-        Parameters
-        ----------
-        n : int
-            number of images to retrieve
-        start_index : int
-            start index of subsection of data to retrieve
-        end_index : int
-            end index of subsection of data to retrieve
+    #     Parameters
+    #     ----------
+    #     n : int
+    #         number of images to retrieve
+    #     start_index : int
+    #         start index of subsection of data to retrieve
+    #     end_index : int
+    #         end index of subsection of data to retrieve
 
-        Returns
-        -------
-        ndarray, shape (end_index-start_index, n-x)
-            n-x retrieved image segments of dimension end_index-start_index
-        """
-        fullimgs = None
-        fullthumbnails = None
-        imgsTracked = []
-        runs = self.split_range(startInd, startInd+n, num_steps)
-        print(runs)
-        trueIntensities = []
-        for runStart, runEnd in runs:
-            self.psi.counter = runStart
-            imgsTracked.append((runStart, runEnd))
+    #     Returns
+    #     -------
+    #     ndarray, shape (end_index-start_index, n-x)
+    #         n-x retrieved image segments of dimension end_index-start_index
+    #     """
+    #     fullimgs = None
+    #     imgsTracked = []
+    #     runs = self.split_range(startInd, startInd+n, num_steps)
+    #     print(runs)
+    #     trueIntensities = []
 
-            imgs = self.psi.get_images(runEnd-runStart, assemble=False)
+    #     for runStart, runEnd in runs:
+    #         self.psi.counter = runStart
+    #         imgsTracked.append((runStart, runEnd))
 
-            imgs = imgs[
-                [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
-            ]
+    #         imgs = self.psi.get_images(runEnd-runStart, assemble=False)
 
-            origTrueIntensities = [np.sum(img.flatten(), dtype=np.double) for img in imgs]
-            newTrueIntensities = []
-            for j in origTrueIntensities:
-                if j<0:
-                    newTrueIntensities.append(0)
-                else:
-                    newTrueIntensities.append(np.log(j))
-            origTrueIntensities = newTrueIntensities
+    #         imgs = imgs[
+    #             [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+    #         ]
 
-            if getThumbnails:
-                saveMe = []
-                for img in imgs:
-                    saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
-                thumbnails = np.array(saveMe)
+    #         origTrueIntensities = [np.sum(img.flatten(), dtype=np.double) for img in imgs]
+    #         newTrueIntensities = []
+    #         for j in origTrueIntensities:
+    #             if j<0:
+    #                 newTrueIntensities.append(0)
+    #             else:
+    #                 newTrueIntensities.append(np.log(j))
+    #         origTrueIntensities = newTrueIntensities
 
-            num_valid_imgs, x, y = imgs.shape
+    #         num_valid_imgs, x, y = imgs.shape
 
-            img_batch = imgs.T
-            img_batch[img_batch<0] = 0
+    #         imshape = (x, y)
+    #         if self.imageProcessor.centerImg:
+    #             imshape = (self.imageProcessor.roiLen, self.imageProcessor.roiLen)
+    #         if self.imageProcessor.downsampleImg!=-1:
+    #             imshape = (self.imageProcessor.downsampleImg, self.imageProcessor.downsampleImg)
+
+    #         img_batch = imgs.T
+    #         img_batch[img_batch<0] = 0
     
-            if getThumbnails:
-                num_valid_thumbnails, tx, ty = thumbnails.shape
-                thumbnail_batch = thumbnails.T
+    #         nimg_batch = []
+    #         ntrueIntensity_batch = []
+    #         for ind, (img, trueIntens) in enumerate(zip(img_batch.T, origTrueIntensities)):
+    #             currIntensity = np.sum(img.flatten(), dtype=np.double)
+    #             nimg = self.imageProcessor.processImg(img, currIntensity)
+    #             if nimg is not None:
+    #                 nimg_batch.append(nimg)
+    #                 ntrueIntensity_batch.append(trueIntens)
+    #             else:
+    #                 num_valid_imgs -= 1
+    #                 self.excludedImgs.append(ind)
+    #         if self.imageProcessor.centerImg or self.imageProcessor.downsampleImg!=-1:
+    #             nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, imshape[0]*imshape[1]).T
+    #         else:
+    #             nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T
 
-            if getThumbnails:
-                nimg_batch = []
-                nthumbnail_batch = []
-                ntrueIntensity_batch = []
-                for ind, (img, thumbnail, trueIntens) in enumerate(zip(img_batch.T, thumbnail_batch.T, origTrueIntensities)):
-                    currIntensity = np.sum(img.flatten(), dtype=np.double)
-                    if self.imageProcessor.centerImg: 
-                        nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
-                    else:
-                        nimg = self.imageProcessor.processImg(img, currIntensity)
-                    if nimg is None:
-                        nthumbnail = None
-                    else:
-                        nthumbnail = nimg.copy()
-                    if nimg is not None:
-                        nimg_batch.append(nimg)
-                        nthumbnail_batch.append(nthumbnail)
-                        ntrueIntensity_batch.append(trueIntens)
-                    else:
-                        num_valid_thumbnails -= 1
-                        num_valid_imgs -= 1
-                        self.excludedImgs.append(ind)
-                if self.imageProcessor.centerImg:
-                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T
-                    nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, self.imageProcessor.roi_h, self.imageProcessor.roi_w)
+    #         if fullimgs is None and nimg_batch.shape[1]!=0:
+    #             fullimgs = nimg_batch
+    #             trueIntensities += ntrueIntensity_batch
+    #         elif nimg_batch.shape[1]!=0: 
+    #             fullimgs = np.hstack((fullimgs, nimg_batch))
+    #             trueIntensities += ntrueIntensity_batch
 
-                    saveMe = []
-                    for img in nthumbnail_batch:
-                        saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
-                    nthumbnail_batch = np.array(saveMe)
+    #     print("EXCLUDING IMAGES: ", self.excludedImgs)
 
-                else:
-                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T 
-                    nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
-                
-                
-                if fullimgs is None and nimg_batch.shape[1]!=0:
-                    fullimgs = nimg_batch
-                    fullthumbnails = nthumbnail_batch
-                    trueIntensities += ntrueIntensity_batch
-                elif nimg_batch.shape[1]!=0: 
-                    fullimgs = np.hstack((fullimgs, nimg_batch))
-                    fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
-                    trueIntensities += ntrueIntensity_batch
-            else:
-                nimg_batch = []
-                for ind, img in enumerate(img_batch.T):
-                    currIntensity = np.sum(img.flatten(), dtype=np.double)
-                    nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
-                    if nimg is not None:
-                        nimg_batch.append(nimg)
-                    else:
-                        num_valid_imgs -= 1
-                        self.excludedImgs.append(ind)
+    #     if getThumbnails:
+    #         fullThumbs = []
+    #         for img in fullimgs.T:
+    #             nimg = img.reshape(imshape)
+    #             if self.imageProcessor.downsampleImg==-1:
+    #                 normalized_array = (255 * (nimg - np.min(nimg)) / np.ptp(nimg)).astype(np.uint8)
+    #             else:
+    #                 normalized_array = nimg
+    #             image = Image.fromarray(normalized_array)
+    #             thumbnail = image.resize((self.thumbLen, self.thumbLen), Image.Resampling.LANCZOS)
+    #             thumbnail_array = np.array(thumbnail)
+    #             fullThumbs.append(thumbnail_array)
+    #         return (fullimgs, fullThumbs, imgsTracked, trueIntensities)
+    #     else:
+    #         return (fullimgs, imgsTracked)
+    
 
-                if self.imageProcessor.centerImg:
-                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T 
-                else: 
-                    nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T 
-
-                if fullimgs is None:
-                    fullimgs = nimg_batch
-                elif nimg_batch.shape[1]!=0:
-                    fullimgs = np.hstack((fullimgs, nimg_batch))
-
-        print("EXCLUDING IMAGES: ", self.excludedImgs)
-
+    def get_fake_images(self, startInd, n, num_steps, getThumbnails):
+        fullimgs = np.load('/sdf/data/lcls/ds/xpp/xppx22715/scratch/winnicki/fakeImgData.npy')
+        with open('/sdf/data/lcls/ds/xpp/xppx22715/scratch/winnicki/fakeThumbData.pkl', 'rb') as f:
+            fullThumbs = pickle.load(f)
         if getThumbnails:
-            print(fullimgs.shape, fullthumbnails.shape, imgsTracked)
-            return (fullimgs, fullthumbnails, imgsTracked, trueIntensities)
+            return (fullimgs, fullThumbs, [[0, 10]], [1 for x in range(len(fullimgs))])
         else:
-            return (fullimgs, imgsTracked)
+            return (fullimgs, [[0, 10]])
+
+
+################################# JOHN OLD VERSION 05/13/2024 ############################################
+# def get_formatted_images(self, startInd, n, num_steps, getThumbnails):
+#         """
+#         Fetch n - x image segments from run, where x is the number of 'dead' images.
+
+#         Parameters
+#         ----------
+#         n : int
+#             number of images to retrieve
+#         start_index : int
+#             start index of subsection of data to retrieve
+#         end_index : int
+#             end index of subsection of data to retrieve
+
+#         Returns
+#         -------
+#         ndarray, shape (end_index-start_index, n-x)
+#             n-x retrieved image segments of dimension end_index-start_index
+#         """
+#         fullimgs = None
+#         fullthumbnails = None
+#         imgsTracked = []
+#         runs = self.split_range(startInd, startInd+n, num_steps)
+#         print(runs)
+#         trueIntensities = []
+#         for runStart, runEnd in runs:
+#             self.psi.counter = runStart
+#             imgsTracked.append((runStart, runEnd))
+
+#             imgs = self.psi.get_images(runEnd-runStart, assemble=False)
+
+#             imgs = imgs[
+#                 [i for i in range(imgs.shape[0]) if not np.isnan(imgs[i : i + 1]).any()]
+#             ]
+
+#             origTrueIntensities = [np.sum(img.flatten(), dtype=np.double) for img in imgs]
+#             newTrueIntensities = []
+#             for j in origTrueIntensities:
+#                 if j<0:
+#                     newTrueIntensities.append(0)
+#                 else:
+#                     newTrueIntensities.append(np.log(j))
+#             origTrueIntensities = newTrueIntensities
+
+#             if getThumbnails:
+#                 saveMe = []
+#                 for img in imgs:
+#                     saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
+#                 thumbnails = np.array(saveMe)
+
+#             num_valid_imgs, x, y = imgs.shape
+
+#             img_batch = imgs.T
+#             img_batch[img_batch<0] = 0
+    
+#             if getThumbnails:
+#                 num_valid_thumbnails, tx, ty = thumbnails.shape
+#                 thumbnail_batch = thumbnails.T
+
+#             if getThumbnails:
+#                 nimg_batch = []
+#                 nthumbnail_batch = []
+#                 ntrueIntensity_batch = []
+#                 for ind, (img, thumbnail, trueIntens) in enumerate(zip(img_batch.T, thumbnail_batch.T, origTrueIntensities)):
+#                     currIntensity = np.sum(img.flatten(), dtype=np.double)
+#                     if self.imageProcessor.centerImg: 
+#                         nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
+#                     else:
+#                         nimg = self.imageProcessor.processImg(img, currIntensity)
+#                     if nimg is None:
+#                         nthumbnail = None
+#                     else:
+#                         nthumbnail = nimg.copy()
+#                     if nimg is not None:
+#                         nimg_batch.append(nimg)
+#                         nthumbnail_batch.append(nthumbnail)
+#                         ntrueIntensity_batch.append(trueIntens)
+#                     else:
+#                         num_valid_thumbnails -= 1
+#                         num_valid_imgs -= 1
+#                         self.excludedImgs.append(ind)
+#                 if self.imageProcessor.centerImg:
+#                     nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T
+#                     nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, self.imageProcessor.roi_h, self.imageProcessor.roi_w)
+
+#                     saveMe = []
+#                     for img in nthumbnail_batch:
+#                         saveMe.append(np.array(Image.fromarray(img).resize((self.thumbnailHeight, self.thumbnailWidth))))
+#                     nthumbnail_batch = np.array(saveMe)
+
+#                 else:
+#                     nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T 
+#                     nthumbnail_batch = np.array(nthumbnail_batch).reshape(num_valid_thumbnails, tx, ty)
+                
+                
+#                 if fullimgs is None and nimg_batch.shape[1]!=0:
+#                     fullimgs = nimg_batch
+#                     fullthumbnails = nthumbnail_batch
+#                     trueIntensities += ntrueIntensity_batch
+#                 elif nimg_batch.shape[1]!=0: 
+#                     fullimgs = np.hstack((fullimgs, nimg_batch))
+#                     fullthumbnails = np.vstack((fullthumbnails, nthumbnail_batch))
+#                     trueIntensities += ntrueIntensity_batch
+#             else:
+#                 nimg_batch = []
+#                 for ind, img in enumerate(img_batch.T):
+#                     currIntensity = np.sum(img.flatten(), dtype=np.double)
+#                     nimg = self.imageProcessor.processImg(img[200:, :], currIntensity)
+#                     if nimg is not None:
+#                         nimg_batch.append(nimg)
+#                     else:
+#                         num_valid_imgs -= 1
+#                         self.excludedImgs.append(ind)
+
+#                 if self.imageProcessor.centerImg:
+#                     nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, self.imageProcessor.roi_h*self.imageProcessor.roi_w).T 
+#                 else: 
+#                     nimg_batch = np.array(nimg_batch).reshape(num_valid_imgs, x*y).T 
+
+#                 if fullimgs is None:
+#                     fullimgs = nimg_batch
+#                 elif nimg_batch.shape[1]!=0:
+#                     fullimgs = np.hstack((fullimgs, nimg_batch))
+
+#         print("EXCLUDING IMAGES: ", self.excludedImgs)
+
+#         if getThumbnails:
+#             print(fullimgs.shape, fullthumbnails.shape, imgsTracked)
+#             return (fullimgs, fullthumbnails, imgsTracked, trueIntensities)
+#         else:
+#             return (fullimgs, imgsTracked)
+
+
+
+
+
+
 
 def main():
     """
