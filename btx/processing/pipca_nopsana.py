@@ -142,8 +142,16 @@ class iPCA_Pytorch_without_Psana:
         end_time = time.time()
 
         with TaskTimer(self.task_durations, "Fusing results"):
-            (reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time) = results[0]
-            #Will do the rest of the results later
+            (reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time) = ([], [], [], [], [], [], [], [])
+            for result in results:
+                reconstructed_images.append(result['reconstructed_images'])
+                S.append(result['S'])
+                V.append(result['V'])
+                mu.append(result['mu'])
+                total_variance.append(result['total_variance'])
+                losses.append(result['losses'])
+                frequency.append(result['frequency'])
+                execution_time.append(result['execution_time'])
 
         logging.info("Fused results from GPUs")
 
@@ -301,6 +309,7 @@ class iPCA_Pytorch_without_Psana:
         reconstructed_images = np.empty((0, self.num_components))
         
         with TaskTimer(self.task_durations, "Reconstructing images"):
+            st = time.time()
             for start in range(0, self.num_images, self.batch_size):
                 end = min(start + self.batch_size, self.num_images)
                 batch_imgs = self.images[start:end] ####
@@ -308,8 +317,9 @@ class iPCA_Pytorch_without_Psana:
                 reconstructed_batch = ipca.transform(reconstructed_batch)
                 reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
                 reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
+            et = time.time()
 
-        logging.info(f"GPU {rank}: Images reconstructed")
+        logging.info(f"GPU {rank}: Images reconstructed in {et-st} seconds")
 
         with TaskTimer(self.task_durations, "Computing compression loss"):
             if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda" and self.num_training_images < self.num_images:
@@ -366,7 +376,7 @@ class iPCA_Pytorch_without_Psana:
         torch.cuda.empty_cache()
         gc.collect()
 
-        return reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time
+        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'frequency':frequency, 'execution_time':execution_time}
 
     def create_shared_images(self):
         for sub_imgs in self.images:
