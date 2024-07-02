@@ -82,12 +82,6 @@ class iPCA_Pytorch_without_Psana:
         initial_shape = self.images.shape
 
         logging.info(f"Number of non-none images: {self.num_images}")
-        mem = psutil.virtual_memory()
-        logging.info("==================BEFORE SPLIT===================")
-        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
-        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
-        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
-        logging.info("=====================================")
 
         with TaskTimer(self.task_durations, "Splitting images on GPUs"):
             self.images = np.split(self.images, self.num_gpus, axis=1)
@@ -95,42 +89,13 @@ class iPCA_Pytorch_without_Psana:
             dtype = self.images[0].dtype
 
         gc.collect()
-        mem = psutil.virtual_memory()
-        logging.info("===============AFTER SPLIT======================")
-        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
-        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
-        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
-        logging.info("=====================================")
-        logging.info('Images split on GPUs')
 
         with TaskTimer(self.task_durations, "Creating shared memory blocks"):
             self.create_shared_images()
 
-        mem = psutil.virtual_memory()
-        logging.info("===============AFTER SHARED MEMORY======================")
-        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
-        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
-        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
-        logging.info("=====================================")
-
         self.device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(self.num_gpus)]
         logging.info(f"Device list: {self.device_list}")
         logging.info(f"Number of available GPUs: {torch.cuda.device_count()}")
-
-        """mp.set_start_method('spawn', force=True)  # Ensure the start method is 'spawn'
-        manager = mp.Manager()
-        return_list = manager.list()  # Shared list to store results from each process
-        processes = []
-
-        for rank in range(self.num_gpus):
-            p = mp.Process(target=self.process_on_gpu, args=(rank, return_list))
-            p.start()
-            processes.append(p)
-
-        for p in processes:
-            p.join()
-
-        results = list(return_list)"""
 
         mp.set_start_method('spawn', force=True)
 
@@ -154,79 +119,6 @@ class iPCA_Pytorch_without_Psana:
                 execution_time.append(result['execution_time'])
 
         logging.info("Fused results from GPUs")
-
-        """with TaskTimer(self.task_durations, "Initializing model"):
-            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size)
-
-        logging.info("Images loaded and formatted and model initialized")
-
-        with TaskTimer(self.task_durations, "Fitting model"):
-            ipca.fit(self.images.reshape(self.num_images, -1)[:self.num_training_images])
-    
-        logging.info(f"Model fitted on {self.num_training_images} images")
-
-        end_time = time.time()
-        execution_time = end_time - start_time  # Calculate the execution time
-        frequency = self.num_images/execution_time
-
-        reconstructed_images = np.empty((0, self.num_components))
-        
-        with TaskTimer(self.task_durations, "Reconstructing images"):
-            for start in range(0, self.num_images, self.batch_size):
-                end = min(start + self.batch_size, self.num_images)
-                batch_imgs = self.images[start:end]
-                reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
-                reconstructed_batch = ipca.transform(reconstructed_batch)
-                reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
-                reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
-
-        logging.info("Images reconstructed")
-
-        with TaskTimer(self.task_durations, "Computing compression loss"):
-            if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda" and self.num_training_images < self.num_images:
-                average_training_losses = []
-                for start in range(0, self.num_training_images, self.batch_size):
-                    end = min(start + self.batch_size, self.num_training_images)
-                    batch_imgs = self.images[start:end]
-                    average_training_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
-                    average_training_losses.append(average_training_loss.cpu().detach().numpy())
-                average_training_loss = np.mean(average_training_losses)
-                logging.info(f"Average training loss: {average_training_loss*100:.3f} (in %)")
-                average_evaluation_losses = []
-                for start in range(self.num_training_images, self.num_images, self.batch_size):
-                    end = min(start + self.batch_size, self.num_images)
-                    batch_imgs = self.images[start:end]
-                    average_evaluation_loss= ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
-                    average_evaluation_losses.append(average_evaluation_loss.cpu().detach().numpy())
-                average_evaluation_loss = np.mean(average_evaluation_losses)
-                logging.info(f"Average evaluation loss: {average_evaluation_loss*100:.3f} (in %)")
-            elif str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
-                average_losses = []
-                for start in range(0, self.num_images, self.batch_size):
-                    end = min(start + self.batch_size, self.num_images)
-                    batch_imgs = self.images[start:end]
-                    average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
-                    average_losses.append(average_loss.cpu().detach().numpy())
-                average_loss = np.mean(average_losses)
-                logging.info(f"Average loss: {average_loss*100:.3f} (in %)")
-            else:
-                RaiseError("Too long not to compute on GPU")
-                        
-        if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
-            S = ipca.singular_values_.cpu().detach().numpy()
-            V = ipca.components_.cpu().detach().numpy().T
-            mu = ipca.mean_.cpu().detach().numpy()
-            total_variance = ipca.explained_variance_.cpu().detach().numpy()
-            if self.num_training_images < self.num_images:
-                losses = average_training_losses, average_evaluation_losses
-            else:
-                losses = average_losses
-        else:
-            S = ipca.singular_values_
-            V = ipca.components_.T
-            mu = ipca.mean_
-            total_variance = ipca.explained_variance_
-            losses = average_loss"""
 
         # save model to an hdf5 file
         with TaskTimer(self.task_durations, "save inputs file h5"):
@@ -274,29 +166,13 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device)
 
-        logging.info(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes")
-        logging.info(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes")
         logging.info(f"GPU {rank}: Images loaded and formatted and model initialized")
-
-        mem = psutil.virtual_memory()
-        logging.info("=====================================")
-        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
-        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
-        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
-        logging.info("=====================================")
 
         with TaskTimer(self.task_durations, "Fitting model"):
             st = time.time()
             ipca.fit(self.images.reshape(self.num_images, -1)[:self.num_training_images]) ##CHANGED THIS TO USE THE SHARED MEMORY
             et = time.time()
             logging.info(f"GPU {rank}: Model fitted in {et-st} seconds")
-
-        mem = psutil.virtual_memory()
-        logging.info("=====================================")
-        logging.info(f"System total memory: {mem.total / 1024**3:.2f} GB")
-        logging.info(f"System available memory: {mem.available / 1024**3:.2f} GB")
-        logging.info(f"System used memory: {mem.used / 1024**3:.2f} GB")
-        logging.info("=====================================")
 
         logging.info(f"GPU {rank}: Model fitted on {self.num_training_images} images")
         logging.info(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes")
@@ -390,9 +266,6 @@ class iPCA_Pytorch_without_Psana:
         self.images = None  # Delete the original images to free up memory
 
 
-
-
-
 def append_to_dataset(f, dataset_name, data):
     if dataset_name not in f:
         f.create_dataset(dataset_name, data=np.array(data))
@@ -470,8 +343,8 @@ def mapping_function(images, type_mapping = "id"):
 
 def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,images,training_percentage,smoothing_function,num_gpus):
 
-    #images = mapping_function(images, type_mapping = smoothing_function)
-    #print("Mapping done")
+    images = mapping_function(images, type_mapping = smoothing_function)
+    print("Mapping done")
     
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,
