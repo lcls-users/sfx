@@ -306,7 +306,7 @@ class CrystFELtoPyFAI:
                 res = panels["panels"][full_name]["res"]
                 corner_x = panels["panels"][full_name]["corner_x"] / res
                 corner_y = panels["panels"][full_name]["corner_y"] / res
-                corner_z = panels["panels"][full_name]["coffset"]-mean_z
+                corner_z = panels["panels"][full_name]["coffset"]
                 # Get tile vectors for ss and fs directions
                 ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
                 fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
@@ -373,16 +373,16 @@ class CrystFELtoPyFAI:
                 # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
                 if cframe==0:
                     # psana frame to pyFAI frame
-                    # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
-                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x  # 1: bottom to top
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = y  # 2: left to right
+                    # 0 = z along beam, 1 = dim1 (vertical) fs, 2 = dim2 (horizontal) ss
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = x
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = y
                 elif cframe==1:
                     # Lab frame to pyFAI frame
-                    # 0 = z along beam, 1 = dim1 (Y) fs, 2 = dim2 (X) ss
-                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z  # 3: along beam
-                    pyfai_fmt[ss_portion, fs_portion, :, 1] = y  # 1: bottom to top
-                    pyfai_fmt[ss_portion, fs_portion, :, 2] = x  # 2: left to right
+                    # 0 = z along beam, 1 = dim1 (vertical) fs, 2 = dim2 (horizontal) ss
+                    pyfai_fmt[ss_portion, fs_portion, :, 0] = z
+                    pyfai_fmt[ss_portion, fs_portion, :, 1] = y
+                    pyfai_fmt[ss_portion, fs_portion, :, 2] = x
         return pyfai_fmt
 
 class PyFAItoCrystFEL:
