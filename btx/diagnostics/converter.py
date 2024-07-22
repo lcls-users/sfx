@@ -340,6 +340,7 @@ class CrystFELtoPyFAI:
                     pix_arr[p, ss_portion, fs_portion, 0] = x[p, ss_portion, fs_portion]
                     pix_arr[p, ss_portion, fs_portion, 1] = y[p, ss_portion, fs_portion]
                     pix_arr[p, ss_portion, fs_portion, 2] = z[p, ss_portion, fs_portion]
+            pix_arr /= 1e6
         return pix_arr
 
     def get_corner_array(self, pix_pos, panels, cframe=CFRAME_PSANA):
