@@ -55,7 +55,7 @@ class ePix10kaQuad(Detector):
 
 class Jungfrau4M(Detector):
     """
-    PyFAI Detector instance for the Jungfrau
+    PyFAI Detector instance for the Jungfrau4M
     """
 
     def __init__(
@@ -149,6 +149,11 @@ class CrystFELtoPyFAI:
     def get_detector(self, det_type):
         """
         Instantiate a PyFAI Detector object based on the detector type
+
+        Parameters
+        ----------
+        det_type : str
+            Detector type
         """
         if det_type == "epix10k2M":
             return ePix10k2M()
@@ -424,6 +429,17 @@ class PyFAItoCrystFEL:
     def rotation(self, X, Y, Z, angle):
         """
         Return the X, Y, Z coordinates rotated by angle
+
+        Parameters
+        ----------
+        X : np.ndarray
+            X coordinates
+        Y : np.ndarray
+            Y coordinates
+        Z : np.ndarray
+            Z coordinates
+        angle : float 
+            rotation angle in radians
         """
         Xr = X * np.cos(angle) - Y * np.sin(angle)
         Yr = X * np.sin(angle) + Y * np.cos(angle)
@@ -432,15 +448,45 @@ class PyFAItoCrystFEL:
     def translation(self, X, Y, Z, dx, dy, dz):
         """
         Return the X, Y, Z coordinates translated by dx, dy, dz
+
+        Parameters
+        ----------
+        X : np.ndarray
+            X coordinates
+        Y : np.ndarray
+            Y coordinates
+        Z : np.ndarray
+            Z coordinates
+        dx : float
+            Translation in X in meters
+        dy : float
+            Translation in Y in meters
+        dz : float
+            Translation in Z in meters
         """
         X += dx
         Y += dy
         Z += dz
         return X, Y, Z
     
-    def PONI_to_center(self, poni1, poni2, dist, rot1, rot2):
+    def PONI_to_center(self, dist=0.1, poni1=0, poni2=0, rot1=0, rot2=0, rot3=0):
         """
         Relate the Point of Normal Incidence (PONI) poni1, poni2, dist to the center of the beam Xc, Yc, Zc
+
+        Parameters
+        ----------
+        dist : float
+            Distance in meters
+        poni1 : float
+            PONI coordinate in the fast scan dimension in meters
+        poni2 : float
+            PONI coordinate in the slow scan dimension in meters
+        rot1 : float
+            Rotation angle around the fast scan axis in radians
+        rot2 : float
+            Rotation angle around the slow scan axis in radians
+        rot3 : float
+            Rotation angle around the beam axis in radians
         """
         Xc = poni1+dist*(np.tan(rot2)/np.cos(rot1))
         Yc = poni2-dist*(np.tan(rot1))
@@ -450,21 +496,52 @@ class PyFAItoCrystFEL:
     def scale_to_µm(self, dx, dy, dz):
         """
         Scale shifts from meter m to micrometer µm
+
+        Parameters
+        ----------
+        dx : float
+            Shift in X in meters
+        dy : float
+            Shift in Y in meters
+        dz : float
+            Shift in Z in meters
         """
         return dx*1e6, dy*1e6, dz*1e6
     
-    def correct_geom(self, poni1, poni2, dist, rot1, rot2, rot3=0):
+    def correct_geom(self, dist=0, poni1=0, poni2=0, rot1=0, rot2=0, rot3=0):
         """
-        Correct the geometry based on the given parameters
+        Correct the geometry based on the given parameters found by PyFAI calibration
+
+        Parameters
+        ----------
+        dist : float
+            Distance in meters
+        poni1 : float
+            PONI coordinate in the fast scan dimension in meters
+        poni2 : float
+            PONI coordinate in the slow scan dimension in meters
+        rot1 : float
+            Rotation angle around the fast scan axis in radians
+        rot2 : float
+            Rotation angle around the slow scan axis in radians
+        rot3 : float
+            Rotation angle around the beam axis in radians
         """
         X, Y, Z = self.X, self.Y, self.Z
+        if dist==0:
+            dist = self.sg.geometry_refinement.param[0]
+            poni1 = self.sg.geometry_refinement.param[1]
+            poni2 = self.sg.geometry_refinement.param[2]
+            rot1 = self.sg.geometry_refinement.param[3]
+            rot2 = self.sg.geometry_refinement.param[4]
+            rot3 = self.sg.geometry_refinement.param[5]
         Xc, Yc, Zc = self.PONI_to_center(poni1, poni2, dist, rot1, rot2)
         Xc, Yc, Zc = self.scale_to_μm(Xc, Yc, Zc)
-        X, Y, Z = self.translation(X, Y, Z, -Xc, -Yc, -np.mean(Z))
+        X, Y, Z = self.translation(X, Y, Z, -Xc, -Yc, -np.mean(Z)-Zc)
         X, Y, Z = self.rotation(Y, Z, X, -rot1)
         X, Y, Z = self.rotation(Z, X, Y, -rot2)
         X, Y, Z = self.rotation(X, Y, Z, rot3)
-        X, Y, Z = self.translation(X, Y, Z, 0, 0, -Zc)
+        #X, Y, Z = self.translation(X, Y, Z, 0, 0, -Zc)
         self.X = X
         self.Y = Y
         self.Z = Z
@@ -472,6 +549,13 @@ class PyFAItoCrystFEL:
     def geometry_to_crystfel(self, output_file, zcorr_um=None):
         """
         From corrected X, Y, Z coordinates, write a CrystFEL .geom file
+
+        Parameters
+        ----------
+        output_file : str
+            Path to the output .geom file
+        zcorr_um : float
+            Correction to the Z coordinates in micrometers
         """
         X, Y, Z = self.X, self.Y, self.Z
         geom = self.geom
