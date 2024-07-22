@@ -469,24 +469,25 @@ class PyFAItoCrystFEL:
         Zc = dist/(np.cos(rot1)*np.cos(rot2))
         return Xc, Yc, Zc
     
-    def scale_to_µm(self, dx, dy, dz):
+    def scale_to_µm(self, x, y, z):
         """
-        Scale shifts from meter m to micrometer µm
+        Scale from meter m to micrometer µm
 
         Parameters
         ----------
-        dx : float
-            Shift in X in meters
-        dy : float
-            Shift in Y in meters
-        dz : float
-            Shift in Z in meters
+        x : np.ndarray
+            x coordinate in meters
+        y : np.ndarray
+            y coordinate in meters
+        z : np.ndarray
+            z coordinate in meters
         """
-        return dx*1e6, dy*1e6, dz*1e6
+        return x*1e6, y*1e6, z*1e6
     
     def correct_geom(self, dist=0, poni1=0, poni2=0, rot1=0, rot2=0, rot3=0):
         """
         Correct the geometry based on the given parameters found by PyFAI calibration
+        Finally scale to micrometers (needed for writing CrystFEL .geom files)
 
         Parameters
         ----------
@@ -512,12 +513,12 @@ class PyFAItoCrystFEL:
             rot2 = self.sg.geometry_refinement.param[4]
             rot3 = self.sg.geometry_refinement.param[5]
         Xc, Yc, Zc = self.PONI_to_center(dist, poni1, poni2, rot1, rot2, rot3)
-        Xc, Yc, Zc = self.scale_to_μm(Xc, Yc, Zc)
-        X, Y, Z = self.translation(X, Y, Z, -Xc, -Yc, -np.mean(Z))
+        X, Y, Z = self.translation(X, Y, Z, -Xc, -Yc, -Zc)
         X, Y, Z = self.rotation(Y, Z, X, -rot1)
         X, Y, Z = self.rotation(Z, X, Y, -rot2)
         X, Y, Z = self.rotation(X, Y, Z, rot3)
-        X, Y, Z = self.translation(X, Y, Z, 0, 0, -Zc)
+        X, Y, Z = self.scale_to_µm(X, Y, Z)
+        #X, Y, Z = self.translation(X, Y, Z, 0, 0, -Zc)
         self.X = X
         self.Y = Y
         self.Z = Z
