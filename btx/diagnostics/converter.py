@@ -293,12 +293,12 @@ class CrystFELtoPyFAI:
         panels : dict
             Dictionary of panels from a CrystFEL geometry file
         """
+        nmods = self.detector.n_modules
+        nasics = self.detector.n_asics
+        asics_shape = self.detector.asics_shape
+        fs_size = self.detector.fs_size
+        ss_size = self.detector.ss_size
         if self.psana_file is None:
-            nmods = self.detector.n_modules
-            nasics = self.detector.n_asics
-            asics_shape = self.detector.asics_shape
-            fs_size = self.detector.fs_size
-            ss_size = self.detector.ss_size
             pix_arr = np.zeros([nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3])
             mean_z = np.mean([panels["panels"][f"p{p}a{a}"]["coffset"] for p in range(nmods) for a in range(nasics)])
             for p in range(nmods):
