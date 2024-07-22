@@ -325,7 +325,7 @@ class CrystFELtoPyFAI:
                     pix_arr[p, ss_portion, fs_portion, 1] = y
                     pix_arr[p, ss_portion, fs_portion, 2] = z
         else:
-            geom = GeometryAccess(self.psana_file, 0, use_wide_pix_center=False)
+            geom = GeometryAccess(psana_file, 0, use_wide_pix_center=False)
             top = geom.get_top_geo()
             child = top.get_list_of_children()[0]
             x, y, z = geom.get_pixel_coords(oname=child.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
