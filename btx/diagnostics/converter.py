@@ -298,8 +298,8 @@ class CrystFELtoPyFAI:
         asics_shape = self.detector.asics_shape
         fs_size = self.detector.fs_size
         ss_size = self.detector.ss_size
+        pix_arr = np.zeros([nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3])
         if self.psana_file is None:
-            pix_arr = np.zeros([nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3])
             mean_z = np.mean([panels["panels"][f"p{p}a{a}"]["coffset"] for p in range(nmods) for a in range(nasics)])
             for p in range(nmods):
                 pname = f"p{p}"
@@ -327,16 +327,19 @@ class CrystFELtoPyFAI:
                     pix_arr[p, ss_portion, fs_portion, 1] = y
                     pix_arr[p, ss_portion, fs_portion, 2] = z
         else:
-            geo = GeometryAccess(self.psana_file, 0, use_wide_pix_center=False)
-            top = geo.get_top_geo()
-            children = top.get_list_of_children()[0]
-            X, Y, Z = geo.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
-            Z -= np.mean(Z)
-            pix_arr = np.array([X, Y, Z])
-            print(pix_arr.shape)
-            pix_arr = pix_arr.reshape(nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3)
-            print(pix_arr.shape)
-            pix_arr /= 1e6
+            geom = GeometryAccess(self.psana_file, 0, use_wide_pix_center=False)
+            top = geom.get_top_geo()
+            child = top.get_list_of_children()[0]
+            x, y, z = geom.get_pixel_coords(oname=child.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
+            for p in range(nmods):
+                for asic in range(nasics):
+                    arow = asic // (nasics//2)
+                    acol = asic % (nasics//2)
+                    ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
+                    fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
+                    pix_arr[p, ss_portion, fs_portion, 0] = x[p, ss_portion, fs_portion]
+                    pix_arr[p, ss_portion, fs_portion, 1] = y[p, ss_portion, fs_portion]
+                    pix_arr[p, ss_portion, fs_portion, 2] = z[p, ss_portion, fs_portion]
         return pix_arr
 
     def get_corner_array(self, pix_pos, panels, cframe=CFRAME_PSANA):
