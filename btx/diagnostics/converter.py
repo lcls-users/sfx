@@ -336,6 +336,7 @@ class CrystFELtoPyFAI:
             print(pix_arr.shape)
             pix_arr = pix_arr.reshape(nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3)
             print(pix_arr.shape)
+            pix_arr /= 1e6
         return pix_arr
 
     def get_corner_array(self, pix_pos, panels, cframe=CFRAME_PSANA):
