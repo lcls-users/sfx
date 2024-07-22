@@ -333,6 +333,7 @@ class CrystFELtoPyFAI:
             pix_arr = geo.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
             pix_arr = np.reshape(pix_arr, (nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3))
             pix_arr[:, :, :, 2] -= np.mean(pix_arr[:, :, :, 2])
+            pix_arr /= 1e6
         return pix_arr
 
     def get_corner_array(self, pix_pos, panels, cframe=CFRAME_PSANA):
