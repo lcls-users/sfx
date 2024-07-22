@@ -395,36 +395,12 @@ class PyFAItoCrystFEL:
     Class to write CrystFEL .geom geometry files from PyFAI SingleGeometry instance
     """
 
-    def __init__(self, sg, psana_file, output_dir):
+    def __init__(self, sg, pixel_array, output_dir):
         self.sg = sg
-        self.psana_file = psana_file
+        self.pixel_array = pixel_array
         self.output_dir = output_dir
         self.detector = sg.detector
-        self.geom = GeometryAccess(psana_file)
-        self.get_pixel_coords()
-
-    def get_pixel_coords(self):
-        """
-        Get pixel coordinates for a given detector object
-
-        Parameters
-        ----------
-        oname : str
-            Detector object name
-        oindex : int
-            Detector object index
-        do_tilt : bool
-            Apply detector tilt
-        cframe : int
-            Reference frame
-        """
-        top = self.geom.get_top_geo()
-        children = top.get_list_of_children()[0]
-        X, Y, Z = self.geom.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
-        self.shape = X.shape
-        self.X = X
-        self.Y = Y
-        self.Z = Z
+        self.X, self.Y, self.Z = pixel_array[:, :, :, 0], pixel_array[:, :, :, 1], pixel_array[:, :, :, 2]
 
     def rotation(self, X, Y, Z, angle):
         """
