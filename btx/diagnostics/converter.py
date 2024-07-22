@@ -136,9 +136,10 @@ class CrystFELtoPyFAI:
     Class to convert CrystFEL .geom geometry files from a given reference frame to PyFAI corner arrays
     """
 
-    def __init__(self, geom_file, det_type, cframe=CFRAME_PSANA):
+    def __init__(self, geom_file, det_type, psana_file=None, cframe=CFRAME_PSANA):
         self.det_type = det_type
         self.geom_file = geom_file
+        self.psana_file = psana_file
         self.cframe = cframe
         self.detector = self.get_detector(det_type)
         self.panels = self.from_CrystFEL(geom_file)
@@ -292,38 +293,45 @@ class CrystFELtoPyFAI:
         panels : dict
             Dictionary of panels from a CrystFEL geometry file
         """
-        nmods = self.detector.n_modules
-        nasics = self.detector.n_asics
-        asics_shape = self.detector.asics_shape
-        fs_size = self.detector.fs_size
-        ss_size = self.detector.ss_size
-        pix_arr = np.zeros([nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3])
-        mean_z = np.mean([panels["panels"][f"p{p}a{a}"]["coffset"] for p in range(nmods) for a in range(nasics)])
-        for p in range(nmods):
-            pname = f"p{p}"
-            for asic in range(nasics):
-                asicname = f"a{asic}"
-                full_name = pname + asicname
-                arow = asic // (nasics//2)
-                acol = asic % (nasics//2)
-                ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
-                fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
-                res = panels["panels"][full_name]["res"]
-                corner_x = panels["panels"][full_name]["corner_x"] / res
-                corner_y = panels["panels"][full_name]["corner_y"] / res
-                corner_z = panels["panels"][full_name]["coffset"]-mean_z
-                # Get tile vectors for ss and fs directions
-                ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
-                fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
-                coords_ss, coords_fs = np.meshgrid(
-                    np.arange(0, ss_size), np.arange(0, fs_size), indexing="ij"
-                )
-                x = corner_x + ssx * coords_ss + fsx * coords_fs
-                y = corner_y + ssy * coords_ss + fsy * coords_fs
-                z = corner_z + ssz * coords_ss + fsz * coords_fs
-                pix_arr[p, ss_portion, fs_portion, 0] = x
-                pix_arr[p, ss_portion, fs_portion, 1] = y
-                pix_arr[p, ss_portion, fs_portion, 2] = z
+        if self.psana_file is None:
+            nmods = self.detector.n_modules
+            nasics = self.detector.n_asics
+            asics_shape = self.detector.asics_shape
+            fs_size = self.detector.fs_size
+            ss_size = self.detector.ss_size
+            pix_arr = np.zeros([nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3])
+            mean_z = np.mean([panels["panels"][f"p{p}a{a}"]["coffset"] for p in range(nmods) for a in range(nasics)])
+            for p in range(nmods):
+                pname = f"p{p}"
+                for asic in range(nasics):
+                    asicname = f"a{asic}"
+                    full_name = pname + asicname
+                    arow = asic // (nasics//2)
+                    acol = asic % (nasics//2)
+                    ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
+                    fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
+                    res = panels["panels"][full_name]["res"]
+                    corner_x = panels["panels"][full_name]["corner_x"] / res
+                    corner_y = panels["panels"][full_name]["corner_y"] / res
+                    corner_z = panels["panels"][full_name]["coffset"]-mean_z
+                    # Get tile vectors for ss and fs directions
+                    ssx, ssy, ssz = np.array(panels["panels"][full_name]["ss"]) / res
+                    fsx, fsy, fsz = np.array(panels["panels"][full_name]["fs"]) / res
+                    coords_ss, coords_fs = np.meshgrid(
+                        np.arange(0, ss_size), np.arange(0, fs_size), indexing="ij"
+                    )
+                    x = corner_x + ssx * coords_ss + fsx * coords_fs
+                    y = corner_y + ssy * coords_ss + fsy * coords_fs
+                    z = corner_z + ssz * coords_ss + fsz * coords_fs
+                    pix_arr[p, ss_portion, fs_portion, 0] = x
+                    pix_arr[p, ss_portion, fs_portion, 1] = y
+                    pix_arr[p, ss_portion, fs_portion, 2] = z
+        else:
+            geo = GeometryAccess(self.psana_file, 0, use_wide_pix_center=False)
+            top = geo.get_top_geo()
+            children = top.get_list_of_children()[0]
+            pix_arr = geo.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
+            pix_arr[:, :, :, 2] -= np.mean(pix_arr[:, :, :, 2])
         return pix_arr
 
     def get_corner_array(self, pix_pos, panels, cframe=CFRAME_PSANA):
@@ -513,12 +521,11 @@ class PyFAItoCrystFEL:
             rot2 = self.sg.geometry_refinement.param[4]
             rot3 = self.sg.geometry_refinement.param[5]
         Xc, Yc, Zc = self.PONI_to_center(dist, poni1, poni2, rot1, rot2, rot3)
-        X, Y, Z = self.translation(X, Y, Z, -Xc, -Yc, 0)
         X, Y, Z = self.rotation(Y, Z, X, -rot1)
         X, Y, Z = self.rotation(Z, X, Y, -rot2)
         X, Y, Z = self.rotation(X, Y, Z, rot3)
+        X, Y, Z = self.translation(X, Y, Z, -Xc, -Yc, -Zc)
         X, Y, Z = self.scale_to_µm(X, Y, Z)
-        X, Y, Z = self.translation(X, Y, Z, 0, 0, -Zc)
         self.X = X
         self.Y = Y
         self.Z = Z
