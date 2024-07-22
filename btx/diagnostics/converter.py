@@ -137,13 +137,9 @@ class CrystFELtoPyFAI:
     """
 
     def __init__(self, geom_file, det_type, psana_file=None, cframe=CFRAME_PSANA):
-        self.det_type = det_type
-        self.geom_file = geom_file
-        self.psana_file = psana_file
-        self.cframe = cframe
         self.detector = self.get_detector(det_type)
         self.panels = self.from_CrystFEL(geom_file)
-        self.pix_pos = self.get_pixel_coordinates(self.panels)
+        self.pix_pos = self.get_pixel_coordinates(self.panels, psana_file)
         self.corner_array = self.get_corner_array(self.pix_pos, self.panels, cframe)
         self.detector.set_pixel_corners(self.corner_array)
 
@@ -283,7 +279,7 @@ class CrystFELtoPyFAI:
                         panel["coffset"] = float(value)
             return detector
 
-    def get_pixel_coordinates(self, panels: dict):
+    def get_pixel_coordinates(self, panels: dict, psana_file=None):
         """
         From a parsed CrystFEL geometry file, calculate Epix10k2M pixel coordinates
         in psana reference frame
@@ -292,6 +288,8 @@ class CrystFELtoPyFAI:
         ----------
         panels : dict
             Dictionary of panels from a CrystFEL geometry file
+        psana_file : str
+            Path to the psana geometry file
         """
         nmods = self.detector.n_modules
         nasics = self.detector.n_asics
