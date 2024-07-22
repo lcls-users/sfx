@@ -330,10 +330,12 @@ class CrystFELtoPyFAI:
             geo = GeometryAccess(self.psana_file, 0, use_wide_pix_center=False)
             top = geo.get_top_geo()
             children = top.get_list_of_children()[0]
-            pix_arr = geo.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
-            pix_arr = np.reshape(pix_arr, (nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3))
-            pix_arr[:, :, :, 2] -= np.mean(pix_arr[:, :, :, 2])
-            pix_arr /= 1e6
+            X, Y, Z = geo.get_pixel_coords(oname=children.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
+            Z -= np.mean(Z)
+            pix_arr = np.array([X, Y, Z])
+            print(pix_arr.shape)
+            pix_arr = pix_arr.reshape(nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3)
+            print(pix_arr.shape)
         return pix_arr
 
     def get_corner_array(self, pix_pos, panels, cframe=CFRAME_PSANA):
