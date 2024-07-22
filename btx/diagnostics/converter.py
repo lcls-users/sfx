@@ -522,7 +522,7 @@ class PyFAItoCrystFEL:
         self.Y = Y
         self.Z = Z
     
-    def geometry_to_crystfel(self, output_file, zcorr_um=None):
+    def geometry_to_crystfel(self, psana_file, output_file, zcorr_um=None):
         """
         From corrected X, Y, Z coordinates, write a CrystFEL .geom file
 
@@ -534,7 +534,7 @@ class PyFAItoCrystFEL:
             Correction to the Z coordinates in micrometers
         """
         X, Y, Z = self.X, self.Y, self.Z
-        geom = self.geom
+        geom = GeometryAccess(psana_file, 0, use_wide_pix_center=False)
         geom1 = geom.get_seg_geo() # GeometryObject
         seg = geom1.algo # object of the SegmentGeometry subclass
 
