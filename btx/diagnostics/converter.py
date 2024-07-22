@@ -297,7 +297,7 @@ class CrystFELtoPyFAI:
         fs_size = self.detector.fs_size
         ss_size = self.detector.ss_size
         pix_arr = np.zeros([nmods, ss_size * asics_shape[0], fs_size * asics_shape[1], 3])
-        if self.psana_file is None:
+        if psana_file is None:
             mean_z = np.mean([panels["panels"][f"p{p}a{a}"]["coffset"] for p in range(nmods) for a in range(nasics)])
             for p in range(nmods):
                 pname = f"p{p}"
