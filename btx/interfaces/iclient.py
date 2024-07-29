@@ -255,6 +255,7 @@ if __name__ == "__main__":
 
     algo_state_dict = ipca_instance.save_state()
     last_batch = False
+    logging.basicConfig(level=logging.DEBUG)
 
     with Pool(processes=num_gpus) as pool:
 
