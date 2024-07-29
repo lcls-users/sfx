@@ -13,7 +13,7 @@ import os
 import sys
 import psutil
 
-from multiprocessing import shared_memory
+from multiprocessing import shared_memory, Pool
 import torch 
 import torch.nn as nn
 import torch.multiprocessing as mp
