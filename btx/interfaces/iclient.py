@@ -289,9 +289,9 @@ if __name__ == "__main__":
             device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
             if not last_batch:
-                algo_state_dict, ipca_state_dict = pool.starmap(ipca_instance.run_batch, [(ipca_instance.algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list) for rank in range(num_gpus)])
+                algo_state_dict, ipca_state_dict = pool.starmap(ipca_instance.run_batch, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list) for rank in range(num_gpus)])
             else:
-                results = pool.starmap(ipca_instance.run_batch, [(ipca_instance.algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list) for rank in range(num_gpus)])
+                results = pool.starmap(ipca_instance.run_batch, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list) for rank in range(num_gpus)])
                 (reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time) = ([], [], [], [], [], [], [], [])
                 for result in results:
                     reconstructed_images.append(result['reconstructed_images'])
