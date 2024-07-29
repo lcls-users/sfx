@@ -259,7 +259,7 @@ if __name__ == "__main__":
 
         for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
-            current_loading_batch = []
+            current_loading_batch = np.array([])
             requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
             server_address = ('localhost', 5000)
@@ -272,9 +272,7 @@ if __name__ == "__main__":
                 current_loading_batch.append(batch)
             print(f"Loaded {event+loading_batch_size} images.")
 
-            current_loading_batch = current_loading_batch[
-                [i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]
-            ]
+            current_loading_batch = current_loading_batch[[i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
             logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
             current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
