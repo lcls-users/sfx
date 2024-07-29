@@ -253,11 +253,15 @@ if __name__ == "__main__":
     )
     
     algo_state_dict = ipca_instance.save_state()
+    last_batch = False
 
     with Pool(processes=num_gpus) as pool:
 
         for event in range(start_offset, start_offset + num_images, loading_batch_size):
-
+            
+            if event + loading_batch_size >= num_images + start_offset:
+                last_batch = True
+                
             current_loading_batch = []
             requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
