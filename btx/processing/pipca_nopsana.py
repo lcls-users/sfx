@@ -279,7 +279,8 @@ class iPCA_Pytorch_without_Psana:
             self.shm = shm_list       
 
     def run_batch(self,algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list):
-        
+        device = device_list[rank]
+        self.device = device
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
         with TaskTimer(self.task_durations, "Initializing model"):
