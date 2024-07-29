@@ -28,7 +28,7 @@ class IncrementalPCAonGPU():
                                     the data and set to `5 * n_features`. Defaults to None.
     """
 
-    def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None, device='cuda'):
+    def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None, device='cuda',state_dict=None):
         self.n_components = n_components
         self.whiten = whiten
         self.copy = copy
@@ -56,7 +56,10 @@ class IncrementalPCAonGPU():
         self.n_samples_seen_ = 0
 
         self.components = []  # Liste pour stocker les composants
-    
+
+        if state_dict is not None:
+            self.__dict__.update(state_dict)
+
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
         Validates and converts the input data `X` to the appropriate tensor format.
@@ -305,3 +308,6 @@ class IncrementalPCAonGPU():
         norm_batch = norm_batch / initial_norm
 
         return torch.mean(norm_batch)
+
+    def save_ipca(self):
+        return self.__dict__.copy()

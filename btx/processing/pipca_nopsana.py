@@ -105,7 +105,7 @@ class iPCA_Pytorch_without_Psana:
 
         logging.info("All processes completed")
         end_time = time.time()
-
+        
         with TaskTimer(self.task_durations, "Fusing results"):
             (reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time) = ([], [], [], [], [], [], [], [])
             for result in results:
@@ -265,6 +265,83 @@ class iPCA_Pytorch_without_Psana:
 
         self.images = None  # Delete the original images to free up memory
 
+    def save_state(self):
+        self.images = None #Free up memory
+        return self.__dict__.copy()
+
+    def update_state(self,state_updates,device_list=None, shm_list = None):
+        if not isinstance(state_updates, dict):
+            raise ValueError("state_updates has to be a dictionnary")
+        self.__dict__.update(state_updates)
+        if device_list is not None:
+            self.device_list = device_list
+        if shm_list is not None:
+            self.shm = shm_list       
+
+    def run_batch(self,algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list):
+        
+        self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
+
+        with TaskTimer(self.task_durations, "Initializing model"):
+            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = ipca_state_dict)
+        
+        with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
+            existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
+            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
+            self.images = images
+            print("Test:",images.shape)
+
+        self.num_images = self.images.shape[0]
+
+        with TaskTimer(self.task_durations, "Fitting model"):
+            st = time.time()
+            ipca.fit(self.images.reshape(self.num_images, -1)) ##va falloir faire gaffe au training ratio
+            et = time.time()
+            logging.info(f"GPU {rank}: Model fitted in {et-st} seconds")
+
+        if not last_batch:
+            existing_shm.close()
+            existing_shm.unlink()
+            self.images = None
+            return (self.save_state(),ipca.save_ipca())
+        
+        reconstructed_images = np.empty((0, self.num_components))    
+
+        with TaskTimer(self.task_durations, "Reconstructing images"):
+            st = time.time()
+            for start in range(0, self.num_images, self.batch_size):
+                end = min(start + self.batch_size, self.num_images)
+                batch_imgs = self.images[start:end] ####
+                reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
+                reconstructed_batch = ipca.transform(reconstructed_batch)
+                reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
+                reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
+            et = time.time()    
+
+        if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
+            S = ipca.singular_values_.cpu().detach().numpy()
+            V = ipca.components_.cpu().detach().numpy().T
+            mu = ipca.mean_.cpu().detach().numpy()
+            total_variance = ipca.explained_variance_.cpu().detach().numpy()
+            if self.num_training_images < self.num_images:
+                losses = average_training_losses, average_evaluation_losses
+            else:
+                losses = average_losses
+        else:
+            S = ipca.singular_values_
+            V = ipca.components_.T
+            mu = ipca.mean_
+            total_variance = ipca.explained_variance_
+            losses = average_loss
+
+        # Clear cache
+        torch.cuda.empty_cache()
+        gc.collect()
+
+        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'frequency':frequency, 'execution_time':execution_time}
+
+###############################################################################################################
+###############################################################################################################
 
 def append_to_dataset(f, dataset_name, data):
     if dataset_name not in f:
