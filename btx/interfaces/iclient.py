@@ -259,7 +259,7 @@ if __name__ == "__main__":
 
         for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
-            current_loading_batch = np.array([])
+            current_loading_batch = []
             requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
             server_address = ('localhost', 5000)
