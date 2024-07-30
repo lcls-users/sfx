@@ -58,7 +58,7 @@ class iPCA_Pytorch_without_Psana:
         self.det_type = det_type
         self.start_time = None
         self.device_list = []
-        self.ipca = None
+        self.ipca_dict = None
 
         self.training_percentage = training_percentage
         self.num_training_images = math.ceil(self.num_images * self.training_percentage)
@@ -286,11 +286,8 @@ class iPCA_Pytorch_without_Psana:
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
         with TaskTimer(self.task_durations, "Initializing model"):
-            if ipca_state_dict is None:
-                ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = ipca_state_dict)
-                self.ipca = ipca
-            else:
-                ipca = self.ipca
+            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = self.ipca_dict)
+            self.ipca_dict =ipca.__dict__
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
@@ -317,7 +314,7 @@ class iPCA_Pytorch_without_Psana:
             etat2 = ipca.save_ipca()
             dict_to_return = {'algo':None,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             logging.info('Checkpoint 4')
-            self.ipca = ipca
+            self.ipca_dict = etat2
             return dict_to_return
         
         logging.info('Checkpoint 5')
