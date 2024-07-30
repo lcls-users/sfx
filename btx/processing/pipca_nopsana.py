@@ -327,16 +327,12 @@ class iPCA_Pytorch_without_Psana:
             V = ipca.components_.cpu().detach().numpy().T
             mu = ipca.mean_.cpu().detach().numpy()
             total_variance = ipca.explained_variance_.cpu().detach().numpy()
-            if self.num_training_images < self.num_images:
-                losses = average_training_losses, average_evaluation_losses
-            else:
-                losses = average_losses
         else:
             S = ipca.singular_values_
             V = ipca.components_.T
             mu = ipca.mean_
             total_variance = ipca.explained_variance_
-            losses = average_loss
+
 
         # Clear cache
         torch.cuda.empty_cache()
