@@ -311,7 +311,7 @@ class iPCA_Pytorch_without_Psana:
             logging.info(etat1)
             etat2 = ipca.save_ipca()
             logging.info(etat2)
-            return (etat1,etat2)
+            return {'algo':etat1,'ipca':etat2}
         
         logging.info('Checkpoint 4')
         reconstructed_images = np.empty((0, self.num_components))    
