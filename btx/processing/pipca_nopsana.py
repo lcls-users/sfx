@@ -313,7 +313,6 @@ class iPCA_Pytorch_without_Psana:
             etat2 = ipca.save_ipca()
             dict_to_return = {'algo':etat1,'ipca':etat2}
             logging.info('Checkpoint 4')
-            logging.info(dict_to_return)
             return dict_to_return
         
         logging.info('Checkpoint 5')
