@@ -286,7 +286,8 @@ class iPCA_Pytorch_without_Psana:
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
         with TaskTimer(self.task_durations, "Initializing model"):
-            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = ipca_state_dict)
+            if ipca_state_dict is not None:
+                ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = ipca_state_dict)
         
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
@@ -311,7 +312,7 @@ class iPCA_Pytorch_without_Psana:
             logging.info('Checkpoint 3')
             etat1 = self.save_state()
             etat2 = ipca.save_ipca()
-            dict_to_return = {'algo':None,'ipca':None} #{'algo':etat1,'ipca':etat2}
+            dict_to_return = {'algo':None,'ipca':None} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             logging.info('Checkpoint 4')
             return dict_to_return
         
