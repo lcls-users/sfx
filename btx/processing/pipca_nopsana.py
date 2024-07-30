@@ -307,9 +307,8 @@ class iPCA_Pytorch_without_Psana:
             existing_shm.unlink()
             self.images = None
             logging.info('Checkpoint 3')
-            logging.info(dir(self))
             etat= self.__dict__
-            loggin.info("Etat:",etat)
+            logging.info("Etat:",etat)
             etat1 = self.save_state()
             logging.info("Etat1:",etat1)
             etat2 = ipca.save_ipca()
