@@ -58,6 +58,7 @@ class iPCA_Pytorch_without_Psana:
         self.det_type = det_type
         self.start_time = None
         self.device_list = []
+        self.ipca = None
 
         self.training_percentage = training_percentage
         self.num_training_images = math.ceil(self.num_images * self.training_percentage)
@@ -288,7 +289,10 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Initializing model"):
             if ipca_state_dict is not None:
                 ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = ipca_state_dict)
-        
+                self.ipca = ipca
+            else:
+                ipca = self.ipca
+
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
             images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
@@ -314,6 +318,7 @@ class iPCA_Pytorch_without_Psana:
             etat2 = ipca.save_ipca()
             dict_to_return = {'algo':None,'ipca':None} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             logging.info('Checkpoint 4')
+            self.ipca = ipca
             return dict_to_return
         
         logging.info('Checkpoint 5')
