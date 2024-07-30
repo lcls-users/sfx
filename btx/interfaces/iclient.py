@@ -294,7 +294,7 @@ if __name__ == "__main__":
                 algo_state_dict, ipca_state_dict = pool.starmap(ipca_instance.run_batch, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list) for rank in range(num_gpus)])
             else:
                 results = pool.starmap(ipca_instance.run_batch, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list) for rank in range(num_gpus)])
-                (reconstructed_images, S, V, mu, total_variance, losses, frequency, execution_time) = ([], [], [], [], [], [], [], [])
+                (reconstructed_images, S, V, mu, total_variance, losses) = ([], [], [], [], [], [], [], [])
                 for result in results:
                     reconstructed_images.append(result['reconstructed_images'])
                     S.append(result['S'])
@@ -302,8 +302,6 @@ if __name__ == "__main__":
                     mu.append(result['mu'])
                     total_variance.append(result['total_variance'])
                     losses.append(result['losses'])
-                    frequency.append(result['frequency'])
-                    execution_time.append(result['execution_time'])
     print("DONE DONE DOOOOOOOOOOOOOOOONE")
 
     """all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING

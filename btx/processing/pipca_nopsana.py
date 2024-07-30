@@ -340,7 +340,7 @@ class iPCA_Pytorch_without_Psana:
         torch.cuda.empty_cache()
         gc.collect()
 
-        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'frequency':frequency, 'execution_time':execution_time}
+        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
 
 ###############################################################################################################
 ###############################################################################################################
