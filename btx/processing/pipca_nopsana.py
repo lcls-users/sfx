@@ -296,14 +296,17 @@ class iPCA_Pytorch_without_Psana:
 
         with TaskTimer(self.task_durations, "Fitting model"):
             st = time.time()
+            logging.info('Checkpoint 1')
             ipca.fit(self.images.reshape(self.num_images, -1)) ##va falloir faire gaffe au training ratio
             et = time.time()
+            logging.info('Checkpoint 2')
             logging.info(f"GPU {rank}: Model fitted in {et-st} seconds")
 
         if not last_batch:
             existing_shm.close()
             existing_shm.unlink()
             self.images = None
+            logging.info('Checkpoint 3')
             return (self.save_state(),ipca.save_ipca())
         
         reconstructed_images = np.empty((0, self.num_components))    
