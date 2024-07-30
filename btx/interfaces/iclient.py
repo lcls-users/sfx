@@ -300,7 +300,6 @@ if __name__ == "__main__":
                     logging.info(ipca_state_dict[rank])
                     algo_state_dict[rank] = results[rank]['algo']
                     logging.info(algo_state_dict[rank])
-                break
             else:
                 results = pool.starmap(ipca_instance.run_batch, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list) for rank in range(num_gpus)])
                 (reconstructed_images, S, V, mu, total_variance, losses) = ([], [], [], [], [], [])
