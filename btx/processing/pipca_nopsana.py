@@ -271,9 +271,8 @@ class iPCA_Pytorch_without_Psana:
         return self.__dict__
 
     def update_state(self,state_updates,device_list=None, shm_list = None):
-        if not isinstance(state_updates, dict):
-            raise ValueError("state_updates has to be a dictionnary")
-        self.__dict__.update(state_updates)
+        if isinstance(state_updates, dict):
+            self.__dict__.update(state_updates)
         if device_list is not None:
             self.device_list = device_list
         if shm_list is not None:
