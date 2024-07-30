@@ -309,6 +309,7 @@ class iPCA_Pytorch_without_Psana:
             logging.info('Checkpoint 3')
             return (self.save_state(),ipca.save_ipca())
         
+        logging.info('Checkpoint 4')
         reconstructed_images = np.empty((0, self.num_components))    
 
         with TaskTimer(self.task_durations, "Reconstructing images"):
