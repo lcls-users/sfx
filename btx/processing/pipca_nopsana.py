@@ -308,9 +308,7 @@ class iPCA_Pytorch_without_Psana:
             self.images = None
             logging.info('Checkpoint 3')
             etat1 = self.save_state()
-            logging.info(etat1)
             etat2 = ipca.save_ipca()
-            logging.info(etat2)
             return {'algo':etat1,'ipca':etat2}
         
         logging.info('Checkpoint 4')
