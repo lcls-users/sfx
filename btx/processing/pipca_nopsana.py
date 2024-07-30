@@ -290,7 +290,7 @@ class iPCA_Pytorch_without_Psana:
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
             images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
             self.images = images
-            print("Test:",images.shape)
+            print("Images shape on each GPU:",images.shape)
 
         self.num_images = self.images.shape[0]
 
