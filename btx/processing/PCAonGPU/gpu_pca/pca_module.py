@@ -310,4 +310,4 @@ class IncrementalPCAonGPU():
         return torch.mean(norm_batch)
 
     def save_ipca(self):
-        return self.__dict__.copy()
+        return self.__dict__
