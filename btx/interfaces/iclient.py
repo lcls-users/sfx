@@ -263,7 +263,7 @@ if __name__ == "__main__":
             algo_state_dict_ = manager.dict()
             for key,value in algo_state_dict_local.items():
                 algo_state_dict_[key] = value
-            algo_state_dict[rank].append(algo_state_dict_)
+            algo_state_dict.append(algo_state_dict_)
 
         with Pool(processes=num_gpus) as pool:
 
