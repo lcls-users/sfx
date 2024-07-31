@@ -313,8 +313,9 @@ if __name__ == "__main__":
                     logging.info(algo_state_dict)
                     logging.info(type(algo_state_dict[0]))
                     for rank in range(num_gpus):
+                        for key,value in results[rank]['algo'].items():
+                            algo_state_dict[rank][key] = value
                         ipca_state_dict[rank] = results[rank]['ipca']
-                        algo_state_dict[rank] = results[rank]['algo']
                     for result in results:
                         reconstructed_images.append(result['reconstructed_images'])
                         S.append(result['S'])
