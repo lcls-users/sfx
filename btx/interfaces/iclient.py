@@ -320,7 +320,7 @@ if __name__ == "__main__":
             
             print("FITTING : DONE")
 
-            for event in range(start_offset, start_offset + num_images, loading_batch_size):
+            """for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
                 current_loading_batch = []
                 requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
@@ -353,7 +353,7 @@ if __name__ == "__main__":
 
                 for rank in range(num_gpus):
                     average_loss,_ = results[rank]
-                    average_losses.append(average_loss)
+                    average_losses.append(average_loss)"""
         
             print("LOSS COMPUTATION : DONE")
 
