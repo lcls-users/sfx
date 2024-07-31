@@ -303,9 +303,7 @@ if __name__ == "__main__":
                     logging.info("Checkpoint : Iteration done")
                     logging.info(type(results))
                     for rank in range(num_gpus):
-                        for key,value in results[rank]['algo'].items():
-                            algo_state_dict[rank][key] = value
-                        ipca_state_dict[rank] = results[rank]['ipca']
+                        ipca_state_dict[rank] = results[rank]['ipca'] #là ton dico est déjà vide, modifie le dans le process idiot
                         logging.info(type(algo_state_dict[rank]))
                     logging.info(algo_state_dict)
                 else:
@@ -314,8 +312,6 @@ if __name__ == "__main__":
                     logging.info(algo_state_dict)
                     logging.info(type(algo_state_dict[0]))
                     for rank in range(num_gpus):
-                        for key,value in results[rank]['algo'].items():
-                            algo_state_dict[rank][key] = value
                         ipca_state_dict[rank] = results[rank]['ipca']
                     for result in results:
                         reconstructed_images.append(result['reconstructed_images'])
