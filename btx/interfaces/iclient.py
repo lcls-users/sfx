@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-                results = pool.starmap(ipca_instance.compute_loss, [(rank,device_list,shape,dtype,shm_list) for rank in range(num_gpus)])
+                results = pool.starmap(ipca_instance.compute_loss, [(rank,device_list,shape,dtype,algo_state_dict,ipca_state_dict) for rank in range(num_gpus)])
 
                 for rank in range(num_gpus):
                     average_loss,_ = results[rank]
