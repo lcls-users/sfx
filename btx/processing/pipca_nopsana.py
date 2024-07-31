@@ -318,6 +318,8 @@ class iPCA_Pytorch_without_Psana:
             dict_to_return = {'algo':current_algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             logging.info(self.ipca_dict)
             for key,value in current_algo_state_dict.items():
+                logging.info(key)
+                logging.info(value)
                 algo_state_dict[key] = value
             return dict_to_return
         
