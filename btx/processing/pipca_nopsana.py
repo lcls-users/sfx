@@ -285,6 +285,7 @@ class iPCA_Pytorch_without_Psana:
         self.device = device
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
+        logging.info(self.ipca_dict)
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = self.ipca_dict)
             self.ipca_dict =ipca.__dict__
