@@ -303,8 +303,9 @@ if __name__ == "__main__":
                     logging.info("Checkpoint : Iteration done")
                     logging.info(type(results))
                     for rank in range(num_gpus):
+                        for key,value in results[rank]['algo'].items():
+                            algo_state_dict[rank][key] = value
                         ipca_state_dict[rank] = results[rank]['ipca']
-                        algo_state_dict[rank] = results[rank]['algo']
                         logging.info(type(algo_state_dict[rank]))
                     logging.info(algo_state_dict)
                 else:
