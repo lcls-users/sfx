@@ -258,7 +258,7 @@ if __name__ == "__main__":
     last_batch = False
     logging.basicConfig(level=logging.DEBUG)
     with mp.Manager() as manager:
-        algo_state_dict=[]
+        algo_state_dict= manager.list()
         for rank in range(num_gpus):
             algo_state_dict_ = manager.dict()
             for key,value in algo_state_dict_local.items():
