@@ -353,7 +353,9 @@ class iPCA_Pytorch_without_Psana:
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list):
         device = device_list[rank]
         self.device = device
-
+        if shm_list is not None:
+            self.shm = shm_list 
+            
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = self.ipca_dict)
             self.ipca_dict =ipca.__dict__
