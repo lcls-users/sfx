@@ -314,8 +314,7 @@ class iPCA_Pytorch_without_Psana:
             etat2 = ipca.save_ipca()
             logging.info('Checkpoint 4')
             self.ipca_dict = etat2
-            for key, value in self.save_state().items():
-                algo_state_dict[key] = value
+            algo_state_dict = self.save_state()
             dict_to_return = {'algo':algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             logging.info(self.ipca_dict)
             return dict_to_return
