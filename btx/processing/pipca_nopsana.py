@@ -352,7 +352,7 @@ class iPCA_Pytorch_without_Psana:
 
         return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
 
-    def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list):
+    def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
         device = device_list[rank]
         self.device = device
         algo_state_dict = algo_state_dict[rank]
