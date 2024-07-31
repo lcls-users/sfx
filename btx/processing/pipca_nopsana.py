@@ -271,7 +271,7 @@ class iPCA_Pytorch_without_Psana:
         return self.__dict__
 
     def update_state(self,state_updates,device_list=None, shm_list = None):
-        if isinstance(state_updates, dict):
+        if state_updates is not None:
             self.__dict__.update(state_updates)
         if device_list is not None:
             self.device_list = device_list
