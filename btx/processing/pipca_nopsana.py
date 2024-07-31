@@ -316,6 +316,7 @@ class iPCA_Pytorch_without_Psana:
             dict_to_return = {'algo':None,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             logging.info('Checkpoint 4')
             self.ipca_dict = etat2
+            logging.info(self.ipca_dict)
             return dict_to_return
         
         logging.info('Checkpoint 5')
