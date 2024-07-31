@@ -306,17 +306,16 @@ class iPCA_Pytorch_without_Psana:
             logging.info('Checkpoint 2')
             logging.info(f"GPU {rank}: Model fitted in {et-st} seconds")
 
+        existing_shm.close()
+        existing_shm.unlink()
+        logging.info('Checkpoint 3')
+        etat2 = ipca.save_ipca()
+        logging.info('Checkpoint 4')
+        self.ipca_dict = etat2
+        algo_state_dict = self.save_state()
+        dict_to_return = {'algo':algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
+
         if not last_batch:
-            existing_shm.close()
-            existing_shm.unlink()
-            self.images = None
-            logging.info('Checkpoint 3')
-            etat1 = self.save_state()
-            etat2 = ipca.save_ipca()
-            dict_to_return = {'algo':algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
-            logging.info('Checkpoint 4')
-            self.ipca_dict = etat2
-            logging.info(self.ipca_dict)
             return dict_to_return
         
         logging.info('Checkpoint 5')
@@ -350,7 +349,7 @@ class iPCA_Pytorch_without_Psana:
         torch.cuda.empty_cache()
         gc.collect()
 
-        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
+        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses,'algo':algo_state_dict,'ipca':'existing'}
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
         device = device_list[rank]
