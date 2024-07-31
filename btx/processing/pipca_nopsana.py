@@ -350,6 +350,33 @@ class iPCA_Pytorch_without_Psana:
 
         return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
 
+    def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list):
+        device = device_list[rank]
+        self.device = device
+
+        with TaskTimer(self.task_durations, "Initializing model"):
+            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = self.ipca_dict)
+            self.ipca_dict =ipca.__dict__
+
+        with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
+            existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
+            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
+            self.images = images
+            print("Images shape on each GPU:",images.shape)
+
+        self.num_images = self.images.shape[0]
+
+        average_losses = []
+        with TaskTimer(self.task_durations, "Computing compression loss"):
+            for start in range(0, self.num_images, self.batch_size):
+                end = min(start + self.batch_size, self.num_images)
+                batch_imgs = self.images[start:end] ###
+                average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
+                average_losses.append(average_loss.cpu().detach().numpy())
+            average_loss = np.mean(average_losses)
+            logging.info(f"GPU {rank}: Average loss on current loading batch: {average_loss * 100:.3f} (in %)")
+
+        return average_loss,average_losses
 ###############################################################################################################
 ###############################################################################################################
 

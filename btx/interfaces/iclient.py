@@ -232,6 +232,7 @@ if __name__ == "__main__":
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     all_data = []
+    average_losses=[]
 
     if start_offset is None:
         start_offset = 0
@@ -310,8 +311,48 @@ if __name__ == "__main__":
                     mu.append(result['mu'])
                     total_variance.append(result['total_variance'])
                     losses.append(result['losses'])
-    print("DONE DONE DOOOOOOOOOOOOOOOONE")
+        
+        print("FITTING : DONE")
 
+        for event in range(start_offset, start_offset + num_images, loading_batch_size):
+
+            current_loading_batch = []
+            requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
+
+            server_address = ('localhost', 5000)
+            dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
+            dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
+            dataloader_iter = iter(dataloader)
+
+            for batch in dataloader_iter:
+                all_data.append(batch)
+                current_loading_batch.append(batch)
+
+            logging.info(f"Loaded {event+loading_batch_size} images.")
+            current_loading_batch = np.concatenate(current_loading_batch, axis=0)
+            current_loading_batch = current_loading_batch[[i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+
+            logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
+            current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
+            current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+
+            shape = current_loading_batch[0].shape
+            dtype = current_loading_batch[0].dtype
+
+            shm_list = create_shared_images(current_loading_batch)
+
+            device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+
+            results = pool.starmap(ipca_instance.compute_loss, [(rank,device_list,shape,dtype,shm_list) for rank in range(num_gpus)])
+
+            for rank in range(num_gpus):
+                average_loss,_ = results[rank]
+                average_losses.append(average_loss)
+    
+        print("LOSS COMPUTATION : DONE")
+
+    print("DONE DONE DOOOOOOOOOOOOOONE")
+    
     """all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING
     mem = psutil.virtual_memory()
     print("================LOADING DONE=====================")
