@@ -355,8 +355,9 @@ class iPCA_Pytorch_without_Psana:
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list):
         device = device_list[rank]
         self.device = device
-        if shm_list is not None:
-            self.shm = shm_list 
+        algo_state_dict = algo_state_dict[rank]
+        ipca_state_dict = ipca_state_dict[rank]
+        self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
         
         logging.info(self.ipca_dict)
         with TaskTimer(self.task_durations, "Initializing model"):
