@@ -268,7 +268,7 @@ class iPCA_Pytorch_without_Psana:
 
     def save_state(self):
         self.images = None #Free up memory
-        return self.__dict__
+        return self.__dict__.copy()
 
     def update_state(self,state_updates,device_list=None, shm_list = None):
         if state_updates is not None:
@@ -309,6 +309,7 @@ class iPCA_Pytorch_without_Psana:
         if not last_batch:
             existing_shm.close()
             existing_shm.unlink()
+            self.shm = None
             self.images = None
             logging.info('Checkpoint 3')
             etat2 = ipca.save_ipca()
