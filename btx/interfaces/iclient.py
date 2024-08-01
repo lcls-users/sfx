@@ -207,6 +207,12 @@ def mapping_function(images, type_mapping = "id"):
     else:
         raise ValueError("The input type is not supported")
 
+def run_batch_process(algo_state_dict, ipca_state_dict, last_batch, rank, device, shape, dtype, shm_list,ipca_instance):
+    # Charge les tenseurs CUDA sur le GPU à l'intérieur du processus
+    algo_state_dict[rank] = {k: v.cuda(device) if torch.is_tensor(v) else v for k, v in algo_state_dict[rank].items()}
+    # Appelle la méthode de traitement
+    return ipca_instance.run_batch(algo_state_dict, ipca_state_dict, last_batch, rank, device, shape, dtype, shm_list)
+
 
 if __name__ == "__main__":
 
@@ -258,12 +264,14 @@ if __name__ == "__main__":
     last_batch = False
     logging.basicConfig(level=logging.DEBUG)
     with mp.Manager() as manager:
-        algo_state_dict= manager.list()
-        for rank in range(num_gpus):
-            algo_state_dict_ = manager.dict()
-            for key,value in algo_state_dict_local.items():
-                algo_state_dict_[key] = value.cpu().clone() if torch.is_tensor(value) else value
-            algo_state_dict.append(algo_state_dict_)
+        algo_state_dict = [manager.dict() for _ in range(num_gpus)]
+        for key, value in algo_state_dict_local.items():
+            if torch.is_tensor(value):
+                for rank in range(num_gpus):
+                    algo_state_dict[rank][key] = value.cpu().clone()
+            else:
+                for rank in range(num_gpus):
+                    algo_state_dict[rank][key] = value
 
         with Pool(processes=num_gpus) as pool:
 
@@ -299,7 +307,7 @@ if __name__ == "__main__":
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
                 if not last_batch:
-                    results = pool.starmap(ipca_instance.run_batch, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list) for rank in range(num_gpus)])
+                    results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     logging.info("Checkpoint : Iteration done")
                     logging.info(type(results))
                     for rank in range(num_gpus):
