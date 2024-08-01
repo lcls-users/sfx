@@ -326,7 +326,18 @@ class iPCA_Pytorch_without_Psana:
                 algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
             return dict_to_return
         
+        existing_shm.close()
+        existing_shm.unlink()
+        logging.info('Checkpoint 3')
+        etat2 = ipca.save_ipca()
+        logging.info('Checkpoint 4')
+        self.ipca_dict = etat2
+        current_algo_state_dict = self.save_state()
+        dict_to_return = {'algo':current_algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
+        for key, value in current_algo_state_dict.items():
+            algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
         logging.info('Checkpoint 5')
+
         reconstructed_images = np.empty((0, self.num_components))    
 
         with TaskTimer(self.task_durations, "Reconstructing images"):
@@ -357,7 +368,7 @@ class iPCA_Pytorch_without_Psana:
         torch.cuda.empty_cache()
         gc.collect()
 
-        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
+        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':'existing','algo':current_algo_state_dict}
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
         device = device_list[rank]
