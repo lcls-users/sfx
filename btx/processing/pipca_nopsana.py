@@ -316,6 +316,8 @@ class iPCA_Pytorch_without_Psana:
                 algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
             for key, value in current_ipca_state_dict.items():
                 ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
+            torch.cuda.empty_cache()
+            gc.collect()
             return None
     
         existing_shm.close()
@@ -339,7 +341,8 @@ class iPCA_Pytorch_without_Psana:
             mu = ipca.mean_
             total_variance = ipca.explained_variance_
             losses = [] ## NOT IMPLEMENTED YET
-
+        torch.cuda.empty_cache()
+        gc.collect()
         dict_to_return = {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
         return dict_to_return
 
