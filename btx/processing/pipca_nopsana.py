@@ -284,7 +284,9 @@ class iPCA_Pytorch_without_Psana:
         ipca_state_dict = ipca_state_dict[rank]
         for key, value in algo_state_dict.items():
             if torch.is_tensor(value):
-                algo_state_dict[key] = torch.from_numpy(value).to(device)
+                algo_state_dict[key] = value.to(device)
+            else:
+                algo_state_dict[key] = value
         self.device = device
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
@@ -321,7 +323,7 @@ class iPCA_Pytorch_without_Psana:
             current_algo_state_dict = self.save_state()
             dict_to_return = {'algo':current_algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             for key, value in current_algo_state_dict.items():
-                algo_state_dict[key] = value.cpu().detach().numpy() if torch.is_tensor(value) else value
+                algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
             return dict_to_return
         
         logging.info('Checkpoint 5')
