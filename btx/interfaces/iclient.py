@@ -213,6 +213,11 @@ def run_batch_process(algo_state_dict, ipca_state_dict, last_batch, rank, device
     # Appelle la méthode de traitement
     return ipca_instance.run_batch(algo_state_dict, ipca_state_dict, last_batch, rank, device, shape, dtype, shm_list)
 
+def compute_loss_process(rank, device_list, shape, dtype, shm_list, algo_state_dict, ipca_state_dict):
+    # Charge les tenseurs CUDA sur le GPU à l'intérieur du processus
+    algo_state_dict[rank] = {k: v.cuda(device_list[rank]) if torch.is_tensor(v) else v for k, v in algo_state_dict[rank].items()}
+    # Appelle la méthode de traitement
+    return ipca_instance.compute_loss(rank, device_list, shape, dtype, shm_list, algo_state_dict, ipca_state_dict)
 
 if __name__ == "__main__":
 
@@ -329,7 +334,7 @@ if __name__ == "__main__":
             
             print("FITTING : DONE")
 
-            """for event in range(start_offset, start_offset + num_images, loading_batch_size):
+            for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
                 current_loading_batch = []
                 requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
@@ -358,14 +363,16 @@ if __name__ == "__main__":
 
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-                results = pool.starmap(ipca_instance.compute_loss, [(rank,device_list,shape,dtype,shm_list,algo_state_dict,ipca_state_dict) for rank in range(num_gpus)])
+                results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,algo_state_dict,ipca_state_dict) for rank in range(num_gpus)])
 
                 for rank in range(num_gpus):
                     average_loss,_ = results[rank]
-                    average_losses.append(average_loss)"""
-        
+                    average_losses.append(average_loss)
+                
+                print("Batch-Averaged Loss:",np.mean(average_losses))
             print("LOSS COMPUTATION : DONE")
-
+            print("Global-Averaged loss :",np.mean(average_losses))
+            
     print("DONE DONE DOOOOOOOOOOOOOONE")
 
     """all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING

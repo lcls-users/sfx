@@ -363,15 +363,25 @@ class iPCA_Pytorch_without_Psana:
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
         device = device_list[rank]
-        self.device = device
+        logging.info('Checkpoint 0')
+        print('Checkpoint 0', flush=True)
         algo_state_dict = algo_state_dict[rank]
         ipca_state_dict = ipca_state_dict[rank]
-        self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
+        for key, value in algo_state_dict.items():
+            if torch.is_tensor(value):
+                algo_state_dict[key] = value.to(device)
+            else:
+                algo_state_dict[key] = value
         
-        logging.info(self.ipca_dict)
+
+        logging.info('Checkpoint 1')
+        print('Checkpoint 1',flush=True)
+        self.device = device
+        self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
+
         with TaskTimer(self.task_durations, "Initializing model"):
-            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = self.ipca_dict)
-            self.ipca_dict =ipca.__dict__
+            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, ipca_state_dict = ipca_state_dict)
+            print('Checkpoint 2',flush=True)
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
