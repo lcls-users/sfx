@@ -288,11 +288,6 @@ class iPCA_Pytorch_without_Psana:
             else:
                 algo_state_dict[key] = value
         
-        for key, value in ipca_state_dict.items():
-            if torch.is_tensor(value):
-                ipca_state_dict[key] = value.to(device)
-            else:
-                ipca_state_dict[key] = value
 
         logging.info('Checkpoint 1')
         print('Checkpoint 1',flush=True)

@@ -58,7 +58,13 @@ class IncrementalPCAonGPU():
         self.components = []  # Liste pour stocker les composants
 
         if state_dict:
-            self.__dict__.update(state_dict)
+            current_state_dict = {}
+            for key, value in state_dict.items():
+                if torch.is_tensor(value):
+                    current_state_dict[key] = value.to(self.device).clone()
+                else:
+                    current_state_dict[key] = value
+            self.__dict__.update(current_state_dict)
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
