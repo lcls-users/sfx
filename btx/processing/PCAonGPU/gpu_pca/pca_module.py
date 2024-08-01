@@ -36,9 +36,6 @@ class IncrementalPCAonGPU():
         self.device = device
         torch.cuda.set_device(self.device)
 
-        # Determine if there's a GPU available
-        print("PyTorch is using:", self.device)
-
         logging.basicConfig(level=logging.INFO)
 
         # Configure specific loggers for numba and distributed
