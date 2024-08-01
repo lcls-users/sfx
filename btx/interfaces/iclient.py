@@ -279,7 +279,7 @@ if __name__ == "__main__":
                     algo_state_dict[rank][key] = value
 
         with Pool(processes=num_gpus) as pool:
-
+            fitting_start_time = time.time()
             for event in range(start_offset, start_offset + num_images, loading_batch_size):
                 
                 if event + loading_batch_size >= num_images + start_offset:
@@ -314,26 +314,19 @@ if __name__ == "__main__":
                 if not last_batch:
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     logging.info("Checkpoint : Iteration done")
-                    logging.info(type(results))
-                    logging.info(algo_state_dict)
-                    print("LE DICT :",algo_state_dict)
-                    print("UN DES DICT DU DICT ALGO :",algo_state_dict[0])
-                    print("UN DES DICT DU DICT IPCA :",ipca_state_dict[0])
                 else:
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
-                    print("DERNIER ROUND",flush=True)
                     (reconstructed_images, S, V, mu, total_variance, losses) = ([], [], [], [], [], [])
-                    print("UN DES DICT DU DICT ALGO :",algo_state_dict[0])
-                    print("UN DES DICT DU DICT IPCA :",ipca_state_dict[0])
                     for result in results:
                         S.append(result['S'])
                         V.append(result['V'])
                         mu.append(result['mu'])
                         total_variance.append(result['total_variance'])
                         losses.append(result['losses'])
-            
-            print("FITTING : DONE")
-
+            fitting_end_time = time.time()
+            print(f"Time elapsed for fitting: {fitting_end_time - fitting_start_time} seconds.",flush=True) 
+            print("FITTING : DONE",flush=True)
+            loss_start_time = time.time()
             for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
                 current_loading_batch = []
@@ -370,7 +363,9 @@ if __name__ == "__main__":
                     average_losses.append(average_loss)
                 
                 print("Batch-Averaged Loss:",np.mean(average_losses))
-            print("LOSS COMPUTATION : DONE")
+            loss_end_time = time.time()
+            print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
+
             print("Global-Averaged loss :",np.mean(average_losses))
 
     print("DONE DONE DOOOOOOOOOOOOOONE")

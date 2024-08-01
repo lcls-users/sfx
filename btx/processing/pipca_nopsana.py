@@ -278,8 +278,6 @@ class iPCA_Pytorch_without_Psana:
 
     def run_batch(self,algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list):
         device = device_list[rank]
-        logging.info('Checkpoint 0')
-        print('Checkpoint 0', flush=True)
         algo_state_dict = algo_state_dict[rank]
         ipca_state_dict = ipca_state_dict[rank]
         for key, value in algo_state_dict.items():
@@ -287,16 +285,12 @@ class iPCA_Pytorch_without_Psana:
                 algo_state_dict[key] = value.to(device)
             else:
                 algo_state_dict[key] = value
-        
 
-        logging.info('Checkpoint 1')
-        print('Checkpoint 1',flush=True)
         self.device = device
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, ipca_state_dict = ipca_state_dict)
-            print('Checkpoint 2',flush=True)
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
@@ -308,10 +302,8 @@ class iPCA_Pytorch_without_Psana:
 
         with TaskTimer(self.task_durations, "Fitting model"):
             st = time.time()
-            print('Checkpoint 1 fit',flush=True)
             ipca.fit(self.images.reshape(self.num_images, -1)) ##va falloir faire gaffe au training ratio
             et = time.time()
-            print('Checkpoint 2 fit',flush=True)
             print(f"GPU {rank}: Model fitted in {et-st} seconds",flush=True)
 
         if not last_batch:
@@ -335,18 +327,12 @@ class iPCA_Pytorch_without_Psana:
             algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
         for key, value in current_ipca_state_dict.items():
             ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
-        
-        print("OUHO",flush=True)
 
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
-            print("S:",S,flush=True)
             V = ipca.components_.cpu().detach().numpy().T
-            print("V",V,flush=True)
             mu = ipca.mean_.cpu().detach().numpy()
-            print("mu",mu,flush=True)
             total_variance = ipca.explained_variance_.cpu().detach().numpy()
-            print("total_variance",total_variance,flush=True)
             losses = [] ## NOT IMPLEMENTED YET
         else:
             S = ipca.singular_values_
@@ -355,16 +341,11 @@ class iPCA_Pytorch_without_Psana:
             total_variance = ipca.explained_variance_
             losses = [] ## NOT IMPLEMENTED YET
 
-        print("OUHO2",flush=True)
-
         dict_to_return = {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
-        print("El final dico:",dict_to_return,flush=True)
         return dict_to_return
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
         device = device_list[rank]
-        logging.info('Checkpoint 0')
-        print('Checkpoint 0', flush=True)
         algo_state_dict = algo_state_dict[rank]
         ipca_state_dict = ipca_state_dict[rank]
         for key, value in algo_state_dict.items():
@@ -372,16 +353,12 @@ class iPCA_Pytorch_without_Psana:
                 algo_state_dict[key] = value.to(device)
             else:
                 algo_state_dict[key] = value
-        
 
-        logging.info('Checkpoint 1')
-        print('Checkpoint 1',flush=True)
         self.device = device
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, ipca_state_dict = ipca_state_dict)
-            print('Checkpoint 2',flush=True)
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
@@ -399,7 +376,6 @@ class iPCA_Pytorch_without_Psana:
                 average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
                 average_losses.append(average_loss.cpu().detach().numpy())
             average_loss = np.mean(average_losses)
-            logging.info(f"GPU {rank}: Average loss on current loading batch: {average_loss * 100:.3f} (in %)")
 
         return average_loss,average_losses
 ###############################################################################################################
