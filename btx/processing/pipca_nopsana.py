@@ -282,13 +282,16 @@ class iPCA_Pytorch_without_Psana:
         device = device_list[rank]
         algo_state_dict = algo_state_dict[rank]
         ipca_state_dict = ipca_state_dict[rank]
+        for key, value in algo_state_dict.items():
+            if torch.is_tensor(value):
+                algo_state_dict[key] = torch.from_numpy(value).to(device)
         self.device = device
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
         logging.info(self.ipca_dict)
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = self.ipca_dict)
-            self.ipca_dict =ipca.__dict__.copy()
+            self.ipca_dict =ipca.__dict__
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
@@ -317,8 +320,8 @@ class iPCA_Pytorch_without_Psana:
             self.ipca_dict = etat2
             current_algo_state_dict = self.save_state()
             dict_to_return = {'algo':current_algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
-            logging.info(self.ipca_dict)
-            algo_state_dict.update(current_algo_state_dict)
+            for key, value in current_algo_state_dict.items():
+                algo_state_dict[key] = value.cpu().detach().numpy() if torch.is_tensor(value) else value
             return dict_to_return
         
         logging.info('Checkpoint 5')
