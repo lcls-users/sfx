@@ -328,18 +328,17 @@ class iPCA_Pytorch_without_Psana:
             dict_to_return = {'algo':current_algo_state_dict,'ipca':current_ipca_state_dict} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             
             return dict_to_return
-        
+    
         existing_shm.close()
         existing_shm.unlink()
-        logging.info('Checkpoint 3')
-        etat2 = ipca.save_ipca()
-        logging.info('Checkpoint 4')
-        self.ipca_dict = etat2
+        current_ipca_state_dict = ipca.save_ipca()
         current_algo_state_dict = self.save_state()
-        dict_to_return = {'algo':current_algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
         for key, value in current_algo_state_dict.items():
             algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
-        logging.info('Checkpoint 5')
+        for key, value in current_ipca_state_dict.items():
+            ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
+        dict_to_return = {'algo':current_algo_state_dict,'ipca':current_ipca_state_dict} #{'algo':etat1,'ipca':etat2} CHANGED HERE
+        
 
 
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
@@ -355,7 +354,7 @@ class iPCA_Pytorch_without_Psana:
             total_variance = ipca.explained_variance_
             losses = [] ## NOT IMPLEMENTED YET
 
-        return {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':'existing','algo':current_algo_state_dict}
+        return {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':current_ipca_state_dict,'algo':current_algo_state_dict}
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
         device = device_list[rank]

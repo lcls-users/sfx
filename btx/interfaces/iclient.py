@@ -313,14 +313,13 @@ if __name__ == "__main__":
                     logging.info(algo_state_dict)
                     print("LE DICT :",algo_state_dict)
                     print("UN DES DICT DU DICT ALGO :",algo_state_dict[0])
-                    print("UN DES DICT DU DICT IPCA :",ipca_state_dict[1])
+                    print("UN DES DICT DU DICT IPCA :",ipca_state_dict[0])
                 else:
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
+                    print("DERNIER ROUND",flush=True)
                     (reconstructed_images, S, V, mu, total_variance, losses) = ([], [], [], [], [], [])
-                    logging.info(algo_state_dict)
-                    logging.info(type(algo_state_dict[0]))
                     print("UN DES DICT DU DICT ALGO :",algo_state_dict[0])
-                    print("UN DES DICT DU DICT IPCA :",ipca_state_dict[1])
+                    print("UN DES DICT DU DICT IPCA :",ipca_state_dict[0])
                     for result in results:
                         S.append(result['S'])
                         V.append(result['V'])
