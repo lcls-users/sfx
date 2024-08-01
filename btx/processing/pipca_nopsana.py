@@ -325,9 +325,7 @@ class iPCA_Pytorch_without_Psana:
                 algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
             for key, value in current_ipca_state_dict.items():
                 ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
-            dict_to_return = {'algo':current_algo_state_dict,'ipca':current_ipca_state_dict} #{'algo':etat1,'ipca':etat2} CHANGED HERE
-            
-            return dict_to_return
+            return None
     
         existing_shm.close()
         existing_shm.unlink()
@@ -342,6 +340,7 @@ class iPCA_Pytorch_without_Psana:
 
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
+            print(S,flush=True)
             V = ipca.components_.cpu().detach().numpy().T
             mu = ipca.mean_.cpu().detach().numpy()
             total_variance = ipca.explained_variance_.cpu().detach().numpy()
