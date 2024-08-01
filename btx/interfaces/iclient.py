@@ -314,6 +314,7 @@ if __name__ == "__main__":
                         ipca_state_dict[rank] = results[rank]['ipca'] #là ton dico est déjà vide, modifie le dans le process idiot
                         logging.info(type(algo_state_dict[rank]))
                     logging.info(algo_state_dict)
+                    print("LE DICT :",algo_state_dict)
                 else:
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     (reconstructed_images, S, V, mu, total_variance, losses) = ([], [], [], [], [], [])

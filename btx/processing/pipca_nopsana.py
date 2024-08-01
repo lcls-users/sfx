@@ -280,6 +280,7 @@ class iPCA_Pytorch_without_Psana:
     def run_batch(self,algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list):
         device = device_list[rank]
         logging.info('Checkpoint 0')
+        print('Checkpoint 0')
         algo_state_dict = algo_state_dict[rank]
         ipca_state_dict = ipca_state_dict[rank]
         for key, value in algo_state_dict.items():
@@ -288,6 +289,7 @@ class iPCA_Pytorch_without_Psana:
             else:
                 algo_state_dict[key] = value
         logging.info('Checkpoint 1')
+        print('Checkpoint 1')
         self.device = device
         self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
 
