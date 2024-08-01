@@ -288,7 +288,7 @@ class iPCA_Pytorch_without_Psana:
         logging.info(self.ipca_dict)
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = self.ipca_dict)
-            self.ipca_dict =ipca.__dict__
+            self.ipca_dict =ipca.__dict__.copy()
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
