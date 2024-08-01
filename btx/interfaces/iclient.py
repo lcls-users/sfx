@@ -244,7 +244,6 @@ if __name__ == "__main__":
         start_offset = 0
     num_images = params.num_images
     loading_batch_size = params.loading_batch_size
-    ipca_state_dict = [None for i in range(num_gpus)]
 
     mp.set_start_method('spawn', force=True)
 
@@ -265,6 +264,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     with mp.Manager() as manager:
         algo_state_dict = [manager.dict() for _ in range(num_gpus)]
+        ipca_state_dict = [manager.dict() for _ in range(num_gpus)]
         for key, value in algo_state_dict_local.items():
             if torch.is_tensor(value):
                 for rank in range(num_gpus):
@@ -310,19 +310,17 @@ if __name__ == "__main__":
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     logging.info("Checkpoint : Iteration done")
                     logging.info(type(results))
-                    for rank in range(num_gpus):
-                        ipca_state_dict[rank] = results[rank]['ipca'] #là ton dico est déjà vide, modifie le dans le process idiot
-                        logging.info(type(algo_state_dict[rank]))
                     logging.info(algo_state_dict)
                     print("LE DICT :",algo_state_dict)
-                    print("UN DES DICT DU DICT:",algo_state_dict[0])
+                    print("UN DES DICT DU DICT ALGO :",algo_state_dict[0])
+                    print("UN DES DICT DU DICT IPCA :",ipca_state_dict[1])
                 else:
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     (reconstructed_images, S, V, mu, total_variance, losses) = ([], [], [], [], [], [])
                     logging.info(algo_state_dict)
                     logging.info(type(algo_state_dict[0]))
-                    for rank in range(num_gpus):
-                        ipca_state_dict[rank] = results[rank]['ipca']
+                    print("UN DES DICT DU DICT ALGO :",algo_state_dict[0])
+                    print("UN DES DICT DU DICT IPCA :",ipca_state_dict[1])
                     for result in results:
                         S.append(result['S'])
                         V.append(result['V'])

@@ -57,7 +57,7 @@ class IncrementalPCAonGPU():
 
         self.components = []  # Liste pour stocker les composants
 
-        if state_dict is not None:
+        if state_dict:
             self.__dict__.update(state_dict)
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):

@@ -58,7 +58,6 @@ class iPCA_Pytorch_without_Psana:
         self.det_type = det_type
         self.start_time = None
         self.device_list = []
-        self.ipca_dict = None
 
         self.training_percentage = training_percentage
         self.num_training_images = math.ceil(self.num_images * self.training_percentage)
@@ -288,6 +287,13 @@ class iPCA_Pytorch_without_Psana:
                 algo_state_dict[key] = value.to(device)
             else:
                 algo_state_dict[key] = value
+        
+        for key, value in ipca_state_dict.items():
+            if torch.is_tensor(value):
+                ipca_state_dict[key] = value.to(device)
+            else:
+                ipca_state_dict[key] = value
+
         logging.info('Checkpoint 1')
         print('Checkpoint 1',flush=True)
         self.device = device
@@ -295,8 +301,7 @@ class iPCA_Pytorch_without_Psana:
 
         logging.info(self.ipca_dict)
         with TaskTimer(self.task_durations, "Initializing model"):
-            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = self.ipca_dict)
-            self.ipca_dict =ipca.__dict__
+            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, state_dict = ipca_state_dict)
 
         with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
             existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
@@ -319,14 +324,14 @@ class iPCA_Pytorch_without_Psana:
             existing_shm.unlink()
             self.shm = None
             self.images = None
-            logging.info('Checkpoint 3')
-            etat2 = ipca.save_ipca()
-            logging.info('Checkpoint 4')
-            self.ipca_dict = etat2
+            current_ipca_state_dict = ipca.save_ipca()
             current_algo_state_dict = self.save_state()
-            dict_to_return = {'algo':current_algo_state_dict,'ipca':'existing'} #{'algo':etat1,'ipca':etat2} CHANGED HERE
             for key, value in current_algo_state_dict.items():
                 algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
+            for key, value in current_ipca_state_dict.items():
+                ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
+            dict_to_return = {'algo':current_algo_state_dict,'ipca':current_ipca_state_dict} #{'algo':etat1,'ipca':etat2} CHANGED HERE
+            
             return dict_to_return
         
         existing_shm.close()
