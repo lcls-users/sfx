@@ -337,7 +337,6 @@ class iPCA_Pytorch_without_Psana:
             algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
         for key, value in current_ipca_state_dict.items():
             ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
-        dict_to_return = {'algo':current_algo_state_dict,'ipca':current_ipca_state_dict} #{'algo':etat1,'ipca':etat2} CHANGED HERE
         
         print("OUHO",flush=True)
 
@@ -355,8 +354,10 @@ class iPCA_Pytorch_without_Psana:
             losses = [] ## NOT IMPLEMENTED YET
 
         print("OUHO2",flush=True)
-        
-        return {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':current_ipca_state_dict,'algo':current_algo_state_dict}
+
+        dict_to_return = {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':current_ipca_state_dict,'algo':current_algo_state_dict}
+        print(dict_to_return,flush=True)
+        return dict_to_return
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
         device = device_list[rank]
