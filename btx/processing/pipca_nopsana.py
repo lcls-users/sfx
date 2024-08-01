@@ -354,6 +354,8 @@ class iPCA_Pytorch_without_Psana:
             total_variance = ipca.explained_variance_
             losses = [] ## NOT IMPLEMENTED YET
 
+        print("OUHO2",flush=True)
+        
         return {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':current_ipca_state_dict,'algo':current_algo_state_dict}
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
