@@ -28,7 +28,7 @@ class IncrementalPCAonGPU():
                                     the data and set to `5 * n_features`. Defaults to None.
     """
 
-    def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None, device='cuda',state_dict=None):
+    def __init__(self, n_components=None, *, whiten=False, copy=True, batch_size=None, device='cuda',ipca_state_dict=None):
         self.n_components = n_components
         self.whiten = whiten
         self.copy = copy
@@ -57,14 +57,16 @@ class IncrementalPCAonGPU():
 
         self.components = []  # Liste pour stocker les composants
 
-        if state_dict:
+        if ipca_state_dict:
             current_state_dict = {}
-            for key, value in state_dict.items():
+            for key, value in ipca_state_dict.items():
                 if torch.is_tensor(value):
                     current_state_dict[key] = value.to(self.device).clone()
                 else:
                     current_state_dict[key] = value
+            print('Checkpoint 4',flush=True)
             self.__dict__.update(current_state_dict)
+            print('Checkpoint 5',flush=True)
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
