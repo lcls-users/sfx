@@ -357,16 +357,17 @@ if __name__ == "__main__":
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
                 results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,algo_state_dict,ipca_state_dict,ipca_instance) for rank in range(num_gpus)])
-
+                current_batch_loss = []
                 for rank in range(num_gpus):
                     average_loss,_ = results[rank]
+                    current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
                 
-                print("Batch-Averaged Loss:",np.mean(average_losses)*100)
+                print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
 
-            print("Global-Averaged loss :",np.mean(average_losses)*100)
+            print("Global-Averaged loss (in %) :",np.mean(average_losses)*100)
 
     print("DONE DONE DOOOOOOOOOOOOOONE")
 
