@@ -266,7 +266,7 @@ if __name__ == "__main__":
 
     algo_state_dict_local = ipca_instance.save_state()
     last_batch = False
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     with mp.Manager() as manager:
         algo_state_dict = [manager.dict() for _ in range(num_gpus)]
         ipca_state_dict = [manager.dict() for _ in range(num_gpus)]
@@ -362,11 +362,11 @@ if __name__ == "__main__":
                     average_loss,_ = results[rank]
                     average_losses.append(average_loss)
                 
-                print("Batch-Averaged Loss:",np.mean(average_losses))
+                print("Batch-Averaged Loss:",np.mean(average_losses)*100)
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
 
-            print("Global-Averaged loss :",np.mean(average_losses))
+            print("Global-Averaged loss :",np.mean(average_losses)*100)
 
     print("DONE DONE DOOOOOOOOOOOOOONE")
 

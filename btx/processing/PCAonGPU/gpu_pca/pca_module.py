@@ -38,7 +38,6 @@ class IncrementalPCAonGPU():
 
         # Determine if there's a GPU available
         print("PyTorch is using:", self.device)
-        print("PyTorch version:", torch.__version__)
 
         logging.basicConfig(level=logging.INFO)
 
@@ -64,9 +63,7 @@ class IncrementalPCAonGPU():
                     current_state_dict[key] = value.to(self.device).clone()
                 else:
                     current_state_dict[key] = value
-            print('Checkpoint 4',flush=True)
             self.__dict__.update(current_state_dict)
-            print('Checkpoint 5',flush=True)
 
     def _validate_data(self, X, dtype=torch.float32, copy=True):
         """
@@ -166,7 +163,6 @@ class IncrementalPCAonGPU():
         if check_input:
             X = self._validate_data(X)
         n_samples, n_features = X.shape
-        logging.info(f"X shape: {X.shape}")
         if self.batch_size is None:
             self.batch_size_ = 5 * n_features
         else:
