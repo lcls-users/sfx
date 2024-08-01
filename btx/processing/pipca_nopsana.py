@@ -267,7 +267,6 @@ class iPCA_Pytorch_without_Psana:
         self.images = None  # Delete the original images to free up memory
 
     def save_state(self):
-        self.images = None #Free up memory
         return self.__dict__.copy()
 
     def update_state(self,state_updates,device_list=None, shm_list = None):
