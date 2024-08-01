@@ -11,6 +11,17 @@ from btx.interfaces.ipsana import *
 from btx.diagnostics.run import RunDiagnostics
 from btx.misc.metrology import *
 from PSCalib.GeometryAccess import GeometryAccess
+import math
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel
+from sklearn.preprocessing import MinMaxScaler
+from scipy.stats import norm
+import os
+import csv
+import yaml
+import copy
+import shutil
+import random
 
 class PyFAIGeomOpt:
     """
@@ -34,12 +45,11 @@ class PyFAIGeomOpt:
         run,
         det_type,
         detector,
+        calibrant,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
-        self.distance = None
-        self.poni1 = None
-        self.poni2 = None
         self.detector = detector
+        self.calibrant = calibrant
 
     def pyFAI_geom_opt(self, powder, mask=None, max_rings=5, pts_per_deg=1, I=0, plot=''):
         """
@@ -78,8 +88,8 @@ class PyFAIGeomOpt:
             sys.exit("Unrecognized powder type, expected a path or number")
         self.img_shape = powder_img.shape
 
-        print("Defining calibrant to be Silver Behenate...")
-        behenate = CALIBRANT_FACTORY("AgBh")
+        print("Defining calibrant...")
+        behenate = CALIBRANT_FACTORY(self.calibrant)
         wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         behenate.wavelength = wavelength
@@ -279,3 +289,191 @@ class PyFAIGeomOpt:
         plt.tight_layout()
         if plot != '':
             fig.savefig(plot, dpi=300)
+
+class BayesGeomOpt:
+    """
+    Class to perform Geometry Optimization using Bayesian Optimization on pyFAI
+
+    Parameters
+    ----------
+    exp : str
+        Experiment name
+    run : int
+        Run number
+    det_type : str
+        Detector type
+    detector : PyFAI(Detector)
+        PyFAI detector object
+    """
+
+    def __init__(
+        self,
+        exp,
+        run,
+        det_type,
+        detector,
+        calibrant,
+    ):
+        self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
+        self.detector = detector
+        self.calibrant = calibrant
+        PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3", "wavelength"]
+        DEFAULT_VALUE = {"dist":0.3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":1e-10}
+        DIST_RES = 0.0001
+        PONI_RES = 0.00001
+        ROT_RES = 0.0001
+
+    @staticmethod
+    def expected_improvement(X, gp_model, best_y):
+        y_pred, y_std = gp_model.predict(X, return_std=True)
+        z = (y_pred - best_y) / y_std
+        ei = (y_pred - best_y) * norm.cdf(z) + y_std * norm.pdf(z)
+        return ei
+
+    @staticmethod
+    def upper_confidence_bound(X, gp_model, beta):
+        y_pred, y_std = gp_model.predict(X, return_std=True)
+        ucb = y_pred + beta * y_std
+        return ucb
+
+    @staticmethod
+    def probability_of_improvement(X, gp_model, best_y):
+        y_pred, y_std = gp_model.predict(X, return_std=True)
+        z = (y_pred - best_y) / y_std
+        pi = norm.cdf(z)
+        return pi
+    
+    def bayesian_geom_opt(
+        self,
+        powder,
+        fix,
+        bounds,
+        mask=None,
+        n_samples=10,
+        num_iterations=100,
+        af="ucb",
+        seed=0,
+    ):
+        """
+        From guessed initial geometry, optimize the geometry using Bayesian Optimization on pyFAI package
+
+        Parameters
+        ----------
+        powder : str or int
+            Path to powder image or number of images to use for calibration
+        fix : list
+            List of parameters not to be optimized
+        bounds : dict
+            Dictionary of bounds for each parameter
+        n_samples : int
+            Number of samples to initialize the GP model
+        num_iterations : int
+            Number of iterations for optimization
+        acqui_func : str
+            Acquisition function to use for optimization
+        seed : int
+            Random seed for reproducibility
+        """
+        if seed is not None:
+            np.random.seed(seed)
+        if type(powder) == str:
+            print(f"Loading powder {powder}")
+            powder_img = np.load(powder)
+        elif type(powder) == int:
+            print("Computing powder from scratch")
+            self.diagnostics.psi.calibrate = True
+            powder_imgs = self.diagnostics.psi.get_images(powder, assemble=False)
+            powder_img = np.max(powder_imgs, axis=0)
+            powder_img = np.reshape(powder_img, self.detector.shape)
+            if mask:
+                print(f"Loading mask {mask}")
+                mask = np.load(mask)
+            else:
+                mask = self.diagnostics.psi.get_mask()
+            powder_img *= mask
+        else:
+            sys.exit("Unrecognized powder type, expected a path or number")
+        self.img_shape = powder_img.shape
+
+        print("Defining calibrant...")
+        calibrant = CALIBRANT_FACTORY(self.calibrant)
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
+        photon_energy = 1.23984197386209e-09 / wavelength
+        calibrant.wavelength = wavelength
+        self.DEFAULT_VALUE["wavelength"] = wavelength
+        
+        bo_history = {}
+        np.random.seed(seed)
+        input_range = {}
+        input_range_norm = {}
+        for param in self.PARAM_ORDER:
+            if param in fix:
+                input_range[param] = np.array([self.DEFAULT_VALUE[param]])
+                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(input_range[param]-input_range[param])
+            elif param == "dist":
+                input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.DIST_RES, self.DIST_RES)
+                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(input_range[param]-input_range[param])
+            elif param in ["poni1", "poni2"]:
+                input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.PONI_RES, self.PONI_RES)
+                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(input_range[param]-input_range[param])
+            else:
+                input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.ROT_RES, self.ROT_RES)
+                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(input_range[param]-input_range[param])
+        X = np.array(np.meshgrid(*[input_range[param] for param in self.PARAM_ORDER])).T.reshape(-1, len(self.PARAM_ORDER))
+        X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.PARAM_ORDER])).T.reshape(-1, len(self.PARAM_ORDER))
+        idx_samples = np.random.choice(X.shape[0], n_samples)
+        X_samples = X[idx_samples]
+        X_norm_samples = X_norm[idx_samples]
+        y = np.zeros((n_samples, 1))
+
+        for i in range(n_samples):
+            dist, poni1, poni2, rot1, rot2, rot3, wavelength = X[i]
+            geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+            sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+            score = sg.geometry_refinement.refine3(fix=["wavelength"])
+            y[i] = score
+            bo_history[f'init_sample_{i+1}'] = {'param':X[i], 'score': score}
+
+        kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
+                * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
+                + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
+        gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=seed)
+        gp_model.fit(X_norm, y)
+        visited_idx = list(idx_samples.flatten())
+
+        if af == "ucb":
+            beta = 0.6
+            af = self.upper_confidence_bound
+        elif af == "ei":
+            af = self.expected_improvement
+        elif af == "pi":
+            af = self.probability_of_improvement
+
+
+        for i in range(num_iterations):
+            # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
+            af_values = af(X_norm, gp_model, beta)
+            af_values[visited_idx] = -np.inf
+            
+            # 2. Select the next set of parameters based on the Acquisition Function
+            new_idx = np.argmax(af_values)
+            new_input = X[new_idx]
+            visited_idx.append(new_idx)
+
+            # 3. Compute the score of the new set of parameters 
+            dist, poni1, poni2, rot1, rot2, rot3, wavelength = new_input
+            geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+            sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+            score = sg.geometry_refinement.refine3(fix=["wavelength"])
+            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
+            y = np.vstack(y, score)
+            X_samples = np.vstack((X_samples, X[new_idx]))
+            X_norm_samples = np.vstack((X_norm_samples, X_norm[new_idx]))
+
+            # 4. Update the Gaussian Process Regressor
+            gp_model.fit(X_norm_samples, y)
+        
+        best_idx = np.argmax(y)
+        best_param = X_samples[best_idx]
