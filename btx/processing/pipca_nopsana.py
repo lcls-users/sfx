@@ -340,10 +340,13 @@ class iPCA_Pytorch_without_Psana:
 
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
-            print(S,flush=True)
+            print("S:",S,flush=True)
             V = ipca.components_.cpu().detach().numpy().T
+            print("V",V,flush=True)
             mu = ipca.mean_.cpu().detach().numpy()
+            print("mu",mu,flush=True)
             total_variance = ipca.explained_variance_.cpu().detach().numpy()
+            print("total_variance",total_variance,flush=True)
             losses = [] ## NOT IMPLEMENTED YET
         else:
             S = ipca.singular_values_
@@ -354,8 +357,8 @@ class iPCA_Pytorch_without_Psana:
 
         print("OUHO2",flush=True)
 
-        dict_to_return = {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':current_ipca_state_dict,'algo':current_algo_state_dict}
-        print(dict_to_return,flush=True)
+        dict_to_return = {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
+        print("El final dico:",dict_to_return,flush=True)
         return dict_to_return
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
