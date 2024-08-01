@@ -337,18 +337,6 @@ class iPCA_Pytorch_without_Psana:
             algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
         logging.info('Checkpoint 5')
 
-        reconstructed_images = np.empty((0, self.num_components))    
-
-        with TaskTimer(self.task_durations, "Reconstructing images"):
-            st = time.time()
-            for start in range(0, self.num_images, self.batch_size):
-                end = min(start + self.batch_size, self.num_images)
-                batch_imgs = self.images[start:end] ####
-                reconstructed_batch = ipca._validate_data(batch_imgs.reshape(end-start, -1))
-                reconstructed_batch = ipca.transform(reconstructed_batch)
-                reconstructed_batch = reconstructed_batch.cpu().detach().numpy()
-                reconstructed_images = np.concatenate((reconstructed_images, reconstructed_batch), axis=0)
-            et = time.time()    
 
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
@@ -363,11 +351,7 @@ class iPCA_Pytorch_without_Psana:
             total_variance = ipca.explained_variance_
             losses = [] ## NOT IMPLEMENTED YET
 
-        # Clear cache
-        torch.cuda.empty_cache()
-        gc.collect()
-
-        return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':'existing','algo':current_algo_state_dict}
+        return {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'ipca':'existing','algo':current_algo_state_dict}
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
         device = device_list[rank]

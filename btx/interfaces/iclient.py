@@ -322,7 +322,6 @@ if __name__ == "__main__":
                     for rank in range(num_gpus):
                         ipca_state_dict[rank] = results[rank]['ipca']
                     for result in results:
-                        reconstructed_images.append(result['reconstructed_images'])
                         S.append(result['S'])
                         V.append(result['V'])
                         mu.append(result['mu'])
