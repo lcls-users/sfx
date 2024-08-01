@@ -375,6 +375,10 @@ class iPCA_Pytorch_without_Psana:
                 average_losses.append(average_loss.cpu().detach().numpy())
             average_loss = np.mean(average_losses)
 
+        existing_shm.close()
+        existing_shm.unlink()
+        self.shm = None
+        self.images = None
         return average_loss,average_losses
 ###############################################################################################################
 ###############################################################################################################
