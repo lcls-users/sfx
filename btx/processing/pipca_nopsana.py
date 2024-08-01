@@ -339,7 +339,7 @@ class iPCA_Pytorch_without_Psana:
             ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
         dict_to_return = {'algo':current_algo_state_dict,'ipca':current_ipca_state_dict} #{'algo':etat1,'ipca':etat2} CHANGED HERE
         
-
+        print("OUHO",flush=True)
 
         if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")).strip() == "cuda":
             S = ipca.singular_values_.cpu().detach().numpy()
