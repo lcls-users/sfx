@@ -428,7 +428,7 @@ class BayesGeomOpt:
         idx_samples = np.random.choice(X.shape[0], n_samples)
         X_samples = X[idx_samples]
         X_norm_samples = X_norm[idx_samples]
-        y = np.zeros((n_samples, 1))
+        y = np.zeros((n_samples))
 
         print("Initializing samples...")
         for i in range(n_samples):
