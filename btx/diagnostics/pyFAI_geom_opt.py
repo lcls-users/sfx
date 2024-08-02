@@ -403,11 +403,13 @@ class BayesGeomOpt:
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
         
+        print("Setting geometry space...")
         bo_history = {}
         np.random.seed(seed)
         input_range = {}
         input_range_norm = {}
         for param in self.PARAM_ORDER:
+            print(f"Setting space for {param}...")
             if param in fix:
                 input_range[param] = np.array([self.DEFAULT_VALUE[param]])
                 input_range_norm[param] = np.array([1])
