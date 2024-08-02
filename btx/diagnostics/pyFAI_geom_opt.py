@@ -410,16 +410,16 @@ class BayesGeomOpt:
         for param in self.PARAM_ORDER:
             if param in fix:
                 input_range[param] = np.array([self.DEFAULT_VALUE[param]])
-                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(input_range[param]-input_range[param])
+                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
             elif param == "dist":
                 input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.DIST_RES, self.DIST_RES)
-                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(input_range[param]-input_range[param])
+                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
             elif param in ["poni1", "poni2"]:
                 input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.PONI_RES, self.PONI_RES)
-                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(input_range[param]-input_range[param])
+                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
             else:
                 input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.ROT_RES, self.ROT_RES)
-                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(input_range[param]-input_range[param])
+                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
         X = np.array(np.meshgrid(*[input_range[param] for param in self.PARAM_ORDER])).T.reshape(-1, len(self.PARAM_ORDER))
         X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.PARAM_ORDER])).T.reshape(-1, len(self.PARAM_ORDER))
         idx_samples = np.random.choice(X.shape[0], n_samples)
