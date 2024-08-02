@@ -393,7 +393,7 @@ class iPCA_Pytorch_without_Psana:
         for start in range(0, images.shape[0], batch_size):
             end = min(start + batch_size, images.shape[0])
             batch_imgs = images[start:end]
-            batch_imgs = torch.tensor(batch_imgs.reshape(end-start,-1), device=device, dtype=images_dtype)
+            batch_imgs = torch.tensor(batch_imgs.reshape(end-start,-1), device=device)
             initial_norm = torch.norm(batch_imgs, dim=1, p = 'fro')
             transformed_batch = torch.mm((batch_imgs.copy() - mu),V)
             reconstructed_batch = torch.mm(transformed_batch,V.T) + mu
