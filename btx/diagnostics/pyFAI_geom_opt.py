@@ -304,6 +304,8 @@ class BayesGeomOpt:
         Detector type
     detector : PyFAI(Detector)
         PyFAI detector object
+    calibrant : str
+        Calibrant name
     """
 
     def __init__(
@@ -318,7 +320,7 @@ class BayesGeomOpt:
         self.detector = detector
         self.calibrant = calibrant
         PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3", "wavelength"]
-        DEFAULT_VALUE = {"dist":0.3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":1e-10}
+        DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
         DIST_RES = 0.0001
         PONI_RES = 0.00001
         ROT_RES = 0.0001
@@ -397,10 +399,9 @@ class BayesGeomOpt:
 
         print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
-        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
+        wavelength = self.DEFAULT_VALUE["wavelength"]
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
-        self.DEFAULT_VALUE["wavelength"] = wavelength
         
         bo_history = {}
         np.random.seed(seed)
@@ -477,3 +478,144 @@ class BayesGeomOpt:
         
         best_idx = np.argmax(y)
         best_param = X_samples[best_idx]
+        best_score = y[best_idx]
+        return bo_history, best_param, best_score
+    
+    def convergence_plot(bo_history):
+        """
+        Plot the convergence of the objective function over time
+
+        Parameters
+        ----------
+        bo_history : dict
+            Dictionary containing the history of optimization
+        """
+        scores = [bo_history[key]['score'] for key in bo_history.keys()]
+        plt.plot(scores)
+        plt.xlabel('Iteration')
+        plt.ylabel('Score')
+        plt.title('Convergence Plot')
+        plt.show()
+
+class HookeJeevesGeomOpt:
+    """
+    Class to perform Geometry Optimization using Hooke-Jeeves algorithm on pyFAI
+    
+    Note: this is intented to work only for 3D optimization
+
+    Parameters
+    ----------
+    exp : str
+        Experiment name
+    run : int
+        Run number
+    det_type : str
+        Detector type
+    detector : PyFAI(Detector)
+        PyFAI detector object
+    calibrant : str
+        Calibrant name
+    """
+
+    def __init__(
+        self,
+        exp,
+        run,
+        det_type,
+        detector,
+        calibrant,
+    ):
+        self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
+        self.detector = detector
+        self.calibrant = calibrant
+        PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3", "wavelength"]
+        DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
+
+    def hookes_jeeves_geom_opt(
+        self,
+        powder,
+        params,
+        mask=None,
+        step_size=0.01,
+        tol=0.00001, 
+    ):
+        """
+        From guessed initial geometry, optimize the geometry using Hooke-Jeeves algorithm on pyFAI package
+
+        Parameters
+        ----------
+        powder : str or int
+            Path to powder image or number of images to use for calibration
+        params : list
+            List of parameters to be optimized
+        mask : str
+            Path to mask file
+        step_size : float
+            Initial tep size for optimization
+        tol : float
+            Tolerance for convergence
+        """
+        if type(powder) == str:
+            print(f"Loading powder {powder}")
+            powder_img = np.load(powder)
+        elif type(powder) == int:
+            print("Computing powder from scratch")
+            self.diagnostics.psi.calibrate = True
+            powder_imgs = self.diagnostics.psi.get_images(powder, assemble=False)
+            powder_img = np.max(powder_imgs, axis=0)
+            powder_img = np.reshape(powder_img, self.detector.shape)
+            if mask:
+                print(f"Loading mask {mask}")
+                mask = np.load(mask)
+            else:
+                mask = self.diagnostics.psi.get_mask()
+            powder_img *= mask
+        else:
+            sys.exit("Unrecognized powder type, expected a path or number")
+        self.img_shape = powder_img.shape
+
+        print("Defining calibrant...")
+        calibrant = CALIBRANT_FACTORY(self.calibrant)
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
+        photon_energy = 1.23984197386209e-09 / wavelength
+        calibrant.wavelength = wavelength
+        self.DEFAULT_VALUE["wavelength"] = wavelength
+        
+        hjo_history = {}
+        x = np.array([self.DEFAULT_VALUE[param] for param in self.PARAM_ORDER])
+        scores = []
+        dist, poni1, poni2, rot1, rot2, rot3, wavelength = x
+        geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+        sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+        score = sg.geometry_refinement.refine3(fix=["wavelength"])
+        n = 0
+        scores.append(score)
+        hjo_history[f'iteration_{n}'] = {'param':x, 'score': score}
+        while step_size >= tol:
+            neighbours = {}
+            for param in params:
+                i = self.PARAM_ORDER.index(param)
+                x_plus = x.copy()
+                x_plus[i] += step_size
+                x_minus = x.copy()
+                x_minus[i] -= step_size
+                neighbours[f'x_plus_{param}'] = x_plus
+                neighbours[f'x_minus_{param}'] = x_minus
+            for key in neighbours.keys():
+                dist, poni1, poni2, rot1, rot2, rot3, wavelength = neighbours[key]
+                geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+                sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+                score = sg.geometry_refinement.refine3(fix=["wavelength"])
+                scores.append(score)
+            best_idx = np.argmin(scores)
+            if best_idx == 0:
+                step_size /= 2
+            else:
+                x = neighbours[f'x_plus_{params[best_idx]}'] if best_idx % 2 == 0 else neighbours[f'x_minus_{params[best_idx]}']
+                n += 1
+                hjo_history[f'iteration_{n}'] = {'param':x, 'score': scores[best_idx]}
+        return hjo_history, x, scores[best_idx]
+
+
