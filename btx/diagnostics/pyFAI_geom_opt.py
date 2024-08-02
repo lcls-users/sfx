@@ -399,7 +399,7 @@ class BayesGeomOpt:
 
         print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
-        wavelength = DEFAULT_VALUE["wavelength"]
+        wavelength = self.DEFAULT_VALUE["wavelength"]
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
         
@@ -528,8 +528,8 @@ class HookeJeevesGeomOpt:
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
         self.detector = detector
         self.calibrant = calibrant
-        PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3", "wavelength"]
-        DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
+        self.PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3", "wavelength"]
+        self.DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
 
     def hookes_jeeves_geom_opt(
         self,
