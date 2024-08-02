@@ -410,7 +410,7 @@ class BayesGeomOpt:
         for param in self.PARAM_ORDER:
             if param in fix:
                 input_range[param] = np.array([self.DEFAULT_VALUE[param]])
-                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                input_range_norm[param] = np.array([1])
             elif param == "dist":
                 input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.DIST_RES, self.DIST_RES)
                 input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
@@ -427,6 +427,7 @@ class BayesGeomOpt:
         X_norm_samples = X_norm[idx_samples]
         y = np.zeros((n_samples, 1))
 
+        print("Initializing samples...")
         for i in range(n_samples):
             dist, poni1, poni2, rot1, rot2, rot3, wavelength = X[i]
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
@@ -451,7 +452,7 @@ class BayesGeomOpt:
         elif af == "pi":
             af = self.probability_of_improvement
 
-
+        print("Starting Bayesian optimization...")
         for i in range(num_iterations):
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
             af_values = af(X_norm, gp_model, beta)
