@@ -475,7 +475,7 @@ class BayesGeomOpt:
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
             score = sg.geometry_refinement.refine3(fix=["wavelength"])
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
-            y.append(score)
+            y = np.append(y, score)
             X_samples.append(X[new_idx])
             X_norm_samples.append(X_norm[new_idx])
 
