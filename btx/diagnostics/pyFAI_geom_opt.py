@@ -321,9 +321,9 @@ class BayesGeomOpt:
         self.calibrant = calibrant
         self.PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3", "wavelength"]
         self.DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
-        self.DIST_RES = 0.0001
-        self.PONI_RES = 0.00001
-        self.ROT_RES = 0.0001
+        self.DIST_RES = 0.001
+        self.PONI_RES = 0.0001
+        self.ROT_RES = 0.001
 
     @staticmethod
     def expected_improvement(X, gp_model, best_y):
