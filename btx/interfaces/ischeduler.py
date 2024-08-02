@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class JobScheduler:
 
     def __init__(self, jobfile, logdir='./', jobname='btx',
-                 account='lcls', queue='ffbh3q', ncores=1, time='01:00:00',
+                 account='lcls', queue='ffbh3q', ncores=1, time='10:00:00',
                  reservation=""):
         self.manager = 'SLURM'
         self.jobfile = jobfile
