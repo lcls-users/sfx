@@ -334,20 +334,18 @@ class iPCA_Pytorch_without_Psana:
             V = ipca.components_.cpu().detach().numpy().T
             mu = ipca.mean_.cpu().detach().numpy()
             total_variance = ipca.explained_variance_.cpu().detach().numpy()
-            losses = [] ## NOT IMPLEMENTED YET
         else:
             S = ipca.singular_values_
             V = ipca.components_.T
             mu = ipca.mean_
             total_variance = ipca.explained_variance_
-            losses = [] ## NOT IMPLEMENTED YET
         torch.cuda.empty_cache()
         gc.collect()
-        dict_to_return = {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses}
+        dict_to_return = {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance}
         return dict_to_return
 
-    def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,algo_state_dict,ipca_state_dict):
-        device = device_list[rank]
+    def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,model_state_dict,batch_size):
+        """device = device_list[rank]
         algo_state_dict = algo_state_dict[rank]
         ipca_state_dict = ipca_state_dict[rank]
         for key, value in algo_state_dict.items():
@@ -382,7 +380,35 @@ class iPCA_Pytorch_without_Psana:
         existing_shm.unlink()
         self.shm = None
         self.images = None
+        return average_loss,average_losses"""
+        device = device_list[rank]
+        model_state_dict = model_state_dict[rank]
+        existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
+        images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
+        
+        V = model_state_dict['V']
+        mu = model_state_dict['mu']
+
+        average_losses = []
+        for start in range(0, images.shape[0], batch_size):
+            end = min(start + batch_size, images.shape[0])
+            batch_imgs = images[start:end]
+            batch_imgs = torch.tensor(batch_imgs.reshape(end-start,-1), device=device, dtype=images_dtype)
+            initial_norm = torch.norm(batch_imgs, dim=1, p = 'fro')
+            transformed_batch = torch.mm((batch_imgs.copy() - mu),V)
+            reconstructed_batch = torch.mm(transformed_batch,V.T) + mu
+            diff = batch_imgs - reconstructed_batch
+            norm_batch = torch.norm(diff, dim=1, p = 'fro')
+            norm_batch = norm_batch/initial_norm
+            average_losses.append(torch.mean(norm_batch).cpu().detach().numpy())
+        
+        average_loss = np.mean(average_losses)
+        existing_shm.close()
+        existing_shm.unlink()
+        torch.cuda.empty_cache()
+        gc.collect()
         return average_loss,average_losses
+
 ###############################################################################################################
 ###############################################################################################################
 

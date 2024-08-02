@@ -270,6 +270,7 @@ if __name__ == "__main__":
     with mp.Manager() as manager:
         algo_state_dict = [manager.dict() for _ in range(num_gpus)]
         ipca_state_dict = [manager.dict() for _ in range(num_gpus)]
+        model_state_dict = [manager.dict() for _ in range(num_gpus)]
         for key, value in algo_state_dict_local.items():
             if torch.is_tensor(value):
                 for rank in range(num_gpus):
@@ -316,20 +317,29 @@ if __name__ == "__main__":
                     logging.info("Checkpoint : Iteration done")
                 else:
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
-                    (reconstructed_images, S, V, mu, total_variance, losses) = ([], [], [], [], [], [])
+                    (reconstructed_images, S, V, mu, total_variance) = ([], [], [], [], [])
                     for result in results:
                         S.append(result['S'])
                         V.append(result['V'])
                         mu.append(result['mu'])
                         total_variance.append(result['total_variance'])
-                        losses.append(result['losses'])
-                
+                    
+                    for rank in range(num_gpus):
+                        model_state_dict[rank]['S'] = S[rank]
+                        model_state_dict[rank]['V'] = V[rank]
+                        model_state_dict[rank]['mu'] = mu[rank]
+                        model_state_dict[rank]['total_variance'] = total_variance[rank]
+                 
                 mem = psutil.virtual_memory()
                 print("================LOADING DONE=====================",flush=True)
                 print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
                 print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
                 print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
                 print("=====================================")
+
+                torch.cuda.empty_cache()
+                gc.collect()
+
             fitting_end_time = time.time()
             print(f"Time elapsed for fitting: {fitting_end_time - fitting_start_time} seconds.",flush=True) 
             print("=====================================\n",flush=True)
@@ -365,7 +375,7 @@ if __name__ == "__main__":
 
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-                results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,algo_state_dict,ipca_state_dict,ipca_instance) for rank in range(num_gpus)])
+                results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size) for rank in range(num_gpus)])
                 current_batch_loss = []
                 for rank in range(num_gpus):
                     average_loss,_ = results[rank]
@@ -379,6 +389,9 @@ if __name__ == "__main__":
                 print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
                 print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
                 print("=====================================")
+                
+                torch.cuda.empty_cache()
+                gc.collect()
                 
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
