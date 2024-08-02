@@ -424,6 +424,7 @@ class BayesGeomOpt:
                 input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
         X = np.array(np.meshgrid(*[input_range[param] for param in self.PARAM_ORDER])).T.reshape(-1, len(self.PARAM_ORDER))
         X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.PARAM_ORDER])).T.reshape(-1, len(self.PARAM_ORDER))
+        print(f"Setting space complete with {X.shape[0]} points")
         idx_samples = np.random.choice(X.shape[0], n_samples)
         X_samples = X[idx_samples]
         X_norm_samples = X_norm[idx_samples]
@@ -431,7 +432,7 @@ class BayesGeomOpt:
 
         print("Initializing samples...")
         for i in range(n_samples):
-            dist, poni1, poni2, rot1, rot2, rot3, wavelength = X[i]
+            dist, poni1, poni2, rot1, rot2, rot3, wavelength = X_samples[i]
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
@@ -443,7 +444,7 @@ class BayesGeomOpt:
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=seed)
-        gp_model.fit(X_norm, y)
+        gp_model.fit(X_norm_samples, y)
         visited_idx = list(idx_samples.flatten())
 
         if af == "ucb":
