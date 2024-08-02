@@ -17,6 +17,7 @@ import torch
 import torch.nn as nn
 import torch.multiprocessing as mp
 import logging
+import gc
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -392,7 +393,7 @@ if __name__ == "__main__":
                 
                 torch.cuda.empty_cache()
                 gc.collect()
-                
+
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)
