@@ -319,11 +319,11 @@ class BayesGeomOpt:
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
         self.detector = detector
         self.calibrant = calibrant
-        PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3", "wavelength"]
-        DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
-        DIST_RES = 0.0001
-        PONI_RES = 0.00001
-        ROT_RES = 0.0001
+        self.PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3", "wavelength"]
+        self.DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
+        self.DIST_RES = 0.0001
+        self.PONI_RES = 0.00001
+        self.ROT_RES = 0.0001
 
     @staticmethod
     def expected_improvement(X, gp_model, best_y):
@@ -371,7 +371,7 @@ class BayesGeomOpt:
             Number of samples to initialize the GP model
         num_iterations : int
             Number of iterations for optimization
-        acqui_func : str
+        af : str
             Acquisition function to use for optimization
         seed : int
             Random seed for reproducibility
@@ -399,7 +399,7 @@ class BayesGeomOpt:
 
         print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
-        wavelength = self.DEFAULT_VALUE["wavelength"]
+        wavelength = DEFAULT_VALUE["wavelength"]
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
         
@@ -534,7 +534,7 @@ class HookeJeevesGeomOpt:
     def hookes_jeeves_geom_opt(
         self,
         powder,
-        params,
+        fix,
         mask=None,
         step_size=0.01,
         tol=0.00001, 
@@ -546,8 +546,8 @@ class HookeJeevesGeomOpt:
         ----------
         powder : str or int
             Path to powder image or number of images to use for calibration
-        params : list
-            List of parameters to be optimized
+        fix : list
+            List of parameters not to be optimized
         mask : str
             Path to mask file
         step_size : float
@@ -579,7 +579,6 @@ class HookeJeevesGeomOpt:
         wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
-        self.DEFAULT_VALUE["wavelength"] = wavelength
         
         hjo_history = {}
         x = np.array([self.DEFAULT_VALUE[param] for param in self.PARAM_ORDER])
@@ -588,20 +587,21 @@ class HookeJeevesGeomOpt:
         geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
         sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-        score = sg.geometry_refinement.refine3(fix=["wavelength"])
+        score = sg.geometry_refinement.refine3(fix=fix)
         n = 0
         scores.append(score)
         hjo_history[f'iteration_{n}'] = {'param':x, 'score': score}
         while step_size >= tol:
             neighbours = {}
-            for param in params:
-                i = self.PARAM_ORDER.index(param)
-                x_plus = x.copy()
-                x_plus[i] += step_size
-                x_minus = x.copy()
-                x_minus[i] -= step_size
-                neighbours[f'x_plus_{param}'] = x_plus
-                neighbours[f'x_minus_{param}'] = x_minus
+            for param in self.PARAM_ORDER:
+                if param not in fix:
+                    i = self.PARAM_ORDER.index(param)
+                    x_plus = x.copy()
+                    x_plus[i] += step_size
+                    x_minus = x.copy()
+                    x_minus[i] -= step_size
+                    neighbours[f'x_plus_{param}'] = x_plus
+                    neighbours[f'x_minus_{param}'] = x_minus
             for key in neighbours.keys():
                 dist, poni1, poni2, rot1, rot2, rot3, wavelength = neighbours[key]
                 geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
