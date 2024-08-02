@@ -373,6 +373,13 @@ if __name__ == "__main__":
                     average_losses.append(average_loss)
                 
                 print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
+                mem = psutil.virtual_memory()
+                print("================LOADING DONE=====================",flush=True)
+                print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
+                print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
+                print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
+                print("=====================================")
+                
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)
