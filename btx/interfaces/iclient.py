@@ -323,9 +323,18 @@ if __name__ == "__main__":
                         mu.append(result['mu'])
                         total_variance.append(result['total_variance'])
                         losses.append(result['losses'])
+                
+                mem = psutil.virtual_memory()
+                print("================LOADING DONE=====================",flush=True)
+                print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
+                print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
+                print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
+                print("=====================================")
             fitting_end_time = time.time()
             print(f"Time elapsed for fitting: {fitting_end_time - fitting_start_time} seconds.",flush=True) 
+            print("=====================================\n",flush=True)
             print("FITTING : DONE",flush=True)
+            print("\n=====================================",flush=True)
             loss_start_time = time.time()
             for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
@@ -366,9 +375,9 @@ if __name__ == "__main__":
                 print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
-
+            print("=====================================\n",flush=True)
             print("Global-Averaged loss (in %) :",np.mean(average_losses)*100)
-
+            print("\n=====================================",flush=True)
     print("DONE DONE DOOOOOOOOOOOOOONE")
 
     """all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING
