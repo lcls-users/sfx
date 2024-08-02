@@ -475,9 +475,9 @@ class BayesGeomOpt:
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
             score = sg.geometry_refinement.refine3(fix=["wavelength"])
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
-            y = np.append(y, score, axis=0)
-            X_samples = np.append(X_samples, X[new_idx], axis=0)
-            X_norm_samples = np.append(X_norm_samples, X_norm[new_idx], axis=0)
+            y = np.append(y, [score], axis=0)
+            X_samples = np.append(X_samples, [X[new_idx]], axis=0)
+            X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
 
             # 4. Update the Gaussian Process Regressor
             gp_model.fit(X_norm_samples, y)
