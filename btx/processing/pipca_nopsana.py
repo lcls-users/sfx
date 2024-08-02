@@ -407,6 +407,10 @@ class iPCA_Pytorch_without_Psana:
         existing_shm.unlink()
         torch.cuda.empty_cache()
         gc.collect()
+
+        print(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes",flush=True)
+        print(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes",flush=True)
+
         return average_loss,average_losses
 
 ###############################################################################################################
