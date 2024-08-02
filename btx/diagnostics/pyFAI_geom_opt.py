@@ -432,6 +432,7 @@ class BayesGeomOpt:
 
         print("Initializing samples...")
         for i in range(n_samples):
+            print(f"Initializing sample {i+1}...")
             dist, poni1, poni2, rot1, rot2, rot3, wavelength = X_samples[i]
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
@@ -457,6 +458,7 @@ class BayesGeomOpt:
 
         print("Starting Bayesian optimization...")
         for i in range(num_iterations):
+            print(f"Iteration {i+1}...")
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
             af_values = af(X_norm, gp_model, beta)
             af_values[visited_idx] = -np.inf
