@@ -245,7 +245,6 @@ if __name__ == "__main__":
     overwrite = True
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
-    all_data = []
     average_losses=[]
     num_training_images = int(params.num_images * training_percentage)
 
@@ -291,9 +290,6 @@ if __name__ == "__main__":
                 
                 if event + loading_batch_size >= num_images + start_offset:
                     last_batch = True
-                
-                if event > num_training_images + start_offset:
-                        break
 
                 current_loading_batch = []
                 requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
@@ -304,10 +300,10 @@ if __name__ == "__main__":
                 dataloader_iter = iter(dataloader)
 
                 for batch in dataloader_iter:
-                    if event + len(current_loading_batch) > num_training_images + start_offset:
-                        break
-                    all_data.append(batch)
+                    if event + len(current_loading_batch) > num_training_images + start_offset and current_loading_batch != []:
+                        last_batch = True
                     current_loading_batch.append(batch)
+    
                 logging.info(f"Loaded {event+loading_batch_size} images.")
                 current_loading_batch = np.concatenate(current_loading_batch, axis=0)
                 #Remove None images
@@ -378,13 +374,11 @@ if __name__ == "__main__":
                 dataloader_iter = iter(dataloader)
 
                 for batch in dataloader_iter:
-                    all_data.append(batch)
                     current_loading_batch.append(batch)
 
                 logging.info(f"Loaded {event+loading_batch_size} images.")
                 current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                current_len = current_loading_batch.shape[0]
-                current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+                current_loading_batch = current_loading_batch[[i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
                 logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
                 current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
