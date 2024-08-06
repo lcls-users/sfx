@@ -291,6 +291,9 @@ if __name__ == "__main__":
                 
                 if event + loading_batch_size >= num_images + start_offset:
                     last_batch = True
+                
+                if event + len(current_loading_batch) >= num_training_images + start_offset:
+                        break
 
                 current_loading_batch = []
                 requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
