@@ -302,6 +302,7 @@ if __name__ == "__main__":
                 for batch in dataloader_iter:
                     if event + len(current_loading_batch) > num_training_images + start_offset and current_loading_batch != []:
                         last_batch = True
+                        break
                     current_loading_batch.append(batch)
     
                 logging.info(f"Loaded {event+loading_batch_size} images.")
