@@ -382,7 +382,8 @@ if __name__ == "__main__":
 
                 logging.info(f"Loaded {event+loading_batch_size} images.")
                 current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                current_loading_batch = current_loading_batch[[i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+                current_len = current_loading_batch.shape[0]
+                current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
                 logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
                 current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
