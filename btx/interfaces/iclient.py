@@ -292,7 +292,7 @@ if __name__ == "__main__":
                 if event + loading_batch_size >= num_images + start_offset:
                     last_batch = True
                 
-                if event >= num_training_images + start_offset:
+                if event > num_training_images + start_offset:
                         break
 
                 current_loading_batch = []
@@ -304,7 +304,7 @@ if __name__ == "__main__":
                 dataloader_iter = iter(dataloader)
 
                 for batch in dataloader_iter:
-                    if event + len(current_loading_batch) >= num_training_images + start_offset:
+                    if event + len(current_loading_batch) > num_training_images + start_offset:
                         break
                     all_data.append(batch)
                     current_loading_batch.append(batch)
@@ -358,10 +358,6 @@ if __name__ == "__main__":
 
                 torch.cuda.empty_cache()
                 gc.collect()
-
-                if event + len(current_loading_batch) >= num_training_images + start_offset:
-                    print(f"Trained on {event+len(current_loading_batch)} images.",flush=True)
-                    break
 
             fitting_end_time = time.time()
             print(f"Time elapsed for fitting: {fitting_end_time - fitting_start_time} seconds.",flush=True) 
