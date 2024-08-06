@@ -255,6 +255,7 @@ if __name__ == "__main__":
 
     mp.set_start_method('spawn', force=True)
 
+    #Initializes iPCA instance
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,
     run=run,
@@ -270,6 +271,7 @@ if __name__ == "__main__":
     algo_state_dict_local = ipca_instance.save_state()
     last_batch = False
     logging.basicConfig(level=logging.INFO)
+    #Creates shared dictionaries for each GPU
     with mp.Manager() as manager:
         algo_state_dict = [manager.dict() for _ in range(num_gpus)]
         ipca_state_dict = [manager.dict() for _ in range(num_gpus)]
@@ -281,7 +283,7 @@ if __name__ == "__main__":
             else:
                 for rank in range(num_gpus):
                     algo_state_dict[rank][key] = value
-
+        #Creates a pool of processes to parallelize the loading and processing of the images
         with Pool(processes=num_gpus) as pool:
             fitting_start_time = time.time()
             for event in range(start_offset, start_offset + num_images, loading_batch_size):
@@ -302,23 +304,30 @@ if __name__ == "__main__":
                     current_loading_batch.append(batch)
                 logging.info(f"Loaded {event+loading_batch_size} images.")
                 current_loading_batch = np.concatenate(current_loading_batch, axis=0)
+                #Remove None images
                 current_loading_batch = current_loading_batch[[i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
                 logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
+                #Apply the smoothing function
                 current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
+
+                #Split the images into batches for each GPU
                 current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
 
                 shape = current_loading_batch[0].shape
                 dtype = current_loading_batch[0].dtype
 
+                #Create shared memory for each batch
                 shm_list = create_shared_images(current_loading_batch)
 
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
                 if not last_batch:
+                    #Run the batch process in parallel
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     logging.info("Checkpoint : Iteration done")
                 else:
+                    #Run the batch process in parallel, gather the results and update the model state dictionary
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     (reconstructed_images, S, V, mu, total_variance) = ([], [], [], [], [])
                     for result in results:
@@ -349,6 +358,7 @@ if __name__ == "__main__":
             print("FITTING : DONE",flush=True)
             print("\n=====================================",flush=True)
             loss_start_time = time.time()
+            #Compute the loss (same loading process)
             for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
                 current_loading_batch = []
@@ -401,60 +411,16 @@ if __name__ == "__main__":
             print("=====================================\n",flush=True)
             print("Global-Averaged loss (in %) :",np.mean(average_losses)*100)
             print("\n=====================================",flush=True)
-    print("DONE DONE DOOOOOOOOOOOOOONE")
 
-    """all_data = np.concatenate(all_data, axis=0) #MODIFY BECAUSE WE WANT IT TO BE INCREMENTAL, IT'S JUST A TEMPORARY THING
-    mem = psutil.virtual_memory()
-    print("================LOADING DONE=====================")
-    print(f"System total memory: {mem.total / 1024**3:.2f} GB")
-    print(f"System available memory: {mem.available / 1024**3:.2f} GB")
-    print(f"System used memory: {mem.used / 1024**3:.2f} GB")
-    print("=====================================")
-    print(all_data.shape)
-    print('Images are loaded!')"""
+    print("DONE")
 
+    #Close the server
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
         sock.sendall("DONE".encode('utf-8'))
 
     print('Server is shut down!')
-
-    """run_client_task(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag,all_data,training_percentage,smoothing_function,num_gpus) # 4 is the number of gpus, will be changed to a parameter
-    """
     print('Pipca is done!')
 
     end_time = time.time()
     print(f"Time elapsed: {end_time - start_time} seconds.")
-
-    """last_batch = False
-
-    for event in range(start_offset, start_offset + num_images, loading_batch_size):
-
-        requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
-
-        server_address = ('localhost', 5000)
-        dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-        dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
-        dataloader_iter = iter(dataloader)
-
-        print(f"Loaded {event+loading_batch_size} images.")
-
-        for batch in dataloader_iter:
-            if dataloader.batch_idx == (len(dataloader) - 1) and event + loading_batch_size >= num_images + start_offset:
-                last_batch = True
-                print('Images are loaded, last batch is processing!')
-            run_client_task(exp,run,det_type,batch_size,num_components,batch_size,
-                            filename_with_tag,batch,training_percentage,last_batch) #there will be issues with the training percentage if we do it batch by batch
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.connect(server_address)
-        sock.sendall("DONE".encode('utf-8'))
-
-    print('Server is shut down!')
-
-    print('Pipca is done!')
-
-    end_time = time.time()
-    print(f"Time elapsed: {end_time - start_time} seconds.")"""
-
-

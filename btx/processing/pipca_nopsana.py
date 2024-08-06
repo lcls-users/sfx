@@ -67,7 +67,7 @@ class iPCA_Pytorch_without_Psana:
 
     def run_model(self):
         """
-        Run the iPCA algorithm on the given data.
+        Run the iPCA algorithm on the given data. The data is split across the available GPUs and the algorithm is run in parallel on each GPU. Needs to be run on the entire dataset.
         """
 
         self.start_time = time.time()
@@ -154,6 +154,7 @@ class iPCA_Pytorch_without_Psana:
         logging.info(f"Model complete in {end_time - self.start_time} seconds")
     
     def process_on_gpu(self,rank,images_shape,images_dtype):
+        """Process the images on the GPU with the given rank. Needs to be run on the entire dataset."""
 
         device = self.device_list[rank]
 
@@ -255,6 +256,7 @@ class iPCA_Pytorch_without_Psana:
         return {'reconstructed_images':reconstructed_images, 'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance, 'losses':losses, 'frequency':frequency, 'execution_time':execution_time}
 
     def create_shared_images(self):
+        """Create shared memory blocks for the images to be shared across the GPUs."""
         for sub_imgs in self.images:
             chunk_size = np.prod(self.images[0].shape) * self.images[0].dtype.itemsize
             shm = shared_memory.SharedMemory(create=True, size=chunk_size)
@@ -277,6 +279,8 @@ class iPCA_Pytorch_without_Psana:
             self.shm = shm_list       
 
     def run_batch(self,algo_state_dict,ipca_state_dict,last_batch,rank,device_list,images_shape,images_dtype,shm_list):
+        """Run the iPCA algorithm on the given data. The data is split across the available GPUs and the algorithm is run in parallel on each GPU. Does not need to be run on the entire dataset.
+        Note that algo_state_dict and ipca_state_dict are shared across all GPUs and are updated in-place."""
         device = device_list[rank]
         algo_state_dict = algo_state_dict[rank]
         ipca_state_dict = ipca_state_dict[rank]
@@ -345,42 +349,6 @@ class iPCA_Pytorch_without_Psana:
         return dict_to_return
 
     def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,model_state_dict,batch_size):
-        """device = device_list[rank]
-        algo_state_dict = algo_state_dict[rank]
-        ipca_state_dict = ipca_state_dict[rank]
-        for key, value in algo_state_dict.items():
-            if torch.is_tensor(value):
-                algo_state_dict[key] = value.to(device)
-            else:
-                algo_state_dict[key] = value
-
-        self.device = device
-        self.update_state(state_updates=algo_state_dict,device_list=device_list,shm_list = shm_list)
-
-        with TaskTimer(self.task_durations, "Initializing model"):
-            ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, ipca_state_dict = ipca_state_dict)
-
-        with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
-            existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
-            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
-            self.images = images
-
-        self.num_images = self.images.shape[0]
-
-        average_losses = []
-        with TaskTimer(self.task_durations, "Computing compression loss"):
-            for start in range(0, self.num_images, self.batch_size):
-                end = min(start + self.batch_size, self.num_images)
-                batch_imgs = self.images[start:end] ###
-                average_loss = ipca.compute_loss_pytorch(batch_imgs.reshape(end-start, -1))
-                average_losses.append(average_loss.cpu().detach().numpy())
-            average_loss = np.mean(average_losses)
-
-        existing_shm.close()
-        existing_shm.unlink()
-        self.shm = None
-        self.images = None
-        return average_loss,average_losses"""
         device = device_list[rank]
         model_state_dict = model_state_dict[rank]
         existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
