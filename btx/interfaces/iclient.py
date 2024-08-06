@@ -247,6 +247,7 @@ if __name__ == "__main__":
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     all_data = []
     average_losses=[]
+    num_training_images = int(params.num_images * training_percentage)
 
     if start_offset is None:
         start_offset = 0
@@ -300,6 +301,8 @@ if __name__ == "__main__":
                 dataloader_iter = iter(dataloader)
 
                 for batch in dataloader_iter:
+                    if event + len(current_loading_batch) >= num_training_images + start_offset:
+                        break
                     all_data.append(batch)
                     current_loading_batch.append(batch)
                 logging.info(f"Loaded {event+loading_batch_size} images.")
@@ -326,6 +329,7 @@ if __name__ == "__main__":
                     #Run the batch process in parallel
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     logging.info("Checkpoint : Iteration done")
+
                 else:
                     #Run the batch process in parallel, gather the results and update the model state dictionary
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
@@ -351,6 +355,10 @@ if __name__ == "__main__":
 
                 torch.cuda.empty_cache()
                 gc.collect()
+
+                if event + len(current_loading_batch) >= num_training_images + start_offset:
+                    print(f"Trained on {event+len(current_loading_batch)} images.",flush=True)
+                    break
 
             fitting_end_time = time.time()
             print(f"Time elapsed for fitting: {fitting_end_time - fitting_start_time} seconds.",flush=True) 
