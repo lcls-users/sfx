@@ -346,6 +346,8 @@ if __name__ == "__main__":
                         model_state_dict[rank]['V'] = V[rank]
                         model_state_dict[rank]['mu'] = mu[rank]
                         model_state_dict[rank]['total_variance'] = total_variance[rank]
+                    
+                    break
                  
                 mem = psutil.virtual_memory()
                 print("================LOADING DONE=====================",flush=True)
