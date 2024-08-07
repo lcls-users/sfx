@@ -445,14 +445,14 @@ if __name__ == "__main__":
             print("\n=====================================",flush=True)
 
 
-    #Fuse results and save the model
-    saving_start_time = time.time()
-    S,V,mu,total_variance = [],[],[],[]
-    for rank in range(num_gpus):
-        S.append(model_state_dict[rank]['S'])
-        V.append(model_state_dict[rank]['V'])
-        mu.append(model_state_dict[rank]['mu'])
-        total_variance.append(model_state_dict[rank]['total_variance'])
+        #Fuse results and save the model
+        saving_start_time = time.time()
+        S,V,mu,total_variance = [],[],[],[]
+        for rank in range(num_gpus):
+            S.append(model_state_dict[rank]['S'])
+            V.append(model_state_dict[rank]['V'])
+            mu.append(model_state_dict[rank]['mu'])
+            total_variance.append(model_state_dict[rank]['total_variance'])
 
     with h5py.File(filename_with_tag, 'a') as f:
                 if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
