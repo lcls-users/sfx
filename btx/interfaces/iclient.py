@@ -444,7 +444,15 @@ if __name__ == "__main__":
             print("\n=====================================",flush=True)
 
 
-    #Save the model
+    #Fuse results and save the model
+    saving_start_time = time.time()
+    S,V,mu,total_variance = [],[],[],[]
+    for rank in range(num_gpus):
+        S.append(model_state_dict[rank]['S'])
+        V.append(model_state_dict[rank]['V'])
+        mu.append(model_state_dict[rank]['mu'])
+        total_variance.append(model_state_dict[rank]['total_variance'])
+
     with h5py.File(filename_with_tag, 'a') as f:
                 if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
                     # Create datasets only if they don't exist
@@ -454,11 +462,15 @@ if __name__ == "__main__":
 
                 create_or_update_dataset(f, 'run', data=run)
                 create_or_update_dataset(f, 'transformed_images', data=transformed_images)
-                create_or_update_dataset(f, 'model_state_dict', data=model_state_dict)
+                create_or_update_dataset(f, 'S', data=S)
+                create_or_update_dataset(f, 'V', data=V)
+                create_or_update_dataset(f, 'mu', data=mu)
+                create_or_update_dataset(f, 'total_variance', data=total_variance)
                 create_or_update_dataset(f, 'average_losses', data=average_losses)
 
+    saving_end_time = time.time()
 
-                print(f'Model saved to {filename_with_tag}',flush=True) 
+    print(f'Model saved to {filename_with_tag} in {saving_end_time-saving_start_time} seconds',flush=True) 
 
     print("DONE")
 
