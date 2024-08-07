@@ -5,6 +5,7 @@ import numpy as np
 import time
 import psutil
 import gc
+import h5py
 
 from matplotlib import pyplot as plt
 from matplotlib import colors
