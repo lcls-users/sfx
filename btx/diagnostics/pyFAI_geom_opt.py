@@ -315,6 +315,8 @@ class BayesGeomOpt:
             List of parameters not to be optimized
         bounds : dict
             Dictionary of bounds for each parameter
+        mask : np.ndarray
+            Mask for powder
         n_samples : int
             Number of samples to initialize the GP model
         num_iterations : int
@@ -394,7 +396,7 @@ class BayesGeomOpt:
 
         kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
-                + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
+                + WhiteKernel(noise_level=0.01, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=seed)
         gp_model.fit(X_norm_samples, y)
         visited_idx = list(idx_samples.flatten())
@@ -473,11 +475,11 @@ class BayesGeomOpt:
         params = [bo_history[key]['param'] for key in bo_history.keys()]
         fig, ax = plt.subplots()
         ax.imshow(grid_search, cmap='RdBu', origin='lower')
-        ax.set_xlabel('Poni1')
-        ax.set_ylabel('Poni2')
+        ax.set_xlabel('Poni2')
+        ax.set_ylabel('Poni1')
         ax.set_title('Bayesian Optimization Convergence on Grid Search Space')
-        ax.scatter([param[1] for param in params], [param[2] for param in params], c=params.index, cmap='viridis')
-        ax.scatter(best_param[1], best_param[2], c='red', label='Best Parameter')
+        ax.scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='plasma')
+        ax.scatter(best_param[1], best_param[2], c='red', label='Best Parameter', s=3)
         ax.legend()
         plt.show()
 
