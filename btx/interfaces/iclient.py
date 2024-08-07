@@ -246,6 +246,7 @@ if __name__ == "__main__":
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     average_losses=[]
+    transformed_images = []
     num_training_images = int(params.num_images * training_percentage)
 
     if start_offset is None:
@@ -397,9 +398,10 @@ if __name__ == "__main__":
                 results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance) for rank in range(num_gpus)])
                 current_batch_loss = []
                 for rank in range(num_gpus):
-                    average_loss,_ = results[rank]
+                    average_loss,_,batch_transformed_images = results[rank]
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
+                    transformed_images.append(batch_transformed_images)
                 
                 print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
                 mem = psutil.virtual_memory()
@@ -412,11 +414,29 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
                 gc.collect()
 
+            transformed_images = np.concatenate(transformed_images, axis=0)
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)
             print("Global-Averaged loss (in %) :",np.mean(average_losses)*100)
             print("\n=====================================",flush=True)
+
+
+    #Save the model
+    with h5py.File(filename_with_tag, 'a') as f:
+                if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
+                    # Create datasets only if they don't exist
+                    f.create_dataset('exp', data=exp)
+                    f.create_dataset('det_type', data=det_type)
+                    f.create_dataset('start_offset', data=start_offset)
+
+                create_or_update_dataset(f, 'run', data=run)
+                create_or_update_dataset(f, 'transformed_images', data=transformed_images)
+                create_or_update_dataset(f, 'model_state_dict', data=model_state_dict)
+                create_or_update_dataset(f, 'average_losses', data=average_losses)
+
+
+                print(f'Model saved to {filename_with_tag}',flush=True) 
 
     print("DONE")
 
