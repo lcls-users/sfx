@@ -18,6 +18,7 @@ import torch.nn as nn
 import torch.multiprocessing as mp
 import logging
 import gc
+import h5py
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
