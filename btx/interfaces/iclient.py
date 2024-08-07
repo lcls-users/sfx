@@ -209,6 +209,27 @@ def mapping_function(images, type_mapping = "id"):
     else:
         raise ValueError("The input type is not supported")
 
+def append_to_dataset(f, dataset_name, data):
+    if dataset_name not in f:
+        f.create_dataset(dataset_name, data=np.array(data))
+    else:
+        if isinstance(f[dataset_name], h5py.Dataset) and f[dataset_name].shape == ():
+            # Scalar dataset, convert to array
+            existing_data = np.atleast_1d(f[dataset_name][()])
+        else:
+            # Non-scalar dataset, use slicing
+            existing_data = f[dataset_name][:]
+
+        new_data = np.atleast_1d(np.array(data))
+        data_combined = np.concatenate([existing_data, new_data])
+        del f[dataset_name]
+        f.create_dataset(dataset_name, data=data_combined)
+
+def create_or_update_dataset(f, name, data):
+    if name in f:
+        del f[name]
+    f.create_dataset(name, data=data)
+
 def run_batch_process(algo_state_dict, ipca_state_dict, last_batch, rank, device, shape, dtype, shm_list,ipca_instance):
     # Charge les tenseurs CUDA sur le GPU à l'intérieur du processus
     algo_state_dict[rank] = {k: v.cuda(device) if torch.is_tensor(v) else v for k, v in algo_state_dict[rank].items()}
