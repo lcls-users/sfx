@@ -419,8 +419,12 @@ class BayesGeomOpt:
             new_input = X[new_idx]
             visited_idx.append(new_idx)
 
-            # 3. Compute the score of the new set of parameters 
-            dist, poni1, poni2, rot1, rot2, rot3 = new_input
+            # 3. Compute the score of the new set of parameters
+            if len(self.PARAM_SPACE) == 3:
+                dist, poni1, poni2 = new_input
+                rot1, rot2, rot3 = self.DEFAULT_VALUE["rot1"], self.DEFAULT_VALUE["rot2"], self.DEFAULT_VALUE["rot3"]
+            else:
+                dist, poni1, poni2, rot1, rot2, rot3 = new_input
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
