@@ -349,7 +349,7 @@ class iPCA_Pytorch_without_Psana:
         dict_to_return = {'S':S, 'V':V, 'mu':mu, 'total_variance':total_variance}
         return dict_to_return
 
-    def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,model_state_dict,batch_size):
+    def compute_loss(self,rank,device_list,images_shape,images_dtype,shm_list,model_state_dict,batch_size,loss_or_not):
         device = device_list[rank]
         model_state_dict = model_state_dict[rank]
         existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
@@ -368,13 +368,14 @@ class iPCA_Pytorch_without_Psana:
             initial_norm = torch.norm(batch_imgs, dim=1, p = 'fro')
             transformed_batch = torch.mm((batch_imgs.clone() - mu),V)
             transformed_images.append(transformed_batch)
-            reconstructed_batch = torch.mm(transformed_batch,V.T) + mu
-            diff = batch_imgs - reconstructed_batch
-            norm_batch = torch.norm(diff, dim=1, p = 'fro')
-            norm_batch = norm_batch/initial_norm
-            average_losses.append(torch.mean(norm_batch).cpu().detach().numpy())
+            if loss_or_not:
+                reconstructed_batch = torch.mm(transformed_batch,V.T) + mu
+                diff = batch_imgs - reconstructed_batch
+                norm_batch = torch.norm(diff, dim=1, p = 'fro')
+                norm_batch = norm_batch/initial_norm
+                average_losses.append(torch.mean(norm_batch).cpu().detach().numpy())
         
-        average_loss = np.mean(average_losses)
+        average_loss = np.mean(average_losses) if loss_or_not else None
         transformed_images = torch.cat(transformed_images, dim=0).cpu().detach().numpy()
         existing_shm.close()
         existing_shm.unlink()

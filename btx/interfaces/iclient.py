@@ -236,13 +236,13 @@ def run_batch_process(algo_state_dict, ipca_state_dict, last_batch, rank, device
     # Appelle la méthode de traitement
     return ipca_instance.run_batch(algo_state_dict, ipca_state_dict, last_batch, rank, device, shape, dtype, shm_list)
 
-def compute_loss_process(rank, device_list, shape, dtype, shm_list, model_state_dict, batch_size,ipca_instance):
+def compute_loss_process(rank, device_list, shape, dtype, shm_list, model_state_dict, batch_size,ipca_instance,loss_or_not):
     # Charge les tenseurs CUDA sur le GPU à l'intérieur du processus
     model_state_dict[rank] = {k:v for k, v in model_state_dict[rank].items()}
     model_state_dict[rank]['V'] = torch.tensor(model_state_dict[rank]['V'], device=device_list[rank])
     model_state_dict[rank]['mu'] = torch.tensor(model_state_dict[rank]['mu'], device=device_list[rank])
     # Appelle la méthode de traitement
-    return ipca_instance.compute_loss(rank, device_list, shape, dtype, shm_list,model_state_dict, batch_size)
+    return ipca_instance.compute_loss(rank, device_list, shape, dtype, shm_list,model_state_dict, batch_size,loss_or_not)
 
 if __name__ == "__main__":
 
@@ -270,6 +270,7 @@ if __name__ == "__main__":
     average_losses=[]
     transformed_images = []
     num_training_images = int(params.num_images * training_percentage)
+    loss_or_not = True
 
     if start_offset is None:
         start_offset = 0
@@ -417,7 +418,7 @@ if __name__ == "__main__":
 
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-                results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance) for rank in range(num_gpus)])
+                results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance,loss_or_not) for rank in range(num_gpus)])
                 current_batch_loss = []
                 for rank in range(num_gpus):
                     average_loss,_,batch_transformed_images = results[rank]
