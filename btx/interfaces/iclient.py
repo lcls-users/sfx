@@ -164,6 +164,12 @@ def parse_input():
         required=True,
         type=int,
     )
+    parser.add_argument(
+        "--compute_loss",
+        help="Compute the loss or not.",
+        required=False,
+        type=bool,
+    )
 
     return parser.parse_args()
 
@@ -264,13 +270,14 @@ if __name__ == "__main__":
     training_percentage = params.training_percentage
     smoothing_function = params.smoothing_function
     num_gpus = params.num_gpus
+    loss_or_not = params.compute_loss
     overwrite = True
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     average_losses=[]
     transformed_images = []
     num_training_images = int(params.num_images * training_percentage)
-    loss_or_not = True
+
 
     if start_offset is None:
         start_offset = 0

@@ -776,6 +776,7 @@ def test_serv_client(config):
     num_gpus = task.num_gpus
     training_percentage = task.training_percentage
     smoothing_function = task.smoothing_function
+    compute_loss = task.compute_loss
     comm = MPI.COMM_WORLD
     ncores = comm.Get_size()
 
@@ -793,9 +794,9 @@ def test_serv_client(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
-    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images {num_images} --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus}"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images {num_images} --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus} --compute_loss {compute_loss}"
 
-    js = JobScheduler(os.path.join(".", f'test_serv_client_{num_components}_{num_images}.sh'),queue = 'ampere', ncores=1, jobname=f'test_serv_client_{num_components}_{num_images}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls')
+    js = JobScheduler(os.path.join(".", f'test_serv_client_{num_components}_{num_images}.sh'),queue = 'ampere', ncores=  1, jobname=f'test_serv_client_{num_components}_{num_images}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls')
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
     js.clean_up()
