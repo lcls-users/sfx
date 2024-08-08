@@ -19,6 +19,7 @@ import torch.multiprocessing as mp
 import logging
 import gc
 import h5py
+import csv
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -472,9 +473,9 @@ if __name__ == "__main__":
             print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,flush=True)
             print("=====================================\n",flush=True)
             
-            with open(f"{path}loss_{tag}.txt", "w") as f:
-                f.write(all_losses*100)
-                f.close()
+            with open(f"{path}loss_{tag}.csv", mode="a", newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(all_losses)
             
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)
