@@ -396,8 +396,19 @@ if __name__ == "__main__":
             print("FITTING : DONE",flush=True)
             print("\n=====================================",flush=True)
             loss_start_time = time.time()
+
+            ##
+            all_norm_diff = []
+            all_init_norm = []
+            ##
+
             #Compute the loss (same loading process)
             for event in range(start_offset, start_offset + num_images, loading_batch_size):
+                
+                ##
+                all_norm_diff.append([])
+                all_init_norm.append([])
+                ##
 
                 current_loading_batch = []
                 requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
@@ -428,10 +439,12 @@ if __name__ == "__main__":
                 results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance,loss_or_not) for rank in range(num_gpus)])
                 current_batch_loss = []
                 for rank in range(num_gpus):
-                    average_loss,_,batch_transformed_images = results[rank]
+                    average_loss,_,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
                     transformed_images.append(batch_transformed_images)
+                    all_norm_diff[-1].append(list_norm_diff)
+                    all_init_norm[-1].append(list_init_norm)
                 
                 print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
                 mem = psutil.virtual_memory()
@@ -445,6 +458,17 @@ if __name__ == "__main__":
                 gc.collect()
 
             transformed_images = np.concatenate(transformed_images, axis=0)
+            all_losses = []
+            for k in range(len(all_init_norm)):
+                i=[0]*len(all_init_norm[k][0])
+                d=[0]*len(all_norm_diff[k][0])
+                for rank in range(num_gpus):
+                    i+= all_init_norm[k][rank]**2
+                    d+= all_norm_diff[k][rank]**2
+                all_losses.append(np.sqrt(d)/np.sqrt(i))
+            
+            print("Test with new loss computation : ",np.mean(all_losses))
+            
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)

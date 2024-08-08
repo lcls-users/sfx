@@ -361,6 +361,11 @@ class iPCA_Pytorch_without_Psana:
         print(images_shape)
 
         average_losses = []
+        ##
+        list_norm_diff = torch.tensor([], device=device)
+        list_init_norm = torch.tensor([], device=device)
+        ##
+
         for start in range(0, images.shape[0], batch_size):
             end = min(start + batch_size, images.shape[0])
             batch_imgs = images[start:end]
@@ -372,11 +377,17 @@ class iPCA_Pytorch_without_Psana:
                 reconstructed_batch = torch.mm(transformed_batch,V.T) + mu
                 diff = batch_imgs - reconstructed_batch
                 norm_batch = torch.norm(diff, dim=1, p = 'fro')
+                ##
+                list_norm_diff = torch.cat((list_norm_diff,norm_batch),dim=0)
+                list_init_norm = torch.cat((list_init_norm,initial_norm),dim=0)
+                ##
                 norm_batch = norm_batch/initial_norm
                 average_losses.append(torch.mean(norm_batch).cpu().detach().numpy())
         
         average_loss = np.mean(average_losses) if loss_or_not else None
         transformed_images = torch.cat(transformed_images, dim=0).cpu().detach().numpy()
+        list_norm_diff = list_norm_diff.cpu().detach().numpy()
+        list_init_norm = list_init_norm.cpu().detach().numpy()
         existing_shm.close()
         existing_shm.unlink()
         torch.cuda.empty_cache()
@@ -386,7 +397,7 @@ class iPCA_Pytorch_without_Psana:
         print(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes",flush=True)
         print(f"Memory free on GPU {rank}: {torch.cuda.mem_get_info(device)[0]} bytes",flush=True)
 
-        return average_loss,average_losses,transformed_images
+        return average_loss,average_losses,transformed_images,list_norm_diff,list_init_norm
 
     
 
