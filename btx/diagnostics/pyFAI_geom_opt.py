@@ -374,8 +374,8 @@ class BayesGeomOpt:
             else:
                 input_range[param] = np.array([self.default_value[self.param_order.index(param)]])
                 input_range_norm[param] = np.array([1])
-        X = np.array(np.meshgrid(*[input_range[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
-        X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
+        X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
+        X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
         print(f"Setting space complete with {X.shape[0]} points")
         idx_samples = np.random.choice(X.shape[0], n_samples)
         X_samples = X[idx_samples]
