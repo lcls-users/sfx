@@ -469,17 +469,15 @@ if __name__ == "__main__":
                     d+= all_norm_diff[k][rank]**2
                 all_losses.append(np.sqrt(d)/np.sqrt(i))
             
-            print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,flush=True)
-
-            #Optional, prints a violin plot of the distribution of the loss
-            sns.violinplot(data=all_losses)
-            plt.title("Distribution of the loss")
-            plt.xlabel("Loss")
-            plt.ylabel("Density")
-            plt.savefig(f"{path}loss_distribution_{tag}.png")
-            plt.show()
-
             loss_end_time = time.time()
+            print("=====================================\n",flush=True)
+            print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,flush=True)
+            print("=====================================\n",flush=True)
+            
+            with open(f"{path}loss_{tag}.txt", "w") as f:
+                f.write(all_losses*100)
+                f.close()
+            
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)
             print("Global-Averaged loss (in %) :",np.mean(average_losses)*100)
