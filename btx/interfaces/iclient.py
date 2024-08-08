@@ -467,7 +467,7 @@ if __name__ == "__main__":
                     d+= all_norm_diff[k][rank]**2
                 all_losses.append(np.sqrt(d)/np.sqrt(i))
             
-            print("Test with new loss computation : ",np.mean(all_losses),flush=True)
+            print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,flush=True)
 
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
