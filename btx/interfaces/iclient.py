@@ -470,10 +470,10 @@ if __name__ == "__main__":
             all_losses = np.concatenate(all_losses, axis=0)
 
             ##
-            threshold = 5 # in %
+            threshold = 10 # in %
             for k in range(len(all_losses)):
                 if all_losses[k]*100>= threshold:
-                    print("Loss above threshold at index",k)
+                    print("Loss above threshold at index",k, all_losses[k]*100)
             ##
             loss_end_time = time.time()
             print("=====================================\n",flush=True)
