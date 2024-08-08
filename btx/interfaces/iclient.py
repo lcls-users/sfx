@@ -468,15 +468,13 @@ if __name__ == "__main__":
                     d+= all_norm_diff[k][rank]**2
                 all_losses.append(np.sqrt(d)/np.sqrt(i))
             all_losses = np.concatenate(all_losses, axis=0)
-            
+
             loss_end_time = time.time()
             print("=====================================\n",flush=True)
             print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,flush=True)
             print("=====================================\n",flush=True)
             
-            with open(f"{path}loss_{tag}.csv", mode="a", newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(all_losses)
+            print("Loss distribution :",all_losses,flush=True)
             
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)
