@@ -19,6 +19,8 @@ import torch.multiprocessing as mp
 import logging
 import gc
 import h5py
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -468,6 +470,14 @@ if __name__ == "__main__":
                 all_losses.append(np.sqrt(d)/np.sqrt(i))
             
             print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,flush=True)
+
+            #Optional, prints a violin plot of the distribution of the loss
+            sns.violinplot(data=all_losses)
+            plt.title("Distribution of the loss")
+            plt.xlabel("Loss")
+            plt.ylabel("Density")
+            plt.savefig(f"{path}loss_distribution_{tag}.png")
+            plt.show()
 
             loss_end_time = time.time()
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
