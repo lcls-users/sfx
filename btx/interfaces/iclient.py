@@ -469,6 +469,12 @@ if __name__ == "__main__":
                 all_losses.append(np.sqrt(d)/np.sqrt(i))
             all_losses = np.concatenate(all_losses, axis=0)
 
+            ##
+            threshold = 5 # in %
+            for k in range(all_losses):
+                if all_losses[k]*100>= threshold:
+                    print("Loss above threshold at index",k)
+            ##
             loss_end_time = time.time()
             print("=====================================\n",flush=True)
             print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,min(all_losses)*100,max(all_losses)*100,flush=True)
