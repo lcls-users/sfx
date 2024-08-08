@@ -471,7 +471,7 @@ if __name__ == "__main__":
 
             ##
             threshold = 5 # in %
-            for k in range(all_losses):
+            for k in range(len(all_losses)):
                 if all_losses[k]*100>= threshold:
                     print("Loss above threshold at index",k)
             ##
