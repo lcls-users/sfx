@@ -471,10 +471,10 @@ if __name__ == "__main__":
 
             loss_end_time = time.time()
             print("=====================================\n",flush=True)
-            print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,flush=True)
+            print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,min(all_losses)*100,max(all_losses)*100,flush=True)
             print("=====================================\n",flush=True)
             
-            print("Loss distribution :",all_losses,flush=True)
+            #print("Loss distribution :",all_losses,flush=True)
             
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)
