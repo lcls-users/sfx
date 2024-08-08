@@ -10,11 +10,9 @@ from pyFAI.gui import jupyter
 from btx.interfaces.ipsana import *
 from btx.diagnostics.run import RunDiagnostics
 from btx.misc.metrology import *
-import math
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel
 from scipy.stats import norm
-import os
 
 class PyFAIGeomOpt:
     """
@@ -263,15 +261,15 @@ class BayesGeomOpt:
         self.detector = detector
         self.calibrant = calibrant
         self.fix = fix
-        self.PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
-        self.DIST_RES = 0.001
-        self.PONI_RES = 0.0001
-        self.ROT_RES = 0.001
-        self.PARAM_SPACE = []
-        for param in self.PARAM_ORDER:
+        self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0, 0, 0, 0, 0]
+        self.dist_res = 0.001
+        self.poni_res = 0.0001
+        self.rot_res = 0.001
+        self.param_space = []
+        for param in self.param_order:
             if param not in fix:
-                self.PARAM_SPACE.append(param)
+                self.param_space.append(param)
 
     @staticmethod
     def expected_improvement(X, gp_model, best_y):
@@ -312,7 +310,8 @@ class BayesGeomOpt:
         powder : str or int
             Path to powder image or number of images to use for calibration
         fix : list
-            List of parameters not to be optimized
+            List of parameters not to be optimized in refine3
+            Nota Bene: this fix could be different from self.fix
         bounds : dict
             Dictionary of bounds for each parameter
         mask : np.ndarray
@@ -350,29 +349,33 @@ class BayesGeomOpt:
 
         print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
-        wavelength = self.DEFAULT_VALUE["wavelength"]
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
         
         print("Setting geometry space...")
-        print(f"Search space: {len(self.PARAM_SPACE)} parameters")
+        print(f"Search space: {self.param_space}")
         bo_history = {}
         np.random.seed(seed)
         input_range = {}
         input_range_norm = {}
-        for param in self.PARAM_SPACE:
-            print(f"Setting space for {param}...")
-            if param == "dist":
-                input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.DIST_RES, self.DIST_RES)
-                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
-            elif param in ["poni1", "poni2"]:
-                input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.PONI_RES, self.PONI_RES)
-                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+        for param in self.param_order:
+            if param in self.param_space:
+                print(f"Setting space for {param}...")
+                if param == "dist":
+                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.dist_res, self.dist_res)
+                    input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                elif param in ["poni1", "poni2"]:
+                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.poni_res, self.poni_res)
+                    input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                else:
+                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.rot_res, self.rot_res)
+                    input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
             else:
-                input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.ROT_RES, self.ROT_RES)
-                input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
-        X = np.array(np.meshgrid(*[input_range[param] for param in self.PARAM_SPACE])).T.reshape(-1, len(self.PARAM_SPACE))
-        X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.PARAM_SPACE])).T.reshape(-1, len(self.PARAM_SPACE))
+                input_range[param] = np.array([self.default_value[self.param_order.index(param)]])
+                input_range_norm[param] = np.array([1])
+        X = np.array(np.meshgrid(*[input_range[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
+        X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
         print(f"Setting space complete with {X.shape[0]} points")
         idx_samples = np.random.choice(X.shape[0], n_samples)
         X_samples = X[idx_samples]
@@ -382,21 +385,17 @@ class BayesGeomOpt:
         print("Initializing samples...")
         for i in range(n_samples):
             print(f"Initializing sample {i+1}...")
-            if len(self.PARAM_SPACE) == 3:
-                dist, poni1, poni2 = X_samples[i]
-                rot1, rot2, rot3 = self.DEFAULT_VALUE["rot1"], self.DEFAULT_VALUE["rot2"], self.DEFAULT_VALUE["rot3"]
-            else:
-                dist, poni1, poni2, rot1, rot2, rot3 = X_samples[i]
+            dist, poni1, poni2, rot1, rot2, rot3 = X_samples[i]
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
             score = sg.geometry_refinement.refine3(fix=fix)
-            y[i] = score
+            y[i] = -score
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'score': score}
 
         kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
-                + WhiteKernel(noise_level=0.01, noise_level_bounds = 'fixed')
+                + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=seed)
         gp_model.fit(X_norm_samples, y)
         visited_idx = list(idx_samples.flatten())
@@ -422,17 +421,13 @@ class BayesGeomOpt:
             visited_idx.append(new_idx)
 
             # 3. Compute the score of the new set of parameters
-            if len(self.PARAM_SPACE) == 3:
-                dist, poni1, poni2 = new_input
-                rot1, rot2, rot3 = self.DEFAULT_VALUE["rot1"], self.DEFAULT_VALUE["rot2"], self.DEFAULT_VALUE["rot3"]
-            else:
-                dist, poni1, poni2, rot1, rot2, rot3 = new_input
+            dist, poni1, poni2, rot1, rot2, rot3 = new_input
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
             score = sg.geometry_refinement.refine3(fix=["wavelength"])
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
-            y = np.append(y, [score], axis=0)
+            y = np.append(y, [-score], axis=0)
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
 
@@ -441,7 +436,7 @@ class BayesGeomOpt:
         
         best_idx = np.argmax(y)
         best_param = X_samples[best_idx]
-        best_score = y[best_idx]
+        best_score = -y[best_idx]
         return bo_history, best_param, best_score
     
     def convergence_plot(bo_history):
@@ -486,8 +481,6 @@ class BayesGeomOpt:
 class HookeJeevesGeomOpt:
     """
     Class to perform Geometry Optimization using Hooke-Jeeves algorithm on pyFAI
-    
-    Note: this is intented to work only for 3D optimization
 
     Parameters
     ----------
@@ -518,14 +511,14 @@ class HookeJeevesGeomOpt:
         self.detector = detector
         self.calibrant = calibrant
         self.fix = fix
-        self.PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
-        self.PARAM_SPACE = []
-        for param in self.PARAM_ORDER:
+        self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0, 0, 0, 0, 0]
+        self.param_space = []
+        for param in self.param_order:
             if param not in fix:
-                self.PARAM_SPACE.append(param)
+                self.param_space.append(param)
 
-    def hookes_jeeves_geom_opt(
+    def hooke_jeeves_geom_opt(
         self,
         powder,
         fix,
@@ -541,7 +534,8 @@ class HookeJeevesGeomOpt:
         powder : str or int
             Path to powder image or number of images to use for calibration
         fix : list
-            List of parameters not to be optimized
+            List of parameters not to be optimized in refine3
+            Nota Bene: this fix could be different from self.fix
         mask : str
             Path to mask file
         step_size : float
@@ -570,83 +564,45 @@ class HookeJeevesGeomOpt:
 
         print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
-        wavelength = self.DEFAULT_VALUE["wavelength"]
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
-        
+
         hjo_history = {}
-        if len(self.PARAM_SPACE) == 3:
-            x = np.array([self.DEFAULT_VALUE[param] for param in self.PARAM_ORDER[:3]])
-            dist, poni1, poni2 = x
-            rot1, rot2, rot3 = self.DEFAULT_VALUE["rot1"], self.DEFAULT_VALUE["rot2"], self.DEFAULT_VALUE["rot3"]
-            scores = []
-            geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-            sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-            score = sg.geometry_refinement.refine3(fix=fix)
-            n = 0
-            scores.append(score)
-            hjo_history[f'iteration_{n}'] = {'param':x, 'score': score}
-            while step_size >= tol:
-                neighbours = {}
-                for param in self.PARAM_SPACE:
-                    i = self.SPACE.index(param)
-                    x_plus = x.copy()
-                    x_plus[i] += step_size
-                    x_minus = x.copy()
-                    x_minus[i] -= step_size
-                    neighbours[f'x_plus_{param}'] = x_plus
-                    neighbours[f'x_minus_{param}'] = x_minus
-                for key in neighbours.keys():
-                    dist, poni1, poni2 = neighbours[key]
-                    geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-                    sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-                    score = sg.geometry_refinement.refine3(fix=fix)
-                    scores.append(score)
-                best_idx = np.argmin(scores)
-                if best_idx == 0:
-                    step_size /= 2
-                else:
-                    x = neighbours[f'x_plus_{params[best_idx]}'] if best_idx % 2 == 0 else neighbours[f'x_minus_{params[best_idx]}']
-                    n += 1
-                    hjo_history[f'iteration_{n}'] = {'param':x, 'score': scores[best_idx]}
-        else:
-            x = np.array([self.DEFAULT_VALUE[param] for param in self.PARAM_ORDER])
-            dist, poni1, poni2, rot1, rot2, rot3 = x
-            scores = []
-            geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-            sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-            score = sg.geometry_refinement.refine3(fix=fix)
-            n = 0
-            scores.append(score)
-            hjo_history[f'iteration_{n}'] = {'param':x, 'score': score}
-            while step_size >= tol:
-                neighbours = {}
-                for param in self.PARAM_SPACE:
-                    i = self.SPACE.index(param)
-                    x_plus = x.copy()
-                    x_plus[i] += step_size
-                    x_minus = x.copy()
-                    x_minus[i] -= step_size
-                    neighbours[f'x_plus_{param}'] = x_plus
-                    neighbours[f'x_minus_{param}'] = x_minus
-                for key in neighbours.keys():
-                    dist, poni1, poni2, rot1, rot2, rot3 = neighbours[key]
-                    geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-                    sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-                    score = sg.geometry_refinement.refine3(fix=["wavelength"])
-                    scores.append(score)
-                best_idx = np.argmin(scores)
-                if best_idx == 0:
-                    step_size /= 2
-                else:
-                    x = neighbours[f'x_plus_{params[best_idx]}'] if best_idx % 2 == 0 else neighbours[f'x_minus_{params[best_idx]}']
-                    n += 1
-                    hjo_history[f'iteration_{n}'] = {'param':x, 'score': scores[best_idx]}
-        return hjo_history, x, scores[best_idx]
+        scores = []
+        dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
+        x = np.array(self.default_value)
+        geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+        sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+        score = sg.geometry_refinement.refine3(fix=fix)
+        i = 0
+        scores.append(score)
+        hjo_history[f'iteration_{i+1}'] = {'param':x, 'score': score}
+        while step_size >= tol:
+            neighbours = {}
+            for param in self.param_space:
+                j = self.param_order.index(param)
+                x_plus = x.copy()
+                x_plus[j] += step_size
+                x_minus = x.copy()
+                x_minus[j] -= step_size
+                neighbours[f'x_plus_{param}'] = x_plus
+                neighbours[f'x_minus_{param}'] = x_minus
+            for key in neighbours.keys():
+                dist, poni1, poni2, rot1, rot2, rot3 = neighbours[key]
+                geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+                sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+                score = sg.geometry_refinement.refine3(fix=fix)
+                scores.append(score)
+            best_idx = np.argmin(scores)
+            if best_idx == 0:
+                step_size /= 2
+            else:
+                x = neighbours[f'x_plus_{self.param_space[best_idx]}'] if best_idx % 2 == 0 else neighbours[f'x_minus_{self.param_space[best_idx]}']
+                i += 1
+                hjo_history[f'iteration_{i+1}'] = {'param':x, 'score': scores[best_idx]}
 
 class CrossEntropyGeomOpt:
     """
@@ -681,12 +637,12 @@ class CrossEntropyGeomOpt:
         self.detector = detector
         self.calibrant = calibrant
         self.fix = fix
-        self.PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
-        self.PARAM_SPACE = []
-        for param in self.PARAM_ORDER:
-            if param in fix:
-                self.PARAM_SPACE.append(param)
+        self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0, 0, 0, 0, 0]
+        self.param_space = []
+        for param in self.param_order:
+            if param not in fix:
+                self.param_space.append(param)
 
     def cross_entropy_geom_opt(
         self,
@@ -751,50 +707,36 @@ class CrossEntropyGeomOpt:
 
         print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
-        wavelength = self.DEFAULT_VALUE["wavelength"]
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
         
         ce_history = {}
+        dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
         if means is None:
-            means = np.array([self.DEFAULT_VALUE[param] for param in self.PARAM_SPACE])
+            means = np.array([self.default_value[self.param_order.index(param)] for param in self.param_space])
         if cov is None:
-            cov = 10*np.eye(len(self.PARAM_SPACE))
-        if len(self.PARAM_SPACE) == 3:
-            rot1, rot2, rot3 = self.DEFAULT_VALUE["rot1"], self.DEFAULT_VALUE["rot2"], self.DEFAULT_VALUE["rot3"]
-            for i in range(num_iterations):
-                print(f"Iteration {i+1}...")
-                X_samples = np.random.multivariate_normal(means, cov, n_samples)
-                scores = []
-                for j in range(n_samples):
-                    dist, poni1, poni2 = X_samples[j]
-                    geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-                    sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-                    score = sg.geometry_refinement.refine3(fix=fix)
-                    scores.append(score)
-                elite_idx = np.argsort(scores)[:m_elite]
-                elite_samples = X_samples[elite_idx]
-                means = np.mean(elite_samples, axis=0)
-                cov = np.cov(elite_samples.T)
-                ce_history[f'iteration_{i+1}'] = {'param':means, 'score': scores[elite_idx[0]]}
-        else:
-            for i in range(num_iterations):
-                print(f"Iteration {i+1}...")
-                X_samples = np.random.multivariate_normal(means, cov, n_samples)
-                scores = []
-                for j in range(n_samples):
-                    dist, poni1, poni2, rot1, rot2, rot3 = X_samples[j]
-                    geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-                    sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-                    score = sg.geometry_refinement.refine3(fix=fix)
-                    scores.append(score)
-                elite_idx = np.argsort(scores)[:m_elite]
-                elite_samples = X_samples[elite_idx]
-                means = np.mean(elite_samples, axis=0)
-                cov = np.cov(elite_samples.T)
-                ce_history[f'iteration_{i+1}'] = {'param':means, 'score': scores[elite_idx[0]]}
+            cov = np.eye(len(self.param_space))
+        for i in range(num_iterations):
+            print(f"Iteration {i+1}...")
+            X_samples = np.random.multivariate_normal(means, cov, n_samples)
+            for param in self.param_order:
+                if param in fix:
+                    idx = self.param_order.index(param)
+                    X_samples = np.insert(X_samples, idx, self.default_value[self.param_order.index(param)], axis=1)
+            scores = []
+            for j in range(n_samples):
+                dist, poni1, poni2, rot1, rot2, rot3 = X_samples[j]
+                geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+                sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+                score = sg.geometry_refinement.refine3(fix=fix)
+                scores.append(score)
+            elite_idx = np.argsort(scores)[:m_elite]
+            elite_samples = X_samples[elite_idx]
+            means = np.mean(elite_samples, axis=0)
+            cov = np.cov(elite_samples.T)
+            ce_history[f'iteration_{i+1}'] = {'param':means, 'score': scores[elite_idx[0]]}
         return ce_history, X_samples[elite_idx[0]], scores[elite_idx[0]]
 
 class SimulatedAnnealingGeomOpt:
@@ -830,12 +772,12 @@ class SimulatedAnnealingGeomOpt:
         self.detector = detector
         self.calibrant = calibrant
         self.fix = fix
-        self.PARAM_ORDER = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.DEFAULT_VALUE = {"dist":self.diagnostics.psi.estimate_distance() * 1e-3, "poni1":0, "poni2":0, "rot1":0, "rot2":0, "rot3":0, "wavelength":self.diagnostics.psi.get_wavelength() * 1e-10}
-        self.PARAM_SPACE = []
-        for param in self.PARAM_ORDER:
-            if param in fix:
-                self.PARAM_SPACE.append(param)
+        self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0, 0, 0, 0, 0]
+        self.param_space = []
+        for param in self.param_order:
+            if param not in fix:
+                self.param_space.append(param)
 
     @staticmethod
     def acceptance_probability(old_cost, new_cost, temperature):
@@ -852,7 +794,7 @@ class SimulatedAnnealingGeomOpt:
         initial_temp=100,
         cooling_rate=0.01,
         num_iterations=100,
-        k=0.1,
+        eps=0.1,
         seed=0,
     ):
         """
@@ -872,7 +814,7 @@ class SimulatedAnnealingGeomOpt:
             Cooling rate for the temperature
         num_iterations : int
             Number of iterations for optimization
-        k : float
+        eps : float
             Perturbation factor for the parameters
         seed : int
             Random seed for reproducibility
@@ -898,17 +840,13 @@ class SimulatedAnnealingGeomOpt:
 
         print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
-        wavelength = self.DEFAULT_VALUE["wavelength"]
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
         
         sa_history = {}
-        x = np.array([self.DEFAULT_VALUE[param] for param in self.PARAM_SPACE])
-        if len(self.PARAM_SPACE) == 3:
-            dist, poni1, poni2 = x
-            rot1, rot2, rot3 = self.DEFAULT_VALUE["rot1"], self.DEFAULT_VALUE["rot2"], self.DEFAULT_VALUE["rot3"]
-        else:
-            dist, poni1, poni2, rot1, rot2, rot3 = x
+        dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
+        x = np.array(self.default_value)
         geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
         sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
@@ -919,17 +857,13 @@ class SimulatedAnnealingGeomOpt:
 
         for i in range(num_iterations):
             x_new = x.copy()
-            idx = np.random.randint(0, len(x)-1)
-            x_new[idx] += np.random.uniform(-k, k)
-            if len(self.PARAM_SPACE) == 3:
-                dist, poni1, poni2 = x_new
-                rot1, rot2, rot3 = self.DEFAULT_VALUE["rot1"], self.DEFAULT_VALUE["rot2"], self.DEFAULT_VALUE["rot3"]
-            else:
-                dist, poni1, poni2, rot1, rot2, rot3 = x_new
+            idx = np.random.choice([self.param_order.index(param) for param in self.param_space])
+            x_new[idx] += np.random.uniform(-eps, eps)
+            dist, poni1, poni2, rot1, rot2, rot3 = x_new
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-            new_score = sg.geometry_refinement.refine3(fix=["wavelength"])
+            new_score = sg.geometry_refinement.refine3(fix=fix)
             if self.acceptance_probability(score, new_score, temperature) > np.random.random():
                 x = x_new
                 score = new_score
@@ -937,5 +871,5 @@ class SimulatedAnnealingGeomOpt:
                     best_param = x_new
                     best_score = new_score
             temperature *= cooling_rate
-            sa_history[f'iteration_{i}'] = {'param':x, 'score': score}
+            sa_history[f'iteration_{i+1}'] = {'param':x, 'score': score}
         return sa_history, best_param, best_score
