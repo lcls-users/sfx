@@ -467,6 +467,7 @@ if __name__ == "__main__":
                     i+= all_init_norm[k][rank]**2
                     d+= all_norm_diff[k][rank]**2
                 all_losses.append(np.sqrt(d)/np.sqrt(i))
+            all_losses = np.concatenate(all_losses, axis=0)
             
             loss_end_time = time.time()
             print("=====================================\n",flush=True)
