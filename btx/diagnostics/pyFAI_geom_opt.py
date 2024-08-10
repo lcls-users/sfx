@@ -580,17 +580,17 @@ class HookeJeevesGeomOpt:
         hjo_history[f'iteration_{i+1}'] = {'param':x, 'score': score}
         while step_size >= tol:
             print(f"Iteration {i+1}...")
-            neighbours = {}
+            neighbours = []
             for param in self.param_space:
                 j = self.param_order.index(param)
                 x_plus = x.copy()
                 x_plus[j] += step_size
                 x_minus = x.copy()
                 x_minus[j] -= step_size
-                neighbours[f'x_plus_{param}'] = x_plus
-                neighbours[f'x_minus_{param}'] = x_minus
-            for key in neighbours.keys():
-                dist, poni1, poni2, rot1, rot2, rot3 = neighbours[key]
+                neighbours.append(x_plus)
+                neighbours.append(x_minus)
+            for neighbour in neighbours:
+                dist, poni1, poni2, rot1, rot2, rot3 = neighbour
                 geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
                 sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
                 sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
@@ -601,9 +601,10 @@ class HookeJeevesGeomOpt:
                 step_size /= 2
                 print(f"Reducing step size to {step_size}")
             else:
-                x = neighbours[f'x_plus_{self.param_space[best_idx]}'] if best_idx % 2 == 0 else neighbours[f'x_minus_{self.param_space[best_idx]}']
+                x = neighbours[best_idx]
                 i += 1
                 hjo_history[f'iteration_{i+1}'] = {'param':x, 'score': scores[best_idx]}
+        return hjo_history, x, scores[best_idx]
 
 class CrossEntropyGeomOpt:
     """
@@ -717,14 +718,14 @@ class CrossEntropyGeomOpt:
         if means is None:
             means = np.array([self.default_value[self.param_order.index(param)] for param in self.param_space])
         if cov is None:
-            cov = np.eye(len(self.param_space))
+            cov = np.eye(len(means))
         for i in range(num_iterations):
             print(f"Iteration {i+1}...")
             X_samples = np.random.multivariate_normal(means, cov, n_samples)
             for param in self.param_order:
                 if param in fix:
                     idx = self.param_order.index(param)
-                    X_samples = np.insert(X_samples, idx, self.default_value[self.param_order.index(param)], axis=1)
+                    X_samples = np.insert(X_samples, idx, self.default_value[idx], axis=1)
             scores = []
             for j in range(n_samples):
                 dist, poni1, poni2, rot1, rot2, rot3 = X_samples[j]
