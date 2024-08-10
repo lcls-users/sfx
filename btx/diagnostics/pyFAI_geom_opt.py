@@ -579,6 +579,7 @@ class HookeJeevesGeomOpt:
         scores.append(score)
         hjo_history[f'iteration_{i+1}'] = {'param':x, 'score': score}
         while step_size >= tol:
+            print(f"Iteration {i+1}...")
             neighbours = {}
             for param in self.param_space:
                 j = self.param_order.index(param)
@@ -598,6 +599,7 @@ class HookeJeevesGeomOpt:
             best_idx = np.argmin(scores)
             if best_idx == 0:
                 step_size /= 2
+                print(f"Reducing step size to {step_size}")
             else:
                 x = neighbours[f'x_plus_{self.param_space[best_idx]}'] if best_idx % 2 == 0 else neighbours[f'x_minus_{self.param_space[best_idx]}']
                 i += 1
@@ -855,6 +857,7 @@ class SimulatedAnnealingGeomOpt:
         temperature = initial_temp
 
         for i in range(num_iterations):
+            print(f"Iteration {i+1}...")
             x_new = x.copy()
             idx = np.random.choice([self.param_order.index(param) for param in self.param_space])
             x_new[idx] += np.random.uniform(-eps, eps)
