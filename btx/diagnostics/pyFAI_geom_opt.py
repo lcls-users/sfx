@@ -364,13 +364,13 @@ class BayesGeomOpt:
                 print(f"Setting space for {param}...")
                 if param == "dist":
                     input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.dist_res, self.dist_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                    input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
                 elif param in ["poni1", "poni2"]:
                     input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.poni_res, self.poni_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                    input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
                 else:
                     input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.rot_res, self.rot_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                    input_range_norm[param] = (input_range[param]-np.min(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
             else:
                 input_range[param] = np.array([self.default_value[self.param_order.index(param)]])
         X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
