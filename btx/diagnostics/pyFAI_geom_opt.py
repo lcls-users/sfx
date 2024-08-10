@@ -262,7 +262,7 @@ class BayesGeomOpt:
         self.calibrant = calibrant
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0, 0, 0, 0, 0]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.dist_res = 0.001
         self.poni_res = 0.0001
         self.rot_res = 0.001
@@ -511,7 +511,7 @@ class HookeJeevesGeomOpt:
         self.calibrant = calibrant
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0, 0, 0, 0, 0]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.param_space = []
         for param in self.param_order:
             if param not in fix:
@@ -640,7 +640,7 @@ class CrossEntropyGeomOpt:
         self.calibrant = calibrant
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0, 0, 0, 0, 0]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.param_space = []
         for param in self.param_order:
             if param not in fix:
@@ -713,6 +713,8 @@ class CrossEntropyGeomOpt:
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
         
+        print("Setting geometry space...")
+        print(f"Search space: {self.param_space}")
         ce_history = {}
         dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
         if means is None:
@@ -775,7 +777,7 @@ class SimulatedAnnealingGeomOpt:
         self.calibrant = calibrant
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0, 0, 0, 0, 0]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.param_space = []
         for param in self.param_order:
             if param not in fix:
