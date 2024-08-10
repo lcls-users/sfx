@@ -734,7 +734,10 @@ class CrossEntropyGeomOpt:
                 geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
                 sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
                 sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
-                score = sg.geometry_refinement.refine3(fix=fix)
+                if len(sg.control_points) == 0:
+                    score = np.inf
+                else:
+                    score = sg.geometry_refinement.refine3(fix=fix)
                 scores.append(score)
             elite_idx = np.argsort(scores)[:m_elite]
             elite_samples = X_samples[elite_idx]
