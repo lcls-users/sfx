@@ -721,13 +721,13 @@ class CrossEntropyGeomOpt:
             means = np.array([self.default_value[self.param_order.index(param)] for param in self.param_space])
         if cov is None:
             cov = np.eye(len(means))
-        for i in range(num_iterations):
-            print(f"Iteration {i+1}...")
-            X_samples = np.random.multivariate_normal(means, cov, n_samples)
-            for param in self.param_order:
+        X_samples = np.random.multivariate_normal(means, cov, n_samples)
+        for param in self.param_order:
                 if param in self.fix:
                     idx = self.param_order.index(param)
                     X_samples = np.insert(X_samples, idx, self.default_value[idx], axis=1)
+        for i in range(num_iterations):
+            print(f"Iteration {i+1}...")
             scores = []
             for j in range(n_samples):
                 dist, poni1, poni2, rot1, rot2, rot3 = X_samples[j]
