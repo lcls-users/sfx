@@ -497,7 +497,7 @@ if __name__ == "__main__":
             mu.append(model_state_dict[rank]['mu'])
             total_variance.append(model_state_dict[rank]['total_variance'])
 
-    with h5py.File(filename_with_tag, 'a') as f:
+    with h5py.File(filename_with_tag, 'w') as f:
                 if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
                     # Create datasets only if they don't exist
                     f.create_dataset('exp', data=exp)
