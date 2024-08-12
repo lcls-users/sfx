@@ -209,13 +209,13 @@ def display_dashboard_pypca(filename, image_to_display=None):
     img = psi.get_images(1)
     img = img.squeeze()
 
-    # Downsample so heatmap is at most 100 x 100
-    hm_data = construct_heatmap_data(img, 100)
+    # Downsample so heatmap is at most 1000 x 1000
+    hm_data = construct_heatmap_data(img, 1000)
 
     opts = dict(width=1600, height=1200, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
-    heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts)
-
-    hv.save(heatmap, f"/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/heatmap.png")
+    heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")
+    
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
     rec_imgs = []
     a,b,c = psi.det.shape()
@@ -226,12 +226,11 @@ def display_dashboard_pypca(filename, image_to_display=None):
         rec_imgs.append(img)
     rec_img = np.concatenate(rec_imgs, axis=1)
 
-    heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts)
+    hm_rec_data = construct_heatmap_data(rec_img, 1000)
+    heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
 
-    hv.save(heatmap_reconstruct, f"/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/heatmap_reconstruct.png")
-
-
-
+    layout = (heatmap + heatmap_reconstruct).cols(2)
+    return layout
 
 
 
