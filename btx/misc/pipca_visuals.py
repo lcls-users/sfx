@@ -131,9 +131,14 @@ def display_dashboard_pytorch(filename):
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
 
-        img = np.dot(transformed_images[img_source, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)+mu
-        img = img.reshape((p, x, y))
-        img = assemble_image_stack_batch(img, pixel_index_map)
+        transformed_images = np.split(transformed_images, len(S), axis=1)
+        imgs = []
+        for rank in range(len(S)):
+            img = np.dot(transformed_images[rank][img_source, first_compo-1:last_compo], V[rank][:, first_compo-1:last_compo].T)+mu
+            img = img.reshape((p, x, y))
+            img = assemble_image_stack_batch(img, pixel_index_map)
+            imgs.append(img)
+        img = np.concatenate(imgs, axis=0)
 
         # Downsample so heatmap is at most 100 x 100
         hm_data = construct_heatmap_data(img, 100)
