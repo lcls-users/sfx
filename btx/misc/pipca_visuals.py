@@ -49,7 +49,7 @@ def display_dashboard_pytorch(filename):
     psi.counter = start_img
 
     # Create PC dictionary and widgets
-    PCs = {f'PC{i}' : v for i, v in enumerate(reconstructed_images.T, start=1)}
+    PCs = {f'PC{i}' : v for i, v in enumerate(transformed_images_images.T, start=1)}
     PC_options = list(PCs)
 
     PCx = pnw.Select(name='X-Axis', value='PC1', options=PC_options)
@@ -115,6 +115,8 @@ def display_dashboard_pytorch(filename):
         opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
         heatmap = hv.HeatMap(hm_data, label="Source Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
 
+        hv.save(heatmap, f"/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/heatmap.png")
+
         return heatmap
         
     # Define function to compute reconstructed heatmap based on tap location
@@ -139,6 +141,7 @@ def display_dashboard_pytorch(filename):
         opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
         heatmap_reconstruct = hv.HeatMap(hm_data, label="iPCA Pytorch Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
 
+        hv.save(heatmap_reconstruct, f"/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/heatmap_reconstruct.png")
         return heatmap_reconstruct
     
     def compute_loss(x, y, pcx, pcy, pcscree, pcscree2):
