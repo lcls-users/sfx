@@ -213,7 +213,7 @@ def display_dashboard_pypca(filename, image_to_display=None):
     hm_data = construct_heatmap_data(img, 100)
 
     opts = dict(width=1600, height=1200, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
-    heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
+    heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts)
 
     hv.save(heatmap, f"/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/heatmap.png")
 
@@ -226,7 +226,7 @@ def display_dashboard_pypca(filename, image_to_display=None):
         rec_imgs.append(img)
     rec_img = np.concatenate(rec_imgs, axis=1)
 
-    heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
+    heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts)
 
     hv.save(heatmap_reconstruct, f"/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/heatmap_reconstruct.png")
 
