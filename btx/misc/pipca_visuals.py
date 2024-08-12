@@ -187,7 +187,7 @@ def display_dashboard_pytorch(filename):
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
-def display_dashboard_pypca(filename, image_to_display=None):
+def display_image_pypca(filename, image_to_display=None):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
@@ -223,7 +223,7 @@ def display_dashboard_pypca(filename, image_to_display=None):
     a,b,c = psi.det.shape()
     for rank in range(len(S)):
         rec_img = np.dot(transformed_images[rank][counter, :], V[rank].T)+mu[rank]
-        rec_img = img.reshape((int(a/len(S)), b, c))
+        rec_img = rec_img.reshape((int(a/len(S)), b, c))
         rec_img = assemble_image_stack_batch(img, pixel_index_map)
         rec_imgs.append(img)
     rec_img = np.concatenate(rec_imgs, axis=1)
@@ -237,6 +237,45 @@ def display_dashboard_pypca(filename, image_to_display=None):
     return layout
 
 
+def display_eigenimages_pytorch(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False):
+    data = unpack_ipca_pytorch_model_file(filename)
+
+    exp = data['exp']
+    run = data['run']
+    det_type = data['det_type']
+    start_img = data['start_offset']
+    transformed_images = data['transformed_images']
+    mu = data['mu']
+    S = data['S']
+    V = data['V']
+
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    if image_to_display is None:
+        counter = start_img
+    else:
+        counter = start_img+image_to_display
+
+    psi.counter = counter
+
+    a,b,c = psi.det.shape()
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+
+    eigenimages = [[]]*nb_eigenimages
+    for k in range(nb_eigenimages):
+        for rank in range(len(V)):
+            eigenimage = V.T[rank]
+            eigenimage = eigenimage.reshape((int(a/len(S)), b, c))
+            eigenimage = assemble_image_stack_batch(eigenimage, pixel_index_map)
+            eigenimages[k].append(eigenimage)
+        eigenimages[k] = np.concatenate(eigenimages[k], axis=1)
+
+    hm_data = [construct_heatmap_data(eigenimages[k], 100) for k in range(nb_eigenimages)]
+    opts = dict(width=1600, height=1200, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
+    heatmaps = [hv.HeatMap(hm_data[k], label="Eigenimage %s" % (k)).aggregate(function=np.mean).opts(**opts).opts(title="Eigenimage %s" % (k)) for k in range(nb_eigenimages)]
+    layout = hv.Layout(heatmaps).cols(3)
+    layout
+    
+    return layout
 
 
 
