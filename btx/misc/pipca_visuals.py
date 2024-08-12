@@ -198,7 +198,6 @@ def display_image_pypca(filename, image_to_display=None):
     mu = data['mu']
     S = data['S']
     V = data['V']
-    num_components = S.shape[0]
 
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     if image_to_display is None:
@@ -244,7 +243,8 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     mu = data['mu']
     S = data['S']
     V = data['V']
-
+    num_components = S.shape[0]
+    
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     counter = start_img
 
@@ -273,19 +273,18 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
 
     if classic_pca_test:
         heatmaps_pca = []
-
         imgs = psi.get_images(num_images,assemble=False)
         imgs = imgs[
             [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
         ]
         imgs = np.reshape(imgs, (imgs.shape[0], a,b,c))
         
-        pca = PCA(n_components=num_components)
+        pca = PCA(n_components=num_components+1)
         pca.fit(imgs.reshape(imgs.shape[0], -1))
-
         V = pca.components_
+
         for k in range(nb_eigenimages):
-            eigenimages = V.T[k]
+            eigenimages = V[k]
             eigenimages = eigenimages.reshape((a,b,c))
             eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
             hm_data = construct_heatmap_data(eigenimages, 100)
