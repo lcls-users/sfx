@@ -232,7 +232,7 @@ def display_image_pypca(filename, image_to_display=None):
     return layout
 
 
-def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False):
+def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,batch_size=50):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
@@ -268,10 +268,40 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         heatmap =hv.HeatMap(hm_data, label="Eigen Image %s" % (k)).aggregate(function=np.mean).opts(**opts).opts(title=f"PyPCA Eigen Image {k}")
         heatmaps.append(heatmap)
     
-    layout = hv.Layout(heatmaps).cols(3)
-    layout
+    layout = hv.Layout(heatmaps).cols(nb_eigenimages)
+
+    if sklearn_test:
+        heatmaps_sklearn = []
+        ipca = IncrementalPCA(n_components=nb_eigenimages,batch_size=batch_size)
+        print(transformed_images.shape[0])
+        imgs = psi.get_images(transformed_images.shape[0],assemble=False)
+        imgs = imgs[
+            [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
+        ]
+        imgs = np.reshape(imgs, (imgs.shape[0], a,b,c))
+        for i in range(0,imgs.shape[0],batch_size):
+            ipca.partial_fit(imgs[i:i+batch_size].reshape(batch_size,-1))
+
+        V_sklearn = ipca.components_
+
+        for k in range(nb_eigenimages):
+            eigenimages = V_sklearn.T[k]
+            eigenimages = eigenimages.reshape((a,b,c))
+            eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
+            hm_data = construct_heatmap_data(eigenimages, 100)
+
+            opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
+
+            heatmap =hv.HeatMap(hm_data, label="Eigen Image Sklearn %s" % (k)).aggregate(function=np.mean).opts(**opts).opts(title=f"Sklearn Eigen Image {k}")
+            heatmaps_sklearn.append(heatmap)
+        
+        layout_sklearn = hv.Layout(heatmaps_sklearn).cols(nb_eigenimages)
+
+        layout = layout + layout_sklearn
     
+    layout
     return layout
+    
 
 
 
