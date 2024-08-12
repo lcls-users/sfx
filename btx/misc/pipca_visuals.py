@@ -39,18 +39,11 @@ def display_dashboard_pytorch(filename):
     exp = data['exp']
     run = data['run']
     det_type = data['det_type']
-    start_img = data['start_img']
-    reconstructed_images = data['reconstructed_images']
+    start_img = data['start_offset']
+    transformed_images = data['transformed_images']
     mu = data['mu']
     S = data['S']
     V = data['V']
-
-    results_file = "/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/S_matrix.txt"
-
-    with open(results_file, "w") as f:
-        writer = csv.writer(f)
-        for val in S:
-            writer.writerow([val])
 
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     psi.counter = start_img
@@ -136,7 +129,7 @@ def display_dashboard_pytorch(filename):
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
 
-        img = np.dot(reconstructed_images[img_source, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)+mu
+        img = np.dot(transformed_images[img_source, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)+mu
         img = img.reshape((p, x, y))
         img = assemble_image_stack_batch(img, pixel_index_map)
 
@@ -165,7 +158,7 @@ def display_dashboard_pytorch(filename):
         #Get reconstructed image
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
-        img_reconstructed = np.dot(reconstructed_images[img_source, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)+mu
+        img_reconstructed = np.dot(transformed_images[img_source, first_compo-1:last_compo], V[:, first_compo-1:last_compo].T)+mu
         img_reconstructed = img_reconstructed.reshape((p, x, y))
         img_reconstructed = assemble_image_stack_batch(img_reconstructed, pixel_index_map)
 
