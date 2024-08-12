@@ -469,11 +469,11 @@ if __name__ == "__main__":
                 all_losses.append(np.sqrt(d)/np.sqrt(i))
             all_losses = np.concatenate(all_losses, axis=0)
 
-            ##
-            threshold = 10 # in %
+            ## Optional for anomaly detection
+            """threshold = 10 # in %
             for k in range(len(all_losses)):
                 if all_losses[k]*100>= threshold:
-                    print("Loss above threshold at index",k, all_losses[k]*100)
+                    print("Loss above threshold at index",k, all_losses[k]*100)"""
             ##
             loss_end_time = time.time()
             print("=====================================\n",flush=True)
@@ -497,11 +497,6 @@ if __name__ == "__main__":
             mu.append(model_state_dict[rank]['mu'])
             total_variance.append(model_state_dict[rank]['total_variance'])
 
-        print("Printing shapes : ",flush=True)
-        print("S shape :",S[0].shape,flush=True)
-        print("V shape :",V[0].shape,flush=True)
-        print("transformed_images shape :",len(transformed_images),transformed_images[0].shape,flush=True)
-        
     with h5py.File(filename_with_tag, 'w') as f:
                 if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
                     # Create datasets only if they don't exist
