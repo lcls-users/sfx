@@ -440,7 +440,8 @@ if __name__ == "__main__":
                 results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance,loss_or_not) for rank in range(num_gpus)])
                 current_batch_loss = []
                 for rank in range(num_gpus):
-                    average_loss,_,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
+                    average_loss,average_losses,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
+                    print("Transformed batch shape :",np.array(batch_transformed_images).shape)
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
                     transformed_images[rank].append(np.array(batch_transformed_images).reshape(shape))
