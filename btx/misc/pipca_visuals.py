@@ -230,6 +230,7 @@ def display_dashboard_pypca(filename, image_to_display=None):
     heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
 
     layout = (heatmap + heatmap_reconstruct).cols(2)
+    layout
     return layout
 
 
