@@ -233,7 +233,7 @@ def display_image_pypca(filename, image_to_display=None):
     return layout
 
 
-def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False):
+def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,num_images=10):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
