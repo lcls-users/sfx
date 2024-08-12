@@ -187,6 +187,64 @@ def display_dashboard_pytorch(filename):
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
+def display_dashboard_pypca(filename, image_to_display=None):
+    data = unpack_ipca_pytorch_model_file(filename)
+
+    exp = data['exp']
+    run = data['run']
+    det_type = data['det_type']
+    start_img = data['start_offset']
+    transformed_images = data['transformed_images']
+    mu = data['mu']
+    S = data['S']
+    V = data['V']
+
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    if image_to_display is None:
+        counter = start_img
+    else:
+        counter = start_img+image_to_display
+
+    psi.counter = counter
+    img = psi.get_images(1)
+    img = img.squeeze()
+
+    # Downsample so heatmap is at most 100 x 100
+    hm_data = construct_heatmap_data(img, 100)
+
+    opts = dict(width=1600, height=1200, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
+    heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
+
+    hv.save(heatmap, f"/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/heatmap.png")
+
+    rec_imgs = []
+    a,b,c = psi.det.shape()
+    for rank in range(len(S)):
+        rec_img = np.dot(transformed_images[rank][counter, :], V[rank].T)+mu[rank]
+        rec_img = img.reshape((int(a/len(S)), b, c))
+        rec_img = assemble_image_stack_batch(img, pixel_index_map)
+        rec_imgs.append(img)
+    rec_img = np.concatenate(rec_imgs, axis=1)
+
+    heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (start_img+img_source)).aggregate(function=np.mean).opts(**opts)
+
+    hv.save(heatmap_reconstruct, f"/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/heatmap_reconstruct.png")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def display_dashboard(filename):
     """
     Displays an interactive dashboard with a PC plot, scree plot, 
