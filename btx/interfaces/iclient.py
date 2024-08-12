@@ -276,7 +276,7 @@ if __name__ == "__main__":
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     average_losses=[]
-    transformed_images = []
+    transformed_images = [[]]*num_gpus
     num_training_images = int(params.num_images * training_percentage)
 
 
@@ -439,16 +439,15 @@ if __name__ == "__main__":
 
                 results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance,loss_or_not) for rank in range(num_gpus)])
                 current_batch_loss = []
-                current_batch_transformed_images = []
                 for rank in range(num_gpus):
                     average_loss,_,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
-                    current_batch_transformed_images.append(batch_transformed_images.reshape(shape))
+                    transformed_images[rank].append(batch_transformed_images.reshape(shape))
                     all_norm_diff[-1].append(list_norm_diff)
                     all_init_norm[-1].append(list_init_norm)
                 
-                transformed_images.append(np.concatenate(current_batch_transformed_images, axis=0))
+                transformed_images.append(np.concatenate(current_batch_transformed_images, axis=1))
                 print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
                 mem = psutil.virtual_memory()
                 print("================LOADING DONE=====================",flush=True)

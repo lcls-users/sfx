@@ -49,7 +49,7 @@ def display_dashboard_pytorch(filename):
     psi.counter = start_img
 
     # Create PC dictionary and widgets
-    PCs = {f'PC{i}' : v for i, v in enumerate(transformed_images.T, start=1)}
+    PCs = {f'PC{i}' : v for i, v in enumerate(np.concatenate(transformed_images,axis=0).T, start=1)}
     PC_options = list(PCs)
 
     PCx = pnw.Select(name='X-Axis', value='PC1', options=PC_options)
@@ -87,7 +87,7 @@ def display_dashboard_pytorch(filename):
             raise ValueError("Error: First component cut-off cannot be greater than last component cut-off.")
 
         components = np.arange(first_compo,last_compo+1)
-        singular_values = S[first_compo-1:last_compo]
+        singular_values = S[0][first_compo-1:last_compo] ################# Only first rank
 
         bars_data = np.stack((components, singular_values)).T
 
@@ -131,10 +131,9 @@ def display_dashboard_pytorch(filename):
         first_compo = int(pcscree[2:])
         last_compo = int(pcscree2[2:])
 
-        transformed_images = np.split(transformed_images, len(S), axis=1)
         imgs = []
         for rank in range(len(S)):
-            img = np.dot(transformed_images[rank][img_source, first_compo-1:last_compo], V[rank][:, first_compo-1:last_compo].T)+mu
+            img = np.dot(transformed_images[rank][img_source, first_compo-1:last_compo], V[rank][:, first_compo-1:last_compo].T)+mu[rank]
             img = img.reshape((p, x, y))
             img = assemble_image_stack_batch(img, pixel_index_map)
             imgs.append(img)
