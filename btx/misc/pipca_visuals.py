@@ -209,14 +209,16 @@ def display_dashboard_pypca(filename, image_to_display=None):
     img = psi.get_images(1)
     img = img.squeeze()
 
+    print("Checkpoint 1")   
     # Downsample so heatmap is at most 1000 x 1000
     hm_data = construct_heatmap_data(img, 1000)
-
+    print("Checkpoint 2")
     opts = dict(width=1600, height=1200, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
     heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")
+    print("Checkpoint 3")
     
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-
+    print("Checkpoint 4")
     rec_imgs = []
     a,b,c = psi.det.shape()
     for rank in range(len(S)):
@@ -225,10 +227,10 @@ def display_dashboard_pypca(filename, image_to_display=None):
         rec_img = assemble_image_stack_batch(img, pixel_index_map)
         rec_imgs.append(img)
     rec_img = np.concatenate(rec_imgs, axis=1)
-
+    print("Checkpoint 5")
     hm_rec_data = construct_heatmap_data(rec_img, 1000)
     heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
-
+    print("Checkpoint 6")
     layout = (heatmap + heatmap_reconstruct).cols(2)
     layout
     hv.save(layout, 'heatmaps_layout.html')
