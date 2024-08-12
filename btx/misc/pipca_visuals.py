@@ -221,8 +221,8 @@ def display_image_pypca(filename, image_to_display=None):
     for rank in range(len(S)):
         rec_img = np.dot(transformed_images[rank][counter, :], V[rank].T)+mu[rank]
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
-        rec_img = assemble_image_stack_batch(img, pixel_index_map)
-        rec_imgs.append(img)
+        rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
+        rec_imgs.append(rec_img)
     rec_img = np.concatenate(rec_imgs, axis=1)
     hm_rec_data = construct_heatmap_data(rec_img, 100)
     heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
