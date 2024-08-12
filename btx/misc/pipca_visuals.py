@@ -211,7 +211,7 @@ def display_image_pypca(filename, image_to_display=None):
  
     # Downsample so heatmap is at most 100 x 100
     hm_data = construct_heatmap_data(img, 100)
-    opts = dict(width=1600, height=1200, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
+    opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
     heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")
     
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
@@ -221,9 +221,9 @@ def display_image_pypca(filename, image_to_display=None):
     for rank in range(len(S)):
         rec_img = np.dot(transformed_images[rank][counter, :], V[rank].T)+mu[rank]
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
-        rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
         rec_imgs.append(rec_img)
-    rec_img = np.concatenate(rec_imgs, axis=1)
+    rec_img = np.concatenate(rec_imgs, axis=0)
+    rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
     hm_rec_data = construct_heatmap_data(rec_img, 100)
     heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
     layout = (heatmap + heatmap_reconstruct).cols(2)
@@ -255,14 +255,14 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     eigenimages = [[]]*nb_eigenimages
     for k in range(nb_eigenimages):
         for rank in range(len(V)):
-            eigenimage = V.T[rank]
+            eigenimage = V[rank].T[k]
             eigenimage = eigenimage.reshape((int(a/len(S)), b, c))
-            eigenimage = assemble_image_stack_batch(eigenimage, pixel_index_map)
             eigenimages[k].append(eigenimage)
-        eigenimages[k] = np.concatenate(eigenimages[k], axis=1)
+        eigenimages[k] = np.concatenate(eigenimages[k], axis=0)
+        eigenimages[k] = assemble_image_stack_batch(eigenimages[k], pixel_index_map)
 
     hm_data = [construct_heatmap_data(eigenimages[k], 100) for k in range(nb_eigenimages)]
-    opts = dict(width=1600, height=1200, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
+    opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
     heatmaps = [hv.HeatMap(hm_data[k], label="Eigenimage %s" % (k)).aggregate(function=np.mean).opts(**opts).opts(title="Eigenimage %s" % (k)) for k in range(nb_eigenimages)]
     layout = hv.Layout(heatmaps).cols(3)
     layout
