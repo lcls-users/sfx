@@ -49,7 +49,7 @@ def display_dashboard_pytorch(filename):
     psi.counter = start_img
 
     # Create PC dictionary and widgets
-    PCs = {f'PC{i}' : v for i, v in enumerate(transformed_images.T, start=1)}
+    PCs = {f'PC{i}' : v for i, v in enumerate(np.concatenate(transformed_images,axis=0).T, start=1)}
     PC_options = list(PCs)
 
     PCx = pnw.Select(name='X-Axis', value='PC1', options=PC_options)

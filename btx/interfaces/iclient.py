@@ -443,7 +443,7 @@ if __name__ == "__main__":
                     average_loss,_,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
-                    transformed_images[rank].append(batch_transformed_images.reshape(shape))
+                    transformed_images[rank].append(np.array(batch_transformed_images).reshape(shape))
                     all_norm_diff[-1].append(list_norm_diff)
                     all_init_norm[-1].append(list_init_norm)
                 
