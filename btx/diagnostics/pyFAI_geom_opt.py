@@ -568,7 +568,6 @@ class HookeJeevesGeomOpt:
         calibrant.wavelength = wavelength
 
         hjo_history = {}
-        scores = []
         dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
         x = np.array(self.default_value)
         geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
@@ -580,6 +579,7 @@ class HookeJeevesGeomOpt:
         hjo_history[f'iteration_{i+1}'] = {'param':x, 'optim': sg.geometry_refinement.param, 'score': score}
         while step_size >= tol:
             print(f"Iteration {i+1}...")
+            scores = []
             neighbours = []
             for param in self.param_space:
                 j = self.param_order.index(param)
