@@ -458,6 +458,7 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
                 gc.collect()
 
+            print(transformed_images.shape,flush=True)
             transformed_images = np.concatenate(transformed_images, axis=1)
             all_losses = []
             for k in range(len(all_init_norm)):
