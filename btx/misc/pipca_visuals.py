@@ -232,7 +232,7 @@ def display_image_pypca(filename, image_to_display=None):
     return layout
 
 
-def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,batch_size=50):
+def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,batch_size=50,num_components=100,num_images=100):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
@@ -272,14 +272,14 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
 
     if sklearn_test:
         heatmaps_sklearn = []
-        ipca = IncrementalPCA(n_components=nb_eigenimages,batch_size=batch_size)
-        print(transformed_images.shape[0])
-        imgs = psi.get_images(transformed_images.shape[0],assemble=False)
+        ipca = IncrementalPCA(n_components=num_components,batch_size=batch_size)
+
+        imgs = psi.get_images(num_images,assemble=False)
         imgs = imgs[
             [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
         ]
         imgs = np.reshape(imgs, (imgs.shape[0], a,b,c))
-        for i in range(0,imgs.shape[0],batch_size):
+        for i in range(0,num_images,batch_size):
             ipca.partial_fit(imgs[i:i+batch_size].reshape(batch_size,-1))
 
         V_sklearn = ipca.components_
@@ -301,7 +301,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     
     layout
     return layout
-    
+
 
 
 
