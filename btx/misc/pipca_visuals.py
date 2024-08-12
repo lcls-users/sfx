@@ -198,6 +198,7 @@ def display_image_pypca(filename, image_to_display=None):
     mu = data['mu']
     S = data['S']
     V = data['V']
+    num_components = S.shape[0]
 
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     if image_to_display is None:
@@ -232,7 +233,7 @@ def display_image_pypca(filename, image_to_display=None):
     return layout
 
 
-def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,batch_size=50,num_components=100,num_images=100):
+def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
@@ -270,34 +271,33 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     
     layout = hv.Layout(heatmaps).cols(nb_eigenimages)
 
-    if sklearn_test:
-        heatmaps_sklearn = []
-        ipca = IncrementalPCA(n_components=num_components,batch_size=batch_size)
+    if classic_pca_test:
+        heatmaps_pca = []
 
         imgs = psi.get_images(num_images,assemble=False)
         imgs = imgs[
             [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
         ]
         imgs = np.reshape(imgs, (imgs.shape[0], a,b,c))
-        for i in range(0,num_images,batch_size):
-            ipca.partial_fit(imgs[i:i+batch_size].reshape(batch_size,-1))
+        
+        pca = PCA(n_components=num_components)
+        pca.fit(imgs.reshape(imgs.shape[0], -1))
 
-        V_sklearn = ipca.components_
-
+        V = pca.components_
         for k in range(nb_eigenimages):
-            eigenimages = V_sklearn.T[k]
+            eigenimages = V.T[k]
             eigenimages = eigenimages.reshape((a,b,c))
             eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
             hm_data = construct_heatmap_data(eigenimages, 100)
 
             opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
 
-            heatmap =hv.HeatMap(hm_data, label="Eigen Image Sklearn %s" % (k)).aggregate(function=np.mean).opts(**opts).opts(title=f"Sklearn Eigen Image {k}")
-            heatmaps_sklearn.append(heatmap)
+            heatmap =hv.HeatMap(hm_data, label="Eigen Image Classic PCA %s" % (k)).aggregate(function=np.mean).opts(**opts).opts(title=f"Classic PCA Eigen Image {k}")
+            heatmaps_pca.append(heatmap)
         
-        layout_sklearn = hv.Layout(heatmaps_sklearn).cols(nb_eigenimages)
+        layout_pca = hv.Layout(heatmaps_pca).cols(nb_eigenimages)
 
-        layout = layout + layout_sklearn
+        layout = layout + layout_pca
     
     layout
     return layout
