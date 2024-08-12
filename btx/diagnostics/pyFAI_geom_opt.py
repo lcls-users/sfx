@@ -644,6 +644,8 @@ class CrossEntropyGeomOpt:
         for param in self.param_order:
             if param not in fix:
                 self.param_space.append(param)
+        self.dict_std = {"dist":0.1, "poni1":0.001, "poni2":0.001, "rot1":0.0001, "rot2":0.0001, "rot3":0.0001}
+        
 
     def cross_entropy_geom_opt(
         self,
@@ -719,7 +721,7 @@ class CrossEntropyGeomOpt:
         if means is None:
             means = np.array([self.default_value[self.param_order.index(param)] for param in self.param_space])
         if cov is None:
-            cov = np.eye(len(means))
+            cov = np.diag([self.dict_std[param] for param in self.param_space])
         for i in range(num_iterations):
             print(f"Iteration {i+1}...")
             X = np.random.multivariate_normal(means, cov, n_samples)
