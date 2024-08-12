@@ -225,7 +225,7 @@ def display_image_pypca(filename, image_to_display=None):
     rec_img = np.concatenate(rec_imgs, axis=0)
     rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
     hm_rec_data = construct_heatmap_data(rec_img, 100)
-    heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
+    heatmap_reconstruct = hv.HeatMap(hm_rec_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
     layout = (heatmap + heatmap_reconstruct).cols(2)
     layout
     hv.save(layout, 'heatmaps_layout.html')
