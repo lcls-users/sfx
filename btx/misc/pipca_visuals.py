@@ -208,17 +208,14 @@ def display_image_pypca(filename, image_to_display=None):
     psi.counter = counter
     img = psi.get_images(1)
     img = img.squeeze()
-
-    print("Checkpoint 1")   
+ 
     # Downsample so heatmap is at most 100 x 100
     hm_data = construct_heatmap_data(img, 100)
-    print("Checkpoint 2")
     opts = dict(width=1600, height=1200, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
     heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")
-    print("Checkpoint 3")
     
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-    print("Checkpoint 4")
+
     rec_imgs = []
     a,b,c = psi.det.shape()
     for rank in range(len(S)):
@@ -227,17 +224,15 @@ def display_image_pypca(filename, image_to_display=None):
         rec_img = assemble_image_stack_batch(img, pixel_index_map)
         rec_imgs.append(img)
     rec_img = np.concatenate(rec_imgs, axis=1)
-    print("Checkpoint 5")
     hm_rec_data = construct_heatmap_data(rec_img, 100)
     heatmap_reconstruct = hv.HeatMap(hm_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
-    print("Checkpoint 6")
     layout = (heatmap + heatmap_reconstruct).cols(2)
     layout
     hv.save(layout, 'heatmaps_layout.html')
     return layout
 
 
-def display_eigenimages_pytorch(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False):
+def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
