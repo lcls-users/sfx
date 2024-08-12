@@ -390,7 +390,7 @@ class BayesGeomOpt:
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
             score = sg.geometry_refinement.refine3(fix=fix)
             y[i] = -score
-            bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'score': score}
+            bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': score}
 
         kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
@@ -425,7 +425,7 @@ class BayesGeomOpt:
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
             score = sg.geometry_refinement.refine3(fix=["wavelength"])
-            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
+            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'optim': sg.geometry_refinement.param, 'score': score}
             y = np.append(y, [-score], axis=0)
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
@@ -577,7 +577,7 @@ class HookeJeevesGeomOpt:
         score = sg.geometry_refinement.refine3(fix=fix)
         i = 0
         scores.append(score)
-        hjo_history[f'iteration_{i+1}'] = {'param':x, 'score': score}
+        hjo_history[f'iteration_{i+1}'] = {'param':x, 'optim': sg.geometry_refinement.param, 'score': score}
         while step_size >= tol:
             print(f"Iteration {i+1}...")
             neighbours = []
@@ -598,12 +598,12 @@ class HookeJeevesGeomOpt:
                 scores.append(score)
             best_idx = np.argmin(scores)
             if best_idx == 0:
-                step_size /= 2
+                step_size /= 10
                 print(f"Reducing step size to {step_size}")
             else:
                 x = neighbours[best_idx]
                 i += 1
-                hjo_history[f'iteration_{i+1}'] = {'param':x, 'score': scores[best_idx]}
+                hjo_history[f'iteration_{i+1}'] = {'param':x, 'optim': sg.geometry_refinement.param, 'score': scores[best_idx]}
         return hjo_history, x, scores[best_idx]
 
 class CrossEntropyGeomOpt:
@@ -721,13 +721,13 @@ class CrossEntropyGeomOpt:
             means = np.array([self.default_value[self.param_order.index(param)] for param in self.param_space])
         if cov is None:
             cov = np.eye(len(means))
-        X_samples = np.random.multivariate_normal(means, cov, n_samples)
-        for param in self.param_order:
-                if param in self.fix:
-                    idx = self.param_order.index(param)
-                    X_samples = np.insert(X_samples, idx, self.default_value[idx], axis=1)
         for i in range(num_iterations):
             print(f"Iteration {i+1}...")
+            X = np.random.multivariate_normal(means, cov, n_samples)
+            for param in self.param_order:
+                if param in self.fix:
+                    idx = self.param_order.index(param)
+                    X_samples = np.insert(X, idx, self.default_value[idx], axis=1)
             scores = []
             for j in range(n_samples):
                 dist, poni1, poni2, rot1, rot2, rot3 = X_samples[j]
@@ -740,7 +740,7 @@ class CrossEntropyGeomOpt:
                     score = sg.geometry_refinement.refine3(fix=fix)
                 scores.append(score)
             elite_idx = np.argsort(scores)[:m_elite]
-            elite_samples = X_samples[elite_idx]
+            elite_samples = X[elite_idx]
             means = np.mean(elite_samples, axis=0)
             cov = np.cov(elite_samples.T)
             ce_history[f'iteration_{i+1}'] = {'param':means, 'score': scores[elite_idx[0]]}
