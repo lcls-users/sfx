@@ -447,7 +447,6 @@ if __name__ == "__main__":
                     all_norm_diff[-1].append(list_norm_diff)
                     all_init_norm[-1].append(list_init_norm)
                 
-                transformed_images.append(np.concatenate(current_batch_transformed_images, axis=1))
                 print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
                 mem = psutil.virtual_memory()
                 print("================LOADING DONE=====================",flush=True)
@@ -459,7 +458,7 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
                 gc.collect()
 
-            transformed_images = np.concatenate(transformed_images, axis=0)
+            transformed_images = np.concatenate(transformed_images, axis=1)
             all_losses = []
             for k in range(len(all_init_norm)):
                 i=[0]*len(all_init_norm[k][0])
@@ -498,6 +497,11 @@ if __name__ == "__main__":
             mu.append(model_state_dict[rank]['mu'])
             total_variance.append(model_state_dict[rank]['total_variance'])
 
+        print("Printing shapes : ",flush=True)
+        print("S shape :",S[0].shape,flush=True)
+        print("V shape :",V[0].shape,flush=True)
+        print("transformed_images shape :",len(transformed_images),transformed_images[0].shape,flush=True)
+        
     with h5py.File(filename_with_tag, 'w') as f:
                 if 'exp' not in f or 'det_type' not in f or 'start_offset' not in f:
                     # Create datasets only if they don't exist
