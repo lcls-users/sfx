@@ -404,8 +404,8 @@ def unpack_ipca_pytorch_model_file(filename):
         data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
         data['run'] = int(np.asarray(f.get('run')))
         data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1]
-        data['start_img'] = int(np.asarray(f.get('start_offset')))
-        data['reconstructed_images'] = np.asarray(f.get('reconstructed_images'))
+        data['start_offset'] = int(np.asarray(f.get('start_offset')))
+        data['transformed_images'] = np.asarray(f.get('transformed_images'))
         data['S'] = np.asarray(f.get('S'))
         data['V'] = np.asarray(f.get('V'))
         data['mu'] = np.asarray(f.get('mu'))
