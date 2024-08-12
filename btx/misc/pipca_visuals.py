@@ -245,10 +245,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     V = data['V']
 
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-    if image_to_display is None:
-        counter = start_img
-    else:
-        counter = start_img+image_to_display
+    counter = start_img
 
     psi.counter = counter
 
