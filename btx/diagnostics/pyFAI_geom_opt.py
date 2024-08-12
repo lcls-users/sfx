@@ -575,7 +575,6 @@ class HookeJeevesGeomOpt:
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
         score = sg.geometry_refinement.refine3(fix=fix)
         i = 0
-        scores.append(score)
         hjo_history[f'iteration_{i+1}'] = {'param':x, 'optim': sg.geometry_refinement.param, 'score': score}
         while step_size >= tol:
             print(f"Iteration {i+1}...")
@@ -724,10 +723,11 @@ class CrossEntropyGeomOpt:
         for i in range(num_iterations):
             print(f"Iteration {i+1}...")
             X = np.random.multivariate_normal(means, cov, n_samples)
+            X_samples = X.copy()
             for param in self.param_order:
                 if param in self.fix:
                     idx = self.param_order.index(param)
-                    X_samples = np.insert(X, idx, self.default_value[idx], axis=1)
+                    X_samples = np.insert(X_samples, idx, self.default_value[idx], axis=1)
             scores = []
             for j in range(n_samples):
                 dist, poni1, poni2, rot1, rot2, rot3 = X_samples[j]
