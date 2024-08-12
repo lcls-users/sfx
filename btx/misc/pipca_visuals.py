@@ -231,6 +231,7 @@ def display_dashboard_pypca(filename, image_to_display=None):
 
     layout = (heatmap + heatmap_reconstruct).cols(2)
     layout
+    hv.save(layout, 'heatmaps_layout.html')
     return layout
 
 
