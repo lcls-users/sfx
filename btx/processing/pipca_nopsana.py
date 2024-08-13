@@ -358,7 +358,6 @@ class iPCA_Pytorch_without_Psana:
         V = model_state_dict['V']
         mu = model_state_dict['mu']
         transformed_images = []
-        print(images_shape)
 
         average_losses = []
         ##

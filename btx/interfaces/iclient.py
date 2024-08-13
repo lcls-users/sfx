@@ -465,6 +465,7 @@ if __name__ == "__main__":
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
                     print("Shape of batch of transformed images",np.array(batch_transformed_images).shape,flush=True)
+                    print("Shape of transformed images",np.array(transformed_images).shape,flush=True)
                     print(f"Shape of transformed images {rank} before append",np.array(transformed_images[rank]).shape,flush=True)
                     transformed_images[rank].append(batch_transformed_images)
                     print(f"Shape of transformed images {rank} after append",np.array(transformed_images[rank]).shape,flush=True)
