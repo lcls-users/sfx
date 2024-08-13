@@ -483,7 +483,8 @@ if __name__ == "__main__":
                 gc.collect()
 
             print("Shape of transformed images before concatenation",np.array(transformed_images).shape,flush=True)
-            transformed_images = np.concatenate(transformed_images, axis=1)
+            for rank in range(num_gpus):
+                transformed_images[rank] = np.concatenate(transformed_images[rank], axis=0)
             print("Shape of transformed images after concatenation",np.array(transformed_images).shape,flush=True)
             all_losses = []
             for k in range(len(all_init_norm)):
