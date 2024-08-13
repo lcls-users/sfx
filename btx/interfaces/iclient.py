@@ -300,6 +300,10 @@ if __name__ == "__main__":
     num_gpus=num_gpus
     )
 
+    l_time = 0 #loading
+    t_time = 0 #treating and cleaning
+    f_time = 0 #fitting
+
     algo_state_dict_local = ipca_instance.save_state()
     last_batch = False
     logging.basicConfig(level=logging.INFO)
@@ -319,7 +323,9 @@ if __name__ == "__main__":
         with Pool(processes=num_gpus) as pool:
             fitting_start_time = time.time()
             for event in range(start_offset, start_offset + num_images, loading_batch_size):
-                
+
+                beginning_time = time.time()
+
                 if event + loading_batch_size >= num_images + start_offset:
                     last_batch = True
 
@@ -336,7 +342,10 @@ if __name__ == "__main__":
                         last_batch = True
                         break
                     current_loading_batch.append(batch)
-    
+
+                intermediate_time = time.time()
+                l_time += intermediate_time-beginning_time
+
                 logging.info(f"Loaded {event+loading_batch_size} images.")
                 current_loading_batch = np.concatenate(current_loading_batch, axis=0)
                 #Remove None images
@@ -357,6 +366,9 @@ if __name__ == "__main__":
                 shm_list = create_shared_images(current_loading_batch)
 
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+
+                intermediate_time2 = time.time()
+                t_time += intermediate_time2-intermediate_time
 
                 if not last_batch:
                     #Run the batch process in parallel
@@ -380,7 +392,10 @@ if __name__ == "__main__":
                         model_state_dict[rank]['total_variance'] = total_variance[rank]
                     
                     break
-                 
+                
+                final_time = time.time()
+                f_time += final_time-intermediate_time2
+
                 mem = psutil.virtual_memory()
                 print("================LOADING DONE=====================",flush=True)
                 print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
@@ -394,7 +409,10 @@ if __name__ == "__main__":
             fitting_end_time = time.time()
             print(f"Time elapsed for fitting: {fitting_end_time - fitting_start_time} seconds.",flush=True) 
             print("=====================================\n",flush=True)
-            print("FITTING : DONE",flush=True)
+            print("FITTING : DONE\n",flush=True)
+            print("Loading time: ",l_time,flush=True)
+            print("Treating time: ",t_time,flush=True)
+            print("Gathering+Fitting time: ",f_time,flush=True)
             print("\n=====================================",flush=True)
             loss_start_time = time.time()
 

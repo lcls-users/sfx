@@ -296,10 +296,11 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         
         layout_pca = hv.Layout(heatmaps_pca).cols(nb_eigenimages)
 
-        layout = layout + layout_pca
+        layout_combined = layout + layout_pca
     
-    layout
-    return layout
+    layout_combined
+
+    return layout_combined
 
 
 
