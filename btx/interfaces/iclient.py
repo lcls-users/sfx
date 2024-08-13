@@ -276,7 +276,7 @@ if __name__ == "__main__":
     filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     average_losses=[]
-    transformed_images = [[]]*num_gpus
+    transformed_images = [[] for _ in range(num_gpus)]
     num_training_images = int(params.num_images * training_percentage)
 
 
