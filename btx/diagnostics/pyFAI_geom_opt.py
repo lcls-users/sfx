@@ -263,9 +263,6 @@ class BayesGeomOpt:
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
         self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
-        self.dist_res = 0.001
-        self.poni_res = 0.0001
-        self.rot_res = 0.001
         self.param_space = []
         for param in self.param_order:
             if param not in fix:
@@ -313,7 +310,7 @@ class BayesGeomOpt:
             List of parameters not to be optimized in refine3
             Nota Bene: this fix could be different from self.fix
         bounds : dict
-            Dictionary of bounds for each parameter
+            Dictionary of bounds and resolution for each parameter
         mask : np.ndarray
             Mask for powder
         n_samples : int
@@ -362,15 +359,8 @@ class BayesGeomOpt:
         for param in self.param_order:
             if param in self.param_space:
                 print(f"Setting space for {param}...")
-                if param == "dist":
-                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.dist_res, self.dist_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
-                elif param in ["poni1", "poni2"]:
-                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.poni_res, self.poni_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
-                else:
-                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.rot_res, self.rot_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                input_range[param] = np.arange(bounds[param][0], bounds[param][1]+bounds[param][2], bounds[param][2])
+                input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
             else:
                 input_range[param] = np.array([self.default_value[self.param_order.index(param)]])
         X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
@@ -598,6 +588,7 @@ class HookeJeevesGeomOpt:
                 sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
                 score = sg.geometry_refinement.refine3(fix=fix)
                 scores.append(score)
+                new_params = sg.geometry_refinement.param
             best_idx = np.argmin(scores)
             if best_idx == 0:
                 step_size /= 10
