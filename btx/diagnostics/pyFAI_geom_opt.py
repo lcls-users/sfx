@@ -930,10 +930,11 @@ class GeneticAlgGeomOpt:
         powder,
         fix, 
         bounds,
+        sigma = 0.1,
         mask=None,
         n_samples=10,
         m_elite=5,
-        num_iterations=100,
+        num_iterations=10,
         seed=0,
     ):
         """
@@ -947,6 +948,8 @@ class GeneticAlgGeomOpt:
             List of parameters not to be optimized
         bounds : dict
             Dictionary of bounds for each parameter
+        sigma : float
+            Standard deviation for the mutation
         mask : str
             Path to mask file
         n_samples : int
@@ -988,30 +991,18 @@ class GeneticAlgGeomOpt:
         print("Setting geometry space...")
         print(f"Search space: {self.param_space}")
         ga_history = {}
-        input_range = {}
-        input_range_norm = {}
+        means = [np.mean(bounds[param]) for param in self.param_space]
+        scales = [np.max(bounds[param]) - np.min(bounds[param]) for param in self.param_space]
+        X_norm = np.random.uniform(low=-1, high=1, size=(n_samples, len(self.param_space)))
+        X_samples = X_norm.copy()
         for param in self.param_order:
-            if param in self.param_space:
-                print(f"Setting space for {param}...")
-                if param == "dist":
-                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.dist_res, self.dist_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
-                elif param in ["poni1", "poni2"]:
-                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.poni_res, self.poni_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
-                else:
-                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.rot_res, self.rot_res)
-                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+            idx = self.param_order.index(param)
+            if param in self.fix:
+                X_samples = np.insert(X_samples, idx, self.default_value[idx], axis=1)
             else:
-                input_range[param] = np.array([self.default_value[self.param_order.index(param)]])
-        X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
-        X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
-        print(f"Setting space complete with {X_norm.shape[0]} points")
-        idx_samples = np.random.choice(X.shape[0], n_samples)
-        X_samples = X[idx_samples]
-        X_norm_samples = X_norm[idx_samples]
-        scores = np.zeros((n_samples))
+                X_samples[:, idx] = means[idx] + scales[idx] * X_norm[:, idx]
 
+        scores = np.zeros(n_samples)
         for i in range(n_samples):
             print(f"Initializing sample {i+1}...")
             dist, poni1, poni2, rot1, rot2, rot3 = X_samples[i]
@@ -1022,6 +1013,37 @@ class GeneticAlgGeomOpt:
             scores[i] = score
             ga_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': score}
         
-        elite_idx = np.argsort(scores)[:m_elite]
+        for k in range(num_iterations):
+            elite_idx = np.argsort(scores)[:m_elite]
+            new_gen = []
+            for _ in range(n_samples - 1):
+                elite_sample = X_norm[np.random.choice(elite_idx)]
+                perturbed_sample = elite_sample + np.random.normal(0, sigma, size=len(self.param_order))
+                new_gen.append(perturbed_sample)
+
+            best_elite_sample = X_norm[elite_idx[0]]
+            new_gen.append(best_elite_sample)
+            X_norm = np.array(new_gen)
+
+            X_samples = X_norm.copy()
+            for param in self.param_order:
+                idx = self.param_order.index(param)
+                if param in self.fix:
+                    X_samples = np.insert(X_samples, idx, self.default_value[idx], axis=1)
+                else:
+                    X_samples[:, idx] = means[idx] + scales[idx] * X_norm[:, idx]
+
+            scores = np.zeros(n_samples)
+            for i in range(n_samples):
+                dist, poni1, poni2, rot1, rot2, rot3 = X_samples[i]
+                geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+                sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+                score = sg.geometry_refinement.refine3(fix=fix)
+                scores[i] = score
+            best_idx = np.argmin(scores)
+            ga_history[f'generation_{k+1}_best_sample'] = {'param':X_samples[best_idx], 'score': scores[best_idx]}
+        return ga_history, X_samples[best_idx], scores[best_idx]
         
+
 
