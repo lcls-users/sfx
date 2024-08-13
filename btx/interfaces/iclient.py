@@ -375,6 +375,9 @@ if __name__ == "__main__":
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
                     logging.info("Checkpoint : Iteration done")
 
+                    final_time = time.time()
+                    f_time += final_time-intermediate_time2
+                    
                 else:
                     #Run the batch process in parallel, gather the results and update the model state dictionary
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
@@ -391,10 +394,10 @@ if __name__ == "__main__":
                         model_state_dict[rank]['mu'] = mu[rank]
                         model_state_dict[rank]['total_variance'] = total_variance[rank]
                     
+                    final_time = time.time()
+                    f_time += final_time-intermediate_time2
                     break
                 
-                final_time = time.time()
-                f_time += final_time-intermediate_time2
 
                 mem = psutil.virtual_memory()
                 print("================LOADING DONE=====================",flush=True)
@@ -461,7 +464,7 @@ if __name__ == "__main__":
                     average_loss,average_losses,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
-                    print("Shape of transformed images",np.array(batch_transformed_images).shape,flush=True)
+                    print("Shape of batch of transformed images",np.array(batch_transformed_images).shape,flush=True)
                     transformed_images[rank].append(batch_transformed_images)
                     all_norm_diff[-1].append(list_norm_diff)
                     all_init_norm[-1].append(list_init_norm)
@@ -477,8 +480,9 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
                 gc.collect()
 
-            print("Shape of transformed images",np.array(transformed_images).shape,flush=True)
+            print("Shape of transformed images before concatenation",np.array(transformed_images).shape,flush=True)
             transformed_images = np.concatenate(transformed_images, axis=1)
+            print("Shape of transformed images after concatenation",np.array(transformed_images).shape,flush=True)
             all_losses = []
             for k in range(len(all_init_norm)):
                 i=[0]*len(all_init_norm[k][0])
