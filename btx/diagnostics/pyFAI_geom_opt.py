@@ -672,10 +672,6 @@ class CrossEntropyGeomOpt:
             Dictionary of bounds for each parameter
         mask : str
             Path to mask file
-        means : np.ndarray
-            Initial means for the Gaussian distribution
-        cov : np.ndarray
-            Initial covariance matrix for the Gaussian distribution
         n_samples : int
             Number of samples to initialize the refit the distribution
         m_elite : int
@@ -720,10 +716,8 @@ class CrossEntropyGeomOpt:
         print(f"Search space: {self.param_space}")
         ce_history = {}
         dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
-        if means is None:
-            means = np.array([np.mean(bounds[param]) for param in self.param_space])
-        if cov is None:
-            cov = np.diag([np.std(bounds[param])**2 for param in self.param_space])
+        means = np.array([np.mean(bounds[param]) for param in self.param_space])
+        cov = np.diag([np.std(bounds[param])**2 for param in self.param_space])
         for i in range(num_iterations):
             print(f"Iteration {i+1}...")
             X = np.random.multivariate_normal(means, cov, n_samples)
