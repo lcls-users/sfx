@@ -521,6 +521,7 @@ class HookeJeevesGeomOpt:
         self,
         powder,
         fix,
+        bounds=None,
         mask=None,
         step_size=0.01,
         tol=0.00001, 
@@ -535,6 +536,8 @@ class HookeJeevesGeomOpt:
         fix : list
             List of parameters not to be optimized in refine3
             Nota Bene: this fix could be different from self.fix
+        bounds : dict
+            Dictionary of bounds for each parameter
         mask : str
             Path to mask file
         step_size : float
@@ -651,8 +654,6 @@ class CrossEntropyGeomOpt:
         fix,
         bounds,
         mask=None,
-        means=None,
-        cov=None,
         n_samples=100,
         m_elite=10,
         num_iterations=100,
@@ -722,7 +723,7 @@ class CrossEntropyGeomOpt:
         if means is None:
             means = np.array([np.mean(bounds[param]) for param in self.param_space])
         if cov is None:
-            cov = np.diag([np.std(bounds[param]) for param in self.param_space])
+            cov = np.diag([np.std(bounds[param])**2 for param in self.param_space])
         for i in range(num_iterations):
             print(f"Iteration {i+1}...")
             X = np.random.multivariate_normal(means, cov, n_samples)
@@ -884,7 +885,7 @@ class SimulatedAnnealingGeomOpt:
             temperature *= cooling_rate
             sa_history[f'iteration_{i+1}'] = {'param':x, 'score': score}
         return sa_history, best_param, best_score
-    
+
 class GeneticAlgGeomOpt:
     """
     Class to perform Geometry Optimization using Genetic Algorithm on pyFAI
@@ -1044,6 +1045,3 @@ class GeneticAlgGeomOpt:
             best_idx = np.argmin(scores)
             ga_history[f'generation_{k+1}_best_sample'] = {'param':X_samples[best_idx], 'score': scores[best_idx]}
         return ga_history, X_samples[best_idx], scores[best_idx]
-        
-
-
