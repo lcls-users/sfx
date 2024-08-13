@@ -377,7 +377,7 @@ if __name__ == "__main__":
 
                     final_time = time.time()
                     f_time += final_time-intermediate_time2
-                    
+
                 else:
                     #Run the batch process in parallel, gather the results and update the model state dictionary
                     results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
@@ -465,7 +465,9 @@ if __name__ == "__main__":
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
                     print("Shape of batch of transformed images",np.array(batch_transformed_images).shape,flush=True)
+                    print(f"Shape of transformed images {rank} before append",np.array(transformed_images[rank]).shape,flush=True)
                     transformed_images[rank].append(batch_transformed_images)
+                    print(f"Shape of transformed images {rank} after append",np.array(transformed_images[rank]).shape,flush=True)
                     all_norm_diff[-1].append(list_norm_diff)
                     all_init_norm[-1].append(list_init_norm)
                 
