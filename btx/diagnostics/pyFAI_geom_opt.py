@@ -538,7 +538,7 @@ class HookeJeevesGeomOpt:
         mask : str
             Path to mask file
         step_size : float
-            Initial tep size for optimization
+            Initial step size for optimization
         tol : float
             Tolerance for convergence
         """
@@ -643,14 +643,13 @@ class CrossEntropyGeomOpt:
         self.param_space = []
         for param in self.param_order:
             if param not in fix:
-                self.param_space.append(param)
-        self.dict_std = {"dist":0.1, "poni1":0.001, "poni2":0.001, "rot1":0.0001, "rot2":0.0001, "rot3":0.0001}
-        
+                self.param_space.append(param)        
 
     def cross_entropy_geom_opt(
         self,
         powder,
         fix,
+        bounds,
         mask=None,
         means=None,
         cov=None,
@@ -668,6 +667,8 @@ class CrossEntropyGeomOpt:
             Path to powder image or number of images to use for calibration
         fix : list
             List of parameters not to be optimized
+        bounds : dict
+            Dictionary of bounds for each parameter
         mask : str
             Path to mask file
         means : np.ndarray
@@ -719,9 +720,9 @@ class CrossEntropyGeomOpt:
         ce_history = {}
         dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
         if means is None:
-            means = np.array([self.default_value[self.param_order.index(param)] for param in self.param_space])
+            means = np.array([np.mean(bounds[param]) for param in self.param_space])
         if cov is None:
-            cov = np.diag([self.dict_std[param] for param in self.param_space])
+            cov = np.diag([np.std(bounds[param]) for param in self.param_space])
         for i in range(num_iterations):
             print(f"Iteration {i+1}...")
             X = np.random.multivariate_normal(means, cov, n_samples)
@@ -883,3 +884,144 @@ class SimulatedAnnealingGeomOpt:
             temperature *= cooling_rate
             sa_history[f'iteration_{i+1}'] = {'param':x, 'score': score}
         return sa_history, best_param, best_score
+    
+class GeneticAlgGeomOpt:
+    """
+    Class to perform Geometry Optimization using Genetic Algorithm on pyFAI
+
+    Parameters
+    ----------
+    exp : str
+        Experiment name
+    run : int
+        Run number
+    det_type : str
+        Detector type
+    detector : PyFAI(Detector)
+        PyFAI detector object
+    calibrant : str
+        Calibrant name
+    fix : list
+        List of parameters not to be optimized
+    """
+
+    def __init__(
+        self,
+        exp,
+        run,
+        det_type,
+        detector,
+        calibrant,
+        fix,
+    ):
+        self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
+        self.detector = detector
+        self.calibrant = calibrant
+        self.fix = fix
+        self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
+        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.param_space = []
+        for param in self.param_order:
+            if param not in fix:
+                self.param_space.append(param)
+
+    def genetic_alg_geom_opt(
+        self,
+        powder,
+        fix, 
+        bounds,
+        mask=None,
+        n_samples=10,
+        m_elite=5,
+        num_iterations=100,
+        seed=0,
+    ):
+        """
+        From guessed initial geometry, optimize the geometry using Genetic Algorithm on pyFAI package
+
+        Parameters
+        ----------
+        powder : str or int
+            Path to powder image or number of images to use for calibration
+        fix : list
+            List of parameters not to be optimized
+        bounds : dict
+            Dictionary of bounds for each parameter
+        mask : str
+            Path to mask file
+        n_samples : int
+            Number of samples to initialize the population
+        m_elite : int
+            Number of elite samples to keep in the population for each generation
+        num_iterations : int
+            Number of iterations for optimization
+        seed : int
+            Random seed for reproducibility
+        """
+        if seed is not None:
+            np.random.seed(seed)
+        if type(powder) == str:
+            print(f"Loading powder {powder}")
+            powder_img = np.load(powder)
+        elif type(powder) == int:
+            print("Computing powder from scratch")
+            self.diagnostics.psi.calibrate = True
+            powder_imgs = self.diagnostics.psi.get_images(powder, assemble=False)
+            powder_img = np.max(powder_imgs, axis=0)
+            powder_img = np.reshape(powder_img, self.detector.shape)
+            if mask:
+                print(f"Loading mask {mask}")
+                mask = np.load(mask)
+            else:
+                mask = self.diagnostics.psi.get_mask()
+            powder_img *= mask
+        else:
+            sys.exit("Unrecognized powder type, expected a path or number")
+        self.img_shape = powder_img.shape
+
+        print("Defining calibrant...")
+        calibrant = CALIBRANT_FACTORY(self.calibrant)
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
+        photon_energy = 1.23984197386209e-09 / wavelength
+        calibrant.wavelength = wavelength
+        
+        print("Setting geometry space...")
+        print(f"Search space: {self.param_space}")
+        ga_history = {}
+        input_range = {}
+        input_range_norm = {}
+        for param in self.param_order:
+            if param in self.param_space:
+                print(f"Setting space for {param}...")
+                if param == "dist":
+                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.dist_res, self.dist_res)
+                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                elif param in ["poni1", "poni2"]:
+                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.poni_res, self.poni_res)
+                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                else:
+                    input_range[param] = np.arange(bounds[param][0], bounds[param][1]+self.rot_res, self.rot_res)
+                    input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+            else:
+                input_range[param] = np.array([self.default_value[self.param_order.index(param)]])
+        X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
+        X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
+        print(f"Setting space complete with {X_norm.shape[0]} points")
+        idx_samples = np.random.choice(X.shape[0], n_samples)
+        X_samples = X[idx_samples]
+        X_norm_samples = X_norm[idx_samples]
+        scores = np.zeros((n_samples))
+
+        for i in range(n_samples):
+            print(f"Initializing sample {i+1}...")
+            dist, poni1, poni2, rot1, rot2, rot3 = X_samples[i]
+            geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+            sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+            score = sg.geometry_refinement.refine3(fix=fix)
+            scores[i] = score
+            ga_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': score}
+        
+        elite_idx = np.argsort(scores)[:m_elite]
+        
+
