@@ -527,7 +527,7 @@ if __name__ == "__main__":
                     f.create_dataset('start_offset', data=start_offset)
 
                 create_or_update_dataset(f, 'run', data=run)
-                create_or_update_dataset(f, 'transformed_images', data=transformed_images)
+                create_or_update_dataset(f, 'transformed_images', data=np.array(transformed_images))
                 create_or_update_dataset(f, 'S', data=S)
                 create_or_update_dataset(f, 'V', data=V)
                 create_or_update_dataset(f, 'mu', data=mu)
