@@ -464,7 +464,6 @@ if __name__ == "__main__":
                     average_loss,average_losses,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
                     current_batch_loss.append(average_loss)
                     average_losses.append(average_loss)
-                    print(f"Shape of transformed images {rank} before append",np.array(transformed_images[rank]).shape,flush=True)
                     transformed_images[rank].append(batch_transformed_images)
                     all_norm_diff[-1].append(list_norm_diff)
                     all_init_norm[-1].append(list_init_norm)
@@ -480,10 +479,8 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
                 gc.collect()
 
-            print("Shape of transformed images before concatenation",np.array(transformed_images).shape,flush=True)
             for rank in range(num_gpus):
                 transformed_images[rank] = np.concatenate(transformed_images[rank], axis=0)
-            print("Shape of transformed images after concatenation",np.array(transformed_images).shape,flush=True)
             all_losses = []
             for k in range(len(all_init_norm)):
                 i=[0]*len(all_init_norm[k][0])
@@ -535,7 +532,6 @@ if __name__ == "__main__":
                 create_or_update_dataset(f, 'V', data=V)
                 create_or_update_dataset(f, 'mu', data=mu)
                 create_or_update_dataset(f, 'total_variance', data=total_variance)
-                create_or_update_dataset(f, 'average_losses', data=average_losses)
 
     saving_end_time = time.time()
 

@@ -392,9 +392,9 @@ class iPCA_Pytorch_without_Psana:
         torch.cuda.empty_cache()
         gc.collect()
 
-        print(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device)} bytes",flush=True)
-        print(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device)} bytes",flush=True)
-        print(f"Memory free on GPU {rank}: {torch.cuda.mem_get_info(device)[0]} bytes",flush=True)
+        print(f"Memory Allocated on GPU {rank}: {torch.cuda.memory_allocated(device) / 1024**3:.2f} GB",flush=True)
+        print(f"Memory Cached on GPU {rank}: {torch.cuda.memory_reserved(device) / 1024**3:.2f} GB",flush=True)
+        print(f"Memory free on GPU {rank}: {torch.cuda.mem_get_info(device)[0] / 1024**3:.2f} GB",flush=True)
 
         return average_loss,average_losses,transformed_images,list_norm_diff,list_init_norm
 
