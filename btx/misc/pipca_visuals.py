@@ -2,6 +2,7 @@ import numpy as np
 import h5py
 import random
 import math
+import time
 
 import csv 
 
@@ -231,7 +232,6 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     hv.save(layout, 'heatmaps_layout.html')
     return layout
 
-
 def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,num_images=10,num_pixels=100):
     data = unpack_ipca_pytorch_model_file(filename)
 
@@ -301,6 +301,31 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     layout_combined
 
     return layout_combined
+
+def ipca_execution_time(num_components,num_images,batch_size,filename):
+    data = unpack_ipca_pytorch_model_file(filename)
+
+    exp = data['exp']
+    run = data['run']
+    det_type = data['det_type']
+    start_img = data['start_offset']
+
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    counter = start_img
+    psi.counter = counter
+    images = psi.get_images(num_images)
+
+    ipca = IncrementalPCA(n_components=num_components, batch_size=batch_size)
+    start = time.time()
+    for start in range(0, num_images, batch_size):
+        end = min(start + batch_size, num_images)
+        batch_imgs = images[start:end]
+        ipca.partial_fit(batch_imgs.reshape(batch_imgs.shape[0], -1))
+    end = time.time()
+    execution_time = end - start
+    return execution_time
+ 
+
 
 def display_dashboard(filename):
     """
