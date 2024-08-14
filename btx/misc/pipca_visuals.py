@@ -187,7 +187,7 @@ def display_dashboard_pytorch(filename):
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
-def display_image_pypca(filename, image_to_display=None):
+def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
@@ -210,7 +210,7 @@ def display_image_pypca(filename, image_to_display=None):
     img = img.squeeze()
  
     # Downsample so heatmap is at most 100 x 100
-    hm_data = construct_heatmap_data(img, 100)
+    hm_data = construct_heatmap_data(img, num_pixels)
     opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
     heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")
     
@@ -224,7 +224,7 @@ def display_image_pypca(filename, image_to_display=None):
         rec_imgs.append(rec_img)
     rec_img = np.concatenate(rec_imgs, axis=0)
     rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
-    hm_rec_data = construct_heatmap_data(rec_img, 100)
+    hm_rec_data = construct_heatmap_data(rec_img, num_pixels)
     heatmap_reconstruct = hv.HeatMap(hm_rec_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
     layout = (heatmap + heatmap_reconstruct).cols(2)
     layout
@@ -232,7 +232,7 @@ def display_image_pypca(filename, image_to_display=None):
     return layout
 
 
-def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,num_images=10):
+def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,num_images=10,num_pixels=100):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
@@ -262,7 +262,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
             eigenimages.append(eigenimage)
         eigenimages = np.concatenate(eigenimages, axis=0)
         eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
-        hm_data = construct_heatmap_data(eigenimages, 100)
+        hm_data = construct_heatmap_data(eigenimages, num_pixels)
 
         opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
 
@@ -287,7 +287,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
             eigenimages = V[k]
             eigenimages = eigenimages.reshape((a,b,c))
             eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
-            hm_data = construct_heatmap_data(eigenimages, 100)
+            hm_data = construct_heatmap_data(eigenimages, num_pixels)
 
             opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
 
@@ -301,17 +301,6 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     layout_combined
 
     return layout_combined
-
-
-
-
-
-
-
-
-
-
-
 
 def display_dashboard(filename):
     """
