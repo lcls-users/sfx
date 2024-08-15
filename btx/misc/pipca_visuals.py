@@ -232,7 +232,7 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     hv.save(layout, 'heatmaps_layout.html')
     return layout
 
-def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,num_images=10,num_pixels=100):
+def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,classic_pca_test=False,num_images=10,num_pixels=100,compute_diff=False):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
@@ -254,6 +254,8 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
     heatmaps=[]
+    eigen_images_pypca = []
+
     for k in range(nb_eigenimages):
         eigenimages = []
         for rank in range(len(V)):
@@ -261,6 +263,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
             eigenimage = eigenimage.reshape((int(a/len(S)), b, c))
             eigenimages.append(eigenimage)
         eigenimages = np.concatenate(eigenimages, axis=0)
+        eigen_images_pypca.append(eigenimages)
         eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
         hm_data = construct_heatmap_data(eigenimages, num_pixels)
 
@@ -300,6 +303,14 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     
     layout_combined
 
+    if compute_diff and classic_pca_test:
+        list_norm_diff = []
+        for k in range(nb_eigenimages):
+            diff = np.abs(eigen_images_pypca[k]) - np.abs(V[k].reshape((a,b,c)))
+            norm_diff = np.linalg.norm(diff, 'fro') / np.linalg.norm(V[k].reshape((a,b,c)), 'fro') * 100
+            list_norm_diff.append(norm_diff)
+        print(list_norm_diff)
+        
     return layout_combined
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
