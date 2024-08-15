@@ -316,15 +316,15 @@ def ipca_execution_time(num_components,num_images,batch_size,filename):
     images = psi.get_images(num_images)
 
     ipca = IncrementalPCA(n_components=num_components, batch_size=batch_size)
-    start = time.time()
+    start_time = time.time()
     for start in range(0, num_images, batch_size):
         print('Processing batch %d' % (start // batch_size))
         end = min(start + batch_size, num_images)
         batch_imgs = images[start:end]
         ipca.partial_fit(batch_imgs.reshape(batch_imgs.shape[0], -1))
-    end = time.time()
-    execution_time = end - start
-
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(execution_time)
     return execution_time
  
 
