@@ -194,6 +194,7 @@ def opt_geom(config):
 
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
+
 def grid_search_pyFAI_geom(config):
     from btx.diagnostics.pyFAI_geom_opt import GridSearchGeomOpt
     from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
@@ -214,9 +215,9 @@ def grid_search_pyFAI_geom(config):
             geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
         PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"))
         conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"))
-        detector = conv.detector
-        detector.set_pixel_corners(conv.corner_array)
-        geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=detector, calibrant=task.calibrant)
+        det = conv.detector
+        det.set_pixel_corners(conv.corner_array)
+        geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant)
         powder = task.get("powder")
         bounds = {'poni1':(-0.01, 0.01, 51), 'poni2':(-0.01, 0.01, 51)}
         dist = task.get("distance")
@@ -228,6 +229,7 @@ def grid_search_pyFAI_geom(config):
         np.save(os.path.join(taskdir, f"grid_search_geom_r{setup.run:04}.npy"), y)
         logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
+
 
 def grid_search_geom(config):
     from btx.misc.shortcuts import fetch_latest
