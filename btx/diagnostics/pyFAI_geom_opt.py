@@ -13,6 +13,7 @@ from btx.misc.metrology import *
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel
 from scipy.stats import norm
+from tqdm import tqdm
 
 class PyFAIGeomOpt:
     """
@@ -227,6 +228,99 @@ class PyFAIGeomOpt:
         plt.tight_layout()
         if plot != '':
             fig.savefig(plot, dpi=300)
+
+class GridSearchGeomOpt:
+    """
+    Class to perform Geometry Optimization using Bayesian Optimization on pyFAI
+
+    Parameters
+    ----------
+    exp : str
+        Experiment name
+    run : int
+        Run number
+    det_type : str
+        Detector type
+    detector : PyFAI(Detector)
+        PyFAI detector object
+    calibrant : str
+        Calibrant name
+    """
+
+    def __init__(
+        self,
+        exp,
+        run,
+        det_type,
+        detector,
+        calibrant,
+    ):
+        self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
+        self.detector = detector
+        self.calibrant = calibrant
+
+    def grid_search_geom_opt(
+        self,
+        powder,
+        bounds,
+        dist,
+        mask=None,
+    ):
+        """
+        From guessed initial geometry, optimize the geometry using Grid Search algorithm on pyFAI package, only for poni1 and poni2
+
+        Parameters
+        ----------
+        powder : str or int
+            Path to powder image or number of images to use for calibration
+        bounds : dict
+            Dictionary of bounds for each parameter
+        dist : float
+            Distance to sample
+        mask : str
+            Path to mask file
+        """
+        if type(powder) == str:
+            print(f"Loading powder {powder}")
+            powder_img = np.load(powder)
+        elif type(powder) == int:
+            print("Computing powder from scratch")
+            self.diagnostics.psi.calibrate = True
+            powder_imgs = self.diagnostics.psi.get_images(powder, assemble=False)
+            powder_img = np.max(powder_imgs, axis=0)
+            powder_img = np.reshape(powder_img, self.detector.shape)
+            if mask:
+                print(f"Loading mask {mask}")
+                mask = np.load(mask)
+            else:
+                mask = self.diagnostics.psi.get_mask()
+            powder_img *= mask
+        else:
+            sys.exit("Unrecognized powder type, expected a path or number")
+        self.img_shape = powder_img.shape
+
+        print("Defining calibrant...")
+        calibrant = CALIBRANT_FACTORY(self.calibrant)
+        wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
+        photon_energy = 1.23984197386209e-09 / wavelength
+        calibrant.wavelength = wavelength
+
+        print("Setting geometry space...")
+        print(f"Search space: {self.param_space}")
+        poni1_range = np.arange(bounds["poni1"][0], bounds["poni1"][1]+bounds["poni1"][2], bounds["poni1"][2])
+        poni2_range = np.arange(bounds["poni2"][0], bounds["poni2"][1]+bounds["poni2"][2], bounds["poni2"][2])
+        cy, cx = np.meshgrid(poni1_range, poni2_range)
+        y = np.zeros_like(cx)
+        for i in tqdm(range(len(poni1_range))):
+            for j in range(len(poni2_range)):
+                    poni1 = cx[i, j]
+                    poni2 = cy[i, j]
+                    geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, detector=self.detector, wavelength=wavelength)
+                    sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=0)
+                    score = sg.geometry_refinement.refine3(fix=["wavelength"])
+                    y[i, j] = score
+        return cx, cy, y
 
 class BayesGeomOpt:
     """

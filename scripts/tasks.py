@@ -196,8 +196,8 @@ def opt_geom(config):
 
 
 def pyFAI_opt_geom(config):
-    from btx.diagnostics.converter import CrystFELtoPyFAI
-    from btx.diagnostics.pyFAI_geom_opt import PyFAIGeomOpt
+    from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
+    from btx.diagnostics.pyFAI_geom_opt import PyFAIGeomOpt, BayesGeomOpt, HookeJeevesGeomOpt, CrossEntropyGeomOpt, SimulatedAnnealingGeomOpt, GeneticAlgGeomOpt
     from btx.misc.shortcuts import fetch_latest
     from btx.misc.shortcuts import TaskTimer
 
@@ -209,27 +209,94 @@ def pyFAI_opt_geom(config):
         taskdir = os.path.join(setup.root_dir, "geom")
         os.makedirs(taskdir, exist_ok=True)
         os.makedirs(os.path.join(taskdir, "figs"), exist_ok=True)
-        geom_opt = PyFAIGeomOpt(
-            exp=setup.exp,
-            run=setup.run,
-            det_type=setup.det_type)
-        geom_opt.pyFAI_geom(geom=os.path.join(setup.root_dir, "geom/r0000.geom"))
-        geom_opt.pyFAI_geom_opt(
-            powder=os.path.join(setup.root_dir, f"powder/calib_max_flat_r{setup.run:04}.npy"),
-            mask=None,
-            max_rings=task.get('max_rings'),
-            pts_per_deg=task.get('pts_per_deg'),
-            I=task.get('I'),
-            plot=os.path.join(taskdir, f"figs/r{setup.run:04}.png"),
-        )
-        logger.info(f"Refined detector distance in mm: {geom_opt.distance}")
-        logger.info(f"Refined detector center in pixels: {geom_opt.poni2}, {geom_opt.poni1}")
-        geom_opt.deploy_geometry(
-                taskdir, pv_camera_length=setup.get("pv_camera_length")
+        geomfile = fetch_latest(fnames=os.path.join(taskdir, "r*.data"), run=setup.run) 
+        if geomfile != '':
+            logger.info(f"Using {geomfile} as input geometry")
+        else:
+            logger.info(f"No geometry files provided: using calibration data as input geometry")
+            geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
+        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"))
+        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"))
+        detector = conv.detector
+        detector.set_pixel_corners(conv.corner_array)
+        if task.get("method") == "bayesian":
+            geom_opt = BayesGeomOpt(
+                detector=detector,
+                exp=setup.exp,
+                run=setup.run,
+                det_type=setup.det_type,
+                detector=detector
             )
-        logger.info(f"Updated geometry files saved to: {taskdir}")
+        elif task.get("method") == "hooke-jeeves":
+            geom_opt = HookeJeevesGeomOpt(
+                detector=detector,
+                exp=setup.exp,
+                run=setup.run,
+                det_type=setup.det_type,
+                detector=detector
+            )
+        elif task.get("method") == "cross_entropy":
+            geom_opt = CrossEntropyGeomOpt(
+                detector=detector,
+                exp=setup.exp,
+                run=setup.run,
+                det_type=setup.det_type,
+                detector=detector
+            )
+        elif task.get("method") == "simulated_annealing":
+            geom_opt = SimulatedAnnealingGeomOpt(
+                detector=detector,
+                exp=setup.exp,
+                run=setup.run,
+                det_type=setup.det_type,
+                detector=detector
+            )
+        elif task.get("method") == "genetic":
+            geom_opt = GeneticAlgGeomOpt(
+                detector=detector,
+                exp=setup.exp,
+                run=setup.run,
+                det_type=setup.det_type,
+                detector=detector
+            )
+        
         logger.debug("Done!")
 
+def grid_search_pyFAI_geom(config):
+    from btx.diagnostics.pyFAI_geom_opt import GridSearchGeomOpt
+    from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
+    from btx.misc.shortcuts import fetch_latest
+    from btx.misc.shortcuts import TaskTimer
+
+    setup = config.setup
+    task = config.grid_search
+    task_durations = dict({})
+    """ Grid search for geometry. """
+    with TaskTimer(task_durations, "total duration"):
+        taskdir = os.path.join(setup.root_dir, "grid_search")
+        os.makedirs(taskdir, exist_ok=True)
+        geomfile = task.get("geomfile")
+        if geomfile != '':
+            logger.info(f"Using {geomfile} as input geometry")
+        else:
+            logger.info(f"No geometry files provided: using calibration data as input geometry")
+            geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
+        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"))
+        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"))
+        detector = conv.detector
+        detector.set_pixel_corners(conv.corner_array)
+        geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=detector, calibrant=task.calibrant)
+        powder = os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy")
+        bounds = {'poni1':(-0.01, 0.01, 0.001), 'poni2':(-0.01, 0.01, 0.001)}
+        dist = task.get("distance")
+        cx, cy, y = geom_opt.grid_search(
+            powder=powder,
+            bounds=bounds,
+            dist=dist,
+        )
+        np.save(os.path.join(taskdir, f"grid_search_geom_r{setup.run:04}.npy"), y)
+        logger.debug("Done!")
+    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
 def grid_search_geom(config):
     from btx.misc.shortcuts import fetch_latest
