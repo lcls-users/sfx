@@ -213,8 +213,8 @@ def grid_search_pyFAI_geom(config):
         else:
             logger.info(f"No geometry files provided: using calibration data as input geometry")
             geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
-        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"))
-        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"))
+        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
+        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
         det = conv.detector
         det.set_pixel_corners(conv.corner_array)
         geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant)
