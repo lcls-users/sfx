@@ -307,8 +307,8 @@ class GridSearchGeomOpt:
 
         print("Setting geometry space...")
         print(f"Search space: {self.param_space}")
-        poni1_range = np.arange(bounds["poni1"][0], bounds["poni1"][1]+bounds["poni1"][2], bounds["poni1"][2])
-        poni2_range = np.arange(bounds["poni2"][0], bounds["poni2"][1]+bounds["poni2"][2], bounds["poni2"][2])
+        poni1_range = np.linspace(bounds["poni1"][0], bounds["poni1"][1], bounds["poni1"][2])
+        poni2_range = np.linspace(bounds["poni2"][0], bounds["poni2"][1], bounds["poni2"][2])
         cy, cx = np.meshgrid(poni1_range, poni2_range)
         y = np.zeros_like(cx)
         for i in tqdm(range(len(poni1_range))):
