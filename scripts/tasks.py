@@ -221,7 +221,7 @@ def grid_search_pyFAI_geom(config):
         powder = task.get("powder")
         bounds = {'poni1':(-0.01, 0.01, 51), 'poni2':(-0.01, 0.01, 51)}
         dist = task.get("distance")
-        cx, cy, y = geom_opt.grid_search(
+        cx, cy, y = geom_opt.grid_search_geom_opt(
             powder=powder,
             bounds=bounds,
             dist=dist,
