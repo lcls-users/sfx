@@ -316,7 +316,7 @@ class GridSearchGeomOpt:
                     poni2 = cy[i, j]
                     geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, detector=self.detector, wavelength=wavelength)
                     sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=30*photon_energy)
+                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=0)
                     if len(sg.geometry_refinement.data) == 0:
                         score = np.inf
                     else:
