@@ -226,7 +226,7 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        print("Shape of the augmented matrix :", X.shape)
+        #print("Shape of the augmented matrix :", X.shape)
         U, S, Vt = torch.linalg.svd(X, full_matrices=False)
 
         U, Vt = self._svd_flip(U, Vt)
