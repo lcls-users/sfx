@@ -10,7 +10,7 @@ class JobScheduler:
 
     def __init__(self, jobfile, logdir='./', jobname='btx',
                  account='lcls', queue='ffbh3q', ncores=1, time='10:00:00',
-                 reservation=""):
+                 reservation="", mem='0', num_gpus=1):
         self.manager = 'SLURM'
         self.jobfile = jobfile
         self.logdir = logdir
@@ -21,6 +21,8 @@ class JobScheduler:
         self.time = time
         self.reservation = reservation
         self._data_systems_management()
+        self.mem = mem
+        self.num_gpus = num_gpus
 
     def _data_systems_management(self):
         """ List the Data Systems group folder paths. """
@@ -72,6 +74,8 @@ class JobScheduler:
                         "#SBATCH --error={error}\n"
                         "#SBATCH --ntasks={ncores}\n"
                         "#SBATCH --time={time}\n"
+                        "#SBATCH --mem={mem}\n"
+                        "#SBATCH --gres=gpu:{num_gpus}\n"
                         "#SBATCH --mem=0\n"
                         "#SBATCH --exclusive\n\n")
         else:
@@ -83,7 +87,9 @@ class JobScheduler:
             "output": os.path.join(self.logdir, f"{self.jobname}.out"),
             "error": os.path.join(self.logdir, f"{self.jobname}.err"),
             "ncores": self.ncores,
-            "time": self.time
+            "time": self.time,
+            "mem": self.mem,
+            "num_gpus": self.num_gpus
         }
 
         with open(self.jobfile, 'w') as jfile:
