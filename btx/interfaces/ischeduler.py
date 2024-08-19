@@ -75,7 +75,6 @@ class JobScheduler:
                         "#SBATCH --ntasks={ncores}\n"
                         "#SBATCH --time={time}\n"
                         "#SBATCH --mem={mem}\n"
-                        "#SBATCH --gres=gpu:{num_gpus}\n"
                         "#SBATCH --mem=0\n"
                         "#SBATCH --exclusive\n\n")
         else:
@@ -88,8 +87,7 @@ class JobScheduler:
             "error": os.path.join(self.logdir, f"{self.jobname}.err"),
             "ncores": self.ncores,
             "time": self.time,
-            "mem": self.mem,
-            "num_gpus": self.num_gpus
+            "mem": self.mem
         }
 
         with open(self.jobfile, 'w') as jfile:
