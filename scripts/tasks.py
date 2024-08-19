@@ -217,7 +217,7 @@ def grid_search_pyFAI_geom(config):
         conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
         det = conv.detector
         det.set_pixel_corners(conv.corner_array)
-        geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant)
+        geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, Imin=task.Imin)
         powder = task.get("powder")
         bounds = {'poni1':(-0.01, 0.01, 51), 'poni2':(-0.01, 0.01, 51)}
         dist = task.get("distance")
