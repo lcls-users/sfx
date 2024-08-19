@@ -245,6 +245,8 @@ class GridSearchGeomOpt:
         PyFAI detector object
     calibrant : str
         Calibrant name
+    Imin : int
+        Minimum intensity to use for control point extraction based on photon energy
     """
 
     def __init__(
@@ -254,10 +256,12 @@ class GridSearchGeomOpt:
         det_type,
         detector,
         calibrant,
+        Imin,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
         self.detector = detector
         self.calibrant = calibrant
+        self.Imin = Imin
 
     def grid_search_geom_opt(
         self,
@@ -316,7 +320,7 @@ class GridSearchGeomOpt:
                     poni2 = cy[i, j]
                     geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, detector=self.detector, wavelength=wavelength)
                     sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=0)
+                    sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
                     if len(sg.geometry_refinement.data) == 0:
                         score = np.inf
                     else:
@@ -340,6 +344,8 @@ class BayesGeomOpt:
         PyFAI detector object
     calibrant : str
         Calibrant name
+    Imin : int
+        Minimum intensity to use for control point extraction based on photon energy
     fix : list
         List of parameters not to be optimized
     """
@@ -351,11 +357,13 @@ class BayesGeomOpt:
         det_type,
         detector,
         calibrant,
+        Imin,
         fix,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
         self.detector = detector
         self.calibrant = calibrant
+        self.Imin = Imin
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
         self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -473,7 +481,7 @@ class BayesGeomOpt:
             dist, poni1, poni2, rot1, rot2, rot3 = X_samples[i]
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
             if len(sg.geometry_refinement.data) == 0:
                 score = np.inf
             else:
@@ -512,11 +520,11 @@ class BayesGeomOpt:
             dist, poni1, poni2, rot1, rot2, rot3 = new_input
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
             if len(sg.geometry_refinement.data) == 0:
                 score = np.inf
             else:
-                score = sg.geometry_refinement.refine3(fix=["wavelength"])
+                score = sg.geometry_refinement.refine3(fix=fix)
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'optim': sg.geometry_refinement.param, 'score': score}
             y = np.append(y, [-score], axis=0)
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
@@ -585,6 +593,8 @@ class HookeJeevesGeomOpt:
         PyFAI detector object
     calibrant : str
         Calibrant name
+    Imin : int
+        Minimum intensity to use for control point extraction based on photon energy
     fix : list
         List of parameters not to be optimized
     """
@@ -596,11 +606,13 @@ class HookeJeevesGeomOpt:
         det_type,
         detector,
         calibrant,
+        Imin,
         fix,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
         self.detector = detector
         self.calibrant = calibrant
+        self.Imin = Imin
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
         self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -667,7 +679,7 @@ class HookeJeevesGeomOpt:
         x = np.array(self.default_value)
         geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
         sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
         score = sg.geometry_refinement.refine3(fix=fix)
         i = 0
         hjo_history[f'iteration_{i+1}'] = {'param':x, 'optim': sg.geometry_refinement.param, 'score': score}
@@ -687,7 +699,7 @@ class HookeJeevesGeomOpt:
                 dist, poni1, poni2, rot1, rot2, rot3 = neighbour
                 geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
                 sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
                 score = sg.geometry_refinement.refine3(fix=fix)
                 scores.append(score)
                 new_params = sg.geometry_refinement.param
@@ -717,6 +729,8 @@ class CrossEntropyGeomOpt:
         PyFAI detector object
     calibrant : str
         Calibrant name
+    Imin : int
+        Minimum intensity to use for control point extraction based on photon energy
     fix : list
         List of parameters not to be optimized
     """
@@ -728,11 +742,13 @@ class CrossEntropyGeomOpt:
         det_type,
         detector,
         calibrant,
+        Imin,
         fix,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
         self.detector = detector
         self.calibrant = calibrant
+        self.Imin = Imin
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
         self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -824,7 +840,7 @@ class CrossEntropyGeomOpt:
                 dist, poni1, poni2, rot1, rot2, rot3 = X_samples[j]
                 geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
                 sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=8*photon_energy)
+                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
                 if len(sg.geometry_refinement.data) == 0:
                     score = np.inf
                 else:
