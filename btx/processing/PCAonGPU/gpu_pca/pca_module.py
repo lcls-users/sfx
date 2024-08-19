@@ -10,6 +10,7 @@ import torch.distributed as dist
 import logging
 import subprocess
 import gc
+import torch.autograd.profiler as profiler
 
 class IncrementalPCAonGPU():
     """
@@ -226,9 +227,11 @@ class IncrementalPCAonGPU():
                 )
 
         # SVD of the augmented data
-        print("Shape of the augmented matrix :", X.shape)
-        U, S, Vt = torch.linalg.svd(X, full_matrices=False)
+        print("Shape of the augmented matrix :", X.shape,flush=True)
+        with profiler.profile(enabled=True, use_cuda=True) as prof:
+            U, S, Vt = torch.linalg.svd(X, full_matrices=False)
 
+        print("===========================\nCONSOMMATION MEMOIRE VIA PROFILER :",prof.key_averages().table(sort_by="self_cuda_memory_usage", row_limit=10),flush=True) 
         U, Vt = self._svd_flip(U, Vt)
         explained_variance = S**2 / (n_total_samples.item() - 1)
         explained_variance_ratio = S**2 / torch.sum(col_var * n_total_samples.item())
