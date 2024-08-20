@@ -555,13 +555,14 @@ class BayesGeomOpt:
         """
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         params = [bo_history[key]['param'] for key in bo_history.keys()]
-        fig, ax = plt.subplots(1, 2)
+        fig, ax = plt.subplots(1, 2, constrained_layout=True, figsize=(12, 6))
         poni1_range = np.linspace(-0.01, 0.01, 51)
         poni2_range = np.linspace(-0.01, 0.01, 51)
         cy, cx = np.meshgrid(poni1_range, poni2_range)
         ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu')
         ax[0].set_xlabel('Poni1')
         ax[0].set_ylabel('Poni2')
+        ax[0].set_aspect('equal')
         ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
         ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
         best_param = params[best_idx]
@@ -571,9 +572,11 @@ class BayesGeomOpt:
         ax[1].set_xticks(np.arange(len(scores)))
         ax[1].set_xlabel('Iteration')
         ax[1].set_ylabel('Score')
+        ax[1].set_aspect('auto')
         ax[1].set_title('Convergence Plot')
         ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
         ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
+        fig.tight_layout()
         fig.savefig(plot)
 
 class HookeJeevesGeomOpt:
