@@ -538,7 +538,7 @@ class BayesGeomOpt:
         best_score = -y[best_idx]
         return bo_history, best_idx
 
-    def grid_search_convergence_plot(bo_history, best_idx, grid_search, plot):
+    def grid_search_convergence_plot(self, bo_history, best_idx, grid_search, plot):
         """
         Returns an animation of the Bayesian Optimization iterations on the grid search space
 
@@ -567,13 +567,13 @@ class BayesGeomOpt:
         best_param = params[best_idx]
         ax[0].scatter(best_param[1], best_param[2], c='red', s=100, label='best', alpha=0.3)
         ax[0].legend()
-        ax[0].set_aspect('equal')
         ax[1].plot(scores)
         ax[1].set_xticks(np.arange(len(scores)))
         ax[1].set_xlabel('Iteration')
         ax[1].set_ylabel('Score')
         ax[1].set_title('Convergence Plot')
         ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
+        ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
         fig.savefig(plot)
 
 class HookeJeevesGeomOpt:
