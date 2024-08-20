@@ -254,7 +254,8 @@ def bayes_pyFAI_geom(config):
         conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
         det = conv.detector
         det.set_pixel_corners(conv.corner_array)
-        geom_opt = BayesGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, Imin=task.Imin)
+        fix = ['rot1', 'rot2', 'rot3']
+        geom_opt = BayesGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, fix=fix, Imin=task.Imin)
         powder = task.get("powder")
         task.dist = tuple([float(elem) for elem in task.dist.split()])
         task.poni = tuple([float(elem) for elem in task.poni.split()])
