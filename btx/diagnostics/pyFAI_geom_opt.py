@@ -535,8 +535,13 @@ class BayesGeomOpt:
         
         best_idx = np.argmax(y)
         best_param = X_samples[best_idx]
-        best_score = -y[best_idx]
-        return bo_history, best_idx
+        dist, poni1, poni2, rot1, rot2, rot3 = best_param
+        geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+        sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
+        best_score = sg.geometry_refinement.refine3(fix=fix)
+        self.dist, self.poni1, self.poni2, self.rot1, self.rot2, self.rot3 = sg.geometry_refinement.param
+        return bo_history, best_idx, best_score
 
     def grid_search_convergence_plot(self, bo_history, best_idx, grid_search, plot):
         """
@@ -569,9 +574,10 @@ class BayesGeomOpt:
         ax[0].scatter(best_param[1], best_param[2], c='red', s=100, label='best', alpha=0.3)
         ax[0].legend()
         ax[1].plot(scores)
-        ax[1].set_xticks(np.arange(len(scores)))
+        ax[1].set_xticks(np.arange(len(scores), step=5))
         ax[1].set_xlabel('Iteration')
         ax[1].set_ylabel('Score')
+        ax[1].set_yscale('log')
         ax[1].set_aspect('auto')
         ax[1].set_title('Convergence Plot')
         ax[1].axvline(x=best_idx, color='red', linestyle='dashed')

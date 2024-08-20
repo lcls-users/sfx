@@ -219,7 +219,7 @@ def grid_search_pyFAI_geom(config):
         det.set_pixel_corners(conv.corner_array)
         geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, Imin=task.Imin)
         powder = task.get("powder")
-        bounds = {'poni1':(-0.01, 0.01, 41), 'poni2':(-0.01, 0.01, 41)}
+        bounds = {'poni1':(-0.01, 0.01, 51), 'poni2':(-0.01, 0.01, 51)}
         dist = task.distance
         cx, cy, y = geom_opt.grid_search_geom_opt(
             powder=powder,
@@ -263,7 +263,7 @@ def bayes_pyFAI_geom(config):
         fix = ['wavelength']
         n_samples = task.get("n_samples")
         num_iterations = task.get("num_iterations")
-        bo_history, best_idx = geom_opt.bayesian_geom_opt(
+        bo_history, best_idx, best_score = geom_opt.bayesian_geom_opt(
             powder=powder,
             fix=fix,
             bounds=bounds,
@@ -271,6 +271,14 @@ def bayes_pyFAI_geom(config):
             n_samples=n_samples,
             num_iterations=num_iterations,
         )
+        logger.info(f"Refined PONI distance in m: {geom_opt.dist}")
+        logger.info(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
+        logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
+        Xc = geom_opt.poni1+geom_opt.dist*(np.tan(geom_opt.rot2)/np.cos(geom_opt.rot1))
+        Yc = geom_opt.poni2-geom_opt.dist*(np.tan(geom_opt.rot1))
+        Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
+        logger.info(f"Refined detector distance in m: {Zc:.2e}")
+        logger.info(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
         grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/r{setup.run:04}/scores_xy.npy"))
         current_time = datetime.datetime.now()
         time_str = current_time.strftime("%Y%m%d_%H%M%S")
