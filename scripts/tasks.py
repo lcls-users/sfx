@@ -271,17 +271,11 @@ def bayes_pyFAI_geom(config):
             n_samples=n_samples,
             num_iterations=num_iterations,
         )
-        print("checkpoint 1")
         grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/r{setup.run:04}/scores_xy.npy"))
-        print("checkpoint 2")
         current_time = datetime.datetime.now()
-        print("checkpoint 3")
         time_str = current_time.strftime("%Y%m%d_%H%M%S")
-        print("checkpoint 4")
         plot = os.path.join(setup.root_dir, f"figs/{time_str}_bayes_opt_geom_r{setup.run:04}.png")
-        print("checkpoint 5")
         geom_opt.grid_search_convergence_plot(bo_history, best_idx, grid_search, plot)
-        print("checkpoint 6")
         logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 

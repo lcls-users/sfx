@@ -574,7 +574,7 @@ class BayesGeomOpt:
         ax[1].set_ylabel('Score')
         ax[1].set_title('Convergence Plot')
         ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
-        plt.savefig(plot)
+        fig.savefig(plot)
 
 class HookeJeevesGeomOpt:
     """
