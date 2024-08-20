@@ -231,6 +231,54 @@ def grid_search_pyFAI_geom(config):
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
 
+def bayes_pyFAI_geom(config):
+    from btx.diagnostics.pyFAI_geom_opt import BayesGeomOpt
+    from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
+    from btx.misc.shortcuts import TaskTimer
+    import datetime
+
+    setup = config.setup
+    task = config.bayes_pyFAI_geom
+    task_durations = dict({})
+    """ Grid search for geometry. """
+    with TaskTimer(task_durations, "total duration"):
+        taskdir = os.path.join(setup.root_dir, "bayes_opt")
+        os.makedirs(taskdir, exist_ok=True)
+        geomfile = task.get("geomfile")
+        if geomfile != '':
+            logger.info(f"Using {geomfile} as input geometry")
+        else:
+            logger.info(f"No geometry files provided: using calibration data as input geometry")
+            geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
+        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
+        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
+        det = conv.detector
+        det.set_pixel_corners(conv.corner_array)
+        geom_opt = BayesGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, Imin=task.Imin)
+        powder = task.get("powder")
+        task.dist = tuple([float(elem) for elem in task.dist.split()])
+        task.poni = tuple([float(elem) for elem in task.poni.split()])
+        bounds = {'dist':(task.dist[0], task.dist[1], task.dist[2]), 'poni1':(task.poni[0], task.poni[1], task.poni[2]), 'poni2':(task.poni[0], task.poni[1], task.poni[2])}
+        fix = task.get("fix")
+        n_samples = task.get("n_samples")
+        num_iterations = task.get("num_iterations")
+        bo_history, best_idx = geom_opt.bayesian_geom_opt(
+            powder=powder,
+            fix=fix,
+            bounds=bounds,
+            mask=None,
+            n_samples=n_samples,
+            num_iterations=num_iterations,
+        )
+        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/run{setup.run:01}/scores_xy.npy"))
+        current_time = datetime.datetime.now()
+        time_str = current_time.strftime("%Y%m%d_%H%M%S")
+        plot = os.path.join(taskdir, f"figs/{time_str}_bayes_opt_geom_r{setup.run:04}.png")
+        geom_opt.grid_search_convergence_plot(bo_history, best_idx, grid_search, plot)
+        logger.debug("Done!")
+    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
+
+
 def grid_search_geom(config):
     from btx.misc.shortcuts import fetch_latest
     from btx.diagnostics.run import RunDiagnostics

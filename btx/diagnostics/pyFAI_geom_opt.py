@@ -536,25 +536,9 @@ class BayesGeomOpt:
         best_idx = np.argmax(y)
         best_param = X_samples[best_idx]
         best_score = -y[best_idx]
-        return bo_history, best_param, best_score
-    
-    def convergence_plot(bo_history):
-        """
-        Plot the convergence of the objective function over time
+        return bo_history, best_idx
 
-        Parameters
-        ----------
-        bo_history : dict
-            Dictionary containing the history of optimization
-        """
-        scores = [bo_history[key]['score'] for key in bo_history.keys()]
-        plt.plot(scores)
-        plt.xlabel('Iteration')
-        plt.ylabel('Score')
-        plt.title('Convergence Plot')
-        plt.show()
-
-    def grid_search_convergence_plot(bo_history, best_param, grid_search):
+    def grid_search_convergence_plot(bo_history, best_idx, grid_search, plot):
         """
         Returns an animation of the Bayesian Optimization iterations on the grid search space
 
@@ -562,20 +546,35 @@ class BayesGeomOpt:
         ----------
         bo_history : dict
             Dictionary containing the history of optimization
+        best_param : np.ndarray
+            Best parameters found
         grid_search : np.ndarray
             Grid search space
+        plot : str
+            Path to save plot
         """
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         params = [bo_history[key]['param'] for key in bo_history.keys()]
-        fig, ax = plt.subplots()
-        ax.imshow(grid_search, cmap='RdBu', origin='lower')
-        ax.set_xlabel('Poni2')
-        ax.set_ylabel('Poni1')
-        ax.set_title('Bayesian Optimization Convergence on Grid Search Space')
-        ax.scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='plasma')
-        ax.scatter(best_param[1], best_param[2], c='red', label='Best Parameter', s=3)
-        ax.legend()
-        plt.show()
+        fig, ax = plt.subplots(1, 2)
+        poni1_range = np.linspace(-0.01, 0.01, 51)
+        poni2_range = np.linspace(-0.01, 0.01, 51)
+        cy, cx = np.meshgrid(poni1_range, poni2_range)
+        ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu')
+        ax[0].set_xlabel('Poni1')
+        ax[0].set_ylabel('Poni2')
+        ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
+        ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
+        best_param = params[best_idx]
+        ax[0].scatter(best_param[1], best_param[2], c='red', s=100, label='best', alpha=0.3)
+        ax[0].legend()
+        ax[0].set_aspect('equal')
+        ax[1].plot(scores)
+        ax[1].set_xticks(np.arange(len(scores)))
+        ax[1].set_xlabel('Iteration')
+        ax[1].set_ylabel('Score')
+        ax[1].set_title('Convergence Plot')
+        ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
+        plt.savefig(plot)
 
 class HookeJeevesGeomOpt:
     """
