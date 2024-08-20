@@ -259,7 +259,7 @@ def bayes_pyFAI_geom(config):
         task.dist = tuple([float(elem) for elem in task.dist.split()])
         task.poni = tuple([float(elem) for elem in task.poni.split()])
         bounds = {'dist':(task.dist[0], task.dist[1], task.dist[2]), 'poni1':(task.poni[0], task.poni[1], task.poni[2]), 'poni2':(task.poni[0], task.poni[1], task.poni[2])}
-        fix = task.get("fix")
+        fix = ['wavelength']
         n_samples = task.get("n_samples")
         num_iterations = task.get("num_iterations")
         bo_history, best_idx = geom_opt.bayesian_geom_opt(
@@ -270,7 +270,7 @@ def bayes_pyFAI_geom(config):
             n_samples=n_samples,
             num_iterations=num_iterations,
         )
-        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/run{setup.run:01}/scores_xy.npy"))
+        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/r{setup.run:04}/scores_xy.npy"))
         current_time = datetime.datetime.now()
         time_str = current_time.strftime("%Y%m%d_%H%M%S")
         plot = os.path.join(taskdir, f"figs/{time_str}_bayes_opt_geom_r{setup.run:04}.png")
