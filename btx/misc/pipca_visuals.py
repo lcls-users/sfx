@@ -304,7 +304,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         
         layout_combined = layout + layout_pca
     
-    layout_combined
+    layout_combined.cols(nb_eigenimages)
 
     if compute_diff and classic_pca_test:
         list_norm_diff = []
