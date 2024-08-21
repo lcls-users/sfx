@@ -259,7 +259,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     for k in range(nb_eigenimages):
         eigenimages = []
         for rank in range(len(V)):
-            eigenimage = V[rank].T[k]
+            eigenimage = V[rank].T[k]/np.linalg.norm(V[rank].T[k], 'fro')
             eigenimage = eigenimage.reshape((int(a/len(S)), b, c))
             eigenimages.append(eigenimage)
         eigenimages = np.concatenate(eigenimages, axis=0)
@@ -273,7 +273,8 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         heatmaps.append(heatmap)
     
     layout = hv.Layout(heatmaps).cols(nb_eigenimages)
-
+    print('PyPCA done')
+    
     if classic_pca_test:
         heatmaps_pca = []
         imgs = psi.get_images(num_images,assemble=False)
@@ -287,7 +288,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         V = pca.components_
 
         for k in range(nb_eigenimages):
-            eigenimages = V[k]
+            eigenimages = V[k]/np.linalg.norm(V[k], 'fro')
             eigenimages = eigenimages.reshape((a,b,c))
             eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
             hm_data = construct_heatmap_data(eigenimages, num_pixels)
@@ -298,7 +299,8 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
             heatmaps_pca.append(heatmap)
         
         layout_pca = hv.Layout(heatmaps_pca).cols(nb_eigenimages)
-
+        print('PCA done')
+        
         layout_combined = layout + layout_pca
     
     layout_combined
@@ -306,8 +308,12 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     if compute_diff and classic_pca_test:
         list_norm_diff = []
         for k in range(nb_eigenimages):
+            eigen_images_pypca[k] = eigen_images_pypca[k]/np.linalg.norm(eigen_images_pypca[k], 'fro')
+            V[k] = V[k]/np.linalg.norm(V[k], 'fro')
+            print('Computing loss for eigenimage : ',k)
             diff = np.abs(eigen_images_pypca[k]) - np.abs(V[k].reshape((a,b,c)))
-            norm_diff = np.linalg.norm(diff, 'fro') / np.linalg.norm(V[k].reshape((a,b,c)), 'fro') * 100
+            diff = diff.reshape(1,-1)
+            norm_diff = np.linalg.norm(diff, 'fro') / np.linalg.norm(V[k].reshape(1,-1), 'fro') * 100
             list_norm_diff.append(norm_diff)
         print(list_norm_diff)
         
