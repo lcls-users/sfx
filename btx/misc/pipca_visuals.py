@@ -259,7 +259,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     for k in range(nb_eigenimages):
         eigenimages = []
         for rank in range(len(V)):
-            eigenimage = V[rank].T[k]
+            eigenimage = V[rank].T[k]/np.linalg.norm(V[rank].T[k].reshape(1,-1), 'fro')
             eigenimage = eigenimage.reshape((int(a/len(S)), b, c))
             eigenimages.append(eigenimage)
         eigenimages = np.concatenate(eigenimages, axis=0)
@@ -288,7 +288,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         V = pca.components_
 
         for k in range(nb_eigenimages):
-            eigenimages = V[k]
+            eigenimages = V[k]/np.linalg.norm(V[k].reshape(1,-1), 'fro')
             eigenimages = eigenimages.reshape((a,b,c))
             eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
             hm_data = construct_heatmap_data(eigenimages, num_pixels)
