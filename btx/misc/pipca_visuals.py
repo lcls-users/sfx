@@ -287,7 +287,10 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         pca = PCA(n_components=num_components+1)
         pca.fit(imgs.reshape(imgs.shape[0], -1))
         V = pca.components_
-
+        ###
+        V = V + pca.mean_
+        print(pca.mean_)
+        
         for k in range(nb_eigenimages):
             eigenimages = V[k]/np.linalg.norm(V[k].reshape(1,-1), 'fro')
             eigenimages = eigenimages.reshape((a,b,c))
