@@ -560,7 +560,7 @@ class BayesGeomOpt:
         """
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         params = [bo_history[key]['param'] for key in bo_history.keys()]
-        fig, ax = plt.subplots(1, 2, constrained_layout=True, figsize=(12, 6))
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
         poni1_range = np.linspace(-0.01, 0.01, 51)
         poni2_range = np.linspace(-0.01, 0.01, 51)
         cy, cx = np.meshgrid(poni1_range, poni2_range)

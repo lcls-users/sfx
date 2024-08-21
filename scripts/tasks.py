@@ -242,8 +242,6 @@ def bayes_pyFAI_geom(config):
     task_durations = dict({})
     """ Grid search for geometry. """
     with TaskTimer(task_durations, "total duration"):
-        taskdir = os.path.join(setup.root_dir, "bayes_opt")
-        os.makedirs(taskdir, exist_ok=True)
         geomfile = task.get("geomfile")
         if geomfile != '':
             logger.info(f"Using {geomfile} as input geometry")
