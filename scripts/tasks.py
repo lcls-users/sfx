@@ -282,7 +282,7 @@ def bayes_pyFAI_geom(config):
         grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/r{setup.run:04}/scores_xy.npy"))
         current_time = datetime.datetime.now()
         time_str = current_time.strftime("%Y%m%d_%H%M%S")
-        plot = os.path.join(setup.root_dir, f"figs/{time_str}_bayes_opt_geom_r{setup.run:04}.png")
+        plot = os.path.join(setup.root_dir, f"figs/bayes_opt/{time_str}_bayes_opt_geom_r{setup.run:04}.png")
         geom_opt.grid_search_convergence_plot(bo_history, best_idx, grid_search, plot)
         logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
