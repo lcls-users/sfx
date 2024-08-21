@@ -261,6 +261,7 @@ def bayes_pyFAI_geom(config):
         fix = ['wavelength']
         n_samples = task.get("n_samples")
         num_iterations = task.get("num_iterations")
+        seed = task.get("seed")
         bo_history, best_idx, best_score = geom_opt.bayesian_geom_opt(
             powder=powder,
             fix=fix,
@@ -268,6 +269,7 @@ def bayes_pyFAI_geom(config):
             mask=None,
             n_samples=n_samples,
             num_iterations=num_iterations,
+            seed=seed,
         )
         logger.info(f"Refined PONI distance in m: {geom_opt.dist}")
         logger.info(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
