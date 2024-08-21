@@ -317,7 +317,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
             print('Computing loss for eigenimage : ',k)
             diff = np.abs(eigen_images_pypca[k]) - np.abs(V[k].reshape((a,b,c)))
             diff = diff.reshape(1,-1)
-            norm_diff = np.linalg.norm(diff, 'fro') * 100
+            norm_diff = np.linalg.norm(diff, 'fro') * 100 / np.linalg.norm(eigen_images_pypca[k].reshape(-1,1), 'fro')
             list_norm_diff.append(norm_diff)
         print(list_norm_diff)
         
