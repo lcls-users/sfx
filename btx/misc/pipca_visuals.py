@@ -259,7 +259,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     for k in range(nb_eigenimages):
         eigenimages = []
         for rank in range(len(V)):
-            eigenimage = V[rank].T[k]/np.linalg.norm(V[rank].T[k].reshape(1,-1), 'fro')
+            eigenimage = V[rank].T[k]
             eigenimage = eigenimage.reshape((int(a/len(S)), b, c))
             eigenimages.append(eigenimage)
         eigenimages = np.concatenate(eigenimages, axis=0)
