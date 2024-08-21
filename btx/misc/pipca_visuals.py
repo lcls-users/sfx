@@ -264,7 +264,6 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
             eigenimages.append(eigenimage)
         eigenimages = np.concatenate(eigenimages, axis=0)
         eigenimages = eigenimages/np.linalg.norm(eigenimages.reshape(-1,1), 'fro')
-        eigenimages = eigenimages/max(eigenimages.max(),-eigenimages.min())
         eigen_images_pypca.append(eigenimages)
         eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
         hm_data = construct_heatmap_data(eigenimages, num_pixels)
@@ -313,7 +312,6 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         for k in range(nb_eigenimages):
             eigen_images_pypca[k] = eigen_images_pypca[k]/np.linalg.norm(eigen_images_pypca[k].reshape(-1,1), 'fro')
             V[k] = V[k]/np.linalg.norm(V[k].reshape(1,-1), 'fro')
-            V[k] = V[k]/max(V[k].max(),-V[k].min())
             print('Computing loss for eigenimage : ',k)
             diff = np.abs(eigen_images_pypca[k]) - np.abs(V[k].reshape((a,b,c)))
             diff = diff.reshape(1,-1)
