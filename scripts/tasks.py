@@ -226,7 +226,7 @@ def grid_search_pyFAI_geom(config):
             bounds=bounds,
             dist=dist,
         )
-        np.save(os.path.join(taskdir, f"grid_search_geom_r{setup.run:04}.npy"), y)
+        np.save(os.path.join(taskdir, f"grid_search_{os.path.basename(powder)}.npy"), y)
         logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
