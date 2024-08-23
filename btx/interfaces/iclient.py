@@ -491,6 +491,14 @@ if __name__ == "__main__":
                 all_losses.append(np.sqrt(d)/np.sqrt(i))
             all_losses = np.concatenate(all_losses, axis=0)
 
+            if training_percentage <1:
+                training_loss = np.mean(all_losses[:num_training_images])
+                testing_loss = np.mean(all_losses[num_training_images:])
+                print("=====================================\n",flush=True)
+                print("Global computation of the average training loss (in %): ",training_loss,flush=True)
+                print("Global computation of the average testing loss (in %): ",testing_loss,flush=True)
+                print("=====================================\n",flush=True)
+                
             ## Optional for anomaly detection
             """threshold = 10 # in %
             for k in range(len(all_losses)):
@@ -506,7 +514,7 @@ if __name__ == "__main__":
             
             print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
             print("=====================================\n",flush=True)
-            print("Global-Averaged loss (in %) :",np.mean(average_losses)*100)
+            print("Panel-Averaged loss (in %) :",np.mean(average_losses)*100)
             print("\n=====================================",flush=True)
 
 
