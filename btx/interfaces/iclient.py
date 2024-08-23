@@ -338,39 +338,33 @@ if __name__ == "__main__":
                 dataloader_iter = iter(dataloader)
 
                 for batch in dataloader_iter:
-                    if event + len(current_loading_batch) >= num_training_images + start_offset :#and current_loading_batch != []:
+                    if event + len(current_loading_batch) > num_training_images + start_offset and current_loading_batch != []:
                         last_batch = True
                         break
                     current_loading_batch.append(batch)
 
                 intermediate_time = time.time()
                 l_time += intermediate_time-beginning_time
-                
-                if current_loading_batch != []:
-                    logging.info(f"Loaded {event+loading_batch_size} images.")
-                    current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                    #Remove None images
-                    current_len = current_loading_batch.shape[0]
-                    current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
-                    logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
-                    #Apply the smoothing function
-                    current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
+                logging.info(f"Loaded {event+loading_batch_size} images.")
+                current_loading_batch = np.concatenate(current_loading_batch, axis=0)
+                #Remove None images
+                current_len = current_loading_batch.shape[0]
+                current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
-                    #Split the images into batches for each GPU
-                    current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+                logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
+                #Apply the smoothing function
+                current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
 
-                    shape = current_loading_batch[0].shape
-                    dtype = current_loading_batch[0].dtype
+                #Split the images into batches for each GPU
+                current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
 
-                    #Create shared memory for each batch
-                    shm_list = create_shared_images(current_loading_batch)
+                shape = current_loading_batch[0].shape
+                dtype = current_loading_batch[0].dtype
 
-                else:
-                    shape = None
-                    dtype = None
-                    shm_list = None
-    
+                #Create shared memory for each batch
+                shm_list = create_shared_images(current_loading_batch)
+
                 device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
                 intermediate_time2 = time.time()
@@ -501,6 +495,7 @@ if __name__ == "__main__":
                 training_loss = np.mean(all_losses[:num_training_images])
                 testing_loss = np.mean(all_losses[num_training_images:])
                 print("=====================================\n",flush=True)
+                print("Number of training images: ",num_training_images,flush=True)
                 print("Global computation of the average training loss (in %): ",training_loss*100,flush=True)
                 print("Global computation of the average testing loss (in %): ",testing_loss*100,flush=True)
                 print("=====================================\n",flush=True)
