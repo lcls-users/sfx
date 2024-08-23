@@ -366,7 +366,12 @@ if __name__ == "__main__":
                     #Create shared memory for each batch
                     shm_list = create_shared_images(current_loading_batch)
 
-                    device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+                else:
+                    shape = None
+                    dtype = None
+                    shm_list = None
+    
+                device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
                 intermediate_time2 = time.time()
                 t_time += intermediate_time2-intermediate_time

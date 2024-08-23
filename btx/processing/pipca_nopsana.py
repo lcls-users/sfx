@@ -297,36 +297,37 @@ class iPCA_Pytorch_without_Psana:
         with TaskTimer(self.task_durations, "Initializing model"):
             ipca = IncrementalPCAonGPU(n_components = self.num_components, batch_size = self.batch_size, device = device, ipca_state_dict = ipca_state_dict)
 
-        with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
-            existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
-            images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
-            self.images = images
+        if self.shm is not None:
+            with TaskTimer(self.task_durations, f"GPU {rank}: Loading images"):
+                existing_shm = shared_memory.SharedMemory(name=self.shm[rank].name)
+                images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
+                self.images = images
 
-        self.num_images = self.images.shape[0]
+            self.num_images = self.images.shape[0]
 
-        with TaskTimer(self.task_durations, "Fitting model"):
-            st = time.time()
-            ipca.fit(self.images.reshape(self.num_images, -1)) ##va falloir faire gaffe au training ratio
-            et = time.time()
-            print(f"GPU {rank}: Model fitted in {et-st} seconds",flush=True)
+            with TaskTimer(self.task_durations, "Fitting model"):
+                st = time.time()
+                ipca.fit(self.images.reshape(self.num_images, -1)) ##va falloir faire gaffe au training ratio
+                et = time.time()
+                print(f"GPU {rank}: Model fitted in {et-st} seconds",flush=True)
 
-        if not last_batch:
+            if not last_batch:
+                existing_shm.close()
+                existing_shm.unlink()
+                self.shm = None
+                self.images = None
+                current_ipca_state_dict = ipca.save_ipca()
+                current_algo_state_dict = self.save_state()
+                for key, value in current_algo_state_dict.items():
+                    algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
+                for key, value in current_ipca_state_dict.items():
+                    ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
+                torch.cuda.empty_cache()
+                gc.collect()
+                return None
+        
             existing_shm.close()
             existing_shm.unlink()
-            self.shm = None
-            self.images = None
-            current_ipca_state_dict = ipca.save_ipca()
-            current_algo_state_dict = self.save_state()
-            for key, value in current_algo_state_dict.items():
-                algo_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
-            for key, value in current_ipca_state_dict.items():
-                ipca_state_dict[key] = value.cpu().clone() if torch.is_tensor(value) else value
-            torch.cuda.empty_cache()
-            gc.collect()
-            return None
-    
-        existing_shm.close()
-        existing_shm.unlink()
         current_ipca_state_dict = ipca.save_ipca()
         current_algo_state_dict = self.save_state()
         for key, value in current_algo_state_dict.items():
