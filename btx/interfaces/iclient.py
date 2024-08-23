@@ -492,12 +492,12 @@ if __name__ == "__main__":
             all_losses = np.concatenate(all_losses, axis=0)
 
             if training_percentage <1:
-                training_loss = np.mean(all_losses[:num_training_images])
-                testing_loss = np.mean(all_losses[num_training_images:])
+                training_loss = (min(all_losses[:num_training_images])*100,np.mean(all_losses[:num_training_images])*100,max(all_losses[:num_training_images])*100)
+                testing_loss = (min(all_losses[num_training_images:])*100,np.mean(all_losses[num_training_images:])*100,max(all_losses[num_training_images:])*100)
                 print("=====================================\n",flush=True)
                 print("Number of training images: ",num_training_images,flush=True)
-                print("Global computation of the average training loss (in %): ",training_loss*100,flush=True)
-                print("Global computation of the average testing loss (in %): ",testing_loss*100,flush=True)
+                print("Global computation of the average training loss (in %): ",training_loss,flush=True)
+                print("Global computation of the average testing loss (in %): ",testing_loss,flush=True)
                 print("=====================================\n",flush=True)
 
             ## Optional for anomaly detection
