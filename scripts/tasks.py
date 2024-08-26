@@ -219,7 +219,7 @@ def grid_search_pyFAI_geom(config):
         det.set_pixel_corners(conv.corner_array)
         geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, Imin=task.Imin)
         powder = task.get("powder")
-        bounds = {'poni1':(-0.1, 0.1, 51), 'poni2':(-0.1, 0.1, 51)}
+        bounds = {'poni1':(-0.01, 0.01, 51), 'poni2':(-0.01, 0.01, 51)}
         dist = task.distance
         cx, cy, y = geom_opt.grid_search_geom_opt(
             powder=powder,
