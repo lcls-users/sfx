@@ -493,7 +493,7 @@ class BayesGeomOpt:
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             if len(sg.geometry_refinement.data) == 0:
-                score = np.inf
+                score = 0
             else:
                 score = sg.geometry_refinement.refine3(fix=fix)
             y[i] = -score
