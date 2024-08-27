@@ -516,7 +516,7 @@ class BayesGeomOpt:
             af = self.probability_of_improvement
 
         print("Starting Bayesian optimization...")
-        for i in range(num_iterations):
+        for i in tqdm(range(num_iterations)):
             print(f"Iteration {i+1}...")
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
             af_values = af(X_norm, gp_model, beta)
@@ -646,7 +646,6 @@ class HookeJeevesGeomOpt:
         self,
         powder,
         fix,
-        bounds=None,
         mask=None,
         step_size=0.01,
         tol=0.00001, 
@@ -694,6 +693,12 @@ class HookeJeevesGeomOpt:
         wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
+        
+        print("Setting minimal intensity...")
+        if type(self.Imin) == str:
+            Imin = np.max(powder_img) * 0.01
+        else:
+            Imin = self.Imin * photon_energy
 
         hjo_history = {}
         dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
@@ -720,10 +725,9 @@ class HookeJeevesGeomOpt:
                 dist, poni1, poni2, rot1, rot2, rot3 = neighbour
                 geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
                 sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
+                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
                 score = sg.geometry_refinement.refine3(fix=fix)
                 scores.append(score)
-                new_params = sg.geometry_refinement.param
             best_idx = np.argmin(scores)
             if best_idx == 0:
                 step_size /= 10
@@ -731,8 +735,58 @@ class HookeJeevesGeomOpt:
             else:
                 x = neighbours[best_idx]
                 i += 1
-                hjo_history[f'iteration_{i+1}'] = {'param':x, 'optim': sg.geometry_refinement.param, 'score': scores[best_idx]}
-        return hjo_history, x, scores[best_idx]
+                hjo_history[f'iteration_{i+1}'] = {'param':x, 'score': scores[best_idx]}
+
+            dist, poni1, poni2, rot1, rot2, rot3 = x
+            best_idx = np.argmin(scores)
+            geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+            sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
+            best_score = sg.geometry_refinement.refine3(fix=fix)
+            self.dist, self.poni1, self.poni2, self.rot1, self.rot2, self.rot3 = sg.geometry_refinement.param
+        return hjo_history, best_idx, best_score
+    
+    def grid_search_convergence_plot(self, hj_history, best_idx, grid_search, plot):
+        """
+        Returns an animation of the Bayesian Optimization iterations on the grid search space
+
+        Parameters
+        ----------
+        bo_history : dict
+            Dictionary containing the history of optimization
+        best_param : np.ndarray
+            Best parameters found
+        grid_search : np.ndarray
+            Grid search space
+        plot : str
+            Path to save plot
+        """
+        scores = [hj_history[key]['score'] for key in hj_history.keys()]
+        params = [hj_history[key]['param'] for key in hj_history.keys()]
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        poni1_range = np.linspace(-0.01, 0.01, 51)
+        poni2_range = np.linspace(-0.01, 0.01, 51)
+        cy, cx = np.meshgrid(poni1_range, poni2_range)
+        ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu')
+        ax[0].set_xlabel('Poni1')
+        ax[0].set_ylabel('Poni2')
+        ax[0].set_aspect('equal')
+        ax[0].set_title('Hooke-Jeeves Search Convergence on Grid Search Space')
+        ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
+        best_param = params[best_idx]
+        ax[0].scatter(best_param[1], best_param[2], c='red', s=100, label='best', alpha=0.3)
+        ax[0].legend()
+        ax[1].plot(scores)
+        ax[1].set_xticks(np.arange(len(scores), step=5))
+        ax[1].set_xlabel('Iteration')
+        ax[1].set_ylabel('Score')
+        ax[1].set_yscale('log')
+        ax[1].set_aspect('auto')
+        ax[1].set_title('Convergence Plot')
+        ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
+        ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
+        fig.tight_layout()
+        fig.savefig(plot)
 
 class CrossEntropyGeomOpt:
     """
@@ -808,10 +862,6 @@ class CrossEntropyGeomOpt:
             Number of elite samples to keep in the population for each generation
         num_iterations : int
             Number of iterations for optimization
-        alpha : float
-            Learning rate for optimization
-        tol : float
-            Tolerance for convergence
         seed : int
             Random seed for reproducibility
         """
@@ -841,14 +891,19 @@ class CrossEntropyGeomOpt:
         wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
+
+        print("Setting minimal intensity...")
+        if type(self.Imin) == str:
+            Imin = np.max(powder_img) * 0.01
+        else:
+            Imin = self.Imin * photon_energy
         
         print("Setting geometry space...")
         print(f"Search space: {self.param_space}")
         ce_history = {}
-        dist, poni1, poni2, rot1, rot2, rot3 = self.default_value
         means = np.array([np.mean(bounds[param]) for param in self.param_space])
         cov = np.diag([np.std(bounds[param])**2 for param in self.param_space])
-        for i in range(num_iterations):
+        for i in tqdm(range(num_iterations)):
             print(f"Iteration {i+1}...")
             X = np.random.multivariate_normal(means, cov, n_samples)
             X_samples = X.copy()
@@ -861,18 +916,68 @@ class CrossEntropyGeomOpt:
                 dist, poni1, poni2, rot1, rot2, rot3 = X_samples[j]
                 geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
                 sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin*photon_energy)
+                sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
                 if len(sg.geometry_refinement.data) == 0:
                     score = np.inf
                 else:
                     score = sg.geometry_refinement.refine3(fix=fix)
                 scores.append(score)
+                ce_history[f'iteration_{i+1}_sample_{j+1}'] = {'param':X_samples[j], 'score': score}
             elite_idx = np.argsort(scores)[:m_elite]
             elite_samples = X[elite_idx]
             means = np.mean(elite_samples, axis=0)
             cov = np.cov(elite_samples.T)
-            ce_history[f'iteration_{i+1}'] = {'param':means, 'score': scores[elite_idx[0]]}
-        return ce_history, X_samples[elite_idx[0]], scores[elite_idx[0]]
+        best_idx = np.argmin([ce_history[key]['score'] for key in ce_history.keys()])
+        q, r = divmod(best_idx, num_iterations)
+        dist, poni1, poni2, rot1, rot2, rot3 = ce_history[f'iteration_{q+1}_sample_{r+1}']['param']
+        geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
+        sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
+        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
+        best_score = sg.geometry_refinement.refine3(fix=fix)
+        self.dist, self.poni1, self.poni2, self.rot1, self.rot2, self.rot3 = sg.geometry_refinement.param
+        return ce_history, best_idx, best_score
+    
+    def grid_search_convergence_plot(self, ce_history, best_idx, grid_search, plot):
+        """
+        Returns an animation of the Bayesian Optimization iterations on the grid search space
+
+        Parameters
+        ----------
+        bo_history : dict
+            Dictionary containing the history of optimization
+        best_param : np.ndarray
+            Best parameters found
+        grid_search : np.ndarray
+            Grid search space
+        plot : str
+            Path to save plot
+        """
+        scores = [ce_history[key]['score'] for key in ce_history.keys()]
+        params = [ce_history[key]['param'] for key in ce_history.keys()]
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        poni1_range = np.linspace(-0.01, 0.01, 51)
+        poni2_range = np.linspace(-0.01, 0.01, 51)
+        cy, cx = np.meshgrid(poni1_range, poni2_range)
+        ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu')
+        ax[0].set_xlabel('Poni1')
+        ax[0].set_ylabel('Poni2')
+        ax[0].set_aspect('equal')
+        ax[0].set_title('Cross Entropy Convergence on Grid Search Space')
+        ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
+        best_param = params[best_idx]
+        ax[0].scatter(best_param[1], best_param[2], c='red', s=100, label='best', alpha=0.3)
+        ax[0].legend()
+        ax[1].plot(scores)
+        ax[1].set_xticks(np.arange(len(scores), step=5))
+        ax[1].set_xlabel('Iteration')
+        ax[1].set_ylabel('Score')
+        ax[1].set_yscale('log')
+        ax[1].set_aspect('auto')
+        ax[1].set_title('Convergence Plot')
+        ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
+        ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
+        fig.tight_layout()
+        fig.savefig(plot)
 
 class SimulatedAnnealingGeomOpt:
     """

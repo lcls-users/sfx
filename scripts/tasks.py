@@ -236,7 +236,7 @@ def bayes_pyFAI_geom(config):
     from btx.diagnostics.pyFAI_geom_opt import BayesGeomOpt
     from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
     from btx.misc.shortcuts import TaskTimer
-    
+
     setup = config.setup
     task = config.bayes_pyFAI_geom
     task_durations = dict({})
@@ -281,6 +281,110 @@ def bayes_pyFAI_geom(config):
         logger.info(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
         grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/grid_search_calib_max_flat_{setup.run:04}_quad2.npy"))
         plot = os.path.join(setup.root_dir, f"figs/bayes_opt/bayes_opt_geom_r{setup.run:04}_seed_{seed}.png")
+        geom_opt.grid_search_convergence_plot(bo_history, best_idx, grid_search, plot)
+        logger.debug("Done!")
+    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
+
+
+def hooke_jeeves_pyFAI_geom(config):
+    from btx.diagnostics.pyFAI_geom_opt import HookeJeevesGeomOpt
+    from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
+    from btx.misc.shortcuts import TaskTimer
+
+    setup = config.setup
+    task = config.hooke_jeeves_pyFAI_geom
+    task_durations = dict({})
+    """ Grid search for geometry. """
+    with TaskTimer(task_durations, "total duration"):
+        geomfile = task.get("geomfile")
+        if geomfile != '':
+            logger.info(f"Using {geomfile} as input geometry")
+        else:
+            logger.info(f"No geometry files provided: using calibration data as input geometry")
+            geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
+        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
+        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
+        det = conv.detector
+        det.set_pixel_corners(conv.corner_array)
+        fix = ['rot1', 'rot2', 'rot3']
+        geom_opt = HookeJeevesGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, fix=fix, Imin=task.Imin)
+        powder = task.get("powder")
+        fix = ['wavelength']
+        step_size = task.get("step_size")
+        tol = task.get("tol")
+        bo_history, best_idx, best_score = geom_opt.hooke_jeeves_geom_opt(
+            powder=powder,
+            fix=fix,
+            mask=None,
+            step_size=step_size,
+            tol=tol,
+        )
+        logger.info(f"Refined PONI distance in m: {geom_opt.dist}")
+        logger.info(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
+        logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
+        Xc = geom_opt.poni1+geom_opt.dist*(np.tan(geom_opt.rot2)/np.cos(geom_opt.rot1))
+        Yc = geom_opt.poni2-geom_opt.dist*(np.tan(geom_opt.rot1))
+        Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
+        logger.info(f"Refined detector distance in m: {Zc:.2e}")
+        logger.info(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
+        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/grid_search_calib_max_flat_{setup.run:04}_quad2.npy"))
+        plot = os.path.join(setup.root_dir, f"figs/bayes_opt/bayes_opt_geom_r{setup.run:04}.png")
+        geom_opt.grid_search_convergence_plot(bo_history, best_idx, grid_search, plot)
+        logger.debug("Done!")
+    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
+
+
+def cross_entropy_pyFAI_geom(config):
+    from btx.diagnostics.pyFAI_geom_opt import CrossEntropyGeomOpt
+    from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
+    from btx.misc.shortcuts import TaskTimer
+
+    setup = config.setup
+    task = config.cross_entropy_pyFAI_geom
+    task_durations = dict({})
+    """ Grid search for geometry. """
+    with TaskTimer(task_durations, "total duration"):
+        geomfile = task.get("geomfile")
+        if geomfile != '':
+            logger.info(f"Using {geomfile} as input geometry")
+        else:
+            logger.info(f"No geometry files provided: using calibration data as input geometry")
+            geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
+        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
+        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
+        det = conv.detector
+        det.set_pixel_corners(conv.corner_array)
+        fix = ['rot1', 'rot2', 'rot3']
+        geom_opt = CrossEntropyGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, fix=fix, Imin=task.Imin)
+        powder = task.get("powder")
+        fix = ['wavelength']
+        task.dist = tuple([float(elem) for elem in task.dist.split()])
+        task.poni = tuple([float(elem) for elem in task.poni.split()])
+        bounds = {'dist':(task.dist[0], task.dist[1]), 'poni1':(task.poni[0], task.poni[1]), 'poni2':(task.poni[0], task.poni[1])}
+        n_samples = task.get("n_samples")
+        m_elite = task.get("m_elite")
+        num_iterations = task.get("num_iterations")
+        seed = task.get("seed")
+        bo_history, best_idx, best_score = geom_opt.cross_entropy_geom_opt(
+            powder=powder,
+            fix=fix,
+            mask=None,
+            bounds=bounds,
+            n_samples=n_samples,
+            m_elite=m_elite,
+            num_iterations=num_iterations,
+            seed=seed,
+        )
+        logger.info(f"Refined PONI distance in m: {geom_opt.dist}")
+        logger.info(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
+        logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
+        Xc = geom_opt.poni1+geom_opt.dist*(np.tan(geom_opt.rot2)/np.cos(geom_opt.rot1))
+        Yc = geom_opt.poni2-geom_opt.dist*(np.tan(geom_opt.rot1))
+        Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
+        logger.info(f"Refined detector distance in m: {Zc:.2e}")
+        logger.info(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
+        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/grid_search_calib_max_flat_{setup.run:04}_quad2.npy"))
+        plot = os.path.join(setup.root_dir, f"figs/bayes_opt/bayes_opt_geom_r{setup.run:04}.png")
         geom_opt.grid_search_convergence_plot(bo_history, best_idx, grid_search, plot)
         logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
