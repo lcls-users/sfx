@@ -280,7 +280,7 @@ def bayes_pyFAI_geom(config):
         Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
         logger.info(f"Refined detector distance in m: {Zc:.2e}")
         logger.info(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
-        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/r{setup.run:04}/scores_xy.npy"))
+        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/grid_search_calib_max_flat_{setup.run:04}_quad2.npy"))
         current_time = datetime.datetime.now()
         time_str = current_time.strftime("%Y%m%d_%H%M%S")
         plot = os.path.join(setup.root_dir, f"figs/bayes_opt/{time_str}_bayes_opt_geom_r{setup.run:04}.png")
