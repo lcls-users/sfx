@@ -220,7 +220,7 @@ def grid_search_pyFAI_geom(config):
         geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, Imin=task.Imin)
         powder = task.get("powder")
         task.poni = tuple([float(elem) for elem in task.poni.split()])
-        bounds = {'poni1':(task.poni[0], task.poni[1], task.poni[2]), 'poni2':(task.poni[0], task.poni[1], task.poni[2])}
+        bounds = {'poni1':(task.poni[0], task.poni[1], int(task.poni[2])), 'poni2':(task.poni[0], task.poni[1], int(task.poni[2]))}
         dist = task.distance
         cx, cy, y = geom_opt.grid_search_geom_opt(
             powder=powder,
