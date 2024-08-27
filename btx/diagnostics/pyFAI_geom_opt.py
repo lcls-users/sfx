@@ -557,7 +557,7 @@ class BayesGeomOpt:
         self.dist, self.poni1, self.poni2, self.rot1, self.rot2, self.rot3 = sg.geometry_refinement.param
         return bo_history, best_idx, best_score
 
-    def grid_search_convergence_plot(self, bo_history, best_idx, grid_search, plot):
+    def grid_search_convergence_plot(self, bo_history, bounds, best_idx, grid_search, plot):
         """
         Returns an animation of the Bayesian Optimization iterations on the grid search space
 
@@ -565,6 +565,8 @@ class BayesGeomOpt:
         ----------
         bo_history : dict
             Dictionary containing the history of optimization
+        bounds : dict
+            Dictionary of bounds for each parameter
         best_param : np.ndarray
             Best parameters found
         grid_search : np.ndarray
@@ -575,8 +577,8 @@ class BayesGeomOpt:
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         params = [bo_history[key]['param'] for key in bo_history.keys()]
         fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-        poni1_range = np.linspace(-0.01, 0.01, 51)
-        poni2_range = np.linspace(-0.01, 0.01, 51)
+        poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], bounds['poni1'][2])
+        poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], bounds['poni2'][2])
         cy, cx = np.meshgrid(poni1_range, poni2_range)
         ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu')
         ax[0].set_xlabel('Poni1')
