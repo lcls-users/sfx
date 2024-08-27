@@ -279,9 +279,10 @@ def bayes_pyFAI_geom(config):
         Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
         logger.info(f"Refined detector distance in m: {Zc:.2e}")
         logger.info(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
+        bounds = {'poni1':(task.poni[0], task.poni[1], 51), 'poni2':(task.poni[0], task.poni[1], 51)}
         grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/grid_search_{os.path.basename(powder)}"))
         plot = os.path.join(setup.root_dir, f"figs/bayes_opt/bayes_opt_geom_r{setup.run:04}_seed_{seed}.png")
-        geom_opt.grid_search_convergence_plot(bo_history, best_idx, grid_search, plot)
+        geom_opt.grid_search_convergence_plot(bo_history, bounds, best_idx, grid_search, plot)
         logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
