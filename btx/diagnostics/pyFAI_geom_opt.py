@@ -331,7 +331,7 @@ class GridSearchGeomOpt:
                         score = np.inf
                     else:
                         score = sg.geometry_refinement.refine3(fix=["wavelength"])
-                    y[i, j] = score
+                    y[i, j] = score + 1 / len(sg.geometry_refinement.data)
         return cx, cy, y
 
 class BayesGeomOpt:
