@@ -274,6 +274,7 @@ def bayes_pyFAI_geom(config):
         logger.info(f"Refined PONI distance in m: {geom_opt.dist}")
         logger.info(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
         logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
+        logger.info(f"Final score: {best_score}")
         Xc = geom_opt.poni1+geom_opt.dist*(np.tan(geom_opt.rot2)/np.cos(geom_opt.rot1))
         Yc = geom_opt.poni2-geom_opt.dist*(np.tan(geom_opt.rot1))
         Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
