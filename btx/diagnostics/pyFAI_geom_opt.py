@@ -493,10 +493,11 @@ class BayesGeomOpt:
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             if len(sg.geometry_refinement.data) == 0:
-                score = 0
+                score = np.finfo(np.float64).min
+                y[i] = score
             else:
                 score = sg.geometry_refinement.refine3(fix=fix)
-            y[i] = -score
+                y[i] = -score
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': score}
 
         kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
