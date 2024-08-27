@@ -493,9 +493,9 @@ class BayesGeomOpt:
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             if len(sg.geometry_refinement.data) == 0:
-                X_samples = np.delete(X_samples, i, axis=0)
-                i -= 1
                 print(f"Sample {i+1} failed, retrying...")
+                score = 1
+                y[i] = -score
             else:
                 score = sg.geometry_refinement.refine3(fix=fix)
                 y[i] = -score
@@ -534,13 +534,13 @@ class BayesGeomOpt:
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             if len(sg.geometry_refinement.data) == 0:
-                X_samples = np.delete(X_samples, i, axis=0)
-                i -= 1
-                print(f"Step {i+1} failed, retrying...")
+                print(f"Step {i+1} failed, no control points found, retrying...")
+                y = np.append(y, [-1], axis=0)
+                bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': 1}
             else:
                 score = sg.geometry_refinement.refine3(fix=fix)
                 y = np.append(y, [-score], axis=0)
-            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'optim': sg.geometry_refinement.param, 'score': score}
+                bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
 
