@@ -227,7 +227,7 @@ def grid_search_pyFAI_geom(config):
             bounds=bounds,
             dist=dist,
         )
-        np.save(os.path.join(taskdir, f"grid_search_{os.path.basename(powder)}"), y)
+        np.save(os.path.join(taskdir, f"grid_search_{os.path.basename(powder)}_ncp"), y)
         logger.debug("Done!")
     logger.warning(f"Total duration: {task_durations['total duration'][0]} seconds")
 
@@ -271,7 +271,7 @@ def bayes_pyFAI_geom(config):
             num_iterations=num_iterations,
             seed=seed,
         )
-        logger.warning(f"Refined PONI distance in m: {geom_opt.dist}")
+        logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")
         logger.warning(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
         logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
         logger.warning(f"Final score: {best_score}")
