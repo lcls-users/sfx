@@ -484,6 +484,7 @@ class BayesGeomOpt:
         X_samples = X[idx_samples]
         X_norm_samples = X_norm[idx_samples]
         y = np.zeros((n_samples))
+        normalization_factor = 0.3
 
         print("Initializing samples...")
         for i in range(n_samples):
@@ -501,9 +502,10 @@ class BayesGeomOpt:
 
         print("Standardizing initial score values...")
         y_norm = (y - np.mean(y)) / np.std(y)
+        y_norm /= normalization_factor
 
         print("Fitting Gaussian Process Regressor...")
-        kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
+        kernel = RBF(length_scale=normalization_factor, length_scale_bounds='fixed') \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
@@ -545,6 +547,7 @@ class BayesGeomOpt:
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
             y_norm = (y - np.mean(y)) / np.std(y)
+            y_norm /= normalization_factor
 
             # 4. Update the Gaussian Process Regressor
             gp_model.fit(X_norm_samples, y_norm)
