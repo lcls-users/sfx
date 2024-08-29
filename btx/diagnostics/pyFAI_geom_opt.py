@@ -493,12 +493,10 @@ class BayesGeomOpt:
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             if len(sg.geometry_refinement.data) == 0:
                 print(f"Sample {i+1} failed, retrying...")
-                score = 1
-                y[i] = -score
+                y[i] = -1
             else:
-                score = sg.geometry_refinement.refine3(fix=fix)
-                y[i] = -score
-            bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': score}
+                y[i] = -1/len(sg.geometry_refinement.data)
+            bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': -y[i]}
 
         kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
@@ -537,7 +535,7 @@ class BayesGeomOpt:
                 y = np.append(y, [-1], axis=0)
                 bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': 1}
             else:
-                score = sg.geometry_refinement.refine3(fix=fix)
+                score = 1/len(sg.geometry_refinement.data)
                 y = np.append(y, [-score], axis=0)
                 bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
@@ -552,9 +550,9 @@ class BayesGeomOpt:
         geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
         sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
-        best_score = sg.geometry_refinement.refine3(fix=fix)
+        residual = sg.geometry_refinement.refine3(fix=fix)
         self.dist, self.poni1, self.poni2, self.rot1, self.rot2, self.rot3 = sg.geometry_refinement.param
-        return bo_history, best_idx, best_score
+        return bo_history, best_idx, residual
 
     def grid_search_convergence_plot(self, bo_history, bounds, best_idx, grid_search, plot):
         """
