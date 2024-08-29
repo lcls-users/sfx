@@ -11,7 +11,7 @@ from btx.interfaces.ipsana import *
 from btx.diagnostics.run import RunDiagnostics
 from btx.misc.metrology import *
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel, ExpSineSquared
 from scipy.stats import norm
 from tqdm import tqdm
 
@@ -498,10 +498,10 @@ class BayesGeomOpt:
                 y[i] = -1/len(sg.geometry_refinement.data)
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': -y[i]}
 
-        kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
+        kernel = ExpSineSquared(length_scale=1, length_scale_bounds='fixed', periodicity=1, periodicity_bounds=(0.1, 10)) \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
-        gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=seed)
+        gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=seed, normalize_y=True)
         gp_model.fit(X_norm_samples, y)
         visited_idx = list(idx_samples.flatten())
 
