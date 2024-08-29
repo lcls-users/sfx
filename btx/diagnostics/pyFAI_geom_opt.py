@@ -484,7 +484,6 @@ class BayesGeomOpt:
         X_samples = X[idx_samples]
         X_norm_samples = X_norm[idx_samples]
         y = np.zeros((n_samples))
-        normalization_factor = 0.3
 
         print("Initializing samples...")
         for i in range(n_samples):
@@ -501,11 +500,10 @@ class BayesGeomOpt:
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': -y[i]}
 
         print("Standardizing initial score values...")
-        y_norm = (y - np.mean(y)) / np.std(y)
-        y_norm /= normalization_factor
+        y_norm = (y - np.mean(y)) / (np.max(y) - np.min(y))
 
         print("Fitting Gaussian Process Regressor...")
-        kernel = RBF(length_scale=normalization_factor, length_scale_bounds='fixed') \
+        kernel = RBF(length_scale=1, length_scale_bounds='fixed') \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
@@ -546,8 +544,7 @@ class BayesGeomOpt:
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': -score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
-            y_norm = (y - np.mean(y)) / np.std(y)
-            y_norm /= normalization_factor
+            y_norm = (y - np.mean(y)) / (np.max(y) - np.min(y))
 
             # 4. Update the Gaussian Process Regressor
             gp_model.fit(X_norm_samples, y_norm)
@@ -591,7 +588,7 @@ class BayesGeomOpt:
         ax[0].set_aspect('equal')
         ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
         ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
-        cbar = plt.colorbar(c, ax=ax[0])
+        cbar = plt.colorbar(c, ax=ax[0], aspect=40)
         cbar.set_label('Score', rotation=270, labelpad=15)
         best_param = params[best_idx]
         ax[0].scatter(best_param[1], best_param[2], c='white', s=100, label='best', alpha=0.3)
