@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 import pyFAI
 from pyFAI.calibrant import CalibrantFactory, CALIBRANT_FACTORY
 from pyFAI.goniometer import SingleGeometry
@@ -577,7 +578,7 @@ class BayesGeomOpt:
         poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], bounds['poni1'][2])
         poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], bounds['poni2'][2])
         cy, cx = np.meshgrid(poni1_range, poni2_range)
-        ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu')
+        ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu', norm=LogNorm())
         ax[0].set_xlabel('Poni1')
         ax[0].set_ylabel('Poni2')
         ax[0].set_aspect('equal')
