@@ -549,7 +549,7 @@ class BayesGeomOpt:
             # 4. Update the Gaussian Process Regressor
             gp_model.fit(X_norm_samples, y_norm)
         
-        best_idx = np.argmax(y)
+        best_idx = np.argmax(y_norm)
         best_param = X_samples[best_idx]
         dist, poni1, poni2, rot1, rot2, rot3 = best_param
         geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
@@ -588,10 +588,10 @@ class BayesGeomOpt:
         ax[0].set_aspect('equal')
         ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
         ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
-        cbar = fig.colorbar(c)
+        cbar = ax[0].colorbar(c)
         cbar.set_label('Score', rotation=270, labelpad=15)
         best_param = params[best_idx]
-        ax[0].scatter(best_param[1], best_param[2], c='red', s=100, label='best', alpha=0.3)
+        ax[0].scatter(best_param[1], best_param[2], c='white', s=100, label='best', alpha=0.3)
         ax[0].legend()
         ax[1].plot(scores)
         ax[1].set_xticks(np.arange(len(scores), step=5))
