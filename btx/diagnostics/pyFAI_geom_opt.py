@@ -499,11 +499,15 @@ class BayesGeomOpt:
                 y[i] = -1/len(sg.geometry_refinement.data)
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': -y[i]}
 
+        print("Standardizing initial score values...")
+        y_norm = (y - np.mean(y)) / np.std(y)
+
+        print("Fitting Gaussian Process Regressor...")
         kernel = RBF(length_scale=1, length_scale_bounds=(0.1, 10)) \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
-        gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=seed, normalize_y=True)
-        gp_model.fit(X_norm_samples, y)
+        gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
+        gp_model.fit(X_norm_samples, y_norm)
         visited_idx = list(idx_samples.flatten())
 
         if af == "ucb":
@@ -533,17 +537,17 @@ class BayesGeomOpt:
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             if len(sg.geometry_refinement.data) == 0:
                 print(f"Step {i+1} failed, no control points found, retrying...")
-                y = np.append(y, [-1], axis=0)
-                bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': 1}
+                score = -1
             else:
-                score = 1/len(sg.geometry_refinement.data)
-                y = np.append(y, [-score], axis=0)
-                bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
+                score = -1/len(sg.geometry_refinement.data)
+            y = np.append(y, [score], axis=0)
+            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': -score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
+            y_norm = (y - np.mean(y)) / np.std(y)
 
             # 4. Update the Gaussian Process Regressor
-            gp_model.fit(X_norm_samples, y)
+            gp_model.fit(X_norm_samples, y_norm)
         
         best_idx = np.argmax(y)
         best_param = X_samples[best_idx]
