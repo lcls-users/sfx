@@ -474,7 +474,7 @@ class BayesGeomOpt:
             if param in self.param_space:
                 print(f"Setting space for {param}...")
                 input_range[param] = np.arange(bounds[param][0], bounds[param][1]+bounds[param][2], bounds[param][2])
-                input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/(np.max(input_range[param])-np.min(input_range[param]))
+                input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/np.std(input_range[param])
             else:
                 input_range[param] = np.array([self.default_value[self.param_order.index(param)]])
         X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
@@ -500,7 +500,7 @@ class BayesGeomOpt:
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': -y[i]}
 
         print("Standardizing initial score values...")
-        y_norm = (y - np.mean(y)) / (np.max(y) - np.min(y))
+        y_norm = (y - np.mean(y)) / np.std(y)
 
         print("Fitting Gaussian Process Regressor...")
         kernel = RBF(length_scale=1, length_scale_bounds='fixed') \
@@ -544,7 +544,7 @@ class BayesGeomOpt:
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': -score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
-            y_norm = (y - np.mean(y)) / (np.max(y) - np.min(y))
+            y_norm = (y - np.mean(y)) / np.std(y)
 
             # 4. Update the Gaussian Process Regressor
             gp_model.fit(X_norm_samples, y_norm)
