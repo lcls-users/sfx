@@ -244,7 +244,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     S = data['S']
     V = data['V']
     num_components = S.shape[0]
-    
+    num_gpus = len(V)
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     counter = start_img
 
@@ -255,15 +255,15 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
 
     heatmaps=[]
     eigen_images_pypca = []
+    eigenimages_pca = []
 
     for k in range(nb_eigenimages):
         eigenimages = []
-        for rank in range(len(V)):
+        for rank in range(num_gpus):
             eigenimage = V[rank].T[k]
-            eigenimage = eigenimage.reshape((int(a/len(S)), b, c))
+            eigenimage = eigenimage.reshape((int(a/len(S)), b, c))/np.linalg.norm(eigenimage.reshape(-1,1), 'fro')
             eigenimages.append(eigenimage)
         eigenimages = np.concatenate(eigenimages, axis=0)
-        eigenimages = eigenimages/np.linalg.norm(eigenimages.reshape(-1,1), 'fro')
         eigen_images_pypca.append(eigenimages)
         eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
         hm_data = construct_heatmap_data(eigenimages, num_pixels)
@@ -284,14 +284,27 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         ]
         imgs = np.reshape(imgs, (imgs.shape[0], a,b,c))
         
-        pca = PCA(n_components=num_components+1)
-        pca.fit(imgs.reshape(imgs.shape[0], -1))
-        V = pca.components_
+        """pca = PCA(n_components=num_components+1)"""
+
+        ##
+        list_V = []
+        list_imgs = np.split(imgs,num_gpus,axis=1)
+        for rank in range(num_gpus):
+            pca = PCA(n_components=num_components+1)
+            pca.fit(list_imgs[rank].reshape(lits_imgs[rank].shape[0], -1))
+            list_V.append(pca.components_)
+        ##
+        """pca.fit(imgs.reshape(imgs.shape[0], -1))
+        V = pca.components_"""
 
         for k in range(nb_eigenimages):
-            eigenimages = V[k]/np.linalg.norm(V[k].reshape(1,-1), 'fro')
-            eigenimages = eigenimages/max(eigenimages.max(),-eigenimages.min())
-            eigenimages = eigenimages.reshape((a,b,c))
+            eigenimages = []
+            for rank in range(num_gpus):
+                eigenimage = list_V[rank][k]
+                eigenimage = eigenimage.reshape((int(a/num_gpus),b,c))/np.linalg.norm(eigenimage.reshape(-1,1), 'fro')
+                eigenimages.append(eigenimage)
+            eigenimages = np.concatenate(eigenimages,axis=0)
+            eigenimages_pca.append(eigenimages)
             eigenimages = assemble_image_stack_batch(eigenimages, pixel_index_map)
             hm_data = construct_heatmap_data(eigenimages, num_pixels)
 
@@ -310,12 +323,10 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
     if compute_diff and classic_pca_test:
         list_norm_diff = []
         for k in range(nb_eigenimages):
-            eigen_images_pypca[k] = eigen_images_pypca[k]/np.linalg.norm(eigen_images_pypca[k].reshape(-1,1), 'fro')
-            V[k] = V[k]/np.linalg.norm(V[k].reshape(1,-1), 'fro')
             print('Computing loss for eigenimage : ',k)
-            diff = np.abs(eigen_images_pypca[k]) - np.abs(V[k].reshape((a,b,c)))
+            diff = np.abs(eigen_images_pypca[k]) - np.abs(eigenimages_pca[k])
             diff = diff.reshape(1,-1)
-            norm_diff = np.linalg.norm(diff, 'fro') * 100 / np.linalg.norm(eigen_images_pypca[k].reshape(-1,1), 'fro')
+            norm_diff = np.linalg.norm(diff, 'fro') * 100 / np.linalg.norm(eigen_images_pypca[k].reshape(-1,1), 'fro') ##PEUT ETRE LE FAIRE PANEL PAR PANEL COMME DANS LE CALCUL DE LA LOSS DE RECONSTRUCTION
             list_norm_diff.append(norm_diff)
         print(list_norm_diff)
         
