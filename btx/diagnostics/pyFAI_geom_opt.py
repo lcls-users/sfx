@@ -329,9 +329,9 @@ class GridSearchGeomOpt:
                     sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
                     sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
                     if len(sg.geometry_refinement.data) == 0:
-                        y[i, j] = np.inf
+                        y[i, j] = 0
                     else:
-                        y[i, j] = 1 / len(sg.geometry_refinement.data)
+                        y[i, j] = len(sg.geometry_refinement.data)
         return cx, cy, y
 
 class BayesGeomOpt:
