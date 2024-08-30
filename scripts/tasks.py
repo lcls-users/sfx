@@ -251,7 +251,6 @@ def bayes_pyFAI_geom(config):
         PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
         conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
         det = conv.detector
-        det.set_pixel_corners(conv.corner_array)
         fix = [str(elem) for elem in task.fix.split()]
         if fix == ['poni1', 'poni2', 'rot1', 'rot2', 'rot3']:
             dist = tuple([float(elem) for elem in task.dist.split()])
@@ -303,7 +302,7 @@ def bayes_pyFAI_geom(config):
         logger.warning(f"Refined detector distance in m: {Zc:.2e}")
         logger.warning(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
         bounds = {'poni1':(task.poni[0], task.poni[1], 51), 'poni2':(task.poni[0], task.poni[1], 51)}
-        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/r{setup.run:04}/grid_search_{os.path.splitext(os.path.basename(powder))[0]}_ncp.npy"))
+        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/r{setup.run:04}/grid_search_{os.path.splitext(os.path.basename(powder))[0]}_#ncp.npy"))
         plot = os.path.join(setup.root_dir, f"figs/bayes_opt/bayes_opt_geom_r{setup.run:04}_seed_{seed}.png")
         geom_opt.grid_search_convergence_plot(bo_history, bounds, best_idx, grid_search, plot)
         logger.debug("Done!")

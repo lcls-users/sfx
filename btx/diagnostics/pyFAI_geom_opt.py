@@ -374,6 +374,9 @@ class BayesGeomOpt:
         for param in self.param_order:
             if param not in fix:
                 self.param_space.append(param)
+        self.distance = self.diagnostics.psi.estimate_distance() * 1e-3
+        self.cx, self.cy, _ = detector.calc_cartesian_positions()
+        self.default_value = {'dist':self.distance, 'poni1':self.cx, 'poni2':self.cy}
 
     @staticmethod
     def expected_improvement(X, gp_model, best_y):
@@ -479,8 +482,12 @@ class BayesGeomOpt:
                 input_range[param] = np.arange(bounds[param][0], bounds[param][1]+bounds[param][2], bounds[param][2])
                 input_range_norm[param] = input_range[param]
             else:
-                print(f'Fixed parameter {param} with value {values[param]}')
-                input_range[param] = np.array([values[param]])
+                if values[param] is None:
+                    print(f"Fixed parameter {param} with value {self.default_value[param]}")
+                    input_range[param] = np.array([self.default_value[param]])
+                else:
+                    print(f'Fixed parameter {param} with value {values[param]}')
+                    input_range[param] = np.array([values[param]])
         X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
         X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
         X_norm = (X_norm - np.mean(X_norm, axis=0)) / np.std(X_norm, axis=0)
@@ -497,11 +504,7 @@ class BayesGeomOpt:
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
-            if len(sg.geometry_refinement.data) == 0:
-                print(f"Sample {i+1} failed, retrying...")
-                y[i] = 1
-            else:
-                y[i] = len(sg.geometry_refinement.data)
+            y[i] = len(sg.geometry_refinement.data)
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'score': y[i]}
 
         print("Standardizing initial score values...")
@@ -540,11 +543,7 @@ class BayesGeomOpt:
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
-            if len(sg.geometry_refinement.data) == 0:
-                print(f"Step {i+1} wrong, no control points found...")
-                score = 0
-            else:
-                score = len(sg.geometry_refinement.data)
+            score = len(sg.geometry_refinement.data)
             y = np.append(y, [score], axis=0)
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
