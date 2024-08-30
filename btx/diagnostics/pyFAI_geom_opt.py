@@ -612,7 +612,7 @@ class BayesGeomOpt:
             ax[0].set_aspect('equal')
             ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
             ax[0].scatter([param[0] for param in params], [param[1] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
-            cbar = plt.colorbar(c, cax=ax[0])
+            cbar = plt.colorbar(c, ax=ax[0])
             cbar.set_label('Score', rotation=270, labelpad=15)
             best_param = params[best_idx]
             ax[0].scatter(best_param[0], best_param[1], c='white', s=100, label='best', alpha=0.3)
@@ -636,7 +636,7 @@ class BayesGeomOpt:
             ax[0].set_aspect('equal')
             ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
             ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
-            cbar = plt.colorbar(c, cax=ax[0])
+            cbar = plt.colorbar(c, ax=ax[0])
             cbar.set_label('Score', rotation=270, labelpad=15)
             best_param = params[best_idx]
             ax[0].scatter(best_param[1], best_param[2], c='white', s=100, label='best', alpha=0.3)
