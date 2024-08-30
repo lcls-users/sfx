@@ -291,7 +291,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         list_imgs = np.split(imgs,num_gpus,axis=1)
         for rank in range(num_gpus):
             pca = PCA(n_components=num_components+1)
-            pca.fit(list_imgs[rank].reshape(lits_imgs[rank].shape[0], -1))
+            pca.fit(list_imgs[rank].reshape(list_imgs[rank].shape[0], -1))
             list_V.append(pca.components_)
         ##
         """pca.fit(imgs.reshape(imgs.shape[0], -1))
