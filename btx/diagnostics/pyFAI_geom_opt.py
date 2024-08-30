@@ -584,8 +584,8 @@ class BayesGeomOpt:
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         params = [bo_history[key]['param'] for key in bo_history.keys()]
         fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-        poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], bounds['poni1'][2])
-        poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], bounds['poni2'][2])
+        poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], grid_search.shape[0])
+        poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], grid_search.shape[1])
         cy, cx = np.meshgrid(poni1_range, poni2_range)
         c = ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu', norm=LogNorm())
         ax[0].set_xlabel('Poni1')
