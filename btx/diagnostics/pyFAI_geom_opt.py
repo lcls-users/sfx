@@ -593,7 +593,7 @@ class BayesGeomOpt:
             best_param = params[best_idx]
             ax[0].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[0].axhline(y=best_param[0], color='green', linestyle='dashed')
-            ax[1].plot(np.minimum.accumulate(scores))
+            ax[1].plot(np.maximum.accumulate(scores))
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Best score so far')
@@ -617,7 +617,7 @@ class BayesGeomOpt:
             best_param = params[best_idx]
             ax[0].scatter(best_param[1], best_param[2], c='white', s=100, label='best', alpha=0.3)
             ax[0].legend()
-            ax[1].plot(np.minimum.accumulate(scores))
+            ax[1].plot(np.maximum.accumulate(scores))
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Best score so far')
@@ -649,7 +649,7 @@ class BayesGeomOpt:
             ax[1].set_title('Bayesian Optimization on Detector Distance')
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=best_param[0], color='green', linestyle='dashed')
-            ax[2].plot(np.minimum.accumulate(scores))
+            ax[2].plot(np.maximum.accumulate(scores))
             ax[2].set_xticks(np.arange(len(scores), step=5))
             ax[2].set_xlabel('Iteration')
             ax[2].set_ylabel('Best score so far')
