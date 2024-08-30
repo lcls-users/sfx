@@ -363,16 +363,13 @@ class BayesGeomOpt:
         det_type,
         detector,
         calibrant,
-        Imin,
         fix,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
         self.detector = detector
         self.calibrant = calibrant
-        self.Imin = Imin
         self.fix = fix
         self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.default_value = [self.diagnostics.psi.estimate_distance() * 1e-3, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.param_space = []
         for param in self.param_order:
             if param not in fix:
@@ -402,11 +399,13 @@ class BayesGeomOpt:
         self,
         powder,
         fix,
+        Imin,
         bounds,
-        mask=None,
-        n_samples=10,
-        num_iterations=100,
+        values,
+        n_samples,
+        num_iterations,
         af="ucb",
+        mask=None,
         seed=0,
     ):
         """
@@ -419,16 +418,20 @@ class BayesGeomOpt:
         fix : list
             List of parameters not to be optimized in refine3
             Nota Bene: this fix could be different from self.fix
+        Imin : int or str
+            Minimum intensity to use for control point extraction based on photon energy or max intensity
         bounds : dict
-            Dictionary of bounds and resolution for each parameter
-        mask : np.ndarray
-            Mask for powder
+            Dictionary of bounds and resolution for search parameters
+        values : dict
+            Dictionary of values for fixed parameters
         n_samples : int
             Number of samples to initialize the GP model
         num_iterations : int
             Number of iterations for optimization
         af : str
             Acquisition function to use for optimization
+        mask : np.ndarray
+            Mask for powder image
         seed : int
             Random seed for reproducibility
         """
@@ -459,27 +462,29 @@ class BayesGeomOpt:
         photon_energy = 1.23984197386209e-09 / wavelength
         calibrant.wavelength = wavelength
         
-        print("Setting minimal intensity...")
-        if type(self.Imin) == str:
+        print("Defining minimal intensity...")
+        if type(Imin) == str:
             Imin = np.max(powder_img) * 0.01
         else:
-            Imin = self.Imin * photon_energy
+            Imin = Imin * photon_energy
 
-        print("Setting geometry space...")
+        print("Defining geometry parameter space...")
         print(f"Search space: {self.param_space}")
         bo_history = {}
         input_range = {}
         input_range_norm = {}
         for param in self.param_order:
             if param in self.param_space:
-                print(f"Setting space for {param}...")
+                print(f"Defining search space for {param}...")
                 input_range[param] = np.arange(bounds[param][0], bounds[param][1]+bounds[param][2], bounds[param][2])
-                input_range_norm[param] = (input_range[param]-np.mean(input_range[param]))/np.std(input_range[param])
+                input_range_norm[param] = input_range[param]
             else:
-                input_range[param] = np.array([self.default_value[self.param_order.index(param)]])
+                print(f'Fixed parameter {param} with value {values[param]}')
+                input_range[param] = np.array([values[param]])
         X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
         X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
-        print(f"Setting space complete with {X_norm.shape[0]} points")
+        X_norm = (X_norm - np.mean(X_norm, axis=0)) / np.std(X_norm, axis=0)
+        print(f"Search space: {X_norm.shape[0]} points")
         idx_samples = np.random.choice(X.shape[0], n_samples)
         X_samples = X[idx_samples]
         X_norm_samples = X_norm[idx_samples]
@@ -494,17 +499,17 @@ class BayesGeomOpt:
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             if len(sg.geometry_refinement.data) == 0:
                 print(f"Sample {i+1} failed, retrying...")
-                y[i] = -1
+                y[i] = 1
             else:
-                y[i] = -1/len(sg.geometry_refinement.data)
-            bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'optim': sg.geometry_refinement.param, 'score': -y[i]}
+                y[i] = len(sg.geometry_refinement.data)
+            bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'score': y[i]}
 
         print("Standardizing initial score values...")
         y_norm = (y - np.mean(y)) / np.std(y)
 
         print("Fitting Gaussian Process Regressor...")
-        kernel = RBF(length_scale=1, length_scale_bounds='fixed') \
-                * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
+        kernel = RBF(length_scale=1.0, length_scale_bounds='fixed') \
+                * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.1, 10.0)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
         gp_model.fit(X_norm_samples, y_norm)
@@ -536,12 +541,12 @@ class BayesGeomOpt:
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             if len(sg.geometry_refinement.data) == 0:
-                print(f"Step {i+1} failed, no control points found, retrying...")
-                score = -1
+                print(f"Step {i+1} wrong, no control points found...")
+                score = 0
             else:
-                score = -1/len(sg.geometry_refinement.data)
+                score = len(sg.geometry_refinement.data)
             y = np.append(y, [score], axis=0)
-            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': -score}
+            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
             y_norm = (y - np.mean(y)) / np.std(y)
@@ -588,15 +593,15 @@ class BayesGeomOpt:
         ax[0].set_aspect('equal')
         ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
         ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
-        cbar = plt.colorbar(c, ax=ax[0], aspect=40)
+        cbar = plt.colorbar(c, cax=ax[0])
         cbar.set_label('Score', rotation=270, labelpad=15)
         best_param = params[best_idx]
         ax[0].scatter(best_param[1], best_param[2], c='white', s=100, label='best', alpha=0.3)
         ax[0].legend()
-        ax[1].plot(scores)
+        ax[1].plot(np.minimum.accumulate(scores))
         ax[1].set_xticks(np.arange(len(scores), step=5))
         ax[1].set_xlabel('Iteration')
-        ax[1].set_ylabel('Score')
+        ax[1].set_ylabel('Best score so far')
         ax[1].set_yscale('log')
         ax[1].set_aspect('auto')
         ax[1].set_title('Convergence Plot')

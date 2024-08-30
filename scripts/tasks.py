@@ -252,21 +252,43 @@ def bayes_pyFAI_geom(config):
         conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
         det = conv.detector
         det.set_pixel_corners(conv.corner_array)
-        fix = ['rot1', 'rot2', 'rot3']
-        geom_opt = BayesGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, fix=fix, Imin=task.Imin)
+        fix = [str(elem) for elem in task.fix.split()]
+        if fix == ['poni1', 'poni2', 'rot1', 'rot2', 'rot3']:
+            dist = tuple([float(elem) for elem in task.dist.split()])
+            bounds = {'dist':(dist[0], dist[1], dist[2])}
+            poni = tuple([float(elem) for elem in task.poni.split()])
+            values = {'poni1':poni[0], 'poni2':poni[1], 'rot1':0, 'rot2':0, 'rot3':0}
+        elif fix == ['dist', 'rot1', 'rot2', 'rot3']:
+            poni1 = tuple([float(elem) for elem in task.poni1.split()])
+            poni2 = tuple([float(elem) for elem in task.poni2.split()])
+            bounds = {'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
+            dist = task.get("dist")
+            values = {'dist':dist, 'rot1':0, 'rot2':0, 'rot3':0}
+        elif fix == ['rot1', 'rot2', 'rot3']:
+            poni1 = tuple([float(elem) for elem in task.poni1.split()])
+            poni2 = tuple([float(elem) for elem in task.poni2.split()])
+            dist = tuple([float(elem) for elem in task.dist.split()])
+            bounds = {'dist': (dist[0], dist[1], dist[2]),'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
+            values = {'rot1':0, 'rot2':0, 'rot3':0}
         powder = task.get("powder")
-        task.dist = tuple([float(elem) for elem in task.dist.split()])
-        task.poni = tuple([float(elem) for elem in task.poni.split()])
-        bounds = {'dist':(task.dist[0], task.dist[1], task.dist[2]), 'poni1':(task.poni[0], task.poni[1], task.poni[2]), 'poni2':(task.poni[0], task.poni[1], task.poni[2])}
-        fix = ['wavelength']
+        Imin = task.get("Imin")
         n_samples = task.get("n_samples")
         num_iterations = task.get("num_iterations")
         seed = task.get("seed")
-        bo_history, best_idx, best_score = geom_opt.bayesian_geom_opt(
-            powder=powder,
+        geom_opt = BayesGeomOpt(
+            exp=setup.exp,
+            run=setup.run,
+            det_type=setup.det_type,
+            detector=det,
+            calibrant=task.calibrant,
             fix=fix,
+        )
+        bo_history, best_idx, residuals = geom_opt.bayesian_geom_opt(
+            powder=powder,
+            fix=['wavelength'],
+            Imin=Imin,
             bounds=bounds,
-            mask=None,
+            values=values,
             n_samples=n_samples,
             num_iterations=num_iterations,
             seed=seed,
@@ -274,7 +296,7 @@ def bayes_pyFAI_geom(config):
         logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")
         logger.warning(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
         logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
-        logger.warning(f"Final score: {best_score}")
+        logger.warning(f"Final score: {residuals}")
         Xc = geom_opt.poni1+geom_opt.dist*(np.tan(geom_opt.rot2)/np.cos(geom_opt.rot1))
         Yc = geom_opt.poni2-geom_opt.dist*(np.tan(geom_opt.rot1))
         Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
