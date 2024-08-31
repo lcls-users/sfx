@@ -410,7 +410,6 @@ class BayesGeomOpt:
         af="ucb",
         mask=None,
         seed=0,
-        binary=None,
     ):
         """
         From guessed initial geometry, optimize the geometry using Bayesian Optimization on pyFAI package
@@ -438,8 +437,6 @@ class BayesGeomOpt:
             Mask for powder image
         seed : int
             Random seed for reproducibility
-        binary: str or None
-            Path to binary powder image
         """
         np.random.seed(seed)
         if type(powder) == str:
@@ -474,15 +471,6 @@ class BayesGeomOpt:
         else:
             Imin = Imin * photon_energy
 
-        norm_factor = 1
-        if binary is not None:
-            print(f"Loading binary powder {binary}")
-            binary_img = np.load(binary)
-            all_cp = np.nonzero(binary_img)
-            all_cp = np.array(list(zip(all_cp[0], all_cp[1])))
-            norm_factor = len(all_cp)
-            print(f"Number of control points: {norm_factor}")
-
         print("Defining geometry parameter space...")
         print(f"Search space: {self.param_space}")
         bo_history = {}
@@ -516,7 +504,7 @@ class BayesGeomOpt:
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
-            y[i] = len(sg.geometry_refinement.data) / norm_factor
+            y[i] = len(sg.geometry_refinement.data)
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'score': y[i]}
 
         print("Standardizing initial score values...")
@@ -531,7 +519,7 @@ class BayesGeomOpt:
         visited_idx = list(idx_samples.flatten())
 
         if af == "ucb":
-            beta = 10
+            beta = 100
             af = self.upper_confidence_bound
         elif af == "ei":
             af = self.expected_improvement
@@ -554,7 +542,7 @@ class BayesGeomOpt:
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
-            score = len(sg.geometry_refinement.data) / norm_factor
+            score = len(sg.geometry_refinement.data)
             y = np.append(y, [score], axis=0)
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)

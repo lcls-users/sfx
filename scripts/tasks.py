@@ -274,9 +274,6 @@ def bayes_pyFAI_geom(config):
         n_samples = task.get("n_samples")
         num_iterations = task.get("num_iterations")
         seed = task.get("seed")
-        binary = task.get("binary")
-        if binary is not None:
-            binary = os.path.join(setup.root_dir, f"powder/{setup.exp}/binary_{os.path.basename(powder)}")
         geom_opt = BayesGeomOpt(
             exp=setup.exp,
             run=setup.run,
@@ -294,7 +291,6 @@ def bayes_pyFAI_geom(config):
             n_samples=n_samples,
             num_iterations=num_iterations,
             seed=seed,
-            binary=binary,
         )
         logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")
         logger.warning(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
