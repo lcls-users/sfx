@@ -529,7 +529,7 @@ class BayesGeomOpt:
         print("Starting Bayesian optimization...")
         for i in tqdm(range(num_iterations)):
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
-            af_values = af(X_norm, gp_model, beta)
+            af_values = af(X_norm, gp_model, best_score)
             af_values[visited_idx] = -np.inf
             
             # 2. Select the next set of parameters based on the Acquisition Function
@@ -548,7 +548,7 @@ class BayesGeomOpt:
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
             y_norm = (y - np.mean(y)) / np.std(y)
-
+            best_score = np.max(y_norm)
             # 4. Update the Gaussian Process Regressor
             gp_model.fit(X_norm_samples, y_norm)
         
