@@ -275,8 +275,7 @@ def bayes_pyFAI_geom(config):
         num_iterations = task.get("num_iterations")
         seed = task.get("seed")
         binary = task.get("binary")
-        if binary is not None:
-            binary = os.path.join(setup.root_dir, f"powder/{setup.exp}/binary_{os.path.basename(powder)}")
+        logger.warning(f"Using {binary} as input cp")
         geom_opt = BayesGeomOpt(
             exp=setup.exp,
             run=setup.run,
