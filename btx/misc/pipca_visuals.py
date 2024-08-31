@@ -12,6 +12,8 @@ from btx.interfaces.ipsana import (
     assemble_image_stack_batch,
 )
 
+import umap
+
 import holoviews as hv
 hv.extension('bokeh')
 from holoviews.streams import Params
@@ -331,6 +333,52 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         print(list_norm_diff)
         
     return layout_combined
+
+def display_umap(filename):
+    data = unpack_ipca_pytorch_model_file(filename)
+
+    exp = data['exp']
+    run = data['run']
+    det_type = data['det_type']
+    start_img = data['start_offset']
+    transformed_images = data['transformed_images']
+    mu = data['mu']
+    S = data['S']
+    V = data['V']
+    num_components = S.shape[0]
+    num_gpus = len(V)
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    counter = start_img
+
+    psi.counter = counter
+
+    a,b,c = psi.det.shape()
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+    imgs = psi.get_images(num_images,assemble=False)
+    imgs = imgs[
+        [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
+    ]
+    imgs = np.reshape(imgs, (imgs.shape[0], a,b,c))
+
+    imgs = np.split(imgs,num_gpus,axis=1)
+
+    for rank in range(num_gpus):
+        U = np.dot(np.dot(imgs[rank],V[rank]),np.diag(S[rank])^(-1))
+        U = np.array([u.flatten() for u in U])
+        reducer = umap.UMAP(n_neighbors=5, min_dist=0.3, n_components=2, metric='euclidean')
+        embedding = reducer.fit_transform(U)
+
+        # Afficher les résultats avec un scatter plot
+        plt.figure(figsize=(10, 6))
+        plt.scatter(embedding[:, 0], embedding[:, 1], c='blue', s=50)
+        plt.title('UMAP projection des projecteurs')
+        plt.xlabel('UMAP1')
+        plt.ylabel('UMAP2')
+        plt.show()
+
+    
+
+
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
