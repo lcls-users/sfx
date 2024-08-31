@@ -284,7 +284,6 @@ def bayes_pyFAI_geom(config):
             detector=det,
             calibrant=task.calibrant,
             fix=fix,
-            binary=binary,
         )
         bo_history, best_idx, residuals = geom_opt.bayesian_geom_opt(
             powder=powder,
@@ -295,6 +294,7 @@ def bayes_pyFAI_geom(config):
             n_samples=n_samples,
             num_iterations=num_iterations,
             seed=seed,
+            binary=binary,
         )
         logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")
         logger.warning(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
