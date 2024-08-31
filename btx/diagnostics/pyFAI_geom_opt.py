@@ -474,7 +474,8 @@ class BayesGeomOpt:
         else:
             Imin = Imin * photon_energy
 
-        if type(binary) == str:
+        norm_factor = 1
+        if binary is not None:
             print(f"Loading binary powder {binary}")
             binary_img = np.load(binary)
             all_cp = np.nonzero(binary_img)
@@ -598,7 +599,6 @@ class BayesGeomOpt:
             ax[0].set_xticks(np.arange(len(scores), step=5))
             ax[0].set_xlabel('Iteration')
             ax[0].set_ylabel('Distance (m)')
-            ax[0].set_aspect('equal')
             ax[0].set_title('Bayesian Optimization on Detector Distance')
             best_param = params[best_idx]
             ax[0].axvline(x=best_idx, color='red', linestyle='dashed')
@@ -607,7 +607,6 @@ class BayesGeomOpt:
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Best score so far')
-            ax[1].set_aspect('equal')
             ax[1].set_title('Convergence Plot')
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
@@ -631,7 +630,6 @@ class BayesGeomOpt:
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Best score so far')
-            ax[1].set_aspect('equal')
             ax[1].set_title('Convergence Plot')
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
@@ -655,7 +653,6 @@ class BayesGeomOpt:
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Distance (m)')
-            ax[1].set_aspect('equal')
             ax[1].set_title('Bayesian Optimization on Detector Distance')
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=best_param[0], color='green', linestyle='dashed')
@@ -663,7 +660,6 @@ class BayesGeomOpt:
             ax[2].set_xticks(np.arange(len(scores), step=5))
             ax[2].set_xlabel('Iteration')
             ax[2].set_ylabel('Best score so far')
-            ax[2].set_aspect('equal')
             ax[2].set_title('Convergence Plot')
             ax[2].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[2].axhline(y=scores[best_idx], color='green', linestyle='dashed')
