@@ -410,6 +410,7 @@ class BayesGeomOpt:
         af="ucb",
         mask=None,
         seed=0,
+        binary=None,
     ):
         """
         From guessed initial geometry, optimize the geometry using Bayesian Optimization on pyFAI package
@@ -437,6 +438,8 @@ class BayesGeomOpt:
             Mask for powder image
         seed : int
             Random seed for reproducibility
+        binary: str or None
+            Path to binary powder image
         """
         np.random.seed(seed)
         if type(powder) == str:
@@ -471,6 +474,14 @@ class BayesGeomOpt:
         else:
             Imin = Imin * photon_energy
 
+        if type(binary) == str:
+            print(f"Loading binary powder {binary}")
+            binary_img = np.load(binary)
+            all_cp = np.nonzero(binary_img)
+            all_cp = np.array(list(zip(all_cp[0], all_cp[1])))
+            norm_factor = len(all_cp)
+            print(f"Number of control points: {norm_factor}")
+
         print("Defining geometry parameter space...")
         print(f"Search space: {self.param_space}")
         bo_history = {}
@@ -504,7 +515,7 @@ class BayesGeomOpt:
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
-            y[i] = len(sg.geometry_refinement.data)
+            y[i] = len(sg.geometry_refinement.data) / norm_factor
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'score': y[i]}
 
         print("Standardizing initial score values...")
@@ -528,7 +539,6 @@ class BayesGeomOpt:
 
         print("Starting Bayesian optimization...")
         for i in tqdm(range(num_iterations)):
-            print(f"Iteration {i+1}...")
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
             af_values = af(X_norm, gp_model, beta)
             af_values[visited_idx] = -np.inf
@@ -543,7 +553,7 @@ class BayesGeomOpt:
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
-            score = len(sg.geometry_refinement.data)
+            score = len(sg.geometry_refinement.data) / norm_factor
             y = np.append(y, [score], axis=0)
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
@@ -588,7 +598,7 @@ class BayesGeomOpt:
             ax[0].set_xticks(np.arange(len(scores), step=5))
             ax[0].set_xlabel('Iteration')
             ax[0].set_ylabel('Distance (m)')
-            ax[0].set_aspect('auto')
+            ax[0].set_aspect('equal')
             ax[0].set_title('Bayesian Optimization on Detector Distance')
             best_param = params[best_idx]
             ax[0].axvline(x=best_idx, color='red', linestyle='dashed')
@@ -597,7 +607,7 @@ class BayesGeomOpt:
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Best score so far')
-            ax[1].set_aspect('auto')
+            ax[1].set_aspect('equal')
             ax[1].set_title('Convergence Plot')
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
@@ -621,7 +631,7 @@ class BayesGeomOpt:
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Best score so far')
-            ax[1].set_aspect('auto')
+            ax[1].set_aspect('equal')
             ax[1].set_title('Convergence Plot')
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
@@ -645,7 +655,7 @@ class BayesGeomOpt:
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Distance (m)')
-            ax[1].set_aspect('auto')
+            ax[1].set_aspect('equal')
             ax[1].set_title('Bayesian Optimization on Detector Distance')
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=best_param[0], color='green', linestyle='dashed')
@@ -653,7 +663,7 @@ class BayesGeomOpt:
             ax[2].set_xticks(np.arange(len(scores), step=5))
             ax[2].set_xlabel('Iteration')
             ax[2].set_ylabel('Best score so far')
-            ax[2].set_aspect('auto')
+            ax[2].set_aspect('equal')
             ax[2].set_title('Convergence Plot')
             ax[2].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[2].axhline(y=scores[best_idx], color='green', linestyle='dashed')

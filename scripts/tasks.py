@@ -274,6 +274,9 @@ def bayes_pyFAI_geom(config):
         n_samples = task.get("n_samples")
         num_iterations = task.get("num_iterations")
         seed = task.get("seed")
+        binary = task.get("binary")
+        if binary is not None:
+            binary = os.path.join(setup.root_dir, f"powder/{setup.exp}/binary_{os.path.basename(powder)}")
         geom_opt = BayesGeomOpt(
             exp=setup.exp,
             run=setup.run,
@@ -281,6 +284,7 @@ def bayes_pyFAI_geom(config):
             detector=det,
             calibrant=task.calibrant,
             fix=fix,
+            binary=binary,
         )
         bo_history, best_idx, residuals = geom_opt.bayesian_geom_opt(
             powder=powder,
