@@ -519,7 +519,7 @@ class BayesGeomOpt:
         visited_idx = list(idx_samples.flatten())
 
         if af == "ucb":
-            beta = 100
+            beta = 50
             af = self.upper_confidence_bound
         elif af == "ei":
             af = self.expected_improvement
