@@ -509,6 +509,7 @@ class BayesGeomOpt:
 
         print("Standardizing initial score values...")
         y_norm = (y - np.mean(y)) / np.std(y)
+        best_score = np.max(y_norm)
 
         print("Fitting Gaussian Process Regressor...")
         kernel = RBF(length_scale=1.0, length_scale_bounds='fixed') \
