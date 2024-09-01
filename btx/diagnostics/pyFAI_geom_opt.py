@@ -379,25 +379,33 @@ class BayesGeomOpt:
         self.default_value = {'dist':self.distance, 'poni1':self.cx, 'poni2':self.cy}
 
     @staticmethod
-    def expected_improvement(X, gp_model, best_y):
+    def expected_improvement(X, gp_model, best_y, epsilon=0):
         y_pred, y_std = gp_model.predict(X, return_std=True)
-        z = (y_pred - best_y) / y_std
-        ei = (y_pred - best_y) * norm.cdf(z) + y_std * norm.pdf(z)
+        z = (y_pred - best_y + epsilon) / y_std
+        ei = y_pred - best_y * norm.cdf(z) + y_std * norm.pdf(z)
         return ei
 
     @staticmethod
-    def upper_confidence_bound(X, gp_model, beta):
+    def upper_confidence_bound(X, gp_model, beta=2):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         ucb = y_pred + beta * y_std
         return ucb
 
     @staticmethod
-    def probability_of_improvement(X, gp_model, best_y):
+    def probability_of_improvement(X, gp_model, best_y, epsilon=0):
         y_pred, y_std = gp_model.predict(X, return_std=True)
-        z = (y_pred - best_y) / y_std
+        z = (y_pred - best_y + epsilon) / y_std
         pi = norm.cdf(z)
         return pi
     
+    @staticmethod
+    def contextual_improvement(X, gp_model, best_y):
+        y_pred, y_std = gp_model.predict(X, return_std=True)
+        cv = np.mean(y_std**2) / best_y
+        z = (y_pred - best_y + cv) / y_std 
+        ci = y_pred - best_y * norm.cdf(z) + y_std * norm.pdf(z)
+        return ci 
+
     def bayesian_geom_opt(
         self,
         powder,
@@ -512,8 +520,8 @@ class BayesGeomOpt:
         best_score = np.max(y_norm)
 
         print("Fitting Gaussian Process Regressor...")
-        kernel = RBF(length_scale=1.0, length_scale_bounds='fixed') \
-                * ConstantKernel(constant_value=10.0, constant_value_bounds=(1.0, 20.0)) \
+        kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
+                * ConstantKernel(constant_value=10.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
         gp_model.fit(X_norm_samples, y_norm)
@@ -523,9 +531,13 @@ class BayesGeomOpt:
             beta = 50
             af = self.upper_confidence_bound
         elif af == "ei":
+            epsilon = 0
             af = self.expected_improvement
         elif af == "pi":
+            epsilon = 0
             af = self.probability_of_improvement
+        elif af == "ci":
+            af = self.contextual_improvement
 
         print("Starting Bayesian optimization...")
         for i in tqdm(range(num_iterations)):
