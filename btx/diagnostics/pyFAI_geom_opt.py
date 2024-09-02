@@ -531,7 +531,7 @@ class BayesGeomOpt:
             beta = 50
             af = self.upper_confidence_bound
         elif af == "ei":
-            epsilon = 0
+            epsilon = 0.3
             af = self.expected_improvement
         elif af == "pi":
             epsilon = 0
