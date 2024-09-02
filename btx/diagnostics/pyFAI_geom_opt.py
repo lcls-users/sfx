@@ -415,7 +415,7 @@ class BayesGeomOpt:
         values,
         n_samples,
         num_iterations,
-        af="ci",
+        af="ei",
         mask=None,
         seed=0,
     ):
