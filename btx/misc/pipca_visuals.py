@@ -12,7 +12,8 @@ from btx.interfaces.ipsana import (
     assemble_image_stack_batch,
 )
 
-import umap
+import cuml 
+import matplotlib.pyplot as plt
 
 import holoviews as hv
 hv.extension('bokeh')
@@ -362,22 +363,32 @@ def display_umap(filename):
 
     imgs = np.split(imgs,num_gpus,axis=1)
 
+    # Initialiser la figure et les sous-graphiques (2x2 si num_gpus = 4)
+    fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+
+    # Aplatir les axes pour un accès facile lors de la boucle
+    axs = axs.flatten()
+
     for rank in range(num_gpus):
-        U = np.dot(np.dot(imgs[rank],V[rank]),np.diag(S[rank])^(-1))
+        # Calculer la matrice U avec les valeurs singulières inversées
+        U = np.dot(np.dot(imgs[rank], V[rank]), np.diag(1.0 / S[rank]))
+        
+        # Aplatir chaque matrice dans U
         U = np.array([u.flatten() for u in U])
-        reducer = umap.UMAP(n_neighbors=5, min_dist=0.3, n_components=2, metric='euclidean')
-        embedding = reducer.fit_transform(U)
+        
+        # Appliquer t-SNE via cuML
+        tsne = cuml.TSNE(n_components=2, perplexity=30)
+        embedding = tsne.fit_transform(U)
+        
+        # Afficher les résultats sur le subplot correspondant
+        axs[rank].scatter(embedding[:, 0], embedding[:, 1], c='blue', s=50)
+        axs[rank].set_title(f't-SNE projection (GPU {rank})')
+        axs[rank].set_xlabel('t-SNE1')
+        axs[rank].set_ylabel('t-SNE2')
 
-        # Afficher les résultats avec un scatter plot
-        plt.figure(figsize=(10, 6))
-        plt.scatter(embedding[:, 0], embedding[:, 1], c='blue', s=50)
-        plt.title('UMAP projection des projecteurs')
-        plt.xlabel('UMAP1')
-        plt.ylabel('UMAP2')
-        plt.show()
-
-    
-
+    # Ajuster l'espacement entre les sous-graphiques
+    plt.tight_layout()
+    plt.show()
 
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
