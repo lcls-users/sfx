@@ -699,7 +699,6 @@ class BayesGeomOpt:
         u_norm = (u - np.min(u))/(np.max(u) - np.min(u))
         v_norm = (v - np.min(v))/(np.max(v) - np.min(v))
         lb = np.sqrt(np.var(u_norm) / np.var(v_norm))
-        print(f'Lambda value: {lb}')
         y = u_norm + lb * v_norm
 
         for i in range(n_samples):
@@ -758,7 +757,12 @@ class BayesGeomOpt:
             else:
                 val_u = -sg.geometry_refinement.refine3(fix=fix)
                 val_v = 1/len(sg.geometry_refinement.data)
-            y = np.append(y, [val_u + lb * val_v], axis=0)
+            u = np.append(u, [val_u], axis=0)
+            v = np.append(v, [val_v], axis=0)
+            u_norm = (u - np.min(u))/(np.max(u) - np.min(u))
+            v_norm = (v - np.min(v))/(np.max(v) - np.min(v))
+            lb = np.sqrt(np.var(u_norm) / np.var(v_norm))
+            y = u + lb * v
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'refine3': -val_u, 'cp': val_v, 'score': y[-1]}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
@@ -827,7 +831,7 @@ class BayesGeomOpt:
             cbar = plt.colorbar(c, ax=ax[0])
             cbar.set_label('Score')
             best_param = params[best_idx]
-            ax[0].scatter(best_param[1], best_param[2], c='white', s=100, label='best', alpha=0.3)
+            ax[0].scatter(best_param[1], best_param[2], c='purple', s=100, label='best', alpha=0.3)
             ax[0].legend()
             ax[1].plot(np.maximum.accumulate(scores))
             ax[1].set_xticks(np.arange(len(scores), step=5))
@@ -850,7 +854,7 @@ class BayesGeomOpt:
             cbar = plt.colorbar(c, ax=ax[0])
             cbar.set_label('Score')
             best_param = params[best_idx]
-            ax[0].scatter(best_param[1], best_param[2], c='white', s=100, label='best', alpha=0.3)
+            ax[0].scatter(best_param[1], best_param[2], c='purple', s=100, label='best', alpha=0.3)
             ax[0].legend()
             ax[1].plot([param[0] for param in params])
             ax[1].set_xticks(np.arange(len(scores), step=5))
