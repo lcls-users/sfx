@@ -528,7 +528,7 @@ class BayesGeomOpt:
         visited_idx = list(idx_samples.flatten())
 
         if af == "ucb":
-            beta = 0.1
+            beta = 2
             af = self.upper_confidence_bound
         elif af == "ei":
             epsilon = 0
