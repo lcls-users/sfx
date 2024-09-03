@@ -275,6 +275,7 @@ def bayes_pyFAI_geom(config):
         num_iterations = task.get("num_iterations")
         af = task.get("af")
         seed = task.get("seed")
+        logger.warning(f'Starting Bayesian optimization for geometry refinement with seed {seed}, acquisition function {af}, and number of iterations {num_iterations}...')
         geom_opt = BayesGeomOpt(
             exp=setup.exp,
             run=setup.run,
