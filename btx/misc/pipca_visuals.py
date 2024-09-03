@@ -335,7 +335,7 @@ def display_eigenimages_pypca(filename,nb_eigenimages=3,sklearn_test=False,class
         
     return layout_combined
 
-def display_umap(filename):
+def display_umap(filename,num_images):
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
