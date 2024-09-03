@@ -14,6 +14,7 @@ from btx.interfaces.ipsana import (
 
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+import mplcursors
 
 import holoviews as hv
 hv.extension('bokeh')
@@ -371,7 +372,7 @@ def display_umap(filename,num_images):
 
     for rank in range(num_gpus):
         # Calculer la matrice U avec les valeurs singulières inversées
-        U = np.dot(np.dot(imgs[rank], V[rank]), np.diag(1.0 / S[rank]))
+        U = np.dot(np.dot(imgs[rank].reshape(num_images,-1), V[rank]), np.diag(1.0 / S[rank]))
         
         # Aplatir chaque matrice dans U
         U = np.array([u.flatten() for u in U])
@@ -385,6 +386,14 @@ def display_umap(filename,num_images):
         axs[rank].set_title(f't-SNE projection (GPU {rank})')
         axs[rank].set_xlabel('t-SNE1')
         axs[rank].set_ylabel('t-SNE2')
+
+        # Ajout des annotations interactives
+        cursor = mplcursors.cursor(scatter, hover=True)
+        @cursor.connect("add")
+        def on_add(sel):
+            index = sel.index
+            singular_value = S[rank][index]
+            sel.annotation.set(text=f'Index: {index}\nSingular Value: {singular_value:.4f}')
 
     # Ajuster l'espacement entre les sous-graphiques
     plt.tight_layout()
