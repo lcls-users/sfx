@@ -520,7 +520,7 @@ class BayesGeomOpt:
         best_score = np.max(y_norm)
 
         print("Fitting Gaussian Process Regressor...")
-        kernel = RBF(length_scale=1.0, length_scale_bounds='fixed') \
+        kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
