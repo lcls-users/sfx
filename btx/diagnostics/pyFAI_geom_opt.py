@@ -521,14 +521,14 @@ class BayesGeomOpt:
 
         print("Fitting Gaussian Process Regressor...")
         kernel = RBF(length_scale=1, length_scale_bounds='fixed') \
-                * ConstantKernel(constant_value=1.0, constant_value_bounds=(1e-2, 1e3)) \
-                + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
+                * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
+                + WhiteKernel(noise_level=0.01, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
         gp_model.fit(X_norm_samples, y_norm)
         visited_idx = list(idx_samples.flatten())
 
         if af == "ucb":
-            beta = 10
+            beta = 2
             af = self.upper_confidence_bound
         elif af == "ei":
             epsilon = 0
