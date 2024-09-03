@@ -365,15 +365,17 @@ def display_umap(filename,num_images):
     imgs = np.reshape(imgs, (imgs.shape[0], a,b,c))
 
     imgs = np.split(imgs,num_gpus,axis=1)
-
+    print("Images gathered and split")
     fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
 
     for rank in range(num_gpus):
         U = np.dot(np.dot(imgs[rank].reshape(num_images,-1), V[rank]), np.diag(1.0 / S[rank]))
         U = np.array([u.flatten() for u in U])
-        
+        print("Projectors reconstructed")
+
         tsne = TSNE(n_components=2, init='random', learning_rate='auto')
         embedding = tsne.fit_transform(U)
+        print(f"Fitting of the t-SNE {rank} done")
         
         df = pd.DataFrame({
             't-SNE1': embedding[:, 0],
@@ -391,7 +393,6 @@ def display_umap(filename,num_images):
 
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
-
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
