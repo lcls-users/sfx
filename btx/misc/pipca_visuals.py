@@ -12,7 +12,7 @@ from btx.interfaces.ipsana import (
     assemble_image_stack_batch,
 )
 
-import cuml 
+from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
 import holoviews as hv
@@ -377,7 +377,7 @@ def display_umap(filename):
         U = np.array([u.flatten() for u in U])
         
         # Appliquer t-SNE via cuML
-        tsne = cuml.TSNE(n_components=2, perplexity=30)
+        tsne = TSNE(n_components=2, init='random', learning_rate='auto')
         embedding = tsne.fit_transform(U)
         
         # Afficher les résultats sur le subplot correspondant
