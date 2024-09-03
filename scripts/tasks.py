@@ -273,6 +273,7 @@ def bayes_pyFAI_geom(config):
         Imin = task.get("Imin")
         n_samples = task.get("n_samples")
         num_iterations = task.get("num_iterations")
+        af = task.get("af")
         seed = task.get("seed")
         geom_opt = BayesGeomOpt(
             exp=setup.exp,
@@ -290,6 +291,7 @@ def bayes_pyFAI_geom(config):
             values=values,
             n_samples=n_samples,
             num_iterations=num_iterations,
+            af=af,
             seed=seed,
         )
         logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")

@@ -415,7 +415,7 @@ class BayesGeomOpt:
         values,
         n_samples,
         num_iterations,
-        af="ei",
+        af="ucb",
         mask=None,
         seed=0,
     ):
@@ -498,7 +498,7 @@ class BayesGeomOpt:
                     input_range[param] = np.array([values[param]])
         X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
         X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
-        X_norm = (X_norm - np.mean(X_norm, axis=0)) / np.std(X_norm, axis=0)
+        X_norm = (X_norm - np.mean(X_norm, axis=0)) / (np.max(X_norm, axis=0) - np.min(X_norm, axis=0))
         print(f"Search space: {X_norm.shape[0]} points")
         idx_samples = np.random.choice(X.shape[0], n_samples)
         X_samples = X[idx_samples]
@@ -521,17 +521,17 @@ class BayesGeomOpt:
 
         print("Fitting Gaussian Process Regressor...")
         kernel = RBF(length_scale=0.3, length_scale_bounds='fixed') \
-                * ConstantKernel(constant_value=10.0, constant_value_bounds=(0.5, 1.5)) \
+                * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
         gp_model.fit(X_norm_samples, y_norm)
         visited_idx = list(idx_samples.flatten())
 
         if af == "ucb":
-            beta = 50
+            beta = 2
             af = self.upper_confidence_bound
         elif af == "ei":
-            epsilon = 0.3
+            epsilon = 0
             af = self.expected_improvement
         elif af == "pi":
             epsilon = 0
@@ -542,7 +542,14 @@ class BayesGeomOpt:
         print("Starting Bayesian optimization...")
         for i in tqdm(range(num_iterations)):
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
-            af_values = af(X_norm, gp_model, best_score)
+            if af == self.upper_confidence_bound:
+                af_values = af(X_norm, gp_model, beta)
+            elif af == self.expected_improvement:
+                af_values = af(X_norm, gp_model, best_score, epsilon)
+            elif af == self.probability_of_improvement:
+                af_values = af(X_norm, gp_model, best_score, epsilon)
+            elif af == self.contextual_improvement:
+                af_values = af(X_norm, gp_model, best_score)
             af_values[visited_idx] = -np.inf
             
             # 2. Select the next set of parameters based on the Acquisition Function
