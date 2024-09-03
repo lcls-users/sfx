@@ -698,8 +698,7 @@ class BayesGeomOpt:
         
         u_norm = (u - np.min(u))/(np.max(u) - np.min(u))
         v_norm = (v - np.min(v))/(np.max(v) - np.min(v))
-        lb = np.sqrt(np.var(u_norm) / np.var(v_norm))
-        y = u_norm + lb * v_norm
+        y = u_norm + v_norm
 
         for i in range(n_samples):
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'refine3': -u[i], 'cp': v[i], 'score': y[i]}
@@ -761,8 +760,7 @@ class BayesGeomOpt:
             v = np.append(v, [val_v], axis=0)
             u_norm = (u - np.min(u))/(np.max(u) - np.min(u))
             v_norm = (v - np.min(v))/(np.max(v) - np.min(v))
-            lb = np.sqrt(np.var(u_norm) / np.var(v_norm))
-            y = u + lb * v
+            y = u_norm + v_norm
             bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'refine3': -val_u, 'cp': val_v, 'score': y[-1]}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
