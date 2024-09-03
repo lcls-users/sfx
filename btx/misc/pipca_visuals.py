@@ -14,7 +14,9 @@ from btx.interfaces.ipsana import (
 
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-import mplcursors
+import plotly.express as px
+import plotly.subplots as sp
+
 
 import holoviews as hv
 hv.extension('bokeh')
@@ -364,11 +366,9 @@ def display_umap(filename,num_images):
 
     imgs = np.split(imgs,num_gpus,axis=1)
 
-    # Initialiser la figure et les sous-graphiques (2x2 si num_gpus = 4)
-    fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+# Initialiser la figure avec 2x2 sous-graphiques si num_gpus = 4
+    fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
 
-    # Aplatir les axes pour un accès facile lors de la boucle
-    axs = axs.flatten()
 
     for rank in range(num_gpus):
         # Calculer la matrice U avec les valeurs singulières inversées
@@ -381,23 +381,26 @@ def display_umap(filename,num_images):
         tsne = TSNE(n_components=2, init='random', learning_rate='auto')
         embedding = tsne.fit_transform(U)
         
-        # Afficher les résultats sur le subplot correspondant
-        axs[rank].scatter(embedding[:, 0], embedding[:, 1], c='blue', s=50)
-        axs[rank].set_title(f't-SNE projection (GPU {rank})')
-        axs[rank].set_xlabel('t-SNE1')
-        axs[rank].set_ylabel('t-SNE2')
+        # Créer un DataFrame avec les résultats pour une meilleure manipulation
+        df = pd.DataFrame({
+            't-SNE1': embedding[:, 0],
+            't-SNE2': embedding[:, 1],
+            'Index': np.arange(len(embedding)),
+            'Singular Value': S[rank]
+        })
+        
+        # Ajouter le scatter plot au sous-graphe approprié
+        scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
+                            hover_data={'Index': True, 'Singular Value': ':.4f'},
+                            labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
+                            title=f't-SNE projection (GPU {rank})')
+        
+        # Ajouter la trace du scatter plot à la figure principale
+        fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
 
-        # Ajout des annotations interactives
-        cursor = mplcursors.cursor(scatter, hover=True)
-        @cursor.connect("add")
-        def on_add(sel):
-            index = sel.index
-            singular_value = S[rank][index]
-            sel.annotation.set(text=f'Index: {index}\nSingular Value: {singular_value:.4f}')
-
-    # Ajuster l'espacement entre les sous-graphiques
-    plt.tight_layout()
-    plt.show()
+    # Mettre à jour la mise en page pour ajuster l'espacement et le titre
+    fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
+    fig.show()
 
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
