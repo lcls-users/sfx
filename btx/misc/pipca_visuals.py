@@ -16,7 +16,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.subplots as sp
-
+import pandas as pd
 
 import holoviews as hv
 hv.extension('bokeh')
@@ -366,22 +366,15 @@ def display_umap(filename,num_images):
 
     imgs = np.split(imgs,num_gpus,axis=1)
 
-# Initialiser la figure avec 2x2 sous-graphiques si num_gpus = 4
     fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
 
-
     for rank in range(num_gpus):
-        # Calculer la matrice U avec les valeurs singulières inversées
         U = np.dot(np.dot(imgs[rank].reshape(num_images,-1), V[rank]), np.diag(1.0 / S[rank]))
-        
-        # Aplatir chaque matrice dans U
         U = np.array([u.flatten() for u in U])
         
-        # Appliquer t-SNE via cuML
         tsne = TSNE(n_components=2, init='random', learning_rate='auto')
         embedding = tsne.fit_transform(U)
         
-        # Créer un DataFrame avec les résultats pour une meilleure manipulation
         df = pd.DataFrame({
             't-SNE1': embedding[:, 0],
             't-SNE2': embedding[:, 1],
@@ -389,16 +382,13 @@ def display_umap(filename,num_images):
             'Singular Value': S[rank]
         })
         
-        # Ajouter le scatter plot au sous-graphe approprié
         scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
                             hover_data={'Index': True, 'Singular Value': ':.4f'},
                             labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
                             title=f't-SNE projection (GPU {rank})')
         
-        # Ajouter la trace du scatter plot à la figure principale
         fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
 
-    # Mettre à jour la mise en page pour ajuster l'espacement et le titre
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
