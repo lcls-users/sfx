@@ -106,10 +106,10 @@ def process(rank, imgs, V, S, num_images,device_list):
     U = np.array([u.flatten() for u in U]) ##
     tsne = TSNE(n_components=2, perplexity=50, n_neighbors=32)
     embedding = tsne.fit_transform(U)
-    trustworthiness = trustworthiness(U, embedding)
+    trustworthiness_score = cuml_trustworthiness(U, embedding)
 
     print(f"t-SNE {rank} fitting done",flush=True)
-    print(f"Trustworthiness on GPU {rank}: {trustworthiness}",flush=True)
+    print(f"Trustworthiness on GPU {rank}: {trustworthiness_score:.4f}",flush=True)
 
     embedding = cp.asnumpy(embedding)
 
