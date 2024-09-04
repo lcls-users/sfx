@@ -383,11 +383,10 @@ def display_umap(filename,num_images):
             't-SNE1': embedding[:, 0],
             't-SNE2': embedding[:, 1],
             'Index': np.arange(len(embedding)),
-            'Singular Value': S[rank]
         })
         
         scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
-                            hover_data={'Index': True, 'Singular Value': ':.4f'},
+                            hover_data={'Index': True},
                             labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
                             title=f't-SNE projection (GPU {rank})')
         
@@ -411,11 +410,10 @@ def plot_t_sne_scatters(filename):
             't-SNE1': embedding[rank][:, 0],
             't-SNE2': embedding[rank][:, 1],
             'Index': np.arange(len(embedding[rank])),
-            'Singular Value': S[rank]
         })
         
         scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
-                            hover_data={'Index': True, 'Singular Value': ':.4f'},
+                            hover_data={'Index': True},
                             labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
                             title=f't-SNE projection (GPU {rank})')
         

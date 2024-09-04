@@ -29,8 +29,9 @@ from btx.processing.pipca_nopsana import main as run_client_task # This is the m
 from btx.processing.pipca_nopsana import remove_file_with_timeout
 
 
-from cuml.manifold import TSNE ###
-import cupy as cp ##
+from cuml.manifold import TSNE 
+from cuml.metrics import trustworthiness
+import cupy as cp 
 
 
 class IPCRemotePsanaDataset(Dataset):
@@ -103,10 +104,15 @@ def process(rank, imgs, V, S, num_images,device_list):
     print(f"Projectors on GPU {rank} computed",flush=True)
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
-    tsne = TSNE(n_components=2)
+    tsne = TSNE(n_components=2, perplexity=50, early_exaggeration=12.0, learning_rate=200.0, num_neighbors=32)
     embedding = tsne.fit_transform(U)
+    trustworthiness = tsne.trustworthiness(U, embedding, metric='euclidean')
+
     print(f"t-SNE {rank} fitting done",flush=True)
+    print(f"Trustworthiness on GPU {rank}: {trustworthiness}",flush=True)
+
     embedding = cp.asnumpy(embedding)
+
 
     return embedding
 
@@ -241,7 +247,7 @@ if __name__ == "__main__":
             embeddings.append(embedding)
     
     print(f"t-SNE fitting done in {time.time()-starting_time} seconds",flush=True)
-    
+
     data = {"embeddings": embeddings, "S": S}
     with open(f"embedding_data_{num_images}.pkl", "wb") as f:
         pickle.dump(data, f)
