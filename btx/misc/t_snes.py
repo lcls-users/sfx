@@ -168,6 +168,7 @@ if name == "__main__":
     num_images = params.num_images
     loading_batch_size = params.loading_batch_size
     ##
+    print("Unpacking model file...",flush=True)
     data = unpack_ipca_pytorch_model_file(filename)
 
     exp = data['exp']
@@ -184,7 +185,8 @@ if name == "__main__":
     mp.set_start_method('spawn', force=True)
 
     list_images=[]
-
+    print("Unpacking done",flush=True)
+    print("Gathering images...",flush=True)
     for event in range(start_img, start_img + num_images, loading_batch_size):
         requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
@@ -198,7 +200,7 @@ if name == "__main__":
     
     list_images = np.concatenate(list_images, axis=0)
     list_images = np.split(list_images,axis=1)
-    print("Loading and splitting done",flush=True)
+    print("Gathering and splitting done",flush=True)
 
     device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
@@ -210,6 +212,8 @@ if name == "__main__":
         
     plot_scatters(embeddings,S)
     
+    print("All done, closing server...",flush=True)
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(server_address)
         sock.sendall("DONE".encode('utf-8'))
