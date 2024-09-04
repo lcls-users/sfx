@@ -820,7 +820,7 @@ def bo_aggregate_init_samples(config):
     """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
     BayesianOptimization.aggregate_init_samples(config, logger)
 
-def compute_t_sne(config):
+def t_sne(config):
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.get_max_events import main as compute_max_events
 
