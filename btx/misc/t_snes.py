@@ -26,7 +26,7 @@ from torch.utils.data import DataLoader
 
 from btx.processing.pipca_nopsana import main as run_client_task # This is the main function that runs the iPCA algorithm
 from btx.processing.pipca_nopsana import remove_file_with_timeout
-from btx.misc.pipca_visuals import unpack_ipca_pytorch_model_file
+
 
 from cuml.manifold import TSNE ###
 import cupy as cp ##
@@ -109,6 +109,7 @@ def process(rank, imgs, V, S, num_images,device_list):
 
     return embedding
 
+
 def plot_scatters(embedding,S):
 
     fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
@@ -131,6 +132,33 @@ def plot_scatters(embedding,S):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
+def unpack_ipca_pytorch_model_file(filename):
+    """
+    Reads PiPCA model information from h5 file and returns its contents
+
+    Parameters
+    ----------
+    filename: str
+        name of h5 file you want to unpack
+
+    Returns
+    -------
+    data: dict
+        A dictionary containing the extracted data from the h5 file.
+    """
+    data = {}
+    with h5py.File(filename, 'r') as f:
+        data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
+        data['run'] = int(np.asarray(f.get('run')))
+        data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1]
+        data['start_offset'] = int(np.asarray(f.get('start_offset')))
+        data['transformed_images'] = np.asarray(f.get('transformed_images'))
+        data['S'] = np.asarray(f.get('S'))
+        data['V'] = np.asarray(f.get('V'))
+        data['mu'] = np.asarray(f.get('mu'))
+
+    return data
+    
 def parse_input():
     """
     Parse command line input.
