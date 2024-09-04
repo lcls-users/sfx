@@ -836,7 +836,7 @@ def t_sne(config):
         loading_batch_size = 2000
 
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
-    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/t_snes.py")
+    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/misc/t_snes.py")
 
     command = "which python; ulimit -n 4096;"
     command += f"python {server_path} & echo 'Server is running'"
