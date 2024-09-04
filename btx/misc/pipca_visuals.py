@@ -399,9 +399,10 @@ def display_umap(filename,num_images):
 def plot_t_sne_scatters(filename):
     with open(filename, "rb") as f:
         data = pickle.load(f)
-        
+
     embeddings = np.array(data["embeddings"])
     S = np.array(data["S"])
+    num_gpus = len(S)
 
     fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
 
