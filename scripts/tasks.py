@@ -828,6 +828,7 @@ def t_sne(config):
     task = config.t_sne
     num_images = task.num_images
     num_gpus = task.num_gpus
+    filename = task.filename
 
     if task.get('loading_batch_size') is not None:
         loading_batch_size = task.loading_batch_size
