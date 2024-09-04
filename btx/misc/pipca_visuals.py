@@ -419,8 +419,6 @@ def ipca_execution_time(num_components,num_images,batch_size,filename):
     print(execution_time)
     return execution_time
  
-
-
 def display_dashboard(filename):
     """
     Displays an interactive dashboard with a PC plot, scree plot, 

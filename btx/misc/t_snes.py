@@ -227,7 +227,7 @@ if __name__ == "__main__":
             list_images.append(batch)
     
     list_images = np.concatenate(list_images, axis=0)
-    list_images = np.split(list_images,axis=1)
+    list_images = np.split(list_images,num_gpus,axis=1)
     print("Gathering and splitting done",flush=True)
 
     device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
