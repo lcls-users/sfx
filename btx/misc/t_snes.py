@@ -26,7 +26,7 @@ from torch.utils.data import DataLoader
 
 from btx.processing.pipca_nopsana import main as run_client_task # This is the main function that runs the iPCA algorithm
 from btx.processing.pipca_nopsana import remove_file_with_timeout
-from btx.misc.unpack_ipca_pytorch_model_file import unpack_ipca_pytorch_model_file
+from btx.misc.pipca_visuals import unpack_ipca_pytorch_model_file
 
 from cuml.manifold import TSNE ###
 import cupy as cp ##
