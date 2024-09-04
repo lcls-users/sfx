@@ -30,7 +30,7 @@ from btx.processing.pipca_nopsana import remove_file_with_timeout
 
 
 from cuml.manifold import TSNE 
-from cuml.metrics import trustworthiness
+from cuml.metrics import trustworthiness as cuml_trustworthiness
 import cupy as cp 
 
 
