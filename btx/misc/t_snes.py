@@ -233,11 +233,14 @@ if __name__ == "__main__":
 
     device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
+    starting_time = time.time()
     with Pool(processes=num_gpus) as pool:
         t_snes = pool.starmap(process,[(rank,list_images,V,S,num_images,device_list) for rank in range(num_gpus)])
         embeddings = []
         for embedding in t_snes:
             embeddings.append(embedding)
+    
+    print(f"t-SNE fitting done in {time.time()-starting_time} seconds",flush=True)
     
     data = {"embeddings": embeddings, "S": S}
     with open(f"embedding_data_{num_images}.pkl", "wb") as f:
