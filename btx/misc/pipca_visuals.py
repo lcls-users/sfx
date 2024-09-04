@@ -4,6 +4,7 @@ import random
 import math
 import time
 import json
+import pickle
 
 import csv 
 
@@ -396,9 +397,9 @@ def display_umap(filename,num_images):
     fig.show()
 
 def plot_t_sne_scatters(filename):
-    with open(filename, 'r') as f:
-        data = json.load(f)
-    
+    with open(filename, "rb") as f:
+        data = pickle.load(f)
+        
     embeddings = np.array(data["embeddings"])
     S = np.array(data["S"])
 

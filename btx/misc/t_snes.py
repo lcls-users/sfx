@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import pickle
 import json
 import socket
 import time
@@ -239,8 +240,8 @@ if __name__ == "__main__":
             embeddings.append(embedding)
     
     data = {"embeddings": embeddings, "S": S}
-    with open('t_sne_data.json', 'w') as f:
-        json.dump(data, f)
+    with open(f"embedding_data_{num_images}.pkl", "wb") as f:
+        pickle.dump(data, f)
     
     print("All done, closing server...",flush=True)
 
