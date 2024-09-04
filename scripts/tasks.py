@@ -819,3 +819,35 @@ def bo_aggregate_init_samples(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
     """ Aggregates the scores and parameters of the initial samples of the Bayesian optimization. """
     BayesianOptimization.aggregate_init_samples(config, logger)
+
+def compute_t_sne(config):
+    from btx.interfaces.ischeduler import JobScheduler
+    from btx.misc.get_max_events import main as compute_max_events
+
+    setup = config.setup
+    task = config.t_sne
+    num_images = task.num_images
+    num_gpus = task.num_gpus
+
+    if task.get('loading_batch_size') is not None:
+        loading_batch_size = task.loading_batch_size
+    else:
+        loading_batch_size = 2000
+
+    server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
+    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/t_snes.py")
+
+    command = "which python; ulimit -n 4096;"
+    command += f"python {server_path} & echo 'Server is running'"
+    command += f"; echo 'Number of images: {num_images}'"
+    command += "; sleep 10"
+    command += ";conda deactivate; echo 'Server environment deactivated'"
+    command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
+    command += f"; python {client_path} --filename {filename} --num_images {num_images} --loading_batch_size {loading_batch_size}"
+
+    js = JobScheduler(os.path.join(".", f't_snes_{num_images}.sh'),queue = 'ampere', ncores=  1, jobname=f't_snes_{num_images}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = 4) ##
+    js.write_header()
+    js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
+    js.clean_up()
+    js.submit()
+    print('All done!')
