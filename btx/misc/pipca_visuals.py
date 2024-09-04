@@ -15,6 +15,7 @@ from btx.interfaces.ipsana import (
 )
 
 from sklearn.manifold import TSNE
+from sklearn.manifold import trustworthiness
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.subplots as sp
@@ -377,6 +378,10 @@ def display_umap(filename,num_images):
 
         tsne = TSNE(n_components=2, init='random', learning_rate='auto')
         embedding = tsne.fit_transform(U)
+        trustworthiness_score = trustworthiness(U, embedding)
+
+        # Print the trustworthiness score
+        print(f"Trustworthiness score: {trustworthiness_score:.4f}")
         print(f"Fitting of the t-SNE {rank} done")
         
         df = pd.DataFrame({
