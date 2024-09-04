@@ -3,6 +3,7 @@ import h5py
 import random
 import math
 import time
+import json
 
 import csv 
 
@@ -381,6 +382,33 @@ def display_umap(filename,num_images):
             't-SNE1': embedding[:, 0],
             't-SNE2': embedding[:, 1],
             'Index': np.arange(len(embedding)),
+            'Singular Value': S[rank]
+        })
+        
+        scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
+                            hover_data={'Index': True, 'Singular Value': ':.4f'},
+                            labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
+                            title=f't-SNE projection (GPU {rank})')
+        
+        fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
+
+    fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
+    fig.show()
+
+def plot_t_sne_scatters(filename):
+    with open(filename, 'r') as f:
+        data = json.load(f)
+    
+    embeddings = np.array(data["embeddings"])
+    S = np.array(data["S"])
+
+    fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
+
+    for rank in range(num_gpus):
+        df = pd.DataFrame({
+            't-SNE1': embedding[rank][:, 0],
+            't-SNE2': embedding[rank][:, 1],
+            'Index': np.arange(len(embedding[rank])),
             'Singular Value': S[rank]
         })
         
