@@ -102,7 +102,7 @@ def process(rank, imgs, V, S, num_images,device_list):
     print(f"Projectors on GPU {rank} computed",flush=True)
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
-    tsne = TSNE(n_components=2, perplexity=30, learning_rate=200, n_iter=1000, random_state=42, device=device_list[rank])
+    tsne = TSNE(n_components=2, perplexity=30, learning_rate=200, n_iter=1000, random_state=42)
     embedding = tsne.fit_transform(U)
     print(f"t-SNE {rank} fitting done",flush=True)
     embedding = cp.asnumpy(embedding)
