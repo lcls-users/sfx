@@ -30,10 +30,6 @@ from btx.processing.pipca_nopsana import remove_file_with_timeout
 
 from cuml.manifold import TSNE ###
 import cupy as cp ##
-import matplotlib.pyplot as plt
-import plotly.express as px
-import plotly.subplots as sp
-import pandas as pd
 
 
 class IPCRemotePsanaDataset(Dataset):
@@ -245,8 +241,6 @@ if __name__ == "__main__":
     data = {"embeddings": embeddings, "S": S}
     with open('t_sne_data.json', 'w') as f:
         json.dump(data, f)
-    
-    plot_scatters(embeddings,S)
     
     print("All done, closing server...",flush=True)
 
