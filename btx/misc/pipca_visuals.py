@@ -400,7 +400,7 @@ def plot_t_sne_scatters(filename):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
-    embeddings = np.array(data["embeddings"])
+    embedding = np.array(data["embeddings"])
     S = np.array(data["S"])
     num_gpus = len(S)
 
