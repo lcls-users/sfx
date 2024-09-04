@@ -30,6 +30,10 @@ from btx.processing.pipca_nopsana import remove_file_with_timeout
 
 from cuml.manifold import TSNE ###
 import cupy as cp ##
+import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.subplots as sp
+import pandas as pd
 
 
 class IPCRemotePsanaDataset(Dataset):
