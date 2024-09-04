@@ -158,7 +158,7 @@ def unpack_ipca_pytorch_model_file(filename):
         data['mu'] = np.asarray(f.get('mu'))
 
     return data
-    
+
 def parse_input():
     """
     Parse command line input.
@@ -189,7 +189,7 @@ def parse_input():
     return parser.parse_args()
 
 
-if name == "__main__":
+if __name__ == "__main__":
     params = parse_input()
     ##
     filename = params.filename
