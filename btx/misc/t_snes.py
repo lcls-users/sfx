@@ -104,7 +104,7 @@ def process(rank, imgs, V, S, num_images,device_list):
     print(f"Projectors on GPU {rank} computed",flush=True)
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
-    tsne = TSNE(n_components=2, perplexity=50, n_neighbors=32)
+    tsne = TSNE(n_components=2, perplexity=50, n_neighbors=32, method='barnes_hut')
     embedding = tsne.fit_transform(U)
     trustworthiness_score = cuml_trustworthiness(U, embedding)
 
