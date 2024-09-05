@@ -95,6 +95,8 @@ class Rayonix(Detector):
     ):
         super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * ss_size, fs_size), **kwargs)
         self.n_modules = n_modules
+        self.n_asics = n_asics
+        self.asics_shape = asics_shape
         self.ss_size = ss_size
         self.fs_size = fs_size
         self.pixel_size = pixel1
