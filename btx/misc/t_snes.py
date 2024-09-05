@@ -111,7 +111,7 @@ def process(rank, imgs, V, S, num_images,device_list):
     best_score_tsne = 0
     best_params_umap = None
     best_score_umap = 0
-    max_iters = 5000
+    max_iters = 10000
 
     for i in range(max_iters):
         n_neighbors = np.random.randint(5, 200)
