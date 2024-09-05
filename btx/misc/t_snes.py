@@ -111,7 +111,7 @@ def process(rank, imgs, V, S, num_images,device_list):
     best_score_tsne = 0
     best_params_umap = None
     best_score_umap = 0
-    max_iters = 300
+    max_iters = 1000
 
     for i in range(max_iters):
         n_neighbors = np.random.randint(5, 200)
@@ -129,6 +129,10 @@ def process(rank, imgs, V, S, num_images,device_list):
             best_params_umap = (n_neighbors, min_dist)
             best_score_umap = trustworthiness_score_umap
     
+    umap = cumlUMAP(n_components=2,n_neighbors=best_params_umap[0],min_dist=best_params_umap[1])
+    embedding_umap = umap.fit_transform(U)
+    trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
+
     for i in range(max_iters):
         perplexity = np.random.randint(5, 50)
         n_neighbors = np.random.randint(3*perplexity, 6*perplexity)
@@ -145,6 +149,9 @@ def process(rank, imgs, V, S, num_images,device_list):
             best_params_tsne = (n_neighbors, perplexity)
             best_score_tsne = trustworthiness_score_tsne
 
+    tsne = TSNE(n_components=2,perplexity=best_params_tsne[1],n_neighbors=best_params_tsne[0],verbose=0)
+    embedding_tsne = tsne.fit_transform(U)
+    trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
 
     print(f"t-SNE and UMAP {rank} fitting done",flush=True)
     print(f"Trustworthiness on t-SNE on GPU {rank}: {best_score_tsne:.4f}",flush=True)
