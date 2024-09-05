@@ -373,7 +373,7 @@ class CrystFELtoPyFAI:
                 full_name = f"{pname}a{asic}"
                 arow = asic // (nasics//2)
                 acol = asic % (nasics//2)
-                slab_offset = p * asics_shape[1] *ss_size
+                slab_offset = p * asics_shape[0] *ss_size
                 ss_portion = slice(
                     arow * ss_size + slab_offset, (arow + 1) * ss_size + slab_offset
                 )
