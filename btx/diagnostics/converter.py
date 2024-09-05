@@ -160,7 +160,7 @@ class CrystFELtoPyFAI:
             return ePix10kaQuad()
         elif det_type == "jungfrau4M":
             return Jungfrau4M()
-        elif det_type == "rayonix" or det_type == "Rayonix":
+        elif det_type == "Rayonix":
             return Rayonix()
         else:
             raise ValueError("Detector type not recognized")
@@ -306,8 +306,12 @@ class CrystFELtoPyFAI:
                 for asic in range(nasics):
                     asicname = f"a{asic}"
                     full_name = pname + asicname
-                    arow = asic // (nasics//2)
-                    acol = asic % (nasics//2)
+                    if nasics == 1:
+                        arow = 0
+                        acol = 0
+                    else:
+                        arow = asic // (nasics//2)
+                        acol = asic % (nasics//2)
                     ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
                     fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
                     res = panels["panels"][full_name]["res"]
@@ -333,8 +337,12 @@ class CrystFELtoPyFAI:
             x, y, z = geom.get_pixel_coords(oname=child.oname, oindex=0, do_tilt=True, cframe=CFRAME_PSANA)
             for p in range(nmods):
                 for asic in range(nasics):
-                    arow = asic // (nasics//2)
-                    acol = asic % (nasics//2)
+                    if nasics == 1:
+                        arow = 0
+                        acol = 0
+                    else:
+                        arow = asic // (nasics//2)
+                        acol = asic % (nasics//2)
                     ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
                     fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
                     pix_arr[p, ss_portion, fs_portion, 0] = x[p, ss_portion, fs_portion]
@@ -373,8 +381,12 @@ class CrystFELtoPyFAI:
             pname = f"p{p}"
             for asic in range(nasics):
                 full_name = f"{pname}a{asic}"
-                arow = asic // (nasics//2)
-                acol = asic % (nasics//2)
+                if nasics == 1:
+                    arow = 0
+                    acol = 0
+                else:
+                    arow = asic // (nasics//2)
+                    acol = asic % (nasics//2)
                 slab_offset = p * asics_shape[0] *ss_size
                 ss_portion = slice(
                     arow * ss_size + slab_offset, (arow + 1) * ss_size + slab_offset
