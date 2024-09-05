@@ -171,6 +171,12 @@ def parse_input():
         required=False,
         type=bool,
     )
+    parser.add_argument(
+        "--num_runs",
+        help="Number of runs to process.",
+        required=True,
+        type=int,
+    )
 
     return parser.parse_args()
 
@@ -278,7 +284,7 @@ if __name__ == "__main__":
     average_losses=[]
     transformed_images = [[] for _ in range(num_gpus)]
     num_training_images = int(params.num_images * training_percentage)
-    num_runs = 2
+    num_runs = params.num_runs
 
     if start_offset is None:
         start_offset = 0
