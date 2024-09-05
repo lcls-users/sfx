@@ -823,7 +823,6 @@ def bo_aggregate_init_samples(config):
 def t_sne(config):
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.get_max_events import main as compute_max_events
-
     setup = config.setup
     task = config.t_sne
     num_images = task.num_images
