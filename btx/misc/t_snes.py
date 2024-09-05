@@ -106,16 +106,51 @@ def process(rank, imgs, V, S, num_images,device_list):
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
 
-    umap = cumlUMAP(n_components=2,n_neighbors=15,min_dist=0.1)
-    embedding_umap = umap.fit_transform(U)
-    tsne = TSNE(n_components=2,perplexity=10,learning_rate=300.0,n_iter=3000)
-    embedding_tsne = tsne.fit_transform(U)
-    trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
-    trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
+    trustworthiness_threshold = 0.85
+    best_params_tsne = None
+    best_score_tsne = 0
+    best_params_umap = None
+    best_score_umap = 0
+    max_iters = 100
+
+    for i in range(max_iters):
+        n_neighbors = np.random.randint(5, 50)
+        min_dist = np.random.uniform(0.0, 0.5) 
+        umap = cumlUMAP(n_components=2,n_neighbors=n_neighbors,min_dist=min_dist)
+        embedding_umap = umap.fit_transform(U)
+        trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
+
+        if trustworthiness_score_umap > trustworthiness_threshold:
+            print(f"Trustworthiness threshold reached !",flush=True)
+            best_params_umap = (n_neighbors, min_dist, n_components)
+            best_score_umap = trustworthiness_score_umap
+            break
+        elif trustworthiness_score_umap > best_score_umap: 
+            best_params_umap = (n_neighbors, min_dist)
+            best_score_umap = trustworthiness_score_umap
+    
+    for i in range(max_iters):
+        perplexity = np.random.randint(5, 100)
+        n_neighbors = np.random.randint(5, 50)
+        tsne = TSNE(n_components=2,perplexity=perplexity,n_neighbors=n_neighbors)
+        embedding_tsne = tsne.fit_transform(U)
+        trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
+
+        if trustworthiness_score_tsne > trustworthiness_threshold:
+            print(f"Trustworthiness threshold !", flush=True)
+            best_params_tsne = (n_neighbors, perplexity)
+            best_score_tsne = trustworthiness_score_tsne
+            break
+        elif trustworthiness_score_tsne > best_score_tsne: 
+            best_params_tsne = (n_neighbors, min_dist)
+            best_score_tsne = trustworthiness_score_tsne
+
 
     print(f"t-SNE and UMAP {rank} fitting done",flush=True)
-    print(f"Trustworthiness on t-SNE on GPU {rank}: {trustworthiness_score_tsne:.4f}",flush=True)
-    print(f"Trustworthiness on UMAP on GPU {rank}: {trustworthiness_score_umap:.4f}",flush=True)
+    print(f"Trustworthiness on t-SNE on GPU {rank}: {best_score_tsne:.4f}",flush=True)
+    print(f"Best parameters for t-SNE on GPU {rank}: {best_params_tsne}",flush=True)
+    print(f"Trustworthiness on UMAP on GPU {rank}: {best_score_umap:.4f}",flush=True)
+    print(f"Best parameters for UMAP on GPU {rank}: {best_params_umap}",flush=True)
 
     embedding_tsne = cp.asnumpy(embedding_tsne)
     embedding_umap = cp.asnumpy(embedding_umap)
