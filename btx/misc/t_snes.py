@@ -108,7 +108,7 @@ def process(rank, imgs, V, S, num_images,device_list):
 
     umap = cumlUMAP(n_components=2,n_neighbors=15,min_dist=0.1)
     embedding_umap = umap.fit_transform(U)
-    tsne = TSNE(n_components=2,perplexity=40,learning_rate=100.0,n_iter=3000)
+    tsne = TSNE(n_components=2,perplexity=10,learning_rate=300.0,n_iter=3000)
     embedding_tsne = tsne.fit_transform(U)
     trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
     trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
