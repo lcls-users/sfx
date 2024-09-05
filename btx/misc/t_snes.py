@@ -149,9 +149,10 @@ def process(rank, imgs, V, S, num_images,device_list):
             best_params_tsne = (n_neighbors, perplexity)
             best_score_tsne = trustworthiness_score_tsne
 
-    tsne = TSNE(n_components=2,perplexity=best_params_tsne[1],n_neighbors=best_params_tsne[0],verbose=0)
-    embedding_tsne = tsne.fit_transform(U)
-    trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
+    if best_score_tsne < trustworthiness_threshold:
+        tsne = TSNE(n_components=2,learning_rate_method='adaptive')
+        embedding_tsne = tsne.fit_transform(U)
+        trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
 
     print(f"t-SNE and UMAP {rank} fitting done",flush=True)
     print(f"Trustworthiness on t-SNE on GPU {rank}: {best_score_tsne:.4f}",flush=True)
