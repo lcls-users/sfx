@@ -130,9 +130,9 @@ def process(rank, imgs, V, S, num_images,device_list):
             best_score_umap = trustworthiness_score_umap
     
     for i in range(max_iters):
-        perplexity = np.random.randint(5, 100)
-        n_neighbors = np.random.randint(2*perplexity, 5*perplexity)
-        tsne = TSNE(n_components=2,perplexity=perplexity,n_neighbors=n_neighbors)
+        perplexity = np.random.randint(5, 50)
+        n_neighbors = np.random.randint(3*perplexity, 6*perplexity)
+        tsne = TSNE(n_components=2,perplexity=perplexity,n_neighbors=n_neighbors,verbose=0)
         embedding_tsne = tsne.fit_transform(U)
         trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
 
