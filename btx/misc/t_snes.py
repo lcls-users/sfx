@@ -121,7 +121,7 @@ def process(rank, imgs, V, S, num_images,device_list):
         trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
 
         if trustworthiness_score_umap > trustworthiness_threshold:
-            print(f"Trustworthiness threshold reached !",flush=True)
+            print(f"Trustworthiness UMAP threshold reached on GPU {rank}!",flush=True)
             best_params_umap = (n_neighbors, min_dist)
             best_score_umap = trustworthiness_score_umap
             break
@@ -137,7 +137,7 @@ def process(rank, imgs, V, S, num_images,device_list):
         trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
 
         if trustworthiness_score_tsne > trustworthiness_threshold:
-            print(f"Trustworthiness threshold !", flush=True)
+            print(f"Trustworthiness t-SNE threshold reached on GPU {rank}!", flush=True)
             best_params_tsne = (n_neighbors, perplexity)
             best_score_tsne = trustworthiness_score_tsne
             break
