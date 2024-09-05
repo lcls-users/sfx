@@ -28,7 +28,8 @@ from torch.utils.data import DataLoader
 from btx.processing.pipca_nopsana import main as run_client_task # This is the main function that runs the iPCA algorithm
 from btx.processing.pipca_nopsana import remove_file_with_timeout
 
-
+import cuml
+from cuml.manifold import UMAP as cumlUMAP
 from cuml.manifold import TSNE 
 from cuml.metrics import trustworthiness as cuml_trustworthiness
 import cupy as cp 
@@ -104,8 +105,11 @@ def process(rank, imgs, V, S, num_images,device_list):
     print(f"Projectors on GPU {rank} computed",flush=True)
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
-    tsne = TSNE(n_components=2, learning_rate_method='none', perplexity=50, n_neighbors=32, n_iter=1000)
-    embedding = tsne.fit_transform(U)
+
+    umap = cumlUMAP(n_neighbors=32, n_components=2, n_epochs=1000)
+    embedding = umap.fit_transform(U)
+    """tsne = TSNE(n_components=2, learning_rate_method='none', perplexity=50, n_neighbors=32, n_iter=1000)
+    embedding = tsne.fit_transform(U)"""
     trustworthiness_score = cuml_trustworthiness(U, embedding)
 
     print(f"t-SNE {rank} fitting done",flush=True)
