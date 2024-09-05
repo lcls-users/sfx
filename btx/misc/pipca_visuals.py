@@ -7,7 +7,7 @@ import json
 import pickle
 
 import csv 
-from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
 
 from btx.interfaces.ipsana import (
     PsanaInterface,
@@ -420,9 +420,9 @@ def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3):
                 't-SNE2': embedding[rank][:, 1],
                 'Index': np.arange(len(embedding[rank])),
             })
-            
-            kmeans = KMeans(n_clusters=num_clusters, random_state=0)
-            df['Cluster'] = kmeans.fit_predict(df[['t-SNE1', 't-SNE2']])
+
+            dbscan = DBSCAN(eps=0.5, min_samples=5)  
+            df['Cluster'] = dbscan.fit_predict(df[['t-SNE1', 't-SNE2']])
             
             scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
                                 color='Cluster',  
@@ -446,9 +446,9 @@ def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3):
                 'UMAP2': embedding[rank][:, 1],
                 'Index': np.arange(len(embedding[rank])),
             })
-            
-            kmeans = KMeans(n_clusters=num_clusters, random_state=0)
-            df['Cluster'] = kmeans.fit_predict(df[['UMAP1', 'UMAP2']])
+
+            dbscan = DBSCAN(eps=0.5, min_samples=5)
+            df['Cluster'] = dbscan.fit_predict(df[['UMAP1', 'UMAP2']])
             
             scatter = px.scatter(df, x='UMAP1', y='UMAP2', 
                                 color='Cluster',  # Utiliser la colonne 'Cluster' pour colorer les points
