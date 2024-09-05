@@ -149,8 +149,8 @@ def plot_scatters(embedding,S,type_of_embedding):
 
         for rank in range(num_gpus):
             df = pd.DataFrame({
-                't-SNE1': embedding[rank][:, 0],
-                't-SNE2': embedding[rank][:, 1],
+                'UMAP1': embedding[rank][:, 0],
+                'UMAP2': embedding[rank][:, 1],
                 'Index': np.arange(len(embedding[rank])),
             })
             
