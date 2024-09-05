@@ -154,11 +154,13 @@ def process(rank, imgs, V, S, num_images,device_list):
         embedding_tsne = tsne.fit_transform(U)
         trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
 
-    print(f"t-SNE and UMAP {rank} fitting done\n"
+    print("=====================================\n"
+          f"t-SNE and UMAP {rank} fitting done\n"
           f"Trustworthiness on t-SNE on GPU {rank}: {best_score_tsne:.4f}\n"
           f"Best parameters for t-SNE on GPU {rank}: {best_params_tsne}\n"
           f"Trustworthiness on UMAP on GPU {rank}: {best_score_umap:.4f}\n"
-          f"Best parameters for UMAP on GPU {rank}: {best_params_umap}", flush=True)
+          f"Best parameters for UMAP on GPU {rank}: {best_params_umap}"
+          "\n=====================================", flush=True)
 
     embedding_tsne = cp.asnumpy(embedding_tsne)
     embedding_umap = cp.asnumpy(embedding_umap)
