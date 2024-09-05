@@ -271,8 +271,8 @@ if __name__ == "__main__":
         embeddings_umap = []
         for embedding in t_snes_and_umap:
             tsne,umap = embedding
-            embeddings_tsne.append(embedding_tsne)
-            embeddings_umap.append(embedding_umap)
+            embeddings_tsne.append(tsne)
+            embeddings_umap.append(umap)
     
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
