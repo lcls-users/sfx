@@ -106,7 +106,7 @@ def process(rank, imgs, V, S, num_images,device_list):
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
 
-    umap = cumlUMAP(n_neighbors=32, n_components=2, n_epochs=1000)
+    umap = cumlUMAP(n_neighbors=50, min_dist=0.4, n_components=2, n_epochs=1000)
     embedding = umap.fit_transform(U)
     """tsne = TSNE(n_components=2, learning_rate_method='none', perplexity=50, n_neighbors=32, n_iter=1000)
     embedding = tsne.fit_transform(U)"""
