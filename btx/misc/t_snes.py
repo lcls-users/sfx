@@ -106,7 +106,7 @@ def process(rank, imgs, V, S, num_images,device_list):
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
 
-    trustworthiness_threshold = 0.85
+    trustworthiness_threshold = 0.9
     best_params_tsne = None
     best_score_tsne = 0
     best_params_umap = None
