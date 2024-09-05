@@ -322,7 +322,7 @@ if __name__ == "__main__":
         #Creates a pool of processes to parallelize the loading and processing of the images
         with Pool(processes=num_gpus) as pool:
             fitting_start_time = time.time()
-            for run in range(init_run, init_run + num_run):
+            for run in range(init_run, init_run + num_runs):
                 for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
                     beginning_time = time.time()
@@ -427,7 +427,7 @@ if __name__ == "__main__":
             ##
 
             #Compute the loss (same loading process)
-            for run in range(init_run, init_run + num_run):
+            for run in range(init_run, init_run + num_runs):
                 for event in range(start_offset, start_offset + num_images, loading_batch_size):
                     
                     ##
