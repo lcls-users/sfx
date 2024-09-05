@@ -111,11 +111,11 @@ def process(rank, imgs, V, S, num_images,device_list):
     best_score_tsne = 0
     best_params_umap = None
     best_score_umap = 0
-    max_iters = 200
+    max_iters = 300
 
     for i in range(max_iters):
-        n_neighbors = np.random.randint(5, 50)
-        min_dist = np.random.uniform(0.0, 0.5) 
+        n_neighbors = np.random.randint(5, 200)
+        min_dist = np.random.uniform(0.0, 2) 
         umap = cumlUMAP(n_components=2,n_neighbors=n_neighbors,min_dist=min_dist)
         embedding_umap = umap.fit_transform(U)
         trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
