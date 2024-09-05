@@ -122,7 +122,7 @@ def process(rank, imgs, V, S, num_images,device_list):
 
         if trustworthiness_score_umap > trustworthiness_threshold:
             print(f"Trustworthiness threshold reached !",flush=True)
-            best_params_umap = (n_neighbors, min_dist, n_components)
+            best_params_umap = (n_neighbors, min_dist)
             best_score_umap = trustworthiness_score_umap
             break
         elif trustworthiness_score_umap > best_score_umap: 
@@ -142,7 +142,7 @@ def process(rank, imgs, V, S, num_images,device_list):
             best_score_tsne = trustworthiness_score_tsne
             break
         elif trustworthiness_score_tsne > best_score_tsne: 
-            best_params_tsne = (n_neighbors, min_dist)
+            best_params_tsne = (n_neighbors, perplexity)
             best_score_tsne = trustworthiness_score_tsne
 
 
