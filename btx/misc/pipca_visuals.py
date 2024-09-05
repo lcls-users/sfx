@@ -400,32 +400,56 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-def plot_t_sne_scatters(filename):
+def plot_t_sne_scatters(filename,type_of_embedding='t-SNE'):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
-    embedding = np.array(data["embeddings"])
+    embedding_tsne = np.array(data["embeddings_tsne"])
+    embedding_umap = np.array(data["embeddings_umap"])
     S = np.array(data["S"])
     num_gpus = len(S)
 
-    fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
+    if type_of_embedding == 't-SNE':
+        embedding = embedding_tsne
+        fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
 
-    for rank in range(num_gpus):
-        df = pd.DataFrame({
-            't-SNE1': embedding[rank][:, 0],
-            't-SNE2': embedding[rank][:, 1],
-            'Index': np.arange(len(embedding[rank])),
-        })
-        
-        scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
-                            hover_data={'Index': True},
-                            labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
-                            title=f't-SNE projection (GPU {rank})')
-        
-        fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
+        for rank in range(num_gpus):
+            df = pd.DataFrame({
+                't-SNE1': embedding[rank][:, 0],
+                't-SNE2': embedding[rank][:, 1],
+                'Index': np.arange(len(embedding[rank])),
+            })
+            
+            scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
+                                hover_data={'Index': True},
+                                labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
+                                title=f't-SNE projection (GPU {rank})')
+            
+            fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
 
-    fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
-    fig.show()
+        fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
+        fig.show()
+
+    else :
+        embedding = embedding_umap
+        fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f'UMAP projection (GPU {rank})' for rank in range(num_gpus)])
+
+        for rank in range(num_gpus):
+            df = pd.DataFrame({
+                't-SNE1': embedding[rank][:, 0],
+                't-SNE2': embedding[rank][:, 1],
+                'Index': np.arange(len(embedding[rank])),
+            })
+            
+            scatter = px.scatter(df, x='UMAP1', y='UMAP2', 
+                                hover_data={'Index': True},
+                                labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
+                                title=f'UMAP projection (GPU {rank})')
+            
+            fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
+
+        fig.update_layout(height=800, width=800, showlegend=False, title_text="UMAP Projections Across GPUs")
+        fig.show()
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)

@@ -106,42 +106,63 @@ def process(rank, imgs, V, S, num_images,device_list):
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
 
-    umap = cumlUMAP(n_neighbors=50, min_dist=0.4, n_components=2, n_epochs=1000)
-    embedding = umap.fit_transform(U)
-    """tsne = TSNE(n_components=2, learning_rate_method='none', perplexity=50, n_neighbors=32, n_iter=1000)
-    embedding = tsne.fit_transform(U)"""
-    trustworthiness_score = cuml_trustworthiness(U, embedding)
+    umap = cumlUMAP(n_components=2)
+    embedding_umap = umap.fit_transform(U)
+    tsne = TSNE(n_components=2)
+    embedding_tsne = tsne.fit_transform(U)
+    trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
+    trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
 
-    print(f"t-SNE {rank} fitting done",flush=True)
-    print(f"Trustworthiness on GPU {rank}: {trustworthiness_score:.4f}",flush=True)
+    print(f"t-SNE and UMAP {rank} fitting done",flush=True)
+    print(f"Trustworthiness on t-SNE on GPU {rank}: {trustworthiness_score_tsne:.4f}",flush=True)
+    print(f"Trustworthiness on UMAP on GPU {rank}: {trustworthiness_score_umap:.4f}",flush=True)
 
-    embedding = cp.asnumpy(embedding)
+    embedding_tsne = cp.asnumpy(embedding_tsne)
+    embedding_umap = cp.asnumpy(embedding_umap)
 
+    return embedding_tsne, embedding_umap
 
-    return embedding
+def plot_scatters(embedding,S,type_of_embedding):
 
+    if type_of_embedding == 't-SNE':
+        fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
 
-def plot_scatters(embedding,S):
+        for rank in range(num_gpus):
+            df = pd.DataFrame({
+                't-SNE1': embedding[rank][:, 0],
+                't-SNE2': embedding[rank][:, 1],
+                'Index': np.arange(len(embedding[rank])),
+            })
+            
+            scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
+                                hover_data={'Index': True},
+                                labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
+                                title=f't-SNE projection (GPU {rank})')
+            
+            fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
 
-    fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
+        fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
+        fig.show()
 
-    for rank in range(num_gpus):
-        df = pd.DataFrame({
-            't-SNE1': embedding[rank][:, 0],
-            't-SNE2': embedding[rank][:, 1],
-            'Index': np.arange(len(embedding[rank])),
-            'Singular Value': S[rank]
-        })
-        
-        scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
-                            hover_data={'Index': True, 'Singular Value': ':.4f'},
-                            labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
-                            title=f't-SNE projection (GPU {rank})')
-        
-        fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
+    else :
+        fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f'UMAP projection (GPU {rank})' for rank in range(num_gpus)])
 
-    fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
-    fig.show()
+        for rank in range(num_gpus):
+            df = pd.DataFrame({
+                't-SNE1': embedding[rank][:, 0],
+                't-SNE2': embedding[rank][:, 1],
+                'Index': np.arange(len(embedding[rank])),
+            })
+            
+            scatter = px.scatter(df, x='UMAP1', y='UMAP2', 
+                                hover_data={'Index': True},
+                                labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
+                                title=f'UMAP projection (GPU {rank})')
+            
+            fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
+
+        fig.update_layout(height=800, width=800, showlegend=False, title_text="UMAP Projections Across GPUs")
+        fig.show()
 
 def unpack_ipca_pytorch_model_file(filename):
     """
@@ -245,14 +266,17 @@ if __name__ == "__main__":
 
     starting_time = time.time()
     with Pool(processes=num_gpus) as pool:
-        t_snes = pool.starmap(process,[(rank,list_images,V,S,num_images,device_list) for rank in range(num_gpus)])
-        embeddings = []
-        for embedding in t_snes:
-            embeddings.append(embedding)
+        t_snes_and_umap = pool.starmap(process,[(rank,list_images,V,S,num_images,device_list) for rank in range(num_gpus)])
+        embeddings_tsne = []
+        embeddings_umap = []
+        for embedding in t_snes_and_umap:
+            tsne,umap = embedding
+            embeddings_tsne.append(embedding_tsne)
+            embeddings_umap.append(embedding_umap)
     
-    print(f"t-SNE fitting done in {time.time()-starting_time} seconds",flush=True)
+    print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
-    data = {"embeddings": embeddings, "S": S}
+    data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S}
     with open(f"embedding_data_{num_images}.pkl", "wb") as f:
         pickle.dump(data, f)
     
