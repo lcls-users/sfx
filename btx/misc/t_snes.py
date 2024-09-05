@@ -136,7 +136,8 @@ def process(rank, imgs, V, S, num_images,device_list):
     for i in range(max_iters):
         perplexity = np.random.randint(5, 50)
         n_neighbors = np.random.randint(3*perplexity, 6*perplexity)
-        tsne = TSNE(n_components=2,perplexity=perplexity,n_neighbors=n_neighbors,verbose=0)
+        learning_rate = np.random.uniform(10, 1000)
+        tsne = TSNE(n_components=2,perplexity=perplexity,n_neighbors=n_neighbors,learning_rate=learning_rate,verbose=0)
         embedding_tsne = tsne.fit_transform(U)
         trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
 
