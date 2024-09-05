@@ -21,7 +21,7 @@ class ePix10k2M(Detector):
         ss_size=176,
         **kwargs,
     ):
-        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[1] * ss_size, asics_shape[0] * fs_size), **kwargs)
+        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[0] * ss_size, asics_shape[1] * fs_size), **kwargs)
         self.n_modules = n_modules
         self.n_asics = n_asics
         self.asics_shape = asics_shape
@@ -45,7 +45,7 @@ class ePix10kaQuad(Detector):
         ss_size=176,
         **kwargs,
     ):
-        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[1] * ss_size, asics_shape[0] * fs_size), **kwargs)
+        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[0] * ss_size, asics_shape[1] * fs_size), **kwargs)
         self.n_modules = n_modules
         self.n_asics = n_asics
         self.asics_shape = asics_shape
@@ -64,12 +64,12 @@ class Jungfrau4M(Detector):
         pixel2=0.075,
         n_modules=8,
         n_asics=8,
-        asics_shape=(4, 2), # (rows, cols) = (ss, fs)
+        asics_shape=(2, 4), # (rows, cols) = (ss, fs)
         fs_size=256,
         ss_size=256,
         **kwargs,
     ):
-        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[1] * ss_size, asics_shape[0] * fs_size), **kwargs)
+        super().__init__(pixel1=pixel1, pixel2=pixel2, max_shape=(n_modules * asics_shape[0] * ss_size, asics_shape[1] * fs_size), **kwargs)
         self.n_modules = n_modules
         self.n_asics = n_asics
         self.asics_shape = asics_shape
