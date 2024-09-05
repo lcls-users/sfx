@@ -7,6 +7,7 @@ import json
 import pickle
 
 import csv 
+from sklearn.cluster import KMeans
 
 from btx.interfaces.ipsana import (
     PsanaInterface,
@@ -400,7 +401,7 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-def plot_t_sne_scatters(filename,type_of_embedding='t-SNE'):
+def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -414,17 +415,17 @@ def plot_t_sne_scatters(filename,type_of_embedding='t-SNE'):
         fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
 
         for rank in range(num_gpus):
-            df = pd.DataFrame({
-                't-SNE1': embedding[rank][:, 0],
-                't-SNE2': embedding[rank][:, 1],
-                'Index': np.arange(len(embedding[rank])),
-            })
+            kmeans = KMeans(n_clusters=num_clusters, random_state=0)
+            kmeans = KMeans(n_clusters=num_clusters, random_state=0)
+            df['Cluster'] = kmeans.fit_predict(df[['t-SNE1', 't-SNE2']])
             
             scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
+                                color='Cluster',  
                                 hover_data={'Index': True},
                                 labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
                                 title=f't-SNE projection (GPU {rank})')
             
+
             fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
 
         fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
@@ -441,11 +442,15 @@ def plot_t_sne_scatters(filename,type_of_embedding='t-SNE'):
                 'Index': np.arange(len(embedding[rank])),
             })
             
+            kmeans = KMeans(n_clusters=num_clusters, random_state=0)
+            df['Cluster'] = kmeans.fit_predict(df[['UMAP1', 'UMAP2']])
+            
             scatter = px.scatter(df, x='UMAP1', y='UMAP2', 
+                                color='Cluster',  # Utiliser la colonne 'Cluster' pour colorer les points
                                 hover_data={'Index': True},
                                 labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
                                 title=f'UMAP projection (GPU {rank})')
-            
+                
             fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
 
         fig.update_layout(height=800, width=800, showlegend=False, title_text="UMAP Projections Across GPUs")
