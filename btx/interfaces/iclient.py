@@ -261,7 +261,7 @@ if __name__ == "__main__":
     start_time = time.time()
     params = parse_input()
     exp = params.exp
-    run = params.run
+    init_run = params.run
     det_type = params.det_type
     start_offset = params.start_offset
     num_components = params.num_components
@@ -278,7 +278,7 @@ if __name__ == "__main__":
     average_losses=[]
     transformed_images = [[] for _ in range(num_gpus)]
     num_training_images = int(params.num_images * training_percentage)
-
+    num_runs = 2
 
     if start_offset is None:
         start_offset = 0
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     #Initializes iPCA instance
     ipca_instance = iPCA_Pytorch_without_Psana(
     exp=exp,
-    run=run,
+    run=init_run,
     det_type=det_type,
     num_images=num_images,
     num_components=num_components,
@@ -322,93 +322,94 @@ if __name__ == "__main__":
         #Creates a pool of processes to parallelize the loading and processing of the images
         with Pool(processes=num_gpus) as pool:
             fitting_start_time = time.time()
-            for event in range(start_offset, start_offset + num_images, loading_batch_size):
+            for run in range(init_run, init_run + num_run):
+                for event in range(start_offset, start_offset + num_images, loading_batch_size):
 
-                beginning_time = time.time()
+                    beginning_time = time.time()
 
-                if event + loading_batch_size >= num_training_images + start_offset:
-                    last_batch = True
-
-                current_loading_batch = []
-                requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
-
-                server_address = ('localhost', 5000)
-                dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-                dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
-                dataloader_iter = iter(dataloader)
-
-                
-                for batch in dataloader_iter:
-                    if event + len(current_loading_batch) > num_training_images + start_offset and current_loading_batch != []:
+                    if event + loading_batch_size >= num_training_images + start_offset:
                         last_batch = True
+
+                    current_loading_batch = []
+                    requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
+
+                    server_address = ('localhost', 5000)
+                    dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
+                    dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
+                    dataloader_iter = iter(dataloader)
+
+                    
+                    for batch in dataloader_iter:
+                        if event + len(current_loading_batch) > num_training_images + start_offset and current_loading_batch != []:
+                            last_batch = True
+                            break
+                        current_loading_batch.append(batch)
+
+                    intermediate_time = time.time()
+                    l_time += intermediate_time-beginning_time
+
+                    logging.info(f"Loaded {event+loading_batch_size} images.")
+                    current_loading_batch = np.concatenate(current_loading_batch, axis=0)
+                    #Remove None images
+                    current_len = current_loading_batch.shape[0]
+                    current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+
+                    logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
+                    #Apply the smoothing function
+                    current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
+
+                    #Split the images into batches for each GPU
+                    current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+
+                    shape = current_loading_batch[0].shape
+                    dtype = current_loading_batch[0].dtype
+
+                    #Create shared memory for each batch
+                    shm_list = create_shared_images(current_loading_batch)
+
+                    device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+
+                    intermediate_time2 = time.time()
+                    t_time += intermediate_time2-intermediate_time
+
+                    if not last_batch:
+                        #Run the batch process in parallel
+                        results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
+                        logging.info("Checkpoint : Iteration done")
+
+                        final_time = time.time()
+                        f_time += final_time-intermediate_time2
+
+                    else:
+                        #Run the batch process in parallel, gather the results and update the model state dictionary
+                        results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
+                        (reconstructed_images, S, V, mu, total_variance) = ([], [], [], [], [])
+                        for result in results:
+                            S.append(result['S'])
+                            V.append(result['V'])
+                            mu.append(result['mu'])
+                            total_variance.append(result['total_variance'])
+                        
+                        for rank in range(num_gpus):
+                            model_state_dict[rank]['S'] = S[rank]
+                            model_state_dict[rank]['V'] = V[rank]
+                            model_state_dict[rank]['mu'] = mu[rank]
+                            model_state_dict[rank]['total_variance'] = total_variance[rank]
+                        
+                        final_time = time.time()
+                        f_time += final_time-intermediate_time2
                         break
-                    current_loading_batch.append(batch)
-
-                intermediate_time = time.time()
-                l_time += intermediate_time-beginning_time
-
-                logging.info(f"Loaded {event+loading_batch_size} images.")
-                current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                #Remove None images
-                current_len = current_loading_batch.shape[0]
-                current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
-
-                logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
-                #Apply the smoothing function
-                current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
-
-                #Split the images into batches for each GPU
-                current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
-
-                shape = current_loading_batch[0].shape
-                dtype = current_loading_batch[0].dtype
-
-                #Create shared memory for each batch
-                shm_list = create_shared_images(current_loading_batch)
-
-                device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
-
-                intermediate_time2 = time.time()
-                t_time += intermediate_time2-intermediate_time
-
-                if not last_batch:
-                    #Run the batch process in parallel
-                    results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
-                    logging.info("Checkpoint : Iteration done")
-
-                    final_time = time.time()
-                    f_time += final_time-intermediate_time2
-
-                else:
-                    #Run the batch process in parallel, gather the results and update the model state dictionary
-                    results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
-                    (reconstructed_images, S, V, mu, total_variance) = ([], [], [], [], [])
-                    for result in results:
-                        S.append(result['S'])
-                        V.append(result['V'])
-                        mu.append(result['mu'])
-                        total_variance.append(result['total_variance'])
                     
-                    for rank in range(num_gpus):
-                        model_state_dict[rank]['S'] = S[rank]
-                        model_state_dict[rank]['V'] = V[rank]
-                        model_state_dict[rank]['mu'] = mu[rank]
-                        model_state_dict[rank]['total_variance'] = total_variance[rank]
-                    
-                    final_time = time.time()
-                    f_time += final_time-intermediate_time2
-                    break
-                
 
-                mem = psutil.virtual_memory()
-                print("================LOADING DONE=====================",flush=True)
-                print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
-                print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
-                print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
-                print("=====================================")
+                    mem = psutil.virtual_memory()
+                    print("================LOADING DONE=====================",flush=True)
+                    print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
+                    print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
+                    print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
+                    print("=====================================")
 
-                torch.cuda.empty_cache()
-                gc.collect()
+                    torch.cuda.empty_cache()
+                    gc.collect()
 
             fitting_end_time = time.time()
             print(f"Time elapsed for fitting: {fitting_end_time - fitting_start_time} seconds.",flush=True) 
@@ -426,59 +427,60 @@ if __name__ == "__main__":
             ##
 
             #Compute the loss (same loading process)
-            for event in range(start_offset, start_offset + num_images, loading_batch_size):
-                
-                ##
-                all_norm_diff.append([])
-                all_init_norm.append([])
-                ##
+            for run in range(init_run, init_run + num_run):
+                for event in range(start_offset, start_offset + num_images, loading_batch_size):
+                    
+                    ##
+                    all_norm_diff.append([])
+                    all_init_norm.append([])
+                    ##
 
-                current_loading_batch = []
-                requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
+                    current_loading_batch = []
+                    requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
-                server_address = ('localhost', 5000)
-                dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-                dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
-                dataloader_iter = iter(dataloader)
+                    server_address = ('localhost', 5000)
+                    dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
+                    dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
+                    dataloader_iter = iter(dataloader)
 
-                for batch in dataloader_iter:
-                    current_loading_batch.append(batch)
+                    for batch in dataloader_iter:
+                        current_loading_batch.append(batch)
 
-                logging.info(f"Loaded {event+loading_batch_size} images.")
-                current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                current_loading_batch = current_loading_batch[[i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+                    logging.info(f"Loaded {event+loading_batch_size} images.")
+                    current_loading_batch = np.concatenate(current_loading_batch, axis=0)
+                    current_loading_batch = current_loading_batch[[i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
-                logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
-                current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
-                current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+                    logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
+                    current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
+                    current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
 
-                shape = current_loading_batch[0].shape
-                dtype = current_loading_batch[0].dtype
+                    shape = current_loading_batch[0].shape
+                    dtype = current_loading_batch[0].dtype
 
-                shm_list = create_shared_images(current_loading_batch)
+                    shm_list = create_shared_images(current_loading_batch)
 
-                device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+                    device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-                results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance,loss_or_not) for rank in range(num_gpus)])
-                current_batch_loss = []
-                for rank in range(num_gpus):
-                    average_loss,average_losses,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
-                    current_batch_loss.append(average_loss)
-                    average_losses.append(average_loss)
-                    transformed_images[rank].append(batch_transformed_images)
-                    all_norm_diff[-1].append(list_norm_diff)
-                    all_init_norm[-1].append(list_init_norm)
-                
-                print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
-                mem = psutil.virtual_memory()
-                print("================LOADING DONE=====================",flush=True)
-                print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
-                print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
-                print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
-                print("=====================================")
-                
-                torch.cuda.empty_cache()
-                gc.collect()
+                    results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance,loss_or_not) for rank in range(num_gpus)])
+                    current_batch_loss = []
+                    for rank in range(num_gpus):
+                        average_loss,average_losses,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
+                        current_batch_loss.append(average_loss)
+                        average_losses.append(average_loss)
+                        transformed_images[rank].append(batch_transformed_images)
+                        all_norm_diff[-1].append(list_norm_diff)
+                        all_init_norm[-1].append(list_init_norm)
+                    
+                    print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
+                    mem = psutil.virtual_memory()
+                    print("================LOADING DONE=====================",flush=True)
+                    print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
+                    print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
+                    print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
+                    print("=====================================")
+                    
+                    torch.cuda.empty_cache()
+                    gc.collect()
 
             for rank in range(num_gpus):
                 transformed_images[rank] = np.concatenate(transformed_images[rank], axis=0)
