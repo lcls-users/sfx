@@ -415,7 +415,12 @@ def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3):
         fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
 
         for rank in range(num_gpus):
-            kmeans = KMeans(n_clusters=num_clusters, random_state=0)
+            df = pd.DataFrame({
+                't-SNE1': embedding[rank][:, 0],
+                't-SNE2': embedding[rank][:, 1],
+                'Index': np.arange(len(embedding[rank])),
+            })
+            
             kmeans = KMeans(n_clusters=num_clusters, random_state=0)
             df['Cluster'] = kmeans.fit_predict(df[['t-SNE1', 't-SNE2']])
             
