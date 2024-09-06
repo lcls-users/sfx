@@ -94,7 +94,7 @@ def run_analysis(config):
     setup = config.setup
     task = config.run_analysis
     """ Generate powders for a given run and plot traces of run statistics. """
-    taskdir = os.path.join(setup.root_dir, f"powder/r{setup.exp}")
+    taskdir = os.path.join(setup.root_dir, f"powder/{setup.exp}")
     os.makedirs(taskdir, exist_ok=True)
     os.makedirs(os.path.join(taskdir, "figs"), exist_ok=True)
     mask_file = fetch_latest(
