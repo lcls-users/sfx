@@ -114,7 +114,9 @@ class PsanatoCrystFEL:
 
     def rayonix_geometry_to_crystfel(self, psana_file, output_file, cframe=CFRAME_PSANA, zcorr_um=None):
         geo = GeometryAccess(psana_file, 0, use_wide_pix_center=False)
-        x, y, z = geo.get_pixel_coords(oname=None, oindex=0, do_tilt=True, cframe=cframe)
+        top = geo.get_top_geo()
+        child = top.get_list_of_children()[0]
+        x, y, z = geo.get_pixel_coords(oname=child.oname, oindex=0, do_tilt=True, cframe=cframe)
         geo1 = geo.get_seg_geo() # GeometryObject
         seg = geo1.algo # object of the SegmentGeometry subclass
         segname = geo1.oname
