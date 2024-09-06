@@ -54,7 +54,7 @@ class RunDiagnostics:
                 self.powders['max'] = np.maximum(self.powders['max'], img)
                 self.powders['min'] = np.minimum(self.powders['min'], img)
 
-    def finalize_powders(self):
+    def finalize_powders(self, assemble=True):
         """
         Finalize powders calculation at end of the run, computing the
         max, avg, and std dev (and gain mode counts if applicable).
@@ -76,9 +76,13 @@ class RunDiagnostics:
             if self.gain_map is not None:
                 self.powders_final['gain_mode_counts'] = np.sum(powder_gain, axis=0)
             if self.psi.det_type.lower() != 'rayonix':
-                for key in self.powders_final.keys():
-                    self.powders_final[key] = assemble_image_stack_batch(self.powders_final[key], self.pixel_index_map)
-                self.panel_mask = assemble_image_stack_batch(np.ones(self.psi.det.shape()), self.pixel_index_map)
+                if assemble:
+                    for key in self.powders_final.keys():
+                        self.powders_final[key] = assemble_image_stack_batch(self.powders_final[key], self.pixel_index_map)
+                    self.panel_mask = assemble_image_stack_batch(np.ones(self.psi.det.shape()), self.pixel_index_map)
+                else:
+                    for key in self.powders_final.keys():
+                        self.powders_final[key] = np.reshape(self.powders_final[key], (self.powders_final[key].shape[0]*self.powders_final[key].shape[1], self.powders_final[key].shape[2]))
 
     def save_powders(self, outdir, raw_img=False):
         """
@@ -226,7 +230,7 @@ class RunDiagnostics:
         evt_map = map_pixel_gain_mode_for_raw(self.psi.det, raw)
         self.gain_map[evt_map==[self.modes[gain_mode]]] += 1
             
-    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, gain_mode=None, raw_img=False):
+    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None, gain_mode=None, raw_img=False, assemble=True):
         """
         Compute powders and per-image statistics. If a mask is provided, it is 
         only applied to the stats trajectories, not in computing the powder.
@@ -245,6 +249,8 @@ class RunDiagnostics:
             gain mode to retrieve statistics for, e.g. 'AML-L' 
         raw_img : bool
             if True, analyze raw rather than calibrated images
+        assemble : bool
+            if True, assemble powders according to pixel map
         """
         if mask is not None:
             if type(mask) == str:
@@ -296,7 +302,7 @@ class RunDiagnostics:
                 break
 
         self.comm.Barrier()
-        self.finalize_powders()
+        self.finalize_powders(assemble)
         if not powder_only:
             self.finalize_stats()
             print(f"Rank {self.rank}, no. empty images: {self.n_empty}, no. excluded images: {n_excluded}")
@@ -770,7 +776,8 @@ def main():
                          mask=params.mask, 
                          threshold=params.mean_threshold,
                          gain_mode=params.gain_mode,
-                         raw_img=params.raw_img)
+                         raw_img=params.raw_img,
+                         assemble=params.assemble)
     rd.save_powders(params.outdir, raw_img=params.raw_img)
     rd.save_traces(params.outdir, raw_img=params.raw_img)
     suffix = ""
@@ -802,6 +809,7 @@ def parse_input():
     parser.add_argument('--raw_img', help="Analyze raw rather than calibrated images", action='store_true')
     parser.add_argument('--outlier_threshold', help='Consider images with a mean below this threshold outliers for energy stats plot',
                         required=False, default=-np.inf, type=float)
+    parser.add_argument('--assemble', help='Powders have to be assembled or not', required=False, default=False, type=bool)
 
     return parser.parse_args()
 

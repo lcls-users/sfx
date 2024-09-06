@@ -116,6 +116,8 @@ def run_analysis(config):
             command += f" --raw_img"
     if task.get("outlier_threshold") is not None:
         command += f" --outlier_threshold={task.outlier_threshold}"
+    if task.get("assemble") is not None:
+        command += f" --assemble={task.assemble}"
     js = JobScheduler(
         os.path.join(".", f"ra_{setup.run:04}.sh"),
         queue=setup.queue,
@@ -216,7 +218,6 @@ def grid_search_pyFAI_geom(config):
         PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
         conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
         det = conv.detector
-        det.set_pixel_corners(conv.corner_array)
         geom_opt = GridSearchGeomOpt(exp=setup.exp, run=setup.run, det_type=setup.det_type, detector=det, calibrant=task.calibrant, Imin=task.Imin)
         powder = task.get("powder")
         task.poni = tuple([float(elem) for elem in task.poni.split()])
