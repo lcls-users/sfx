@@ -117,7 +117,8 @@ def run_analysis(config):
     if task.get("outlier_threshold") is not None:
         command += f" --outlier_threshold={task.outlier_threshold}"
     if task.get("assemble") is not None:
-        command += f" --assemble={task.assemble}"
+        if not task.assemble:
+            command += f" --assemble"
     js = JobScheduler(
         os.path.join(".", f"ra_{setup.run:04}.sh"),
         queue=setup.queue,
