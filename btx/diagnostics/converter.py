@@ -60,8 +60,8 @@ class Jungfrau4M(Detector):
 
     def __init__(
         self,
-        pixel1=0.075,
-        pixel2=0.075,
+        pixel1=0.000075,
+        pixel2=0.000075,
         n_modules=8,
         n_asics=8,
         asics_shape=(2, 4), # (rows, cols) = (ss, fs)
@@ -84,8 +84,8 @@ class Rayonix(Detector):
 
     def __init__(
         self,
-        pixel1=0.044,
-        pixel2=0.044,
+        pixel1=0.000044,
+        pixel2=0.000044,
         n_modules=1,
         n_asics=1,
         asics_shape=(1, 1),
