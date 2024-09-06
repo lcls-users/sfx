@@ -809,7 +809,7 @@ def parse_input():
     parser.add_argument('--raw_img', help="Analyze raw rather than calibrated images", action='store_true')
     parser.add_argument('--outlier_threshold', help='Consider images with a mean below this threshold outliers for energy stats plot',
                         required=False, default=-np.inf, type=float)
-    parser.add_argument('--assemble', help='Powders have to be assembled or not', required=False, default=False, type=bool)
+    parser.add_argument('--assemble', help='Powders have to be assembled or not', required=False, default=True, type=bool)
 
     return parser.parse_args()
 
