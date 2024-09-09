@@ -329,7 +329,7 @@ if __name__ == "__main__":
         with Pool(processes=num_gpus) as pool:
             fitting_start_time = time.time()
             for run in range(init_run, init_run + num_runs):
-                for event in range(start_offset, start_offset + num_images, loading_batch_size):
+                for event in range(start_offset, start_offset + num_images[run-init_run], loading_batch_size):
 
                     beginning_time = time.time()
 
@@ -406,7 +406,6 @@ if __name__ == "__main__":
                         f_time += final_time-intermediate_time2
                         break
                     
-
                     mem = psutil.virtual_memory()
                     print("================LOADING DONE=====================",flush=True)
                     print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
@@ -434,7 +433,7 @@ if __name__ == "__main__":
 
             #Compute the loss (same loading process)
             for run in range(init_run, init_run + num_runs):
-                for event in range(start_offset, start_offset + num_images, loading_batch_size):
+                for event in range(start_offset, start_offset + num_images[run-init_run], loading_batch_size):
                     
                     ##
                     all_norm_diff.append([])
