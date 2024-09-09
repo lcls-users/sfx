@@ -20,6 +20,7 @@ import logging
 import gc
 import h5py
 import csv
+import ast
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -113,9 +114,9 @@ def parse_input():
     )
     parser.add_argument(
         "--num_images",
-        help="Total number of images to be incorporated into model.",
+        help="Total number of images per run to be incorporated into model.",
         required=True,
-        type=list,
+        type=str,
     )
     parser.add_argument(
         "--loading_batch_size",
@@ -289,6 +290,7 @@ if __name__ == "__main__":
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
+    num_images = ast.literal_eval(num_images)
     loading_batch_size = params.loading_batch_size
 
     mp.set_start_method('spawn', force=True)
