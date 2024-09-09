@@ -115,7 +115,7 @@ def parse_input():
         "--num_images",
         help="Total number of images to be incorporated into model.",
         required=True,
-        type=int,
+        type=list,
     )
     parser.add_argument(
         "--loading_batch_size",
