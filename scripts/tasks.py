@@ -770,14 +770,17 @@ def test_serv_client(config):
     num_runs = task.num_runs
     num_images = task.num_images
     num_tot_images = num_images
-    max_events = [compute_max_events(exp, run+k, det_type) for k in range(num_runs)]
     distribution_images = [] 
-    for events in max_events:
-        if num_images <= 0:
-            break
-        images_for_run = min(events, num_images)
+    ##
+    num_runs = 0
+    while num_images > 0:
+        max_event = compute_max_events(exp, run+num_runs, det_type)
+        images_for_run = min(max_events, num_images)
         distribution_images.append(images_for_run)
         num_images -= images_for_run
+        num_runs += 1
+    ##
+    print(f"Number of runs: {num_runs}")
     num_images_str = json.dumps(distribution_images)
     num_components = task.num_components
     batch_size = task.batch_size
@@ -800,7 +803,7 @@ def test_serv_client(config):
 
     command = "which python; ulimit -n 4096;"
     command += f"python {server_path} & echo 'Server is running'"
-    command += f"; echo 'Number of images: {num_tot_images}'; echo 'Max number of events: {max_events}'"
+    command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images}'"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
