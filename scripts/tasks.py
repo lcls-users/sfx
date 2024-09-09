@@ -778,6 +778,7 @@ def test_serv_client(config):
         distribution_images.append(images_for_run)
         num_images -= images_for_run
     num_images = str(distribution_images)
+    print(num_images)
     num_components = task.num_components
     batch_size = task.batch_size
     path = task.path
