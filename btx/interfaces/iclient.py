@@ -284,13 +284,14 @@ if __name__ == "__main__":
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     average_losses=[]
     transformed_images = [[] for _ in range(num_gpus)]
-    num_training_images = int(params.num_images * training_percentage)
     num_runs = params.num_runs
 
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
     num_images = json.loads(num_images)
+    num_tot_images = sum(num_images)
+    num_training_images = int(num_tot_images * training_percentage)
     loading_batch_size = params.loading_batch_size
 
     mp.set_start_method('spawn', force=True)
