@@ -769,7 +769,6 @@ def test_serv_client(config):
     num_runs = task.num_runs
     num_images = task.num_images
     max_events = [compute_max_events(exp, run+k, det_type) for k in range(num_runs)]
-    num_images = min(num_images, max_events)
     distribution_images = [] 
     for events in max_events:
         if num_images <= 0:
