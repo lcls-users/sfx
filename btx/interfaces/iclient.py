@@ -301,7 +301,7 @@ if __name__ == "__main__":
     exp=exp,
     run=init_run,
     det_type=det_type,
-    num_images=num_images,
+    num_images=num_tot_images,
     num_components=num_components,
     batch_size=batch_size,
     filename = filename_with_tag,
