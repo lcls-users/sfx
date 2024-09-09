@@ -290,7 +290,7 @@ if __name__ == "__main__":
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
-    num_images = ast.literal_eval(num_images)
+    num_images = json.loads(num_images)
     loading_batch_size = params.loading_batch_size
 
     mp.set_start_method('spawn', force=True)
