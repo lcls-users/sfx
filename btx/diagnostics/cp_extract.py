@@ -293,10 +293,12 @@ class ControlPointExtractor():
         for j in range(len(ratio_radii)):
             i = np.argmin(abs(ratio_radii[j]-ratio_q))
             min_val = np.min(abs(ratio_radii[j]-ratio_q))
-            if min_val < 0.02:
+            if min_val < 0.02 and i not in ring_index:
                 print(f'Found match for ratio idx {j} being ratio of rings {i}/{i+1}')
                 ring_index.append(i)
-                ring_index.append(i+1)
+        for i in range(len(ring_index)):
+            ring = ring_index[i]
+            ring_index = np.insert(ring_index, i+1, ring+1)
         return np.unique(ring_index)
         
     def extract_control_points(self, eps_range, plot=None):
