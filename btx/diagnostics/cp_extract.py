@@ -133,8 +133,8 @@ class ControlPointExtractor():
         grady_powder = np.zeros_like(powder)
         gradx_powder[:-1, :-1] = (powder_smoothed[1:, :-1] - powder_smoothed[:-1, :-1] + powder_smoothed[1:, 1:] - powder_smoothed[:-1, 1:]) / 2 
         grady_powder[:-1, :-1] = (powder_smoothed[:-1, 1:] - powder_smoothed[:-1, :-1] + powder_smoothed[1:, 1:] - powder_smoothed[1:, :-1]) / 2
-        M = np.sqrt(gradx_powder**2 + grady_powder**2)
-        binary_powder = (M > 1).astype(np.uint8)
+        mag = np.sqrt(gradx_powder**2 + grady_powder**2)
+        binary_powder = (mag > 1).astype(np.uint8)
         X_total = np.nonzero(binary_powder)
         print(f'Extracted {len(X_total[0])} control points')
         structuring_element = np.ones((3, 3), dtype=np.uint8)
@@ -144,7 +144,7 @@ class ControlPointExtractor():
         X = np.array(list(zip(points[0], points[1])))
         N = X.shape[0]
         self.X = X
-        print(f"Extracted {N} control points")
+        print(f"Extracted {N} control points after dilation and thinning")
 
     def regroup_by_panel(self):
         """
@@ -156,9 +156,8 @@ class ControlPointExtractor():
             module = self.detector.center_modules[i]
             panel = self.X[(self.X[:, 0] >= module * self.detector.asics_shape[0] * self.detector.ss_size) & (self.X[:, 0] < (module + 1) * self.detector.asics_shape[0] * self.detector.ss_size)]
             self.panels.append(panel)
-            panel_norm = panel.copy()
-            panel_norm[:, 0] = panel_norm[:, 0] - module * self.detector.asics_shape[0] * self.detector.ss_size
-            self.panels_normalized.append(panel_norm)
+            panel[:, 0] = panel[:, 0] - module * self.detector.asics_shape[0] * self.detector.ss_size
+            self.panels_normalized.append(panel)
             print(f"Panel {module} has {len(panel)} control points")
 
     def clusterise(self, X, eps, min_samples):
@@ -292,14 +291,14 @@ class ControlPointExtractor():
     def ring_indexing(self, ratio_q, ratio_radii):
         ring_index = []
         for j in range(len(ratio_radii)):
-            for i, dq in enumerate(ratio_q):
-                if np.isclose(dq, ratio_radii[j], atol=0.01):
-                    ring_index.append(i)
-                    ring_index.append(i+1)
-                    j +=1
-                    break
-        return ring_index
-    
+            i = np.argmin(abs(ratio_radii[j]-ratio_q))
+            min_val = np.min(abs(ratio_radii[j]-ratio_q))
+            if min_val < 0.02:
+                print(f'Found match for ratio idx {j} being ratio of rings {i}/{i+1}')
+                ring_index.append(i)
+                ring_index.append(i+1)
+        return np.unique(ring_index)
+        
     def extract_control_points(self, eps_range, plot=None):
         """
         Extract control points from powder, cluster them into concentric rings and find appropriate ring index
@@ -311,7 +310,7 @@ class ControlPointExtractor():
         q_data = np.array(self.calibrant.get_peaks(unit='q_nm^-1'))
         ratio_q = q_data[:-1] / q_data[1:]
         data = []
-        for k, X in enumerate(self.panels_normalized):
+        for k, X in enumerate(self.panels):
             print(f"Processing panel {self.detector.center_modules[k]}...")
             eps = self.hyperparameter_eps_search(X, eps_range)
             print(f"Best eps for panel {self.detector.center_modules[k]}: {eps}")
@@ -331,8 +330,9 @@ class ControlPointExtractor():
             else:
                 for i in range(len(final_clusters)):
                     cluster = labels == final_clusters[i]
-                    xy = self.panels[k][cluster]
-                    data.append([xy[:, 0], xy[:, 1], ring_index[i]])
+                    xy = X[cluster]
+                    xy[:, 0] += self.detector.center_modules[k] * self.detector.asics_shape[0] * self.detector.ss_size
+                    ring_idx = ring_index[i]
+                    data = np.append(data, np.column_stack((xy[:, 0], xy[:, 1], np.full(len(xy), ring_idx))), axis=0)
         data = np.array(data)
-        data = data.reshape(-1, 3)
         self.data = data
