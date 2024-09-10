@@ -2,7 +2,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pyFAI.calibrant import CalibrantFactory, CALIBRANT_FACTORY
 from btx.interfaces.ipsana import *
-from btx.diagnostics.converter import get_detector
 from scipy.optimize import least_squares
 from sklearn.cluster import DBSCAN
 from scipy.ndimage import gaussian_filter
@@ -300,13 +299,17 @@ class ControlPointExtractor():
         """
         Extract control points from powder, cluster them into concentric rings and find appropriate ring index
         """
+        print("Extracting control points from binarized powder...")
         self.extract()
+        print("Regrouping control points by panel...")
         self.regroup_by_panel()
         q_data = np.array(self.calibrant.get_peaks(unit='q_nm^-1'))
         ratio_q = q_data[:-1] / q_data[1:]
         data = []
         for k, X in enumerate(self.panels_normalized):
+            print(f"Processing panel {k}...")
             eps = self.hyperparameter_eps_search(X, eps_range)
+            print(f"Best eps for panel {k}: {eps}")
             labels = self.clusterise(X, eps=eps, min_samples=4)
             centers, radii = self.fit_circles_on_clusters(X, labels)
             nice_clusters, centroid = self.find_nice_clusters(centers, radii, X, labels)
