@@ -309,7 +309,7 @@ class ControlPointExtractor():
         self.regroup_by_panel()
         q_data = np.array(self.calibrant.get_peaks(unit='q_nm^-1'))
         ratio_q = q_data[:-1] / q_data[1:]
-        data = []
+        data = np.array([])
         for k, X in enumerate(self.panels):
             print(f"Processing panel {self.detector.center_modules[k]}...")
             eps = self.hyperparameter_eps_search(X, eps_range)
