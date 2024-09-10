@@ -127,18 +127,18 @@ class ControlPointExtractor():
         Extract control points from powder
         """
         gray_powder = (self.powder - self.powder.min()) / (self.powder.max() - self.powder.min()) * 255
-        gray_powder = gray_powder.astype(np.uint8)
-        gray_smoothed_powder = gaussian_filter(gray_powder, sigma=1)
-        gradx_powder = np.zeros_like(self.powder)
-        grady_powder = np.zeros_like(self.powder)
-        gradx_powder[:-1, :-1] = (gray_smoothed_powder[1:, :-1] - gray_smoothed_powder[:-1, :-1] + gray_smoothed_powder[1:, 1:] - gray_smoothed_powder[:-1, 1:]) / 2 
-        grady_powder[:-1, :-1] = (gray_smoothed_powder[:-1, 1:] - gray_smoothed_powder[:-1, :-1] + gray_smoothed_powder[1:, 1:] - gray_smoothed_powder[1:, :-1]) / 2
-        magnitude_powder = np.sqrt(gradx_powder**2 + grady_powder**2)
-        binary_powder = (magnitude_powder > 1).astype(np.uint8)
+        powder = gray_powder.astype(np.uint8)
+        powder_smoothed = gaussian_filter(powder, sigma=1)
+        gradx_powder = np.zeros_like(powder)
+        grady_powder = np.zeros_like(powder)
+        gradx_powder[:-1, :-1] = (powder_smoothed[1:, :-1] - powder_smoothed[:-1, :-1] + powder_smoothed[1:, 1:] - powder_smoothed[:-1, 1:]) / 2 
+        grady_powder[:-1, :-1] = (powder_smoothed[:-1, 1:] - powder_smoothed[:-1, :-1] + powder_smoothed[1:, 1:] - powder_smoothed[1:, :-1]) / 2
+        M = np.sqrt(gradx_powder**2 + grady_powder**2)
+        binary_powder = (M > 1).astype(np.uint8)
         X_total = np.nonzero(binary_powder)
         print(f'Extracted {len(X_total[0])} control points')
         structuring_element = np.ones((3, 3), dtype=np.uint8)
-        dilated_powder = dilation(binary_powder, selem=structuring_element)
+        dilated_powder = dilation(binary_powder, structuring_element)
         final_powder = skeletonize(dilated_powder).astype(np.uint8)
         points = np.nonzero(final_powder)
         X = np.array(list(zip(points[0], points[1])))
