@@ -144,6 +144,7 @@ class ControlPointExtractor():
         X[:, 0] = points[:, 0]
         X[:, 1] = points[:, 1]
         self.X = X
+        print(f"Extracted {N} control points")
 
     def regroup_by_panel(self):
         """
@@ -158,6 +159,7 @@ class ControlPointExtractor():
             panel_norm = panel.copy()
             panel_norm[:, 0] = panel_norm[:, 0] - module * self.detector.ss_size
             self.panels_normalized.append(panel_norm)
+            print(f"Panel {module} has {len(panel)} control points")
 
     def clusterise(self, X, eps, min_samples):
         db = DBSCAN(eps=eps, min_samples=min_samples).fit(X)
