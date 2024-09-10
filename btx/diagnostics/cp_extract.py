@@ -135,6 +135,8 @@ class ControlPointExtractor():
         grady_powder[:-1, :-1] = (gray_smoothed_powder[:-1, 1:] - gray_smoothed_powder[:-1, :-1] + gray_smoothed_powder[1:, 1:] - gray_smoothed_powder[1:, :-1]) / 2
         magnitude_powder = np.sqrt(gradx_powder**2 + grady_powder**2)
         binary_powder = (magnitude_powder > 1).astype(np.uint8)
+        X_total = np.nonzero(binary_powder)
+        print(f'Extracted {len(X_total[0])} control points')
         structuring_element = np.ones((3, 3), dtype=np.uint8)
         dilated_powder = dilation(binary_powder, selem=structuring_element)
         final_powder = skeletonize(dilated_powder).astype(np.uint8)
@@ -155,7 +157,7 @@ class ControlPointExtractor():
             panel = self.X[(self.X[:, 0] >= module * self.detector.asics_shape[0] * self.detector.ss_size) & (self.X[:, 0] < (module + 1) * self.detector.asics_shape[0] * self.detector.ss_size)]
             self.panels.append(panel)
             panel_norm = panel.copy()
-            panel_norm[:, 0] = panel_norm[:, 0] - module * self.detector.ss_size
+            panel_norm[:, 0] = panel_norm[:, 0] - module * self.detector.asics_shape[0] * self.detector.ss_size
             self.panels_normalized.append(panel_norm)
             print(f"Panel {module} has {len(panel)} control points")
 
