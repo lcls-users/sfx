@@ -325,7 +325,7 @@ class ControlPointExtractor():
             final_clusters = nice_clusters[permutation]
             ratio_radii = sorted_radii[:-1] / sorted_radii[1:]
             ring_index = self.ring_indexing(ratio_q, ratio_radii)
-            if ring_index == []:
+            if len(ring_index) == 0:
                 print(f"No ring index found for panel {self.detector.center_modules[k]}")
             else:
                 for i in range(len(final_clusters)):
