@@ -137,7 +137,7 @@ class ControlPointExtractor():
         binary_powder = (magnitude_powder > 1).astype(np.uint8)
         structuring_element = np.ones((3, 3), dtype=np.uint8)
         dilated_powder = dilation(binary_powder, selem=structuring_element)
-        final_powder = skeletonize(dilated_powder)
+        final_powder = skeletonize(dilated_powder).astype(np.uint8)
         points = np.nonzero(final_powder)
         X = np.array(list(zip(points[0], points[1])))
         N = X.shape[0]
