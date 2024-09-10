@@ -213,7 +213,10 @@ class ControlPointExtractor():
         nice_clusters = nice_clusters[filtered_indices]
 
         # centroid: Mean center of the true centers
-        centroid = np.mean(centers[true_centers][filtered_indices], axis=0)
+        if len(nice_clusters) != 0:
+            centroid = np.mean(centers[true_centers][filtered_indices], axis=0)
+        else:
+            centroid = np.array([0, 0])
         return nice_clusters, centroid
 
     def fit_concentric_rings(self, X, labels, nice_clusters, centroid):
