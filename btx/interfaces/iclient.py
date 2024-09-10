@@ -446,7 +446,7 @@ if __name__ == "__main__":
                     ##
 
                     current_loading_batch = []
-                    requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
+                    requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[run-init_run]))]
 
                     server_address = ('localhost', 5000)
                     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
