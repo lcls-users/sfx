@@ -100,7 +100,7 @@ class ControlPointExtractor():
         wavelength = self.diagnostics.get_wavelength() * 1e-10
         self.calibrant.set_wavelength(wavelength)
         self.detector = self.get_detector(det_type)
-        self.extract_control_points(eps_range=np.arange(20, 60), plot=None)
+        self.extract_control_points(eps_range=np.arange(20, 60, 1), plot=None)
 
     def get_detector(self, det_type):
         """
@@ -307,9 +307,9 @@ class ControlPointExtractor():
         ratio_q = q_data[:-1] / q_data[1:]
         data = []
         for k, X in enumerate(self.panels_normalized):
-            print(f"Processing panel {k}...")
+            print(f"Processing panel {self.detector.center_modules[k]}...")
             eps = self.hyperparameter_eps_search(X, eps_range)
-            print(f"Best eps for panel {k}: {eps}")
+            print(f"Best eps for panel {self.detector.center_modules[k]}: {eps}")
             labels = self.clusterise(X, eps=eps, min_samples=4)
             centers, radii = self.fit_circles_on_clusters(X, labels)
             nice_clusters, centroid = self.find_nice_clusters(centers, radii, X, labels)
@@ -321,10 +321,13 @@ class ControlPointExtractor():
             final_clusters = nice_clusters[permutation]
             ratio_radii = sorted_radii[:-1] / sorted_radii[1:]
             ring_index = self.ring_indexing(ratio_q, ratio_radii)
-            for i in range(len(final_clusters)):
-                cluster = labels == final_clusters[i]
-                xy = self.panels[k][cluster]
-                data.append([xy[:, 0], xy[:, 1], ring_index[i]])
+            if ring_index == []:
+                print(f"No ring index found for panel {self.detector.center_modules[k]}")
+            else:
+                for i in range(len(final_clusters)):
+                    cluster = labels == final_clusters[i]
+                    xy = self.panels[k][cluster]
+                    data.append([xy[:, 0], xy[:, 1], ring_index[i]])
         data = np.array(data)
         data = data.reshape(-1, 3)
         self.data = data
