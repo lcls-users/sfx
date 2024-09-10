@@ -359,10 +359,11 @@ if __name__ == "__main__":
                     intermediate_time = time.time()
                     l_time += intermediate_time-beginning_time
 
-                    logging.info(f"Loaded {event+loading_batch_size} images from run {run}.")
+
                     current_loading_batch = np.concatenate(current_loading_batch, axis=0)
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
+                    logging.info(f"Loaded {event+current_len} images from run {run}.")
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
                     logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
@@ -456,9 +457,11 @@ if __name__ == "__main__":
                     for batch in dataloader_iter:
                         current_loading_batch.append(batch)
 
-                    logging.info(f"Loaded {event+loading_batch_size} images from run {run}.")
+
                     current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                    current_loading_batch = current_loading_batch[[i for i in range(loading_batch_size) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+                    current_len = current_loading_batch.shape[0]
+                    logging.info(f"Loaded {event+current_len} images from run {run}.")
+                    current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
                     logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
                     current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
