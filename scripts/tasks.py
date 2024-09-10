@@ -776,7 +776,7 @@ def test_serv_client(config):
     while num_images > 0:
         max_event = compute_max_events(exp, run+num_runs, det_type)
         images_for_run = min(max_event, num_images)
-        distribution_images.append(images_for_run)
+        distribution_images.append(images_for_run-1)
         num_images -= images_for_run
         num_runs += 1
     ##
@@ -803,7 +803,7 @@ def test_serv_client(config):
 
     command = "which python; ulimit -n 4096;"
     command += f"python {server_path} & echo 'Server is running'"
-    command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images}'"
+    command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images_str}'"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
