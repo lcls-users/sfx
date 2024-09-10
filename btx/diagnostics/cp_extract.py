@@ -209,8 +209,8 @@ class ControlPointExtractor():
         nice_clusters = np.arange(0, len(true_centers))[true_centers]
         nice_cluster_radii = radii[true_centers]
 
-        # Filter out clusters where the radius is less than 100pix
-        filtered_indices = nice_cluster_radii >= 100
+        # Filter out clusters where the radius is less than 200pix
+        filtered_indices = nice_cluster_radii >= 200
         nice_clusters = nice_clusters[filtered_indices]
 
         # centroid: Mean center of the true centers
