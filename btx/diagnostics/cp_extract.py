@@ -98,6 +98,8 @@ class ControlPointExtractor():
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
         self.calibrant = CALIBRANT_FACTORY(calibrant)
+        wavelength = self.diagnostics.get_wavelength() * 1e-10
+        self.calibrant.set_wavelength(wavelength)
         self.detector = self.get_detector(det_type)
         self.extract_control_points(eps_range=np.arange(20, 60), plot=None)
 
