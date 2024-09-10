@@ -138,11 +138,9 @@ class ControlPointExtractor():
         structuring_element = np.ones((3, 3), dtype=np.uint8)
         dilated_powder = dilation(binary_powder, selem=structuring_element)
         final_powder = skeletonize(dilated_powder)
-        points = np.argwhere(final_powder != 0)
-        N = points.shape[0]
-        X = np.zeros((N, 2))
-        X[:, 0] = points[:, 0]
-        X[:, 1] = points[:, 1]
+        points = np.nonzero(final_powder)
+        X = np.array(list(zip(points[0], points[1])))
+        N = X.shape[0]
         self.X = X
         print(f"Extracted {N} control points")
 
@@ -154,7 +152,7 @@ class ControlPointExtractor():
         self.panels_normalized = []
         for i in range(self.detector.n_modules):
             module = self.detector.center_modules[i]
-            panel = self.X[(self.X[:, 0] >= module * self.detector.ss_size) & (self.X[:, 0] < (module + 1) * self.detector.ss_size)]
+            panel = self.X[(self.X[:, 0] >= module * self.detector.asics_shape[0] * self.detector.ss_size) & (self.X[:, 0] < (module + 1) * self.detector.asics_shape[0] * self.detector.ss_size)]
             self.panels.append(panel)
             panel_norm = panel.copy()
             panel_norm[:, 0] = panel_norm[:, 0] - module * self.detector.ss_size
