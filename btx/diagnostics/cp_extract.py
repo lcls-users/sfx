@@ -296,8 +296,8 @@ class ControlPointExtractor():
             min_val = np.min(abs(ratio_radii[j]-ratio_q))
             if min_val < 0.02:
                 print(f'Found match for ratio idx {j} being ratio of rings {i+count}/{i+count+1}')
-                ring_index.append(i+c)
-                ring_index.append(i+c+1)
+                ring_index.append(i+count)
+                ring_index.append(i+count+1)
                 ratio_q = np.delete(ratio_q, i)
                 count += 1
             else:
