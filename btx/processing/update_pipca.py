@@ -490,7 +490,10 @@ if __name__ == "__main__":
                             if last_batch:
                                 print("Last batch",flush=True)
                                 break
-
+                        
+                    if last_batch:
+                        break
+                    
         #Update the model
         if update_or_not:
             update_model(filename, model_state_dict)    
