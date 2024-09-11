@@ -342,9 +342,9 @@ class ControlPointExtractor():
                 # Black used for noise.
                 col = [0, 0, 0, 1]
 
-            class_member_mask = labels == i
+            cluster = labels == i
 
-            xy = X[class_member_mask]
+            xy = X[cluster]
             plt.plot(
                 xy[:, 1],
                 xy[:, 0],
@@ -355,7 +355,7 @@ class ControlPointExtractor():
                 label=i
             )
         cx, cy = centroid
-        for i in nice_clusters:
+        for i in range(len(nice_clusters)):
             circle = plt.Circle((cx, cy), radii[i], color='r', fill=False, linestyle='--')
             plt.gca().add_artist(circle)
         plt.legend()
