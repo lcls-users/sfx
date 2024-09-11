@@ -407,7 +407,7 @@ if __name__ == "__main__":
 
     mp.set_start_method('spawn', force=True)    
     #Reads current model
-    data = read_model_file(model)
+    data = read_model_file(filename)
     with mp.Manager() as manager:
         model_state_dict = [manager.dict() for _ in range(num_gpus)]
         for rank in range(num_gpus):
@@ -479,4 +479,4 @@ if __name__ == "__main__":
                             break
 
         #Update the model
-        update_model(model, model_state_dict)        
+        update_model(filename, model_state_dict)        
