@@ -395,7 +395,7 @@ class ControlPointExtractor():
                 permutation = np.argsort(radii)
                 final_clusters = nice_clusters[permutation]
                 ratio_radii = sorted_radii[:-1] / sorted_radii[1:]
-                ring_index, is_rings = self.ring_indexing(ratio_q, ratio_radii, final_clusters, a_tol)
+                ring_index = self.ring_indexing(ratio_q, ratio_radii, final_clusters, a_tol)
             else:
                 final_clusters = nice_clusters
                 ring_index = None
