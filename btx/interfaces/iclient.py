@@ -245,26 +245,20 @@ def create_or_update_dataset(f, name, data):
     f.create_dataset(name, data=data)
 
 def run_batch_process(algo_state_dict, ipca_state_dict, last_batch, rank, device, shape, dtype, shm_list,ipca_instance):
-    # Charge les tenseurs CUDA sur le GPU à l'intérieur du processus
     algo_state_dict[rank] = {k: v.cuda(device) if torch.is_tensor(v) else v for k, v in algo_state_dict[rank].items()}
-    # Appelle la méthode de traitement
     return ipca_instance.run_batch(algo_state_dict, ipca_state_dict, last_batch, rank, device, shape, dtype, shm_list)
 
 def compute_loss_process(rank, device_list, shape, dtype, shm_list, model_state_dict, batch_size,ipca_instance,loss_or_not):
-    # Charge les tenseurs CUDA sur le GPU à l'intérieur du processus
     model_state_dict[rank] = {k:v for k, v in model_state_dict[rank].items()}
     model_state_dict[rank]['V'] = torch.tensor(model_state_dict[rank]['V'], device=device_list[rank])
     model_state_dict[rank]['mu'] = torch.tensor(model_state_dict[rank]['mu'], device=device_list[rank])
-    # Appelle la méthode de traitement
     return ipca_instance.compute_loss(rank, device_list, shape, dtype, shm_list,model_state_dict, batch_size,loss_or_not)
 
 if __name__ == "__main__":
 
-    # Python executable location
     print("\nPython executable location from client:")
     print(sys.executable)
     
-
     start_time = time.time()
     params = parse_input()
     exp = params.exp
@@ -552,11 +546,13 @@ if __name__ == "__main__":
                     f.create_dataset('start_offset', data=start_offset)
 
                 create_or_update_dataset(f, 'run', data=run)
+                create_or_update_dataset(f, 'num_runs', data=num_runs)
                 create_or_update_dataset(f, 'transformed_images', data=np.array(transformed_images))
                 create_or_update_dataset(f, 'S', data=S)
                 create_or_update_dataset(f, 'V', data=V)
                 create_or_update_dataset(f, 'mu', data=mu)
                 create_or_update_dataset(f, 'total_variance', data=total_variance)
+                create_or_update_dataset(f, 'num_images', data=num_images)
 
     saving_end_time = time.time()
 

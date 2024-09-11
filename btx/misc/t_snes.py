@@ -97,7 +97,7 @@ class IPCRemotePsanaDataset(Dataset):
             return result
 
 
-def process(rank, imgs, V, S, num_images,device_list):
+def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     S = torch.tensor(np.diag(S[rank]), device=device_list[rank])
     V = torch.tensor(V[rank],device=device_list[rank])
     imgs = torch.tensor(imgs[rank].reshape(num_images,-1),device=device_list[rank])
@@ -106,12 +106,12 @@ def process(rank, imgs, V, S, num_images,device_list):
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
 
-    trustworthiness_threshold = 0.8
+    trustworthiness_threshold = threshold
     best_params_tsne = None
     best_score_tsne = 0
     best_params_umap = None
     best_score_umap = 0
-    max_iters = 1000
+    max_iters = num_tries
 
     for i in range(max_iters):
         n_neighbors = np.random.randint(5, 200)
@@ -264,6 +264,16 @@ def parse_input():
         type=int
     )
 
+    parser.add_argument(
+        "--num_tries",
+        type=int
+    )
+
+    parser.add_argument(
+        "--trustworthiness_threshold",
+        type=float
+    )
+
     return parser.parse_args()
 
 
@@ -273,6 +283,8 @@ if __name__ == "__main__":
     filename = params.filename
     num_images = params.num_images
     loading_batch_size = params.loading_batch_size
+    threshold = params.trustworthiness_threshold
+    num_tries = params.num_tries
     ##
     print("Unpacking model file...",flush=True)
     data = unpack_ipca_pytorch_model_file(filename)
@@ -312,7 +324,7 @@ if __name__ == "__main__":
 
     starting_time = time.time()
     with Pool(processes=num_gpus) as pool:
-        t_snes_and_umap = pool.starmap(process,[(rank,list_images,V,S,num_images,device_list) for rank in range(num_gpus)])
+        t_snes_and_umap = pool.starmap(process,[(rank,list_images,V,S,num_images,device_list,num_tries,threshold) for rank in range(num_gpus)])
         embeddings_tsne = []
         embeddings_umap = []
         for embedding in t_snes_and_umap:
