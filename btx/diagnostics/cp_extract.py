@@ -111,6 +111,8 @@ class ControlPointExtractor():
         Threshold value for binarization
     """
     def __init__(self, exp, run, det_type, powder, calibrant, threshold=1):
+        self.exp = exp
+        self.run = run
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
         self.calibrant = CALIBRANT_FACTORY(calibrant)
