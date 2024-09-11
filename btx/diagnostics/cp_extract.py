@@ -380,7 +380,7 @@ class ControlPointExtractor():
             print(f"Best eps for panel {self.detector.center_modules[k]}: {eps}")
             labels = self.clusterise(X, eps=eps, min_samples=4)
             centers, radii = self.fit_circles_on_clusters(X, labels)
-            nice_clusters, centroid = self.find_nice_clusters(centers, radii, X, labels)
+            nice_clusters, centroid = self.find_nice_clusters(centers, radii)
             radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
             labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii)
             radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
