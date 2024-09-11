@@ -317,8 +317,6 @@ def update_model(model, model_state_dict):
         create_or_update_dataset(f, 'S', data=S)
         create_or_update_dataset(f, 'num_images', data=new_num_images)
     
-
-
 def parse_input():
     """
     Parse command line input.
@@ -396,7 +394,6 @@ if __name__ == "__main__":
     batch_size = params.batch_size
     filename = params.model
     num_gpus = params.num_gpus
-    remove_file_with_timeout(filename, overwrite, timeout=10)
     num_runs = params.num_runs
     threshold = params.threshold
 
