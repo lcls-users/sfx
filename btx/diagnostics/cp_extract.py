@@ -336,7 +336,7 @@ class ControlPointExtractor():
         """
         Plot final clustering after fitting concentric rings
         """
-        fig, ax = plt.subplots(figsize=(8, 8))
+        fig, ax = plt.subplots(figsize=(4, 4))
         unique_labels = np.unique(labels)
         colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
         for i, col in zip(unique_labels, colors):
@@ -364,7 +364,7 @@ class ControlPointExtractor():
         if ring_index is not None:
             plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} with indexed rings {ring_index}")
         else:
-            plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} witg no ring found")
+            plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} with no ring found")
         fig.savefig(plot)
 
     def extract_control_points(self, eps_range, threshold, plot=True):
