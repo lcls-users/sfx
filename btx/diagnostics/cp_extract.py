@@ -363,12 +363,12 @@ class ControlPointExtractor():
             plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} witg no ring found")
         fig.savefig(plot)
 
-    def extract_control_points(self, eps_range, plot=True):
+    def extract_control_points(self, eps_range, threshold, plot=True):
         """
         Extract control points from powder, cluster them into concentric rings and find appropriate ring index
         """
         print("Extracting control points from binarized powder...")
-        self.extract()
+        self.extract(threshold)
         print("Regrouping control points by panel...")
         self.regroup_by_panel()
         q_data = np.array(self.calibrant.get_peaks(unit='q_nm^-1'))
