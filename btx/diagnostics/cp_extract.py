@@ -110,7 +110,7 @@ class ControlPointExtractor():
     threshold : float
         Threshold value for binarization
     """
-    def __init__(self, exp, run, det_type, powder, calibrant, threshold=1, filter=100):
+    def __init__(self, exp, run, det_type, powder, calibrant, threshold=1, filter=100, a_tol=0.02):
         self.exp = exp
         self.run = run
         self.det_type = det_type
@@ -120,7 +120,7 @@ class ControlPointExtractor():
         wavelength = self.diagnostics.get_wavelength() * 1e-10
         self.calibrant.set_wavelength(wavelength)
         self.detector = self.get_detector(det_type)
-        self.extract_control_points(eps_range=np.arange(20, 60, 1), threshold=threshold, filter=filter, plot=True)
+        self.extract_control_points(eps_range=np.arange(20, 60, 1), threshold=threshold, filter=filter, a_tol=a_tol, plot=True)
 
     def get_detector(self, det_type):
         """
@@ -316,24 +316,24 @@ class ControlPointExtractor():
             scores.append(score)
         return eps_range[np.argmax(scores)]
     
-    def ring_indexing(self, ratio_q, ratio_radii):
-        ring_index = []
+    def ring_indexing(self, ratio_q, ratio_radii, final_clusters, a_tol):
+        ring_index = np.full(len(final_clusters), -1)
         count = 0
         for j in range(len(ratio_radii)):
             i = np.argmin(abs(ratio_radii[j]-ratio_q))
             min_val = np.min(abs(ratio_radii[j]-ratio_q))
-            if min_val < 0.04:
+            if min_val < a_tol:
                 print(f'Found match for ratio idx {j} being ratio of rings {i+count}/{i+count+1}')
-                ring_index.append(i+count)
-                ring_index.append(i+count+1)
+                ring_index[j] = i+count
+                ring_index[j+1] = i+count+1
                 ratio_q = np.delete(ratio_q, i)
                 count += 1
             else:
                 print(f'Missing one ring radius value for ratio idx {j}')
-        return np.unique(ring_index) if len(ring_index) > 0 else None
+        return ring_index if len(ring_index) > 0 else None
         
     def plot_final_clustering(self, X, labels, nice_clusters, centroid, radii, ring_index, plot):
-        """
+        """ 
         Plot final clustering after fitting concentric rings
         """
         fig, ax = plt.subplots(figsize=(6, 6))
@@ -368,7 +368,7 @@ class ControlPointExtractor():
         plt.axis("equal")
         fig.savefig(plot)
 
-    def extract_control_points(self, eps_range, threshold, filter, plot=True):
+    def extract_control_points(self, eps_range, threshold, filter, a_tol, plot=True):
         """
         Extract control points from powder, cluster them into concentric rings and find appropriate ring index
         """
@@ -395,7 +395,7 @@ class ControlPointExtractor():
                 permutation = np.argsort(radii)
                 final_clusters = nice_clusters[permutation]
                 ratio_radii = sorted_radii[:-1] / sorted_radii[1:]
-                ring_index = self.ring_indexing(ratio_q, ratio_radii)
+                ring_index, is_rings = self.ring_indexing(ratio_q, ratio_radii, final_clusters, a_tol)
             else:
                 final_clusters = nice_clusters
                 ring_index = None
@@ -406,13 +406,14 @@ class ControlPointExtractor():
                 print(f"No ring index found for panel {self.detector.center_modules[k]}")
             else:
                 for i in range(len(final_clusters)):
-                    cluster = labels == final_clusters[i]
-                    xy = X[cluster]
-                    xy[:, 0] += self.detector.center_modules[k] * self.detector.asics_shape[0] * self.detector.ss_size
-                    ring_idx = ring_index[i]
-                    if len(data) == 0:
-                        data = np.column_stack((xy[:, 0], xy[:, 1], np.full(len(xy), ring_idx)))
-                    else:
-                        data = np.append(data, np.column_stack((xy[:, 0], xy[:, 1], np.full(len(xy), ring_idx))), axis=0)
+                    if ring_index[i] != -1:
+                        cluster = labels == final_clusters[i]
+                        xy = X[cluster]
+                        xy[:, 0] += self.detector.center_modules[k] * self.detector.asics_shape[0] * self.detector.ss_size
+                        ring_idx = ring_index[i]
+                        if len(data) == 0:
+                            data = np.column_stack((xy[:, 0], xy[:, 1], np.full(len(xy), ring_idx)))
+                        else:
+                            data = np.append(data, np.column_stack((xy[:, 0], xy[:, 1], np.full(len(xy), ring_idx))), axis=0)
         data = np.array(data)
         self.data = data
