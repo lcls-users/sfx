@@ -336,7 +336,7 @@ class ControlPointExtractor():
         """
         Plot final clustering after fitting concentric rings
         """
-        fig, ax = plt.subplots(figsize=(4, 4))
+        fig, ax = plt.subplots(figsize=(6, 6))
         unique_labels = np.unique(labels)
         colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
         for i, col in zip(unique_labels, colors):
