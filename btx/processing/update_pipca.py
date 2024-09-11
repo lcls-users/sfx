@@ -258,7 +258,8 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
         The updated mu vector of the iPCA model
     """
 
-
+    print(f"Rank {rank} updating model",flush=True)
+    print(f"Model dictionnary on rank {rank} before update :",model_state_dict[rank])
     num_components = model_state_dict[rank]['num_components']
     num_images = model_state_dict[rank]['num_images']
 
@@ -268,14 +269,14 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     ipca.mean_ = torch.tensor(model_state_dict[rank]['mu'], device=device)
     ipca.n_samples_seen_ = num_images
     ipca.singular_values_ = torch.tensor(model_state_dict[rank]['S'], device=device)
-
+    print(f"Rank {rank} model loaded",flush=True)
     existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
     images = np.ndarray(shape, dtype=dtype, buffer=existing_shm.buf)
     images = [images[i] for i in indices_to_update]
-
+    print(f"Rank {rank} images to update loaded",flush=True)
     st = time.time()
     ipca.fit(images.reshape(len(indices_to_update),-1))
-    print(f"Time to fit: {time.time()-st}")
+    print(f"Fitting done on rank {rank}. Time to fit: {time.time()-st}")
 
     existing_shm.close()
     existing_shm.unlink()
@@ -291,6 +292,8 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     model_state_dict[rank]['S'] = S
     model_state_dict[rank]['num_images'] += len(indices_to_update)
 
+    print(f"Rank {rank} model updated",flush=True)
+    print(f"Model dictionnary on rank {rank} after update :",model_state_dict[rank])
     existing_shm.close()
     existing_shm.unlink()
     torch.cuda.empty_cache()
