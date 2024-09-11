@@ -878,6 +878,8 @@ def inference(config):
     start_offset = task.start_offset
     num_images = task.num_images
     num_tot_images = num_images
+    threshold = task.threshold
+    
     distribution_images = [] 
     ##
     num_runs = 0
