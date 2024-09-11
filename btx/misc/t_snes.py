@@ -270,7 +270,7 @@ def parse_input():
     )
 
     parser.add_argument(
-        "--trustworthiness_threshold",
+        "--threshold",
         type=float
     )
 
@@ -283,7 +283,7 @@ if __name__ == "__main__":
     filename = params.filename
     num_images = params.num_images
     loading_batch_size = params.loading_batch_size
-    threshold = params.trustworthiness_threshold
+    threshold = params.threshold
     num_tries = params.num_tries
     ##
     print("Unpacking model file...",flush=True)
