@@ -92,15 +92,32 @@ class Rayonix():
         self.center_modules = center_modules
 
 class ControlPointExtractor():
-
-    def __init__(self, exp, run, det_type, powder, calibrant):
+    """
+    Class for extracting control points from powder diffraction data and cluster them into concentric rings and find appropriate ring index
+    
+    Parameters
+    ----------
+    exp : str
+        Experiment name
+    run : int
+        Run number
+    det_type : str
+        Detector type
+    powder : str
+        Path to powder diffraction data
+    calibrant : str
+        Calibrant name
+    threshold : float
+        Threshold value for binarization
+    """
+    def __init__(self, exp, run, det_type, powder, calibrant, threshold=1):
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
         self.calibrant = CALIBRANT_FACTORY(calibrant)
         wavelength = self.diagnostics.get_wavelength() * 1e-10
         self.calibrant.set_wavelength(wavelength)
         self.detector = self.get_detector(det_type)
-        self.extract_control_points(eps_range=np.arange(20, 60, 1), plot=None)
+        self.extract_control_points(eps_range=np.arange(20, 60, 1), threshold=threshold, plot=None)
 
     def get_detector(self, det_type):
         """
@@ -122,9 +139,14 @@ class ControlPointExtractor():
         else:
             raise ValueError("Detector type not recognized")
 
-    def extract(self):
+    def extract(self, threshold):
         """
         Extract control points from powder
+
+        Parameters
+        ----------
+        threshold : float
+            Threshold value for binarization
         """
         gray_powder = (self.powder - self.powder.min()) / (self.powder.max() - self.powder.min()) * 255
         powder = gray_powder.astype(np.uint8)
@@ -134,7 +156,7 @@ class ControlPointExtractor():
         gradx_powder[:-1, :-1] = (powder_smoothed[1:, :-1] - powder_smoothed[:-1, :-1] + powder_smoothed[1:, 1:] - powder_smoothed[:-1, 1:]) / 2 
         grady_powder[:-1, :-1] = (powder_smoothed[:-1, 1:] - powder_smoothed[:-1, :-1] + powder_smoothed[1:, 1:] - powder_smoothed[1:, :-1]) / 2
         mag = np.sqrt(gradx_powder**2 + grady_powder**2)
-        binary_powder = (mag > 1).astype(np.uint8)
+        binary_powder = (mag > threshold).astype(np.uint8)
         X_total = np.nonzero(binary_powder)
         print(f'Extracted {len(X_total[0])} control points')
         structuring_element = np.ones((3, 3), dtype=np.uint8)
@@ -196,16 +218,16 @@ class ControlPointExtractor():
         radii = np.array(radii)
         return centers, radii
     
-    def find_nice_clusters(self, centers, radii, X, labels):
+    def find_nice_clusters(self, centers, radii, eps=100, label=0):
         """
         Find nicely clustered control points based on fitted centers
         """
         # Use DBSCAN to cluster the centers
-        db = DBSCAN(eps=100, min_samples=2).fit(centers)
+        db = DBSCAN(eps=eps, min_samples=2).fit(centers)
         labels_c = db.labels_
 
         # Nice cluters are the ones with label 0
-        true_centers = labels_c == 0
+        true_centers = labels_c == label
         nice_clusters = np.arange(0, len(true_centers))[true_centers]
         nice_cluster_radii = radii[true_centers]
 
@@ -216,6 +238,8 @@ class ControlPointExtractor():
         # centroid: Mean center of the true centers
         if len(nice_clusters) != 0:
             centroid = np.mean(centers[true_centers][filtered_indices], axis=0)
+            if (centroid[0] >= 0 and centroid[0] < self.detector.ss_size) and (centroid[1] >= 0 and centroid[1] < self.detector.fs_size) and (len(np.unique(labels_c)) > 2):
+                nice_clusters, centroid = self.find_nice_clusters(centers, radii, 5*eps, label+1)
         else:
             centroid = np.array([0, 0])
         return nice_clusters, centroid
@@ -267,7 +291,7 @@ class ControlPointExtractor():
         Score of the current clustering with given hyperparameter eps
         """
         cp = [len(X[labels==i]) for i in nice_clusters]
-        score = len(nice_clusters) * np.sum(cp)/len(X)
+        score = len(nice_clusters) + np.sum(cp)/len(X)
         return score
 
     def hyperparameter_eps_search(self, X, eps_range):
@@ -302,9 +326,44 @@ class ControlPointExtractor():
                 count += 1
             else:
                 print(f'Missing one ring radius value for ratio idx {j}')
-        return np.unique(ring_index)
+        return np.unique(ring_index) if len(ring_index) > 0 else None
         
-    def extract_control_points(self, eps_range, plot=None):
+    def plot_final_clustering(self, X, labels, nice_clusters, centroid, radii, ring_index, plot):
+        """
+        Plot final clustering after fitting concentric rings
+        """
+        fig, ax = plt.subplots(figsize=(8, 8))
+        unique_labels = np.unique(labels)
+        colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
+        for i, col in zip(unique_labels, colors):
+            if i == -1:
+                # Black used for noise.
+                col = [0, 0, 0, 1]
+
+            class_member_mask = labels == i
+
+            xy = X[class_member_mask]
+            plt.plot(
+                xy[:, 1],
+                xy[:, 0],
+                "o",
+                markerfacecolor=tuple(col),
+                markeredgecolor="k",
+                markersize=10,
+                label=i
+            )
+        cx, cy = centroid
+        for i in nice_clusters:
+            circle = plt.Circle((cx, cy), radii[i], color='r', fill=False, linestyle='--')
+            plt.gca().add_artist(circle)
+        plt.legend()
+        if ring_index is not None:
+            plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} with indexed rings {ring_index}")
+        else:
+            plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} witg no ring found")
+        fig.savefig(plot)
+
+    def extract_control_points(self, eps_range, plot=True):
         """
         Extract control points from powder, cluster them into concentric rings and find appropriate ring index
         """
@@ -325,12 +384,19 @@ class ControlPointExtractor():
             radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
             labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii)
             radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
-            sorted_radii = np.sort(radii)
-            permutation = np.argsort(radii)
-            final_clusters = nice_clusters[permutation]
-            ratio_radii = sorted_radii[:-1] / sorted_radii[1:]
-            ring_index = self.ring_indexing(ratio_q, ratio_radii)
-            if len(ring_index) == 0:
+            if len(radii) > 1:
+                sorted_radii = np.sort(radii)
+                permutation = np.argsort(radii)
+                final_clusters = nice_clusters[permutation]
+                ratio_radii = sorted_radii[:-1] / sorted_radii[1:]
+                ring_index = self.ring_indexing(ratio_q, ratio_radii)
+            else:
+                final_clusters = nice_clusters
+                ring_index = None
+            if plot:
+                plot_name = f"{self.exp}_{self.run:04}_panel{self.detector.center_modules[k]}_clustering.png"
+                self.plot_final_clustering(X, labels, nice_clusters, centroid, radii, ring_index, plot_name)
+            if ring_index is None:
                 print(f"No ring index found for panel {self.detector.center_modules[k]}")
             else:
                 for i in range(len(final_clusters)):
