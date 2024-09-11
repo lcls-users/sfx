@@ -177,7 +177,7 @@ class ControlPointExtractor():
         """
         self.panels = []
         self.panels_normalized = []
-        for i in range(self.detector.n_modules):
+        for i in range(self.detector.center_modules):
             module = self.detector.center_modules[i]
             panel = self.X[(self.X[:, 0] >= module * self.detector.asics_shape[0] * self.detector.ss_size) & (self.X[:, 0] < (module + 1) * self.detector.asics_shape[0] * self.detector.ss_size)]
             self.panels.append(panel)
