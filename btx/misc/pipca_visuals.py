@@ -401,7 +401,7 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3):
+def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3,eps=1,min_samples=3):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -421,7 +421,7 @@ def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3):
                 'Index': np.arange(len(embedding[rank])),
             })
 
-            dbscan = DBSCAN(eps=0.5, min_samples=5)  
+            dbscan = DBSCAN(eps=eps, min_samples=min_samples)  
             df['Cluster'] = dbscan.fit_predict(df[['t-SNE1', 't-SNE2']])
             
             scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
@@ -447,7 +447,7 @@ def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3):
                 'Index': np.arange(len(embedding[rank])),
             })
 
-            dbscan = DBSCAN(eps=0.5, min_samples=5)
+            dbscan = DBSCAN(eps=eps, min_samples=min_samples)
             df['Cluster'] = dbscan.fit_predict(df[['UMAP1', 'UMAP2']])
             
             scatter = px.scatter(df, x='UMAP1', y='UMAP2', 
