@@ -495,11 +495,5 @@ if __name__ == "__main__":
         if update_or_not:
             update_model(filename, model_state_dict)    
             print("Model updated",flush=True)   
-        
-        #Remove shared memory
-        for shm in shm_list:
-            shm.close()
-            shm.unlink()
-        print("Shared memory removed",flush=True)
+
         print("Process finished",flush=True)
-        
