@@ -172,8 +172,8 @@ def compute_loss_process(rank,model_state_dict,shm_list,device_list,shape,dtype,
     mu = model_state_dict[rank]['mu']
 
     device = device_list[rank]
-    V = V.to(device)
-    mu = mu.to(device)
+    V = torch.tensor(V, device=device)
+    mu = torch.tensor(mu, device=device)
 
     # Load the shared memory images
     existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
@@ -265,10 +265,10 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
 
     device = device_list[rank]
     ipca = IncrementalPCAonGPU(n_components = num_components, batch_size = batch_size, device = device)
-    ipca.components_ = model_state_dict[rank]['V'].T.to(device)
-    ipca.mean_ = mu.to(device)
+    ipca.components_ = torch.tensor(model_state_dict[rank]['V'].T, device=device)
+    ipca.mean_ = torch.tensor(model_state_dict[rank]['mu'], device=device)
     ipca.n_samples_seen_ = num_images
-    ipca.singular_values_ = model_state_dict[rank]['S'].to(device)
+    ipca.singular_values_ = torch.tensor(model_state_dict[rank]['S'], device=device)
 
     existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
     images = np.ndarray(shape, dtype=dtype, buffer=existing_shm.buf)
