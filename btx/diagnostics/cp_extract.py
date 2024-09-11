@@ -117,7 +117,7 @@ class ControlPointExtractor():
         wavelength = self.diagnostics.get_wavelength() * 1e-10
         self.calibrant.set_wavelength(wavelength)
         self.detector = self.get_detector(det_type)
-        self.extract_control_points(eps_range=np.arange(20, 60, 1), threshold=threshold, plot=None)
+        self.extract_control_points(eps_range=np.arange(20, 60, 1), threshold=threshold, plot=True)
 
     def get_detector(self, det_type):
         """
@@ -383,6 +383,7 @@ class ControlPointExtractor():
             nice_clusters, centroid = self.find_nice_clusters(centers, radii)
             radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
             labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii)
+            print(f"Number of nice clusters for panel {self.detector.center_modules[k]}: {len(nice_clusters)}")
             radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
             if len(radii) > 1:
                 sorted_radii = np.sort(radii)
