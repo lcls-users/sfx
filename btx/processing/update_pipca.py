@@ -409,7 +409,7 @@ if __name__ == "__main__":
     data = read_model_file(filename)
     all_norm_diff = []
     all_init_norm = []
-
+    last_batch = False
     with mp.Manager() as manager:
         model_state_dict = [manager.dict() for _ in range(num_gpus)]
         for rank in range(num_gpus):
