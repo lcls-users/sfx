@@ -113,6 +113,7 @@ class ControlPointExtractor():
     def __init__(self, exp, run, det_type, powder, calibrant, threshold=1):
         self.exp = exp
         self.run = run
+        self.det_type = det_type
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
         self.calibrant = CALIBRANT_FACTORY(calibrant)
@@ -241,6 +242,7 @@ class ControlPointExtractor():
         if len(nice_clusters) != 0:
             centroid = np.mean(centers[true_centers][filtered_indices], axis=0)
             if (centroid[0] >= 0 and centroid[0] < self.detector.ss_size) and (centroid[1] >= 0 and centroid[1] < self.detector.fs_size) and (len(np.unique(labels_c)) > 2):
+                print(f"Found {len(np.unique(labels_c))} center clusters and label {label} is unsatisfactory, looking at label {label+1}")
                 nice_clusters, centroid = self.find_nice_clusters(centers, radii, 5*eps, label+1)
         else:
             centroid = np.array([0, 0])
@@ -397,7 +399,7 @@ class ControlPointExtractor():
                 final_clusters = nice_clusters
                 ring_index = None
             if plot:
-                plot_name = f"{self.exp}_{self.run:04}_panel{self.detector.center_modules[k]}_clustering.png"
+                plot_name = f"{self.exp}_r{self.run:04}_{self.det_type}_panel{self.detector.center_modules[k]}_clustering.png"
                 self.plot_final_clustering(X, labels, nice_clusters, centroid, radii, ring_index, plot_name)
             if ring_index is None:
                 print(f"No ring index found for panel {self.detector.center_modules[k]}")
