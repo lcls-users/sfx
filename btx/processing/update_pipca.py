@@ -407,6 +407,9 @@ if __name__ == "__main__":
     mp.set_start_method('spawn', force=True)    
     #Reads current model
     data = read_model_file(filename)
+    all_norm_diff = []
+    all_init_norm = []
+
     with mp.Manager() as manager:
         model_state_dict = [manager.dict() for _ in range(num_gpus)]
         for rank in range(num_gpus):
@@ -424,6 +427,8 @@ if __name__ == "__main__":
                             last_batch = True
 
                         current_loading_batch = []
+                        all_norm_diff.append([])
+                        all_init_norm.append([])
                         requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[run-init_run]))]
 
                         server_address = ('localhost', 5000)
@@ -461,12 +466,10 @@ if __name__ == "__main__":
                         #Compute the loss
                         results = pool.starmap(compute_loss_process, [(rank,model_state_dict,shm_list,device_list,shape,dtype,batch_size) for rank in range(num_gpus)])
 
-                        all_norm_diff = []
-                        all_init_norm = []
-
-                        for result in results:
-                            all_norm_diff.append(result[0])
-                            all_init_norm.append(result[1])
+                        for rank in range(num_gpus):
+                            list_norm_diff,list_init_norm = results[rank]
+                            all_norm_diff[-1].append(list_norm_diff)
+                            all_init_norm[-1].append(list_init_norm)
 
                         total_losses = compute_total_loss(all_norm_diff,all_init_norm)
                         indices = indices_to_update(total_losses,threshold)
