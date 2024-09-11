@@ -475,17 +475,31 @@ if __name__ == "__main__":
                         indices = indices_to_update(total_losses,threshold)
                         print(f"Number of images to update: {len(indices)}",flush=True)
 
-                        if len(indices) == 0:
-                            print("No images to update",flush=True)
-                            pass
+                        if len(indices) > 0:
+                            update_or_not = True
+                            #Update the model
+                            results = pool.starmap(compute_new_model, [(model_state_dict,batch_size,device_list,rank,shm_list,shape,dtype,indices) for rank in range(num_gpus)])
+                            print("New model computed",flush=True)
+                            if last_batch:
+                                print("Last batch",flush=True)
+                                break
                         
-                        #Update the model
-                        results = pool.starmap(compute_new_model, [(model_state_dict,batch_size,device_list,rank,shm_list,shape,dtype,indices) for rank in range(num_gpus)])
-                        print("New model computed",flush=True)
-                        if last_batch:
-                            print("Last batch",flush=True)
-                            break
+                        else:
+                            print("No images to update",flush=True)
+                            update_or_not = False
+                            if last_batch:
+                                print("Last batch",flush=True)
+                                break
 
         #Update the model
-        update_model(filename, model_state_dict)    
-        print("Model updated",flush=True)   
+        if update_or_not:
+            update_model(filename, model_state_dict)    
+            print("Model updated",flush=True)   
+        
+        #Remove shared memory
+        for shm in shm_list:
+            shm.close()
+            shm.unlink()
+        print("Shared memory removed",flush=True)
+        print("Process finished",flush=True)
+        
