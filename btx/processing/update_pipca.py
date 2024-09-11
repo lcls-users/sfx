@@ -474,6 +474,11 @@ if __name__ == "__main__":
                         total_losses = compute_total_loss(all_norm_diff,all_init_norm)
                         indices = indices_to_update(total_losses,threshold)
                         print(f"Number of images to update: {len(indices)}",flush=True)
+
+                        if len(indices) == 0:
+                            print("No images to update",flush=True)
+                            pass
+                        
                         #Update the model
                         results = pool.starmap(compute_new_model, [(model_state_dict,batch_size,device_list,rank,shm_list,shape,dtype,indices) for rank in range(num_gpus)])
                         print("New model computed",flush=True)

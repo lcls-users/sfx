@@ -106,6 +106,9 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     U = U.cpu().detach().numpy()
     U = np.array([u.flatten() for u in U]) ##
 
+    torch.cuda.empty_cache()
+    gc.collect()
+    
     trustworthiness_threshold = threshold
     best_params_tsne = None
     best_score_tsne = 0
