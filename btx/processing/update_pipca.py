@@ -447,10 +447,10 @@ if __name__ == "__main__":
                         current_loading_batch = np.concatenate(current_loading_batch, axis=0)
                         #Remove None images
                         current_len = current_loading_batch.shape[0]
-                        logging.info(f"Loaded {event+current_len} images from run {run}.")
+                        print(f"Loaded {event+current_len} images from run {run}.",flush=True)
                         current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
-                        logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
+                        print(f"Number of non-none images: {current_loading_batch.shape[0]}",flush=True)
 
                         #Split the images into batches for each GPU
                         current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
@@ -460,12 +460,12 @@ if __name__ == "__main__":
 
                         #Create shared memory for each batch
                         shm_list = create_shared_images(current_loading_batch)
-
+                        print("Images split and on shared memory",flush=True)
                         device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
                         #Compute the loss
                         results = pool.starmap(compute_loss_process, [(rank,model_state_dict,shm_list,device_list,shape,dtype,batch_size) for rank in range(num_gpus)])
-
+                        print("Loss computed",flush=True)
                         for rank in range(num_gpus):
                             list_norm_diff,list_init_norm = results[rank]
                             all_norm_diff[-1].append(list_norm_diff)
@@ -473,12 +473,14 @@ if __name__ == "__main__":
 
                         total_losses = compute_total_loss(all_norm_diff,all_init_norm)
                         indices = indices_to_update(total_losses,threshold)
-
+                        print(f"Number of images to update: {len(indices)}",flush=True)
                         #Update the model
                         results = pool.starmap(compute_new_model, [(model_state_dict,batch_size,device_list,rank,shm_list,shape,dtype,indices) for rank in range(num_gpus)])
-
+                        print("New model computed",flush=True)
                         if last_batch:
+                            print("Last batch",flush=True)
                             break
 
         #Update the model
-        update_model(filename, model_state_dict)        
+        update_model(filename, model_state_dict)    
+        print("Model updated",flush=True)   
