@@ -365,6 +365,7 @@ class ControlPointExtractor():
             plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} with indexed rings {ring_index}")
         else:
             plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} with no ring found")
+        plt.axis("equal")
         fig.savefig(plot)
 
     def extract_control_points(self, eps_range, threshold, plot=True):
