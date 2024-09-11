@@ -322,7 +322,7 @@ class ControlPointExtractor():
         for j in range(len(ratio_radii)):
             i = np.argmin(abs(ratio_radii[j]-ratio_q))
             min_val = np.min(abs(ratio_radii[j]-ratio_q))
-            if min_val < 0.02:
+            if min_val < 0.04:
                 print(f'Found match for ratio idx {j} being ratio of rings {i+count}/{i+count+1}')
                 ring_index.append(i+count)
                 ring_index.append(i+count+1)
