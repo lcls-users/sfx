@@ -438,7 +438,7 @@ if __name__ == "__main__":
 
                         
                         for batch in dataloader_iter:
-                            if num_images_seen + len(current_loading_batch) > num_images_to_add + start_offset and current_loading_batch != []:
+                            if num_images_seen > num_images_to_add + start_offset and current_loading_batch != []:
                                 last_batch = True
                                 break
                             current_loading_batch.append(batch)
@@ -493,7 +493,7 @@ if __name__ == "__main__":
                         
                     if last_batch:
                         break
-                    
+
         #Update the model
         if update_or_not:
             update_model(filename, model_state_dict)    
