@@ -293,9 +293,6 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     model_state_dict[rank]['num_images'] += len(indices_to_update)
 
     print(f"Rank {rank} model updated",flush=True)
-    print(f"Model dictionnary on rank {rank} after update :",model_state_dict[rank])
-    existing_shm.close()
-    existing_shm.unlink()
     torch.cuda.empty_cache()
     gc.collect()
     
