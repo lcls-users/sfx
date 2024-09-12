@@ -272,7 +272,7 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     print(f"Rank {rank} model loaded",flush=True)
     existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
     images = np.ndarray(shape, dtype=dtype, buffer=existing_shm.buf)
-    images = [images[i] for i in indices_to_update]
+    images = images[indices_to_update]
     print(f"Rank {rank} images to update loaded",flush=True)
     st = time.time()
     ipca.fit(images.reshape(len(indices_to_update),-1))
