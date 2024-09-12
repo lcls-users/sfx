@@ -465,6 +465,7 @@ def display_umap(filename,num_images):
         fig.show()
 """
 
+#Ok
 def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=3):
     with open(filename, "rb") as f:
         data = pickle.load(f)
