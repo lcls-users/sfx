@@ -21,6 +21,9 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.subplots as sp
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from collections import defaultdict
 
 import holoviews as hv
 hv.extension('bokeh')
@@ -401,7 +404,7 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3,eps=1,min_samples=3):
+"""def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',eps=1,min_samples=3):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -460,6 +463,78 @@ def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',num_clusters=3,eps=1,
 
         fig.update_layout(height=800, width=800, showlegend=False, title_text="UMAP Projections Across GPUs")
         fig.show()
+"""
+
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=3):
+    with open(filename, "rb") as f:
+        data = pickle.load(f)
+
+    embedding_tsne = np.array(data["embeddings_tsne"])
+    embedding_umap = np.array(data["embeddings_umap"])
+    S = np.array(data["S"])
+    num_gpus = len(S)
+
+    if type_of_embedding == 't-SNE':
+        embedding = embedding_tsne
+        projection_title = 't-SNE projection'
+    else:
+        embedding = embedding_umap
+        projection_title = 'UMAP projection'
+    
+    # Initialiser les dictionnaires pour stocker les indices de chaque cluster
+    clusters_per_gpu = [defaultdict(set) for _ in range(num_gpus)]
+
+    fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f'{projection_title} (GPU {rank})' for rank in range(num_gpus)])
+
+    for rank in range(num_gpus):
+        df = pd.DataFrame({
+            f'{projection_title}1': embedding[rank][:, 0],
+            f'{projection_title}2': embedding[rank][:, 1],
+            'Index': np.arange(len(embedding[rank])),
+        })
+
+        dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+        df['Cluster'] = dbscan.fit_predict(df[[f'{projection_title}1', f'{projection_title}2']])
+        
+        # Stocker les indices dans chaque cluster
+        for cluster, indices in df.groupby('Cluster')['Index']:
+            clusters_per_gpu[rank][cluster].update(indices)
+        
+        scatter = px.scatter(df, x=f'{projection_title}1', y=f'{projection_title}2', 
+                            color='Cluster',
+                            hover_data={'Index': True},
+                            labels={f'{projection_title}1': f'{projection_title}1', f'{projection_title}2': f'{projection_title}2'},
+                            title=f'{projection_title} (GPU {rank})')
+        
+        fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
+
+    fig.update_layout(height=800, width=800, showlegend=False, title_text=f"{projection_title} Across GPUs")
+    fig.show()
+
+    # Calculer les pourcentages de ressemblance entre les clusters de chaque paire de GPU
+    def jaccard_index(set1, set2):
+        intersection = len(set1.intersection(set2))
+        union = len(set1.union(set2))
+        return intersection / union if union != 0 else 0
+
+    similarity_matrix = np.zeros((num_gpus, num_gpus))
+
+    for i in range(num_gpus):
+        for j in range(num_gpus):
+            if i != j:
+                similarities = []
+                for cluster_i, indices_i in clusters_per_gpu[i].items():
+                    for cluster_j, indices_j in clusters_per_gpu[j].items():
+                        similarity = jaccard_index(indices_i, indices_j)
+                        similarities.append(similarity)
+                
+                # Moyenne des similarités entre tous les clusters
+                similarity_matrix[i, j] = np.mean(similarities) if similarities else 0
+
+    # Afficher la matrice de similarité
+    sns.heatmap(similarity_matrix, annot=True, cmap="YlGnBu", xticklabels=[f'GPU {i}' for i in range(num_gpus)], yticklabels=[f'GPU {i}' for i in range(num_gpus)])
+    plt.title('Matrice de Similarité des Clusters entre GPUs')
+    plt.show()
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
