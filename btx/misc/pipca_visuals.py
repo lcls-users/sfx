@@ -465,7 +465,6 @@ def display_umap(filename,num_images):
         fig.show()
 """
 
-#Ok
 def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=3):
     with open(filename, "rb") as f:
         data = pickle.load(f)
@@ -536,10 +535,14 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=
     num_pairs = len(clusters_pairs)
     similarity_matrix = np.zeros((num_pairs, num_pairs))
 
-    for (i, cluster_i), (j, cluster_j) in cluster_similarity.keys():
-        idx_i = cluster_pairs_idx[(i, cluster_i)]
-        idx_j = cluster_pairs_idx[(j, cluster_j)]
-        similarity_matrix[idx_i, idx_j] = cluster_similarity[(i, cluster_i)].get((j, cluster_j), 0)
+    # Assurer que les clés sont correctement décompressées
+    for key in cluster_similarity:
+        i, cluster_i = key
+        for sub_key in cluster_similarity[key]:
+            j, cluster_j = sub_key
+            idx_i = cluster_pairs_idx[(i, cluster_i)]
+            idx_j = cluster_pairs_idx[(j, cluster_j)]
+            similarity_matrix[idx_i, idx_j] = cluster_similarity[key].get(sub_key, 0)
 
     # Afficher la matrice de similarité
     plt.figure(figsize=(12, 10))
