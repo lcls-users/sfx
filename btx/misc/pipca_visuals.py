@@ -511,29 +511,47 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=
     fig.update_layout(height=800, width=800, showlegend=False, title_text=f"{projection_title} Across GPUs")
     fig.show()
 
-    # Calculer les pourcentages de ressemblance entre les clusters de chaque paire de GPU
+    # Calculer la similarité entre les clusters de chaque paire de GPU
     def jaccard_index(set1, set2):
         intersection = len(set1.intersection(set2))
         union = len(set1.union(set2))
         return intersection / union if union != 0 else 0
 
-    similarity_matrix = np.zeros((num_gpus, num_gpus))
+    # Calculer les similarités cluster par cluster
+    cluster_similarities = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
 
     for i in range(num_gpus):
         for j in range(num_gpus):
             if i != j:
-                similarities = []
                 for cluster_i, indices_i in clusters_per_gpu[i].items():
                     for cluster_j, indices_j in clusters_per_gpu[j].items():
                         similarity = jaccard_index(indices_i, indices_j)
-                        similarities.append(similarity)
-                
-                # Moyenne des similarités entre tous les clusters
-                similarity_matrix[i, j] = np.mean(similarities) if similarities else 0
+                        cluster_similarities[i][cluster_i][j] = cluster_similarities[i][cluster_i].get(j, 0) + similarity
+
+    # Préparer les données pour la heatmap
+    all_clusters = set()
+    for gpu_clusters in clusters_per_gpu:
+        all_clusters.update(gpu_clusters.keys())
+
+    all_clusters = sorted(all_clusters)
+    cluster_indices = {cluster: idx for idx, cluster in enumerate(all_clusters)}
+
+    # Matrice de similarité
+    num_clusters = len(all_clusters)
+    similarity_matrix = np.zeros((num_clusters, num_clusters))
+
+    for i in range(num_gpus):
+        for cluster_i in clusters_per_gpu[i].keys():
+            for j in range(num_gpus):
+                if i != j:
+                    for cluster_j in clusters_per_gpu[j].keys():
+                        idx_i = cluster_indices[cluster_i]
+                        idx_j = cluster_indices[cluster_j]
+                        similarity_matrix[idx_i, idx_j] = cluster_similarities[i][cluster_i].get(j, 0)
 
     # Afficher la matrice de similarité
-    sns.heatmap(similarity_matrix, annot=True, cmap="YlGnBu", xticklabels=[f'GPU {i}' for i in range(num_gpus)], yticklabels=[f'GPU {i}' for i in range(num_gpus)])
-    plt.title('Matrice de Similarité des Clusters entre GPUs')
+    sns.heatmap(similarity_matrix, annot=True, cmap="YlGnBu", xticklabels=all_clusters, yticklabels=all_clusters)
+    plt.title('Matrice de Similarité des Clusters')
     plt.show()
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
