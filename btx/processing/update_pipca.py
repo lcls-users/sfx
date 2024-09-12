@@ -416,15 +416,15 @@ if __name__ == "__main__":
     with mp.Manager() as manager:
         model_state_dict = [manager.dict() for _ in range(num_gpus)]
         for rank in range(num_gpus):
-            model_state_dict[rank]['V'] = data['V'][rank].cpu().detach().numpy()
-            model_state_dict[rank]['mu'] = data['mu'][rank].cpu().detach().numpy()
-            model_state_dict[rank]['S'] = data['S'][rank].cpu().detach().numpy()
+            model_state_dict[rank]['V'] = data['V'][rank]
+            model_state_dict[rank]['mu'] = data['mu'][rank]
+            model_state_dict[rank]['S'] = data['S'][rank]
             model_state_dict[rank]['num_images'] = data['num_images']
             model_state_dict[rank]['num_components'] = data['num_components']
         
         print("Model loaded",flush=True)
         print(model_state_dict[0],flush=True)
-        
+
         with Pool(processes=num_gpus) as pool:
                 num_images_seen = 0
                 for run in range(init_run, init_run + num_runs):
