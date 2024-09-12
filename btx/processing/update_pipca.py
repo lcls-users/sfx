@@ -476,6 +476,8 @@ if __name__ == "__main__":
 
                         total_losses = compute_total_loss(all_norm_diff,all_init_norm)
                         indices = indices_to_update(total_losses,threshold)
+                        all_norm_diff = []
+                        all_init_norm = []
                         print(f"Number of images to update: {len(indices)}",flush=True)
 
                         if len(indices) > 0:
