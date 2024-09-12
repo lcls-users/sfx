@@ -634,7 +634,7 @@ class BayesGeomOpt:
             best_param = params[best_idx]
             ax[0].scatter(best_param[1], best_param[2], c='purple', s=100, label='best', alpha=0.3)
             ax[0].legend()
-            ax[1].plot(np.maximum.accumulate(scores))
+            ax[1].plot(scores)
             ax[1].set_xticks(np.arange(len(scores), step=5))
             ax[1].set_xlabel('Iteration')
             ax[1].set_ylabel('Best score so far')
