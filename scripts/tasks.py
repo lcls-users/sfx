@@ -886,7 +886,7 @@ def inference(config):
     while num_images > 0:
         max_event = compute_max_events(exp, run+num_runs, det_type)
         images_for_run = min(max_event, num_images)
-        distribution_images.append(images_for_run-1)
+        distribution_images.append(images_for_run) #-1 enlevé là
         num_images -= images_for_run
         num_runs += 1
     ##

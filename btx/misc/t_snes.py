@@ -108,7 +108,7 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
 
     torch.cuda.empty_cache()
     gc.collect()
-    
+
     trustworthiness_threshold = threshold
     best_params_tsne = None
     best_score_tsne = 0
@@ -117,6 +117,8 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     max_iters = num_tries
 
     for i in range(max_iters):
+        if i%2500 == 0:
+            print(f"UMAP fitting on GPU {rank} iteration {i}",flush=True)
         n_neighbors = np.random.randint(5, 200)
         min_dist = np.random.uniform(0.0, 0.99) 
         umap = cumlUMAP(n_components=2,n_neighbors=n_neighbors,min_dist=min_dist)
@@ -137,6 +139,8 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
 
     for i in range(max_iters):
+        if i%2500 == 0:
+            print(f"t-SNE fitting on GPU {rank} iteration {i}",flush=True)
         perplexity = np.random.randint(5, 50)
         n_neighbors = np.random.randint(3*perplexity, 6*perplexity)
         learning_rate = np.random.uniform(10, 1000)
