@@ -28,6 +28,7 @@ from torch.utils.data import DataLoader
 from btx.processing.pipca_nopsana import main as run_client_task # This is the main function that runs the iPCA algorithm
 from btx.processing.pipca_nopsana import remove_file_with_timeout
 from btx.processing.pipca_nopsana import iPCA_Pytorch_without_Psana
+from btx.processing.PCAonGPU.gpu_pca.pca_module import IncrementalPCAonGPU
 
 class IPCRemotePsanaDataset(Dataset):
     def __init__(self, server_address, requests_list):
@@ -259,7 +260,6 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     """
 
     print(f"Rank {rank} updating model",flush=True)
-    print(f"Model dictionnary on rank {rank} before update :",model_state_dict[rank])
     num_components = model_state_dict[rank]['num_components']
     num_images = model_state_dict[rank]['num_images']
 
