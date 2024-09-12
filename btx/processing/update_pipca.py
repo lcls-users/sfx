@@ -198,8 +198,8 @@ def compute_loss_process(rank,model_state_dict,shm_list,device_list,shape,dtype,
 
     list_norm_diff = list_norm_diff.cpu().detach().numpy()
     list_init_norm = list_init_norm.cpu().detach().numpy()
-    existing_shm.close()
-    existing_shm.unlink()
+    """existing_shm.close()
+    existing_shm.unlink()"""
     torch.cuda.empty_cache()
     gc.collect()
     
@@ -423,7 +423,6 @@ if __name__ == "__main__":
             model_state_dict[rank]['num_components'] = data['num_components']
         
         print("Model loaded",flush=True)
-        print(model_state_dict[0],flush=True)
 
         with Pool(processes=num_gpus) as pool:
                 num_images_seen = 0
