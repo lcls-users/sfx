@@ -483,6 +483,7 @@ if __name__ == "__main__":
                             #Update the model
                             print("Updating model",flush=True)
                             print("Model dictionnary before update :",model_state_dict)
+                            print("Test",flush=True)
                             results = pool.starmap(compute_new_model, [(model_state_dict,batch_size,device_list,rank,shm_list,shape,dtype,indices) for rank in range(num_gpus)])
                             print("New model computed",flush=True)
                             if last_batch:
