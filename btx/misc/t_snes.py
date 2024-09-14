@@ -117,8 +117,11 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     max_iters = num_tries
 
     for i in range(max_iters):
-        if i%2500 == 0:
+        if i%2000 == 0:
             print(f"UMAP fitting on GPU {rank} iteration {i}",flush=True)
+            torch.cuda.empty_cache()
+            gc.collect()
+
         n_neighbors = np.random.randint(5, 200)
         min_dist = np.random.uniform(0.0, 0.99) 
         umap = cumlUMAP(n_components=2,n_neighbors=n_neighbors,min_dist=min_dist)
@@ -138,9 +141,14 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     embedding_umap = umap.fit_transform(U)
     trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
 
+    torch.cuda.empty_cache()
+    gc.collect()
+
     for i in range(max_iters):
-        if i%2500 == 0:
+        if i%2000 == 0:
             print(f"t-SNE fitting on GPU {rank} iteration {i}",flush=True)
+            torch.cuda.empty_cache()
+            gc.collect()
         perplexity = np.random.randint(5, 50)
         n_neighbors = np.random.randint(3*perplexity, 6*perplexity)
         learning_rate = np.random.uniform(10, 1000)
@@ -157,6 +165,9 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
             best_params_tsne = (n_neighbors, perplexity)
             best_score_tsne = trustworthiness_score_tsne
 
+    torch.cuda.empty_cache()
+    gc.collect()
+    
     if best_score_tsne < trustworthiness_threshold:
         tsne = TSNE(n_components=2,learning_rate_method='adaptive')
         embedding_tsne = tsne.fit_transform(U)
