@@ -99,6 +99,7 @@ class IPCRemotePsanaDataset(Dataset):
 
 def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     S = torch.tensor(np.diag(S[rank]), device=device_list[rank])
+    print(S,flush=True)
     V = torch.tensor(V[rank],device=device_list[rank])
     imgs = torch.tensor(imgs[rank].reshape(num_images,-1),device=device_list[rank])
     U = torch.mm(torch.mm(imgs,V),torch.inverse(S))
@@ -140,10 +141,6 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     embedding_umap = umap.fit_transform(U)
     trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
 
-    torch.cuda.synchronize()
-    torch.cuda.empty_cache()
-    gc.collect()
-
     for i in range(max_iters):
         if i%2000 == 0:
             print(f"t-SNE fitting on GPU {rank} iteration {i}",flush=True)
@@ -165,7 +162,6 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
             best_params_tsne = (n_neighbors, perplexity)
             best_score_tsne = trustworthiness_score_tsne
 
-    torch.cuda.synchronize()
     torch.cuda.empty_cache()
     gc.collect()
 
