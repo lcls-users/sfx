@@ -99,7 +99,6 @@ class IPCRemotePsanaDataset(Dataset):
 
 def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     S = torch.tensor(np.diag(S[rank]), device=device_list[rank])
-    print(S,flush=True)
     V = torch.tensor(V[rank],device=device_list[rank])
     imgs = torch.tensor(imgs[rank].reshape(num_images,-1),device=device_list[rank])
     U = torch.mm(torch.mm(imgs,V),torch.inverse(S))
