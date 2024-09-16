@@ -390,7 +390,6 @@ if __name__ == "__main__":
                     if not last_batch:
                         #Run the batch process in parallel
                         results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
-                        logging.info("Checkpoint : Iteration done")
 
                         final_time = time.time()
                         f_time += final_time-intermediate_time2
