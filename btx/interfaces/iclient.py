@@ -345,12 +345,11 @@ if __name__ == "__main__":
                     
                     for batch in dataloader_iter:
                         current_loading_batch.append(batch)
-                        if num_images_seen + len(current_loading_batch) >= num_training_images + start_offset and current_loading_batch != []:
+                        if num_images_seen + len(current_loading_batch) >= num_training_images and current_loading_batch != []:
                             last_batch = True
                             break
                     
 
-                    print("Number of images seen:",num_images_seen,flush=True)
                     intermediate_time = time.time()
                     l_time += intermediate_time-beginning_time
 
@@ -360,6 +359,7 @@ if __name__ == "__main__":
                     current_len = current_loading_batch.shape[0]
                     num_images_seen += current_len
                     logging.info(f"Loaded {event+current_len} images from run {run}.")
+                    print("Number of images seen:",num_images_seen,flush=True)
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
                     logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
