@@ -757,12 +757,11 @@ def ipca_pytorch(config):
         ipca.run()
     
 def create_pypca(config):
-    print("TESTING SERVER AND CLIENT COMMUNICATION")
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.get_max_events import main as compute_max_events
 
     setup = config.setup
-    task = config.test_serv_client
+    task = config.create_pypca
     exp = setup.exp
     run = task.run
     det_type = setup.det_type
@@ -808,7 +807,7 @@ def create_pypca(config):
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
     command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus} --compute_loss {compute_loss} --num_runs {num_runs}"
 
-    js = JobScheduler(os.path.join(".", f'test_serv_client_{num_components}_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'test_serv_client_{num_components}_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
+    js = JobScheduler(os.path.join(".", f'create_pypca_{num_components}_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'create_pypca_{num_components}_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
     js.clean_up()
@@ -871,7 +870,7 @@ def update_pypca(config):
     from btx.misc.get_max_events import main as compute_max_events
 
     setup = config.setup
-    task = config.inference
+    task = config.update_pypca
     exp = setup.exp
     run = task.run
     det_type = setup.det_type
@@ -916,7 +915,7 @@ def update_pypca(config):
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
     command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --lower_bound {lower_bound} --upper_bound {upper_bound} --model {model} --num_gpus {num_gpus}"
 
-    js = JobScheduler(os.path.join(".", f'update_model_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'update_model_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
+    js = JobScheduler(os.path.join(".", f'update_pypca_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'update_pypca_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
     js.clean_up()
