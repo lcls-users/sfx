@@ -262,10 +262,8 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     print(f"Rank {rank} updating model",flush=True)
 
     num_components = model_state_dict[rank]['num_components']
-    print("Num components: ",num_components,flush=True)
     num_images = model_state_dict[rank]['num_images']
 
-    print(f"=================\n S on rank {rank} is of shape {model_state_dict[rank]['S'].shape} : ",model_state_dict[rank]['S'],flush=True)
     device = device_list[rank]
     ipca = IncrementalPCAonGPU(n_components = num_components, batch_size = batch_size, device = device)
     ipca.components_ = torch.tensor(model_state_dict[rank]['V'].T, device=device)
@@ -295,7 +293,6 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     model_state_dict[rank]['S'] = S
     model_state_dict[rank]['num_images'] += len(indices_to_update)
 
-    print(f"=================\n S on rank {rank} is of shape {S.shape} : ",S,flush=True)
     print(f"\n=================\n Rank {rank} model updated",flush=True)
     torch.cuda.empty_cache()
     gc.collect()
