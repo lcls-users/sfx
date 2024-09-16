@@ -434,7 +434,8 @@ if __name__ == "__main__":
             print("Gathering+Fitting time: ",f_time,flush=True)
             print("\n=====================================",flush=True)
             loss_start_time = time.time()
-
+            
+            print("ALLOOOOO",compute_projected_images)
             if compute_projected_images:
                 ##
                 all_norm_diff = []
