@@ -345,13 +345,12 @@ if __name__ == "__main__":
                     
                     for batch in dataloader_iter:
                         current_loading_batch.append(batch)
-                        if num_images_seen + len(current_loading_batch) > num_training_images + start_offset and current_loading_batch != []:
+                        if num_images_seen + len(current_loading_batch) >= num_training_images + start_offset and current_loading_batch != []:
                             last_batch = True
                             break
                     
                     num_images_seen += len(current_loading_batch)
-                    print("Number of images seen:",num_images_seen)
-
+                    print("Number of images seen:",num_images_seen,flush=True)
                     intermediate_time = time.time()
                     l_time += intermediate_time-beginning_time
 
@@ -383,6 +382,7 @@ if __name__ == "__main__":
                     if not last_batch:
                         #Run the batch process in parallel
                         results = pool.starmap(run_batch_process, [(algo_state_dict,ipca_state_dict,last_batch,rank,device_list,shape,dtype,shm_list,ipca_instance) for rank in range(num_gpus)])
+                        logging.info("Checkpoint : Iteration done")
 
                         final_time = time.time()
                         f_time += final_time-intermediate_time2
