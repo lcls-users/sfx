@@ -332,7 +332,9 @@ if __name__ == "__main__":
         projected_images[rank] = np.concatenate(projected_images[rank], axis=0)
    
     #Save the projected images
-    with h5py.File(f"{filename}/../projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}.h5", 'w') as f:
+    input_path = os.path.dirname(filename)
+    output_path = os.path.join(input_path, f"projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}.h5")
+    with h5py.File(output_path, 'w') as f:
         append_to_dataset(f, 'projected_images', projected_images)
     
     print(f"Model saved under the name projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}.h5",flush=True)
