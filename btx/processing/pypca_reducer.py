@@ -165,8 +165,6 @@ def reduce_images(V,mu,batch_size,device_list,rank,shm_list,shape,dtype):
     device = device_list[rank]
     V = torch.tensor(V[rank],device=device)
     mu = torch.tensor(mu[rank],device=device)
-    print(V.shape)
-    print(mu.shape)
 
     existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
     images = np.ndarray(shape, dtype=dtype, buffer=existing_shm.buf)
@@ -332,8 +330,7 @@ if __name__ == "__main__":
     #Creates a reduced dataset
     for rank in range(num_gpus):
         projected_images[rank] = np.concatenate(projected_images[rank], axis=0)
-        print(f"Projected images shape for GPU {rank}: {projected_images[rank].shape}",flush=True)
-    
+   
     #Save the projected images
     with h5py.File(f"projected_images_exp_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}.h5", 'w') as f:
         append_to_dataset(f, 'projected_images', projected_images)
