@@ -331,7 +331,7 @@ if __name__ == "__main__":
 
                     beginning_time = time.time()
 
-                    if num_images_seen + loading_batch_size >= num_training_images + start_offset:
+                    if num_images_seen + loading_batch_size >= num_training_images:
                         last_batch = True
 
                     current_loading_batch = []
@@ -349,7 +349,7 @@ if __name__ == "__main__":
                             last_batch = True
                             break
                     
-                    num_images_seen += len(current_loading_batch)
+
                     print("Number of images seen:",num_images_seen,flush=True)
                     intermediate_time = time.time()
                     l_time += intermediate_time-beginning_time
@@ -358,6 +358,7 @@ if __name__ == "__main__":
                     current_loading_batch = np.concatenate(current_loading_batch, axis=0)
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
+                    num_images_seen += current_len
                     logging.info(f"Loaded {event+current_len} images from run {run}.")
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
