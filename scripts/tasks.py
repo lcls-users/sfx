@@ -842,7 +842,6 @@ def create_pypca(config):
     comm = MPI.COMM_WORLD
     ncores = comm.Get_size()
     compute_projected_images = task.compute_projected_images
-    print(compute_projected_images)
 
     if task.get('loading_batch_size') is not None:
         loading_batch_size = task.loading_batch_size
