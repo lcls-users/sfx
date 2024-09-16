@@ -177,7 +177,7 @@ def reduce_images(V,mu,batch_size,device_list,rank,shm_list,shape,dtype):
         end = min(start + batch_size, images.shape[0])
         batch = images[start:end]
         batch = torch.tensor(batch.reshape(end-start,-1), device=device)
-        transformed_batch = torch.mm(batch - mu, V)
+        transformed_batch = torch.mm((batch - mu).float(), V.float())
         transformed_images.append(transformed_batch)
     
     transformed_images = torch.cat(transformed_images, dim=0)
