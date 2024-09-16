@@ -178,6 +178,12 @@ def parse_input():
         required=True,
         type=int,
     )
+    parser.add_argument(
+        "--compute_projected_images",
+        help="Compute the projected images or not.",
+        required=False,
+        type=bool,
+    )
 
     return parser.parse_args()
 
@@ -274,11 +280,12 @@ if __name__ == "__main__":
     num_gpus = params.num_gpus
     loss_or_not = params.compute_loss
     overwrite = True
-    filename_with_tag = f"{path}ipca_model_nopsana_{tag}.h5"
+    filename_with_tag = f"{path}pypca_model_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
     average_losses=[]
     transformed_images = [[] for _ in range(num_gpus)]
     num_runs = params.num_runs
+    compute_projected_images = params.compute_projected_images
 
     if start_offset is None:
         start_offset = 0
@@ -428,107 +435,108 @@ if __name__ == "__main__":
             print("\n=====================================",flush=True)
             loss_start_time = time.time()
 
-            ##
-            all_norm_diff = []
-            all_init_norm = []
-            ##
+            if compute_projected_images:
+                ##
+                all_norm_diff = []
+                all_init_norm = []
+                ##
 
-            #Compute the loss (same loading process)
-            for run in range(init_run, init_run + num_runs):
-                for event in range(start_offset, start_offset + num_images[run-init_run], loading_batch_size):
-                    
-                    ##
-                    all_norm_diff.append([])
-                    all_init_norm.append([])
-                    ##
+                #Compute the loss (same loading process)
+                for run in range(init_run, init_run + num_runs):
+                    for event in range(start_offset, start_offset + num_images[run-init_run], loading_batch_size):
+                        
+                        ##
+                        all_norm_diff.append([])
+                        all_init_norm.append([])
+                        ##
 
-                    current_loading_batch = []
-                    requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[run-init_run]))]
+                        current_loading_batch = []
+                        requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[run-init_run]))]
 
-                    server_address = ('localhost', 5000)
-                    dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-                    dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
-                    dataloader_iter = iter(dataloader)
+                        server_address = ('localhost', 5000)
+                        dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
+                        dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
+                        dataloader_iter = iter(dataloader)
 
-                    for batch in dataloader_iter:
-                        current_loading_batch.append(batch)
+                        for batch in dataloader_iter:
+                            current_loading_batch.append(batch)
 
 
-                    current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                    current_len = current_loading_batch.shape[0]
-                    logging.info(f"Loaded {event+current_len} images from run {run}.")
-                    current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+                        current_loading_batch = np.concatenate(current_loading_batch, axis=0)
+                        current_len = current_loading_batch.shape[0]
+                        logging.info(f"Loaded {event+current_len} images from run {run}.")
+                        current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
-                    logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
-                    current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
-                    current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+                        logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
+                        current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
+                        current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
 
-                    shape = current_loading_batch[0].shape
-                    dtype = current_loading_batch[0].dtype
+                        shape = current_loading_batch[0].shape
+                        dtype = current_loading_batch[0].dtype
 
-                    shm_list = create_shared_images(current_loading_batch)
+                        shm_list = create_shared_images(current_loading_batch)
 
-                    device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+                        device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-                    results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance,loss_or_not) for rank in range(num_gpus)])
-                    current_batch_loss = []
-                    for rank in range(num_gpus):
-                        average_loss,average_losses,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
-                        current_batch_loss.append(average_loss)
-                        average_losses.append(average_loss)
-                        transformed_images[rank].append(batch_transformed_images)
-                        all_norm_diff[-1].append(list_norm_diff)
-                        all_init_norm[-1].append(list_init_norm)
-                    
-                    print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
-                    mem = psutil.virtual_memory()
-                    print("================LOADING DONE=====================",flush=True)
-                    print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
-                    print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
-                    print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
-                    print("=====================================")
-                    
-                    torch.cuda.empty_cache()
-                    gc.collect()
+                        results = pool.starmap(compute_loss_process,[(rank,device_list,shape,dtype,shm_list,model_state_dict,batch_size,ipca_instance,loss_or_not) for rank in range(num_gpus)])
+                        current_batch_loss = []
+                        for rank in range(num_gpus):
+                            average_loss,average_losses,batch_transformed_images,list_norm_diff,list_init_norm = results[rank]
+                            current_batch_loss.append(average_loss)
+                            average_losses.append(average_loss)
+                            transformed_images[rank].append(batch_transformed_images)
+                            all_norm_diff[-1].append(list_norm_diff)
+                            all_init_norm[-1].append(list_init_norm)
+                        
+                        print("Batch-Averaged Loss (in %):",np.mean(current_batch_loss)*100)
+                        mem = psutil.virtual_memory()
+                        print("================LOADING DONE=====================",flush=True)
+                        print(f"System total memory: {mem.total / 1024**3:.2f} GB",flush=True)
+                        print(f"System available memory: {mem.available / 1024**3:.2f} GB",flush=True)
+                        print(f"System used memory: {mem.used / 1024**3:.2f} GB",flush=True)
+                        print("=====================================")
+                        
+                        torch.cuda.empty_cache()
+                        gc.collect()
 
-            for rank in range(num_gpus):
-                transformed_images[rank] = np.concatenate(transformed_images[rank], axis=0)
-            all_losses = []
-            for k in range(len(all_init_norm)):
-                i=[0]*len(all_init_norm[k][0])
-                d=[0]*len(all_norm_diff[k][0])
                 for rank in range(num_gpus):
-                    i+= all_init_norm[k][rank]**2
-                    d+= all_norm_diff[k][rank]**2
-                all_losses.append(np.sqrt(d)/np.sqrt(i))
-            all_losses = np.concatenate(all_losses, axis=0)
+                    transformed_images[rank] = np.concatenate(transformed_images[rank], axis=0)
+                all_losses = []
+                for k in range(len(all_init_norm)):
+                    i=[0]*len(all_init_norm[k][0])
+                    d=[0]*len(all_norm_diff[k][0])
+                    for rank in range(num_gpus):
+                        i+= all_init_norm[k][rank]**2
+                        d+= all_norm_diff[k][rank]**2
+                    all_losses.append(np.sqrt(d)/np.sqrt(i))
+                all_losses = np.concatenate(all_losses, axis=0)
 
-            if training_percentage <1:
-                training_loss = (min(all_losses[:num_training_images])*100,np.mean(all_losses[:num_training_images])*100,max(all_losses[:num_training_images])*100)
-                testing_loss = (min(all_losses[num_training_images:])*100,np.mean(all_losses[num_training_images:])*100,max(all_losses[num_training_images:])*100)
-                print("=====================================\n",flush=True)
-                print("Number of training images: ",num_training_images,flush=True)
-                print("Global computation of the average training loss (in %): ",training_loss,flush=True)
-                print("Global computation of the average testing loss (in %): ",testing_loss,flush=True)
-                print("=====================================\n",flush=True)
+                if training_percentage <1:
+                    training_loss = (min(all_losses[:num_training_images])*100,np.mean(all_losses[:num_training_images])*100,max(all_losses[:num_training_images])*100)
+                    testing_loss = (min(all_losses[num_training_images:])*100,np.mean(all_losses[num_training_images:])*100,max(all_losses[num_training_images:])*100)
+                    print("=====================================\n",flush=True)
+                    print("Number of training images: ",num_training_images,flush=True)
+                    print("Global computation of the average training loss (in %): ",training_loss,flush=True)
+                    print("Global computation of the average testing loss (in %): ",testing_loss,flush=True)
+                    print("=====================================\n",flush=True)
 
-            ## Optional for anomaly detection
-            """threshold = 10 # in %
-            for k in range(len(all_losses)):
-                if all_losses[k]*100>= threshold:
-                    print("Loss above threshold at index",k, all_losses[k]*100)"""
-            ##
-            loss_end_time = time.time()
-            print("=====================================\n",flush=True)
-            print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,min(all_losses)*100,max(all_losses)*100,flush=True)
-            print("=====================================\n",flush=True)
-            
-            #print("Loss distribution :",all_losses,flush=True)
-            
-            print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
-            print("=====================================\n",flush=True)
-            print("Panel-Averaged loss (in %) :",np.mean(average_losses)*100)
-            print("\n=====================================",flush=True)
+                ## Optional for anomaly detection
+                """threshold = 10 # in %
+                for k in range(len(all_losses)):
+                    if all_losses[k]*100>= threshold:
+                        print("Loss above threshold at index",k, all_losses[k]*100)"""
+                ##
+                loss_end_time = time.time()
+                print("=====================================\n",flush=True)
+                print("Global computation of the average loss (in %): ",np.mean(all_losses)*100,min(all_losses)*100,max(all_losses)*100,flush=True)
+                print("=====================================\n",flush=True)
+                
+                #print("Loss distribution :",all_losses,flush=True)
+                
+                print("LOSS COMPUTATION : DONE IN",loss_end_time-loss_start_time,"SECONDS",flush=True)
+                print("=====================================\n",flush=True)
+                print("Panel-Averaged loss (in %) :",np.mean(average_losses)*100)
+                print("\n=====================================",flush=True)
 
 
         #Fuse results and save the model
@@ -549,7 +557,6 @@ if __name__ == "__main__":
 
                 create_or_update_dataset(f, 'run', data=run)
                 create_or_update_dataset(f, 'num_runs', data=num_runs)
-                create_or_update_dataset(f, 'transformed_images', data=np.array(transformed_images))
                 create_or_update_dataset(f, 'S', data=S)
                 create_or_update_dataset(f, 'V', data=V)
                 create_or_update_dataset(f, 'mu', data=mu)

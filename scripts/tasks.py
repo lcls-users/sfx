@@ -755,64 +755,6 @@ def ipca_pytorch(config):
 
         # Run iPCA for the current run
         ipca.run()
-    
-def create_pypca(config):
-    from btx.interfaces.ischeduler import JobScheduler
-    from btx.misc.get_max_events import main as compute_max_events
-
-    setup = config.setup
-    task = config.create_pypca
-    exp = setup.exp
-    run = task.run
-    det_type = setup.det_type
-    start_offset = task.start_offset
-    num_images = task.num_images
-    num_tot_images = num_images
-    distribution_images = [] 
-    ##
-    num_runs = 0
-    while num_images > 0:
-        max_event = compute_max_events(exp, run+num_runs, det_type)
-        images_for_run = min(max_event, num_images)
-        distribution_images.append(images_for_run)
-        num_images -= images_for_run
-        num_runs += 1
-    ##
-    print(f"Number of runs: {num_runs}")
-    num_images_str = json.dumps(distribution_images)
-    num_components = task.num_components
-    batch_size = task.batch_size
-    path = task.path
-    tag = task.tag
-    num_gpus = task.num_gpus
-    training_percentage = task.training_percentage
-    smoothing_function = task.smoothing_function
-    compute_loss = task.compute_loss
-    comm = MPI.COMM_WORLD
-    ncores = comm.Get_size()
-
-    if task.get('loading_batch_size') is not None:
-        loading_batch_size = task.loading_batch_size
-    else:
-        loading_batch_size = 2000
-
-    server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
-    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
-
-    command = "which python; ulimit -n 4096;"
-    command += f"python {server_path} & echo 'Server is running'"
-    command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images_str}'"
-    command += "; sleep 10"
-    command += ";conda deactivate; echo 'Server environment deactivated'"
-    command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
-    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus} --compute_loss {compute_loss} --num_runs {num_runs}"
-
-    js = JobScheduler(os.path.join(".", f'create_pypca_{num_components}_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'create_pypca_{num_components}_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
-    js.write_header()
-    js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
-    js.clean_up()
-    js.submit()
-    print('All done!')
 
 def bayesian_optimization(config):
     from btx.diagnostics.bayesian_optimization import BayesianOptimization
@@ -859,6 +801,65 @@ def t_sne(config):
     command += f"; python {client_path} --filename {filename} --num_images {num_images} --loading_batch_size {loading_batch_size} --num_tries {num_tries} --threshold {threshold}"
 
     js = JobScheduler(os.path.join(".", f't_snes_{num_images}.sh'),queue = 'ampere', ncores=  1, jobname=f't_snes_{num_images}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = 4) ##
+    js.write_header()
+    js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
+    js.clean_up()
+    js.submit()
+    print('All done!')
+
+def create_pypca(config):
+    from btx.interfaces.ischeduler import JobScheduler
+    from btx.misc.get_max_events import main as compute_max_events
+
+    setup = config.setup
+    task = config.create_pypca
+    exp = setup.exp
+    run = task.run
+    det_type = setup.det_type
+    start_offset = task.start_offset
+    num_images = task.num_images
+    num_tot_images = num_images
+    distribution_images = [] 
+    ##
+    num_runs = 0
+    while num_images > 0:
+        max_event = compute_max_events(exp, run+num_runs, det_type)
+        images_for_run = min(max_event, num_images)
+        distribution_images.append(images_for_run)
+        num_images -= images_for_run
+        num_runs += 1
+    ##
+    print(f"Number of runs: {num_runs}")
+    num_images_str = json.dumps(distribution_images)
+    num_components = task.num_components
+    batch_size = task.batch_size
+    path = task.path
+    tag = task.tag
+    num_gpus = task.num_gpus
+    training_percentage = task.training_percentage
+    smoothing_function = task.smoothing_function
+    compute_loss = task.compute_loss
+    comm = MPI.COMM_WORLD
+    ncores = comm.Get_size()
+    compute_projected_images = task.compute_projected_images
+
+    if task.get('loading_batch_size') is not None:
+        loading_batch_size = task.loading_batch_size
+    else:
+        loading_batch_size = 2000
+
+    server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
+    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iclient.py")
+
+    command = "which python; ulimit -n 4096;"
+    command += f"python {server_path} & echo 'Server is running'"
+    command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images_str}'"
+    command += "; sleep 10"
+    command += ";conda deactivate; echo 'Server environment deactivated'"
+    command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus} --compute_loss {compute_loss} --num_runs {num_runs} --compute_projected_images {compute_projected_images}"
+
+    js = JobScheduler(os.path.join(".", f'create_pypca_{num_components}_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'create_pypca_{num_components}_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
     js.clean_up()
@@ -916,6 +917,61 @@ def update_pypca(config):
     command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --lower_bound {lower_bound} --upper_bound {upper_bound} --model {model} --num_gpus {num_gpus}"
 
     js = JobScheduler(os.path.join(".", f'update_pypca_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'update_pypca_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
+    js.write_header()
+    js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
+    js.clean_up()
+    js.submit()
+    print('All done!')
+
+def reduce_pypca(config):
+    from btx.interfaces.ischeduler import JobScheduler
+    from btx.misc.get_max_events import main as compute_max_events
+
+    setup = config.setup
+    task = config.reduce_pypca
+    exp = setup.exp
+    run = task.run
+    det_type = setup.det_type
+    start_offset = task.start_offset
+    num_images = task.num_images
+    num_tot_images = num_images
+
+    distribution_images = [] 
+    ##
+    num_runs = 0
+    while num_images > 0:
+        max_event = compute_max_events(exp, run+num_runs, det_type)
+        images_for_run = min(max_event, num_images)
+        distribution_images.append(images_for_run)
+        num_images -= images_for_run
+        num_runs += 1
+    ##
+    print(f"Number of runs: {num_runs}")
+    num_images_str = json.dumps(distribution_images)
+    batch_size = task.batch_size
+    num_gpus = task.num_gpus
+    model = task.model
+
+    comm = MPI.COMM_WORLD
+    ncores = comm.Get_size()
+
+    if task.get('loading_batch_size') is not None:
+        loading_batch_size = task.loading_batch_size
+    else:
+        loading_batch_size = 2000
+
+    server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
+    client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/processing/pypca_reducer.py")
+
+    command = "which python; ulimit -n 4096;"
+    command += f"python {server_path} & echo 'Server is running'"
+    command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images_str}'"
+    command += "; sleep 10"
+    command += ";conda deactivate; echo 'Server environment deactivated'"
+    command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --model {model} --num_gpus {num_gpus}"
+
+    js = JobScheduler(os.path.join(".", f'reduce_pypca_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'reduce_pypca_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
     js.clean_up()

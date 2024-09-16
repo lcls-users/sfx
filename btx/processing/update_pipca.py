@@ -477,19 +477,23 @@ if __name__ == "__main__":
                         print("Images split and on shared memory",flush=True)
                         device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-                        #Compute the loss
-                        results = pool.starmap(compute_loss_process, [(rank,model_state_dict,shm_list,device_list,shape,dtype,batch_size) for rank in range(num_gpus)])
-                        print("Loss computed",flush=True)
-                        for rank in range(num_gpus):
-                            list_norm_diff,list_init_norm = results[rank]
-                            all_norm_diff[-1].append(list_norm_diff)
-                            all_init_norm[-1].append(list_init_norm)
+                        #Compute the loss (or not if the bounds are 0 and 1e9)
+                        if lower_bound == 0 and upper_bound == 1e9:
+                            indices = range(current_len)
+                        
+                        else:
+                            results = pool.starmap(compute_loss_process, [(rank,model_state_dict,shm_list,device_list,shape,dtype,batch_size) for rank in range(num_gpus)])
+                            print("Loss computed",flush=True)
+                            for rank in range(num_gpus):
+                                list_norm_diff,list_init_norm = results[rank]
+                                all_norm_diff[-1].append(list_norm_diff)
+                                all_init_norm[-1].append(list_init_norm)
 
-                        total_losses = compute_total_loss(all_norm_diff,all_init_norm)
-                        indices = indices_to_update(total_losses,lower_bound,upper_bound)
-                        all_norm_diff = []
-                        all_init_norm = []
-                        print(f"Number of images to update: {len(indices)}",flush=True)
+                            total_losses = compute_total_loss(all_norm_diff,all_init_norm)
+                            indices = indices_to_update(total_losses,lower_bound,upper_bound)
+                            all_norm_diff = []
+                            all_init_norm = []
+                            print(f"Number of images to update: {len(indices)}",flush=True)
 
                         if len(indices) > 0:
                             update_or_not = True
