@@ -279,6 +279,10 @@ if __name__ == "__main__":
     smoothing_function = params.smoothing_function
     num_gpus = params.num_gpus
     loss_or_not = params.compute_loss
+    if loss_or_not == 0:
+        loss_or_not = False
+    else:
+        loss_or_not = True
     overwrite = True
     filename_with_tag = f"{path}pypca_model_{tag}.h5"
     remove_file_with_timeout(filename_with_tag, overwrite, timeout=10)
@@ -286,7 +290,10 @@ if __name__ == "__main__":
     transformed_images = [[] for _ in range(num_gpus)]
     num_runs = params.num_runs
     compute_projected_images = params.compute_projected_images
-
+    if compute_projected_images == 0:
+        compute_projected_images = False
+    else:
+        compute_projected_images = True
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
