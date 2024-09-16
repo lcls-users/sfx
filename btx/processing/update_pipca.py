@@ -446,7 +446,7 @@ if __name__ == "__main__":
                         
                         for batch in dataloader_iter:
                             current_loading_batch.append(batch)
-                            if num_images_seen + len(current_loading_batch) >= num_training_images and current_loading_batch != []:
+                            if num_images_seen + len(current_loading_batch) >= num_images_to_add and current_loading_batch != []:
                                 last_batch = True
                                 break
 
