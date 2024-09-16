@@ -477,8 +477,8 @@ if __name__ == "__main__":
                         print("Images split and on shared memory",flush=True)
                         device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-                        #Compute the loss (or not if the bounds are 0 and 1e9)
-                        if lower_bound == 0 and upper_bound == 1e9:
+                        #Compute the loss (or not if the bounds are -1)
+                        if lower_bound == -1 and upper_bound == -1:
                             indices = range(current_len)
                         
                         else:
