@@ -142,7 +142,7 @@ def read_model_file(filename):
         data['mu'] = np.asarray(f.get('mu'))
         data['S'] = np.asarray(f.get('S'))
         data['num_images'] = np.asarray(f.get('transformed_images')).shape[0]
-        data['num_components'] = data['V'].shape[0]
+        data['num_components'] = data['V'].shape[2]
     return data
 
 def compute_loss_process(rank,model_state_dict,shm_list,device_list,shape,dtype,batch_size):
