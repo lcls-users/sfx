@@ -167,7 +167,7 @@ def reduce_images(V,mu,batch_size,device_list,rank,shm_list,shape,dtype):
     mu = torch.tensor(mu[rank],device=device)
 
     existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
-    images = np.ndarray(images_shape, dtype=images_dtype, buffer=existing_shm.buf)
+    images = np.ndarray(shape, dtype=dtype, buffer=existing_shm.buf)
 
     transformed_images = []
 

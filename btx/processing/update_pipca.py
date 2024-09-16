@@ -272,14 +272,12 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     ipca.mean_ = torch.tensor(model_state_dict[rank]['mu'], device=device)
     ipca.n_samples_seen_ = num_images
     ipca.singular_values_ = torch.tensor(model_state_dict[rank]['S'], device=device)
-    print(f"Rank {rank} model loaded",flush=True)
     existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
     images = np.ndarray(shape, dtype=dtype, buffer=existing_shm.buf)
     images = images[indices_to_update]
-    print(f"Rank {rank} images to update loaded",flush=True)
     st = time.time()
     ipca.fit(images.reshape(len(indices_to_update),-1))
-    print(f"Fitting done on rank {rank}. Time to fit: {time.time()-st}")
+    print(f"\n=================\n Fitting done on rank {rank}. Time to fit: {time.time()-st}")
 
     existing_shm.close()
     existing_shm.unlink()
@@ -518,6 +516,6 @@ if __name__ == "__main__":
         #Update the model
         if update_or_not:
             update_model(filename, model_state_dict)    
-            print("Model updated",flush=True)   
+            print("Model updated and saved",flush=True)   
 
         print("Process finished",flush=True)
