@@ -344,11 +344,11 @@ if __name__ == "__main__":
 
                     
                     for batch in dataloader_iter:
+                        current_loading_batch.append(batch)
+                        num_images_seen += len(batch)
                         if num_images_seen + len(current_loading_batch) > num_training_images + start_offset and current_loading_batch != []:
                             last_batch = True
                             break
-                        current_loading_batch.append(batch)
-                        num_images_seen += len(batch)
 
                     intermediate_time = time.time()
                     l_time += intermediate_time-beginning_time
