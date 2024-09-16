@@ -262,9 +262,10 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     print(f"Rank {rank} updating model",flush=True)
 
     num_components = model_state_dict[rank]['num_components']
+    print("Num components: ",num_components,flush=True)
     num_images = model_state_dict[rank]['num_images']
 
-    print(print(f"=================\n S on rank {rank} is of shape {model_state_dict[rank]['S'].shape} : ",model_state_dict[rank]['S'],flush=True))
+    print(f"=================\n S on rank {rank} is of shape {model_state_dict[rank]['S'].shape} : ",model_state_dict[rank]['S'],flush=True)
     device = device_list[rank]
     ipca = IncrementalPCAonGPU(n_components = num_components, batch_size = batch_size, device = device)
     ipca.components_ = torch.tensor(model_state_dict[rank]['V'].T, device=device)
@@ -457,7 +458,7 @@ if __name__ == "__main__":
                         print("Number of images seen:",num_images_seen,flush=True)
                         current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
 
-                        print(f"Number of non-none images: {current_loading_batch.shape[0]}",flush=True)
+                        print(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}",flush=True)
 
                         #Split the images into batches for each GPU
                         current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
