@@ -756,7 +756,7 @@ def ipca_pytorch(config):
         # Run iPCA for the current run
         ipca.run()
     
-def test_serv_client(config):
+def create_pypca(config):
     print("TESTING SERVER AND CLIENT COMMUNICATION")
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.get_max_events import main as compute_max_events
@@ -866,7 +866,7 @@ def t_sne(config):
     js.submit()
     print('All done!')
 
-def inference(config):
+def update_pypca(config):
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.get_max_events import main as compute_max_events
 

@@ -20,6 +20,9 @@ from sklearn.manifold import trustworthiness
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.subplots as sp
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -465,7 +468,7 @@ def display_umap(filename,num_images):
         fig.show()
 """
 
-def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=3):
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_samples=3):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -481,43 +484,76 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=
         embedding = embedding_umap
         projection_title = 'UMAP projection'
     
-    # Initialiser les dictionnaires pour stocker les indices de chaque cluster
+    # Initialize dictionaries to store indices of each cluster
     clusters_per_gpu = [defaultdict(set) for _ in range(num_gpus)]
 
-    fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f'{projection_title} (GPU {rank})' for rank in range(num_gpus)])
+    fig = make_subplots(rows=2, cols=2, subplot_titles=[f'{projection_title} (GPU {rank})' for rank in range(num_gpus)])
 
     for rank in range(num_gpus):
         df = pd.DataFrame({
-            f'{projection_title}1': embedding[rank][:, 0],
-            f'{projection_title}2': embedding[rank][:, 1],
+            'Projection1': embedding[rank][:, 0],
+            'Projection2': embedding[rank][:, 1],
             'Index': np.arange(len(embedding[rank])),
         })
 
         dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-        df['Cluster'] = dbscan.fit_predict(df[[f'{projection_title}1', f'{projection_title}2']])
+        df['Cluster'] = dbscan.fit_predict(df[['Projection1', 'Projection2']])
         
-        # Stocker les indices dans chaque cluster
-        for cluster, indices in df.groupby('Cluster')['Index']:
-            clusters_per_gpu[rank][cluster].update(indices)
-        
-        scatter = px.scatter(df, x=f'{projection_title}1', y=f'{projection_title}2', 
-                            color='Cluster',
-                            hover_data={'Index': True},
-                            labels={f'{projection_title}1': f'{projection_title}1', f'{projection_title}2': f'{projection_title}2'},
-                            title=f'{projection_title} (GPU {rank})')
-        
-        fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
+        # Check if there are valid clusters
+        if len(set(df['Cluster'])) > 1 or (len(set(df['Cluster'])) == 1 and -1 not in df['Cluster']):
+            # Store indices in each cluster
+            for cluster, indices in df.groupby('Cluster')['Index']:
+                clusters_per_gpu[rank][cluster].update(indices)
+            
+            # Separate noise points from clustered points
+            noise_points = df[df['Cluster'] == -1]
+            clustered_points = df[df['Cluster'] != -1]
 
-    fig.update_layout(height=800, width=800, showlegend=False, title_text=f"{projection_title} Across GPUs")
+            # Create scatter plot for clustered points
+            scatter = px.scatter(clustered_points, x='Projection1', y='Projection2', 
+                                color='Cluster',
+                                color_discrete_sequence=px.colors.qualitative.Dark24,
+                                hover_data={'Index': True},
+                                title=f'{projection_title} (GPU {rank})')
+
+            # Add noise points in light grey
+            scatter.add_trace(go.Scatter(
+                x=noise_points['Projection1'],
+                y=noise_points['Projection2'],
+                mode='markers',
+                marker=dict(color='lightgrey', size=5),
+                hoverinfo='text',
+                text=noise_points['Index'],
+                name='Noise'
+            ))
+
+            for trace in scatter.data:
+                fig.add_trace(trace, row=(rank // 2) + 1, col=(rank % 2) + 1)
+        else:
+            print(f"Warning: No valid clusters found for GPU {rank}")
+            fig.add_annotation(
+                text="No valid clusters",
+                xref="x domain", yref="y domain",
+                x=0.5, y=0.5, showarrow=False,
+                row=(rank // 2) + 1, col=(rank % 2) + 1
+            )
+
+    fig.update_layout(
+        height=800, width=800, showlegend=False, 
+        title_text=f"{projection_title} Across GPUs",
+        plot_bgcolor='white', paper_bgcolor='white', font=dict(color='black')
+    )
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey')
     fig.show()
 
-    # Calculer la similarité entre les clusters de chaque paire de GPU
+    # Calculate similarity between clusters of each GPU pair
     def jaccard_index(set1, set2):
         intersection = len(set1.intersection(set2))
         union = len(set1.union(set2))
         return intersection / union if union != 0 else 0
 
-    # Initialiser les matrices de similarité
+    # Initialize similarity matrices
     cluster_similarity = defaultdict(lambda: defaultdict(float))
 
     for i in range(num_gpus):
@@ -528,14 +564,14 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=
                         similarity = jaccard_index(indices_i, indices_j)
                         cluster_similarity[(i, cluster_i)][(j, cluster_j)] = similarity
 
-    # Préparer les données pour la heatmap
+    # Prepare data for heatmap
     clusters_pairs = sorted(set([(i, cluster) for i in range(num_gpus) for cluster in clusters_per_gpu[i].keys()]))
     cluster_pairs_idx = {pair: idx for idx, pair in enumerate(clusters_pairs)}
 
     num_pairs = len(clusters_pairs)
     similarity_matrix = np.zeros((num_pairs, num_pairs))
 
-    # Assurer que les clés sont correctement décompressées
+    # Ensure keys are properly unpacked
     for key in cluster_similarity:
         i, cluster_i = key
         for sub_key in cluster_similarity[key]:
@@ -544,11 +580,18 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=1, min_samples=
             idx_j = cluster_pairs_idx[(j, cluster_j)]
             similarity_matrix[idx_i, idx_j] = cluster_similarity[key].get(sub_key, 0)
 
-    # Afficher la matrice de similarité
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(similarity_matrix, annot=True, cmap="YlGnBu", xticklabels=[f'GPU {p[0]}-Cluster {p[1]}' for p in clusters_pairs], yticklabels=[f'GPU {p[0]}-Cluster {p[1]}' for p in clusters_pairs])
-    plt.title('Matrice de Similarité entre Clusters')
-    plt.show()
+    # Check if similarity matrix contains valid data
+    if np.any(similarity_matrix) and len(clusters_pairs) > 0:
+        # Display similarity matrix
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(similarity_matrix, annot=True, cmap="YlGnBu", 
+                    xticklabels=[f'GPU {p[0]}-Cluster {p[1]}' for p in clusters_pairs], 
+                    yticklabels=[f'GPU {p[0]}-Cluster {p[1]}' for p in clusters_pairs])
+        plt.title('Cluster Similarity Matrix')
+        plt.show()
+    else:
+        print("Warning: No valid clusters found to create similarity heatmap.")
+
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
