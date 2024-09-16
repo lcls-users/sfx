@@ -182,7 +182,7 @@ def parse_input():
         "--compute_projected_images",
         help="Compute the projected images or not.",
         required=False,
-        type=bool,
+        type=int,
     )
 
     return parser.parse_args()
