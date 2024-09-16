@@ -165,7 +165,7 @@ def reduce_images(V,mu,batch_size,device_list,rank,shm_list,shape,dtype):
     device = device_list[rank]
     V = torch.tensor(V[rank],device=device)
     mu = torch.tensor(mu[rank],device=device)
-    print(V/shape)
+    print(V.shape)
     print(mu.shape)
 
     existing_shm = shared_memory.SharedMemory(name=shm_list[rank].name)
