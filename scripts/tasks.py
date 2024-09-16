@@ -878,7 +878,8 @@ def inference(config):
     start_offset = task.start_offset
     num_images = task.num_images
     num_tot_images = num_images
-    threshold = task.threshold
+    lower_bound = task.lower_bound
+    upper_bound = task.upper_bound
 
     distribution_images = [] 
     ##
@@ -913,7 +914,7 @@ def inference(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
-    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --threshold {threshold} --model {model} --num_gpus {num_gpus}"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --lower_bound {lower_bound} --upper_bound {upper_bound} --model {model} --num_gpus {num_gpus}"
 
     js = JobScheduler(os.path.join(".", f'update_model_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'update_model_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
     js.write_header()

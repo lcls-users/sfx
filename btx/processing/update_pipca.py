@@ -219,23 +219,25 @@ def compute_total_loss(list_norm_diff,list_init_norm):
 
     return all_losses
 
-def indices_to_update(losses, threshold):
+def indices_to_update(losses, lower_bound=0, upper_bound=1e9):
     """
     This function is used to compute the indices of the images that need to be updated.
 
     Parameters
     ----------
     losses: np.array
-        The loss of the iPCA model
-    threshold: float
-        The threshold to use for updating images
+        The losses of the images
+    lower_bound: float
+        The lower bound of the loss
+    upper_bound: float
+        The upper bound of the loss
 
     Returns
     -------
     indices: np.array
         The indices of the images that need to be updated
     """
-    indices = np.where(losses > threshold)[0]
+    indices = np.where(losses >= lower_bound and losses <= upper_bound)[0]
     return indices
 
 def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shape,dtype,indices_to_update):
@@ -363,8 +365,14 @@ def parse_input():
         type=int,
     )
     parser.add_argument(
-        "--threshold",
-        help="Threshold for updating images.",
+        "--lower_bound",
+        help="Lower bound for the loss.",
+        required=True,
+        type=float,
+    )
+    parser.add_argument(
+        "--upper_bound",
+        help="Upper bound for the loss.",
         required=True,
         type=float,
     )
@@ -395,7 +403,8 @@ if __name__ == "__main__":
     filename = params.model
     num_gpus = params.num_gpus
     num_runs = params.num_runs
-    threshold = params.threshold
+    lower_bound = params.lower_bound
+    upper_bound = params.upper_bound
 
     if start_offset is None:
         start_offset = 0
@@ -477,7 +486,7 @@ if __name__ == "__main__":
                             all_init_norm[-1].append(list_init_norm)
 
                         total_losses = compute_total_loss(all_norm_diff,all_init_norm)
-                        indices = indices_to_update(total_losses,threshold)
+                        indices = indices_to_update(total_losses,lower_bound,upper_bound)
                         all_norm_diff = []
                         all_init_norm = []
                         print(f"Number of images to update: {len(indices)}",flush=True)
