@@ -294,6 +294,8 @@ if __name__ == "__main__":
         compute_projected_images = False
     else:
         compute_projected_images = True
+    
+    print("ALLO 1",compute_projected_images)
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
