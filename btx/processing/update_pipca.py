@@ -237,7 +237,7 @@ def indices_to_update(losses, lower_bound=0, upper_bound=1e9):
     indices: np.array
         The indices of the images that need to be updated
     """
-    indices = np.where(losses >= lower_bound and losses <= upper_bound)[0]
+    indices = np.where((losses >= lower_bound) & (losses <= upper_bound))[0]
     return indices
 
 def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shape,dtype,indices_to_update):
