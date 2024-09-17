@@ -294,7 +294,6 @@ if __name__ == "__main__":
         compute_projected_images = False
     else:
         compute_projected_images = True
-    
     if start_offset is None:
         start_offset = 0
     num_images = params.num_images
