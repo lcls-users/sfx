@@ -500,6 +500,7 @@ class BayesGeomOpt:
         X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
         X_norm = (X_norm - np.mean(X_norm, axis=0)) / (np.max(X_norm, axis=0) - np.min(X_norm, axis=0))
         print(f"Search space: {X_norm.shape[0]} points")
+        print(X_norm)
         idx_samples = np.random.choice(X.shape[0], n_samples)
         X_samples = X[idx_samples]
         X_norm_samples = X_norm[idx_samples]
@@ -528,7 +529,7 @@ class BayesGeomOpt:
         visited_idx = list(idx_samples.flatten())
 
         if af == "ucb":
-            beta = 10
+            beta = 2
             af = self.upper_confidence_bound
         elif af == "ei":
             epsilon = 0
