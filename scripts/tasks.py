@@ -287,31 +287,18 @@ def bayes_pyFAI_geom(config):
             calibrant=task.calibrant,
             fix=fix,
         )
-        score = task.get("score")
-        if score == 'mixed':
-            bo_history, best_idx, residuals = geom_opt.bayesian_geom_opt_mixed_score(
-                powder=powder,
-                fix=['wavelength'],
-                Imin=Imin,
-                bounds=bounds,
-                values=values,
-                n_samples=n_samples,
-                num_iterations=num_iterations,
-                af=af,
-                seed=seed,
-            )
-        else:
-            bo_history, best_idx, residuals = geom_opt.bayesian_geom_opt(
-                powder=powder,
-                fix=['wavelength'],
-                Imin=Imin,
-                bounds=bounds,
-                values=values,
-                n_samples=n_samples,
-                num_iterations=num_iterations,
-                af=af,
-                seed=seed,
-            )
+    
+        bo_history, best_idx, residuals = geom_opt.bayesian_geom_opt(
+            powder=powder,
+            fix=['wavelength'],
+            Imin=Imin,
+            bounds=bounds,
+            values=values,
+            n_samples=n_samples,
+            num_iterations=num_iterations,
+            af=af,
+            seed=seed,
+        )
         logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")
         logger.warning(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
         logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
