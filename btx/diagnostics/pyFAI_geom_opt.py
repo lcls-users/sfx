@@ -550,7 +550,8 @@ class BayesGeomOpt:
             elif af == self.probability_of_improvement:
                 af_values = af(X_norm, gp_model, best_score, epsilon)
             elif af == self.contextual_improvement:
-                af_values = af(X_norm, gp_model, best_score)            
+                af_values = af(X_norm, gp_model, best_score)   
+            af_values[visited_idx] = -np.inf         
             
             # 2. Select the next set of parameters based on the Acquisition Function
             new_idx = np.argmax(af_values)
@@ -602,7 +603,7 @@ class BayesGeomOpt:
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         params = [bo_history[key]['param'] for key in bo_history.keys()]
         if len(self.param_space)==1:
-            fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+            fig, ax = plt.subplots(1, 2)
             ax[0].plot([param[0] for param in params])
             ax[0].set_xticks(np.arange(len(scores), step=5))
             ax[0].set_xlabel('Iteration')
@@ -619,14 +620,13 @@ class BayesGeomOpt:
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
         elif len(self.param_space)==2:
-            fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+            fig, ax = plt.subplots(1, 2)
             poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], grid_search.shape[0])
             poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], grid_search.shape[1])
-            cy, cx = np.meshgrid(poni1_range, poni2_range)
+            cx, cy = np.meshgrid(poni1_range, poni2_range)
             c = ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu')
             ax[0].set_xlabel('Poni1 (m)')
             ax[0].set_ylabel('Poni2 (m)')
-            ax[0].set_aspect('equal')
             ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
             ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
             cbar = plt.colorbar(c, ax=ax[0])
@@ -642,14 +642,13 @@ class BayesGeomOpt:
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
         elif len(self.param_space)==3:
-            fig, ax = plt.subplots(1, 3, figsize=(12, 6))
+            fig, ax = plt.subplots(1, 3)
             poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], grid_search.shape[0])
             poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], grid_search.shape[1])
-            cy, cx = np.meshgrid(poni1_range, poni2_range)
+            cx, cy = np.meshgrid(poni1_range, poni2_range)
             c = ax[0].pcolormesh(cx, cy, grid_search, cmap='RdBu')
             ax[0].set_xlabel('Poni1 (m)')
             ax[0].set_ylabel('Poni2 (m)')
-            ax[0].set_aspect('equal')
             ax[0].set_title('Bayesian Optimization Convergence on Grid Search Space')
             ax[0].scatter([param[1] for param in params], [param[2] for param in params], c=np.arange(len(params)), cmap='RdYlGn')
             cbar = plt.colorbar(c, ax=ax[0])
