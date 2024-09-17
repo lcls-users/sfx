@@ -603,7 +603,7 @@ class BayesGeomOpt:
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         params = [bo_history[key]['param'] for key in bo_history.keys()]
         if len(self.param_space)==1:
-            fig, ax = plt.subplots(1, 2, (14, 6))
+            fig, ax = plt.subplots(1, 2, figsize=(14, 6))
             ax[0].plot([param[0] for param in params])
             ax[0].set_xticks(np.arange(len(scores), step=5))
             ax[0].set_xlabel('Iteration')
@@ -620,7 +620,7 @@ class BayesGeomOpt:
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
         elif len(self.param_space)==2:
-            fig, ax = plt.subplots(1, 2, (14, 6))
+            fig, ax = plt.subplots(1, 2, figsize=(14, 6))
             poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], grid_search.shape[0])
             poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], grid_search.shape[1])
             cx, cy = np.meshgrid(poni1_range, poni2_range)
@@ -642,7 +642,7 @@ class BayesGeomOpt:
             ax[1].axvline(x=best_idx, color='red', linestyle='dashed')
             ax[1].axhline(y=scores[best_idx], color='green', linestyle='dashed')
         elif len(self.param_space)==3:
-            fig, ax = plt.subplots(1, 3, (21, 6))
+            fig, ax = plt.subplots(1, 3, figsize=(21, 6))
             poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], grid_search.shape[0])
             poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], grid_search.shape[1])
             cx, cy = np.meshgrid(poni1_range, poni2_range)
