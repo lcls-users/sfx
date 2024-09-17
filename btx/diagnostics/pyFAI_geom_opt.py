@@ -550,8 +550,7 @@ class BayesGeomOpt:
             elif af == self.probability_of_improvement:
                 af_values = af(X_norm, gp_model, best_score, epsilon)
             elif af == self.contextual_improvement:
-                af_values = af(X_norm, gp_model, best_score)
-            af_values[visited_idx] = -np.inf
+                af_values = af(X_norm, gp_model, best_score)            
             
             # 2. Select the next set of parameters based on the Acquisition Function
             new_idx = np.argmax(af_values)
@@ -565,7 +564,7 @@ class BayesGeomOpt:
             sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
             score = len(sg.geometry_refinement.data)
             y = np.append(y, [score], axis=0)
-            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score}
+            bo_history[f'iteration_{i+1}'] = {'param':X[new_idx], 'score': score, 'af': af_values}
             X_samples = np.append(X_samples, [X[new_idx]], axis=0)
             X_norm_samples = np.append(X_norm_samples, [X_norm[new_idx]], axis=0)
             y_norm = (y - np.mean(y)) / np.std(y)
