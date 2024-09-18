@@ -276,6 +276,7 @@ def bayes_pyFAI_geom(config):
         n_samples = task.get("n_samples")
         num_iterations = task.get("num_iterations")
         af = task.get("af")
+        prior = task.get("prior")
         seed = task.get("seed")
         logger.warning(f'Starting Bayesian optimization for geometry refinement...')
         logger.warning(f'n_samples: {n_samples}, num_iterations: {num_iterations}, acquisition function: {af}, seed: {seed}')
@@ -297,6 +298,7 @@ def bayes_pyFAI_geom(config):
             n_samples=n_samples,
             num_iterations=num_iterations,
             af=af,
+            prior=prior,
             seed=seed,
         )
         logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")

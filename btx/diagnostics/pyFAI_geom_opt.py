@@ -416,6 +416,7 @@ class BayesGeomOpt:
         n_samples,
         num_iterations,
         af="ucb",
+        prior=False,
         mask=None,
         seed=0,
     ):
@@ -441,6 +442,8 @@ class BayesGeomOpt:
             Number of iterations for optimization
         af : str
             Acquisition function to use for optimization
+        prior : bool
+            Use prior information for optimization
         mask : np.ndarray
             Mask for powder image
         seed : int
@@ -500,10 +503,15 @@ class BayesGeomOpt:
         X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
         X_norm = (X_norm - np.mean(X_norm, axis=0)) / (np.max(X_norm, axis=0) - np.min(X_norm, axis=0))
         print(f"Search space: {X_norm.shape[0]} points")
-        print(X_norm)
-        idx_samples = np.random.choice(X.shape[0], n_samples)
-        X_samples = X[idx_samples]
-        X_norm_samples = X_norm[idx_samples]
+        if prior:
+            print("Using prior information...")
+            means = np.mean(X_norm, axis=0)
+            cov = np.cov(X_norm.T)
+            X_norm_samples = np.random.multivariate_normal(means, cov, n_samples)
+        else:
+            idx_samples = np.random.choice(X.shape[0], n_samples)
+            X_samples = X[idx_samples]
+            X_norm_samples = X_norm[idx_samples]
         y = np.zeros((n_samples))
 
         print("Initializing samples...")
@@ -526,7 +534,7 @@ class BayesGeomOpt:
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
         gp_model.fit(X_norm_samples, y_norm)
-        visited_idx = list(idx_samples.flatten())
+        visited_idx = np.array([])
 
         if af == "ucb":
             beta = 2
