@@ -539,7 +539,7 @@ class BayesGeomOpt:
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
         gp_model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
         gp_model.fit(X_norm_samples, y_norm)
-        visited_idx = np.array([])
+        visited_idx = list([])
 
         if af == "ucb":
             beta = 2
