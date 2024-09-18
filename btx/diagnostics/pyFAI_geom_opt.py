@@ -505,10 +505,10 @@ class BayesGeomOpt:
         print(f"Search space: {X_norm.shape[0]} points")
         if prior:
             print("Using prior information...")
-            means = np.mean(X_norm, axis=0)
-            cov = 1 / np.sqrt(2) * np.eye(X_norm.shape[1])
-            X_norm_samples = np.random.multivariate_normal(means, cov, n_samples)
-            X_samples = X_norm_samples * (np.max(X_space, axis=0) - np.min(X_space, axis=0)) + np.mean(X_space, axis=0)
+            means = np.mean(X_space, axis=0)
+            cov = np.eye(X_space.shape[1]) / (np.max(X_space, axis=0) - np.min(X_space, axis=0))
+            X_samples = np.random.multivariate_normal(means, cov, n_samples)
+            X_norm_samples = (X_samples - np.mean(X_space, axis=0)) / (np.max(X_space, axis=0) - np.min(X_space, axis=0))
             for param in self.param_order:
                 if param not in self.param_space:
                     idx = self.param_order.index(param)
