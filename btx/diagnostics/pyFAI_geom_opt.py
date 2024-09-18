@@ -500,14 +500,19 @@ class BayesGeomOpt:
                     print(f'Fixed parameter {param} with value {values[param]}')
                     input_range[param] = np.array([values[param]])
         X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
-        X_norm = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
-        X_norm = (X_norm - np.mean(X_norm, axis=0)) / (np.max(X_norm, axis=0) - np.min(X_norm, axis=0))
+        X_space = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
+        X_norm = (X_space - np.mean(X_space, axis=0)) / (np.max(X_space, axis=0) - np.min(X_space, axis=0))
         print(f"Search space: {X_norm.shape[0]} points")
         if prior:
             print("Using prior information...")
             means = np.mean(X_norm, axis=0)
-            cov = np.cov(X_norm.T)
+            cov = 1 / np.sqrt(2) * np.eye(X_norm.shape[1])
             X_norm_samples = np.random.multivariate_normal(means, cov, n_samples)
+            X_samples = X_norm_samples * (np.max(X_space, axis=0) - np.min(X_space, axis=0)) + np.mean(X_space, axis=0)
+            for param in self.param_order:
+                if param not in self.param_space:
+                    idx = self.param_order.index(param)
+                    X_samples = np.insert(X_samples, idx, values[param], axis=1)
         else:
             idx_samples = np.random.choice(X.shape[0], n_samples)
             X_samples = X[idx_samples]
