@@ -319,12 +319,12 @@ class GridSearchGeomOpt:
         print("Setting geometry space...")
         poni1_range = np.linspace(bounds["poni1"][0], bounds["poni1"][1], bounds["poni1"][2])
         poni2_range = np.linspace(bounds["poni2"][0], bounds["poni2"][1], bounds["poni2"][2])
-        cy, cx = np.meshgrid(poni1_range, poni2_range)
-        y = np.zeros_like(cx)
+        poni1m, poni2m = np.meshgrid(poni1_range, poni2_range, indexing='ij')
+        y = np.zeros_like(poni1m)
         for i in tqdm(range(len(poni1_range))):
             for j in range(len(poni2_range)):
-                    poni1 = cx[i, j]
-                    poni2 = cy[i, j]
+                    poni1 = poni1m[i, j]
+                    poni2 = poni2m[i, j]
                     geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, detector=self.detector, wavelength=wavelength)
                     sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
                     sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
@@ -332,7 +332,7 @@ class GridSearchGeomOpt:
                         y[i, j] = 0
                     else:
                         y[i, j] = len(sg.geometry_refinement.data)
-        return cx, cy, y
+        return poni1m, poni2m, y
 
 class BayesGeomOpt:
     """
@@ -624,7 +624,7 @@ class BayesGeomOpt:
             fig, ax = plt.subplots(1, 2, figsize=(14, 6))
             poni1_range = np.linspace(bounds['poni1'][0], bounds['poni1'][1], grid_search.shape[0])
             poni2_range = np.linspace(bounds['poni2'][0], bounds['poni2'][1], grid_search.shape[1])
-            poni2, poni1 = np.meshgrid(poni1_range, poni2_range, indexing='ij')
+            poni1, poni2 = np.meshgrid(poni1_range, poni2_range, indexing='ij')
             c = ax[0].pcolormesh(poni2, poni1, grid_search, cmap='RdBu')
             ax[0].set_xlabel('Poni2 (m)')
             ax[0].set_ylabel('Poni1 (m)')
