@@ -506,7 +506,7 @@ class BayesGeomOpt:
         if prior:
             print("Using prior information...")
             means = np.mean(X_space, axis=0)
-            cov = np.eye(X_space.shape[1]) / (np.max(X_space, axis=0) - np.min(X_space, axis=0))
+            cov = np.diag([np.std(input_range[param])**2 for param in self.param_space])
             X_samples = np.random.multivariate_normal(means, cov, n_samples)
             X_norm_samples = (X_samples - np.mean(X_space, axis=0)) / (np.max(X_space, axis=0) - np.min(X_space, axis=0))
             for param in self.param_order:
