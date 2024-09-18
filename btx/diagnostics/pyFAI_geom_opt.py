@@ -564,7 +564,7 @@ class BayesGeomOpt:
                 af_values = af(X_norm, gp_model, best_score, epsilon)
             elif af == self.contextual_improvement:
                 af_values = af(X_norm, gp_model, best_score)   
-            af_values[visited_idx] = -np.inf         
+            #af_values[visited_idx] = -np.inf         
             
             # 2. Select the next set of parameters based on the Acquisition Function
             new_idx = np.argmax(af_values)
