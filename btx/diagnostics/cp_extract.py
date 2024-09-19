@@ -175,7 +175,7 @@ class ControlPointExtractor():
         """
         self.panels = []
         self.panels_normalized = []
-        for module in range(len(self.detector.n_modules)):
+        for module in range(self.detector.n_modules):
             panel = self.X[(self.X[:, 0] >= module * self.detector.asics_shape[0] * self.detector.ss_size) & (self.X[:, 0] < (module + 1) * self.detector.asics_shape[0] * self.detector.ss_size)]
             self.panels.append(panel)
             panel[:, 0] = panel[:, 0] - module * self.detector.asics_shape[0] * self.detector.ss_size
@@ -451,6 +451,9 @@ class ControlPointExtractor():
         ratio_q = q_data[:-1] / q_data[1:]
         data = np.array([])
         for k, X in enumerate(self.panels):
+            if len(X) == 0:
+                print(f"Skipping panel {k} as no control points were found")
+                continue
             print(f"Processing panel {k}...")
             eps = self.hyperparameter_eps_search(X, eps_range, filter, radius_tol)
             print(f"Best eps for panel {k}: {eps}")
