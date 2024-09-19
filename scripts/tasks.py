@@ -271,7 +271,7 @@ def bayes_pyFAI_geom(config):
             poni1 = tuple([float(elem) for elem in task.poni1.split()])
             poni2 = tuple([float(elem) for elem in task.poni2.split()])
             dist = tuple([float(elem) for elem in task.dist.split()])
-            dists = np.arange(dist[0], dist[1]+dist[2], dist[2])
+            dists = np.arange(dist[0], dist[1], dist[2])
             bounds = {'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
         for dist in dists:
             values = {'dist':dist, 'rot1':0, 'rot2':0, 'rot3':0}
