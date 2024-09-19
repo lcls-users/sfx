@@ -377,13 +377,13 @@ class ControlPointExtractor():
         for eps in eps_range:
             labels = self.clusterise(X, eps=eps, min_samples=4)
             centers, radii = self.fit_circles_on_clusters(X, labels)
-            nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
-            if len(nice_clusters) > 0:
-                radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
-                labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
-                score = self.score_clutering(X, labels, nice_clusters)
-            else:
-                score = 0
+            score = 0
+            if len(centers) > 0:
+                nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
+                if len(nice_clusters) > 0:
+                    radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
+                    labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
+                    score = self.score_clutering(X, labels, nice_clusters)
             scores.append(score)
         return eps_range[np.argmax(scores)]
     
