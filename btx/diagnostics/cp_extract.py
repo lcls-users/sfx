@@ -483,7 +483,7 @@ class ControlPointExtractor():
                     if ring_index[i] != -1:
                         cluster = labels == final_clusters[i]
                         xy = X[cluster]
-                        xy[:, 0] += self.detector.center_modules[k] * self.detector.asics_shape[0] * self.detector.ss_size
+                        xy[:, 0] += k * self.detector.asics_shape[0] * self.detector.ss_size
                         ring_idx = ring_index[i]
                         if len(data) == 0:
                             data = np.column_stack((xy[:, 0], xy[:, 1], np.full(len(xy), ring_idx)))
