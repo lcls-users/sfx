@@ -403,7 +403,7 @@ class ControlPointExtractor():
                 print(f'Missing one ring radius value for ratio idx {j}')
         return ring_index if len(ring_index) > 0 else None
         
-    def plot_final_clustering(self, X, labels, nice_clusters, centroid, radii, ring_index, plot):
+    def plot_final_clustering(self, X, labels, nice_clusters, plot, centroid=[], radii=[], ring_index=None):
         """ 
         Plot final clustering after fitting concentric rings
         """
@@ -427,11 +427,12 @@ class ControlPointExtractor():
                 markersize=10,
                 label=i
             )
-        cx, cy = centroid
-        for i in range(len(nice_clusters)):
-            circle = plt.Circle((cx, cy), radii[i], color='r', fill=False, linestyle='--')
-            plt.gca().add_artist(circle)
-        plt.legend()
+        if len(nice_clusters) > 0:
+            cx, cy = centroid
+            for i in range(len(nice_clusters)):
+                circle = plt.Circle((cx, cy), radii[i], color='r', fill=False, linestyle='--')
+                plt.gca().add_artist(circle)
+            plt.legend()
         if ring_index is not None:
             plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)} with indexed rings {ring_index}")
         else:
@@ -459,23 +460,27 @@ class ControlPointExtractor():
             print(f"Best eps for panel {k}: {eps}")
             labels = self.clusterise(X, eps=eps, min_samples=4)
             centers, radii = self.fit_circles_on_clusters(X, labels)
-            nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
-            radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
-            labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
-            print(f"Number of nice clusters for panel {k}: {len(nice_clusters)}")
-            radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
-            if len(radii) > 1:
-                sorted_radii = np.sort(radii)
-                permutation = np.argsort(radii)
-                final_clusters = nice_clusters[permutation]
-                ratio_radii = sorted_radii[:-1] / sorted_radii[1:]
-                ring_index = self.ring_indexing(ratio_q, ratio_radii, final_clusters, ring_tol)
+            ring_index = None
+            final_clusters = []
+            if len(centers) == 0:
+                print(f"All data clustered as noise in panel {k}")
             else:
-                final_clusters = nice_clusters
-                ring_index = None
+                nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
+                radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
+                labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
+                print(f"Number of nice clusters for panel {k}: {len(nice_clusters)}")
+                radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
+                if len(radii) > 1:
+                    sorted_radii = np.sort(radii)
+                    permutation = np.argsort(radii)
+                    final_clusters = nice_clusters[permutation]
+                    ratio_radii = sorted_radii[:-1] / sorted_radii[1:]
+                    ring_index = self.ring_indexing(ratio_q, ratio_radii, final_clusters, ring_tol)
+                else:
+                    final_clusters = nice_clusters
             if plot:
                 plot_name = f"{self.exp}_r{self.run:04}_{self.det_type}_panel{k}_clustering.png"
-                self.plot_final_clustering(X, labels, nice_clusters, centroid, radii, ring_index, plot_name)
+                self.plot_final_clustering(X, labels, final_clusters, centroid, radii, ring_index, plot_name)
             if ring_index is None:
                 print(f"No ring index found for panel {k}")
             else:
