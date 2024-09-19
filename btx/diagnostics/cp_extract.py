@@ -405,7 +405,7 @@ class ControlPointExtractor():
                 print(f'Missing one ring radius value for ratio idx {j}')
         return ring_index if len(ring_index) > 0 else None
         
-    def plot_final_clustering(self, X, labels, nice_clusters, plot, centroid=[], radii=[], ring_index=None):
+    def plot_final_clustering(self, X, labels, nice_clusters, centroid, radii, ring_index, plot):
         """ 
         Plot final clustering after fitting concentric rings
         """
@@ -464,6 +464,8 @@ class ControlPointExtractor():
             centers, radii = self.fit_circles_on_clusters(X, labels)
             ring_index = None
             final_clusters = []
+            centroid = []
+            radii = []
             if len(centers) == 0:
                 print(f"All data clustered as noise in panel {k}")
             else:
@@ -482,7 +484,7 @@ class ControlPointExtractor():
                     final_clusters = nice_clusters
             if plot:
                 plot_name = f"{self.exp}_r{self.run:04}_{self.det_type}_panel{k}_clustering.png"
-                self.plot_final_clustering(X, labels, final_clusters, plot_name, centroid, radii, ring_index)
+                self.plot_final_clustering(X, labels, final_clusters, centroid, radii, ring_index, plot_name)
             if ring_index is None:
                 print(f"No ring index found for panel {k}")
             else:
