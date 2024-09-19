@@ -465,9 +465,8 @@ class ControlPointExtractor():
             ring_index = None
             final_clusters = []
             centroid = []
-            radii = []
             if len(centers) == 0:
-                print(f"All data clustered as noise in panel {k}")
+                print(f"All data clustered as noise in panel {k}")                
             else:
                 nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
                 radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
