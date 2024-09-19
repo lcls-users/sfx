@@ -480,7 +480,7 @@ class ControlPointExtractor():
                     final_clusters = nice_clusters
             if plot:
                 plot_name = f"{self.exp}_r{self.run:04}_{self.det_type}_panel{k}_clustering.png"
-                self.plot_final_clustering(X, labels, final_clusters, centroid, radii, ring_index, plot_name)
+                self.plot_final_clustering(X, labels, final_clusters, plot_name, centroid, radii, ring_index)
             if ring_index is None:
                 print(f"No ring index found for panel {k}")
             else:
