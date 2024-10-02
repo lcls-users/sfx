@@ -8,6 +8,7 @@ from pyFAI.goniometer import SingleGeometry
 from pyFAI.geometry import Geometry
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI.gui import jupyter
+from mpi4py import MPI
 from btx.interfaces.ipsana import *
 from btx.diagnostics.run import RunDiagnostics
 from btx.misc.metrology import *
@@ -128,107 +129,6 @@ class PyFAIGeomOpt:
         if plot is not None:
             self.visualize_results()
         return score
-
-    def display_panel(img=None, cp=None, ai=None, label=None, sg=None, ax=None):
-        """Display an image with the control points and the calibrated rings
-        in Jupyter notebooks
-
-        Parameters
-        ----------
-        :param img: 2D numpy array with an image
-        :param cp: ControlPoint instance
-        :param ai: azimuthal integrator for iso-2th curves
-        :param label: name of the curve
-        :param sg: single geometry object regrouping img, cp and ai
-        :param ax: subplot object to display in, if None, a new one is created.
-        :param photon_energy: photon energy in eV
-        :return: Matplotlib subplot
-        """
-        import numpy
-        from matplotlib import lines
-        from matplotlib.colors import SymLogNorm
-        
-        if ax is None:
-            fig, ax = plt.subplots(2, 2, figsize=(8, 8), dpi=300)
-        if sg is not None:
-            if img is None:
-                img = sg.image
-            if cp is None:
-                cp = sg.control_points
-            if ai is None:
-                ai = sg.geometry_refinement
-            if label is None:
-                label = sg.label
-        n_panels = [2, 6, 10, 14]
-        for i in range(len(n_panels)):
-            img_panel = img[n_panels[i]*352:(n_panels[i]+1)*352,:]
-            ax[i//2, i%2].imshow(img_panel,
-                    origin="lower",
-                    cmap="viridis",
-                    vmax=np.max(img)/100)
-            label = f'panel {n_panels[i]}'
-            ax[i//2, i%2].set_title(label, fontsize='small')
-            if cp is not None:
-                for lbl in cp.get_labels():
-                    pt = numpy.array(cp.get(lbl=lbl).points)
-                    pt_lbl = []
-                    if len(pt) > 0:
-                        for point in pt:
-                            if n_panels[i]*352 <= point[0] <= (n_panels[i]+1)*352:
-                                pt_lbl.append(point)
-                        pt_lbl = np.array(pt_lbl)
-                        if len(pt_lbl) > 0:
-                            ax[i//2, i%2].scatter(pt_lbl[:,1], pt_lbl[:,0]-n_panels[i]*352, label=lbl, s=10)
-            if ai is not None and cp.calibrant is not None:
-                tth = cp.calibrant.get_2th()
-                ttha = ai.twoThetaArray()
-                ax[i//2, i%2].contour(ttha[n_panels[i]*352:(n_panels[i]+1)*352,:], levels=tth, cmap="autumn", linewidths=2, linestyles="dashed")
-            ax[i//2, i%2].axis('off')
-        return ax
-
-    def visualize_results(self, flat_powder, sg0=None, sg1=None, plot=''):
-        """
-        Visualize the extraction of control points and the radial profiles
-        before and after optimization
-
-        Parameters
-        ----------
-        flat_powder : numpy.ndarray
-            Powder image
-        sg0 : SingleGeometry
-            SingleGeometry object before optimization
-        sg1 : SingleGeometry
-            SingleGeometry object after optimization
-        plot : str
-            Path to save plot
-        """
-        fig = plt.figure(figsize=(10, 8), dpi=300)
-
-        subfigs = fig.subfigures(2, 2, height_ratios=[1.2, 1])
-
-        # plotting control points extraction
-        subfigs[0, 0].suptitle('Powder before Optimization')
-        ax0 = subfigs[0, 0].subplots(2, 2)
-        self.display_panel(sg=sg0, ax=ax0)
-        subfigs[0, 1].suptitle('Powder after Optimization')
-        ax1 = subfigs[0, 1].subplots(2, 2)
-        self.display_panel(sg=sg1, ax=ax1)
-
-        # plotting radial profiles with peaks
-        subfigs[1, 0].suptitle('Radially averaged intensity before Optimization')
-        ax2 = subfigs[1, 0].subplots()
-        ai = sg0.geometry_refinement
-        rai = ai.integrate1d(flat_powder, 1000)
-        jupyter.plot1d(rai, calibrant=sg0.calibrant, ax=ax2)
-        subfigs[1, 1].suptitle('Radially averaged intensity after Optimization')
-        ax3 = subfigs[1, 1].subplots()
-        ai = sg1.geometry_refinement
-        rai = ai.integrate1d(flat_powder, 1000)
-        jupyter.plot1d(rai, calibrant=sg1.calibrant, ax=ax3)
-
-        plt.tight_layout()
-        if plot != '':
-            fig.savefig(plot, dpi=300)
 
 class GridSearchGeomOpt:
     """
@@ -352,8 +252,6 @@ class BayesGeomOpt:
         Calibrant name
     Imin : int
         Minimum intensity to use for control point extraction based on photon energy
-    fix : list
-        List of parameters not to be optimized
     """
 
     def __init__(
@@ -363,20 +261,16 @@ class BayesGeomOpt:
         det_type,
         detector,
         calibrant,
-        fix,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
         self.detector = detector
         self.calibrant = calibrant
-        self.fix = fix
-        self.param_order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
-        self.param_space = []
-        for param in self.param_order:
-            if param not in fix:
-                self.param_space.append(param)
-        self.distance = self.diagnostics.psi.estimate_distance() * 1e-3
-        self.cx, self.cy, _ = detector.calc_cartesian_positions()
-        self.default_value = {'dist':self.distance, 'poni1':self.cx, 'poni2':self.cy}
+        self.order = ["dist", "poni1", "poni2", "rot1", "rot2", "rot3"]
+        self.space = ["poni1", "poni2"]
+        self.values = {'dist':self.diagnostics.psi.estimate_distance() * 1e-3,'poni1':0, 'poni2':0, 'rot1':0, 'rot2':0, 'rot3':0}
 
     @staticmethod
     def expected_improvement(X, gp_model, best_y, epsilon=0):
@@ -404,52 +298,19 @@ class BayesGeomOpt:
         cv = np.mean(y_std**2) / best_y
         z = (y_pred - best_y + cv) / y_std 
         ci = y_pred - best_y * norm.cdf(z) + y_std * norm.pdf(z)
-        return ci 
-
-    def bayesian_geom_opt(
-        self,
-        powder,
-        fix,
-        Imin,
-        bounds,
-        values,
-        n_samples,
-        num_iterations,
-        af="ucb",
-        prior=False,
-        mask=None,
-        seed=0,
-    ):
+        return ci
+    
+    def make_powder(self, powder, mask=None):
         """
-        From guessed initial geometry, optimize the geometry using Bayesian Optimization on pyFAI package
+        Fabricate powder image from scratch or load from file
 
         Parameters
         ----------
         powder : str or int
             Path to powder image or number of images to use for calibration
-        fix : list
-            List of parameters not to be optimized in refine3
-            Nota Bene: this fix could be different from self.fix
-        Imin : int or str
-            Minimum intensity to use for control point extraction based on photon energy or max intensity
-        bounds : dict
-            Dictionary of bounds and resolution for search parameters
-        values : dict
-            Dictionary of values for fixed parameters
-        n_samples : int
-            Number of samples to initialize the GP model
-        num_iterations : int
-            Number of iterations for optimization
-        af : str
-            Acquisition function to use for optimization
-        prior : bool
-            Use prior information for optimization
-        mask : np.ndarray
-            Mask for powder image
-        seed : int
-            Random seed for reproducibility
+        mask : str
+            Path to mask file
         """
-        np.random.seed(seed)
         if type(powder) == str:
             print(f"Loading powder {powder}")
             powder_img = np.load(powder)
@@ -468,65 +329,133 @@ class BayesGeomOpt:
             powder_img *= mask
         else:
             sys.exit("Unrecognized powder type, expected a path or number")
-        self.img_shape = powder_img.shape
+        return powder_img
 
+    def make_calibrant(self):
+        """
+        Define calibrant for optimization
+
+        Parameters
+        ----------
+        calibrant : str
+            Calibrant name
+        wavelength : float
+            Wavelength of the experiment
+        """
         print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
         wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
+        self.photon_energy = photon_energy
         calibrant.wavelength = wavelength
-        
+        self.calibrant = calibrant
+
+    def minimal_intensity(self, Imin):
+        """
+        Define minimal intensity for control point extraction
+
+        Parameters
+        ----------
+        Imin : int or str
+            Minimum intensity to use for control point extraction based on photon energy or max intensity
+        """
         print("Defining minimal intensity...")
         if type(Imin) == str:
-            Imin = np.max(powder_img) * 0.01
+            Imin = np.max(self.powder_img) * 0.01
         else:
-            Imin = Imin * photon_energy
+            Imin = Imin * self.photon_energy
+        self.Imin = Imin
 
+    def distribute_scan(self, scan):
+        """
+        Distribute the scan across all ranks.
+        
+        Parameters
+        ----------
+        scan : list of distances
+            parameter dist for initial estimates
+        """
+        n_search = len(scan)
+        split_indices = np.zeros(self.size) 
+        for r in range(self.size):
+            num_per_rank = n_search // self.size
+            if r < (n_search % self.size):
+                num_per_rank += 1
+            split_indices[r] = num_per_rank
+        split_indices = np.append(np.array([0]), np.cumsum(split_indices)).astype(int) 
+        return scan[split_indices[self.rank]:split_indices[self.rank+1]]
+
+    def bayes_opt_center(self, powder_img, dist, bounds, n_samples=50, num_iterations=50, af="ucb", prior=True, seed=None):
+        """
+        Perform Bayesian Optimization on PONI center parameters, for a fixed distance
+        
+        Parameters
+        ----------
+        powder_img : np.ndarray
+            Powder image
+        dist : float
+            Fixed distance
+        bounds : dict
+            Dictionary of bounds for each parameter
+        values : dict
+            Dictionary of values for fixed parameters
+        n_samples : int
+            Number of samples to initialize the GP model
+        num_iterations : int
+            Number of iterations for optimization
+        af : str
+            Acquisition function to use for optimization
+        prior : bool
+            Use prior information for optimization
+        seed : int
+            Random seed for reproducibility
+        """
+        if seed is not None:
+            np.random.seed(seed)
+
+        print(f"Initializing Bayesian Optimization for dist = {dist}m...")
+        self.values['dist'] = dist
         print("Defining geometry parameter space...")
-        print(f"Search space: {self.param_space}")
-        bo_history = {}
-        input_range = {}
-        input_range_norm = {}
-        for param in self.param_order:
-            if param in self.param_space:
-                print(f"Defining search space for {param}...")
-                input_range[param] = np.arange(bounds[param][0], bounds[param][1]+bounds[param][2], bounds[param][2])
-                input_range_norm[param] = input_range[param]
+        print(f"Search space: {self.space}")
+        inputs = {}
+        norm_inputs = {}
+        for p in self.order:
+            if p in self.space:
+                print(f"Defining search space for {p}...")
+                inputs[p] = np.arange(bounds[p][0], bounds[p][1]+bounds[p][2], bounds[p][2])
+                norm_inputs[p] = inputs[p]
             else:
-                if values[param] is None:
-                    print(f"Fixed parameter {param} with value {self.default_value[param]}")
-                    input_range[param] = np.array([self.default_value[param]])
-                else:
-                    print(f'Fixed parameter {param} with value {values[param]}')
-                    input_range[param] = np.array([values[param]])
-        X = np.array(np.meshgrid(*[input_range[param] for param in self.param_order])).T.reshape(-1, len(self.param_order))
-        X_space = np.array(np.meshgrid(*[input_range_norm[param] for param in self.param_space])).T.reshape(-1, len(self.param_space))
+                print(f"Fixed parameter {p} with value {self.values[p]}")
+                inputs[p] = np.array([self.values[p]])
+        X = np.array(np.meshgrid(*[inputs[p] for p in self.order])).T.reshape(-1, len(self.order))
+        X_space = np.array(np.meshgrid(*[norm_inputs[p] for p in self.space])).T.reshape(-1, len(self.space))
         X_norm = (X_space - np.mean(X_space, axis=0)) / (np.max(X_space, axis=0) - np.min(X_space, axis=0))
         print(f"Search space: {X_norm.shape[0]} points")
         if prior:
             print("Using prior information...")
             means = np.mean(X_space, axis=0)
-            cov = np.diag([((bounds[param][1] - bounds[param][0]) / 5)**2 for param in self.param_space])
+            cov = np.diag([((bounds[param][1] - bounds[param][0]) / 5)**2 for param in self.space])
             X_samples = np.random.multivariate_normal(means, cov, n_samples)
             X_norm_samples = (X_samples - np.mean(X_space, axis=0)) / (np.max(X_space, axis=0) - np.min(X_space, axis=0))
-            for param in self.param_order:
-                if param not in self.param_space:
-                    idx = self.param_order.index(param)
-                    X_samples = np.insert(X_samples, idx, values[param], axis=1)
+            for p in self.order:
+                if p not in self.space:
+                    idx = self.order.index(p)
+                    X_samples = np.insert(X_samples, idx, self.values[p], axis=1)
         else:
             print("Randomly picking samples...")
             idx_samples = np.random.choice(X.shape[0], n_samples)
             X_samples = X[idx_samples]
             X_norm_samples = X_norm[idx_samples]
-        y = np.zeros((n_samples))
 
         print("Initializing samples...")
+        bo_history = {}
+        y = np.zeros((n_samples))
         for i in range(n_samples):
             print(f"Initializing sample {i+1}...")
             dist, poni1, poni2, rot1, rot2, rot3 = X_samples[i]
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-            sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
+            sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
+            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
             y[i] = len(sg.geometry_refinement.data)
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'score': y[i]}
 
@@ -575,8 +504,8 @@ class BayesGeomOpt:
             # 3. Compute the score of the new set of parameters
             dist, poni1, poni2, rot1, rot2, rot3 = new_input
             geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-            sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
+            sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
+            sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
             score = len(sg.geometry_refinement.data)
             y = np.append(y, [score], axis=0)
             ypred = gp_model.predict(X_norm, return_std=False)
@@ -592,11 +521,85 @@ class BayesGeomOpt:
         best_param = X_samples[best_idx]
         dist, poni1, poni2, rot1, rot2, rot3 = best_param
         geom_initial = pyFAI.geometry.Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=wavelength)
-        sg = SingleGeometry("extract_cp", powder_img, calibrant=calibrant, detector=self.detector, geometry=geom_initial)
-        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=Imin)
-        residual = sg.geometry_refinement.refine3(fix=fix)
+        sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
+        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
+        residuals = sg.geometry_refinement.refine3(fix=['wavelength'])
         self.dist, self.poni1, self.poni2, self.rot1, self.rot2, self.rot3 = sg.geometry_refinement.param
-        return bo_history, best_idx, residual
+        self.bo_history = bo_history
+        self.best_idx = best_idx
+        self.residuals = residuals
+
+    def bayes_opt_geom(self, powder, bounds, Imin='max', n_samples=50, num_iterations=50, af="ucb", prior=True, mask=None, seed=None):
+        """
+        From guessed initial geometry, optimize the geometry using Bayesian Optimization on pyFAI package
+
+        Parameters
+        ----------
+        powder : str or int
+            Path to powder image or number of images to use for calibration
+        bounds : dict
+            Dictionary of bounds and resolution for search parameters
+        Imin : int or str
+            Minimum intensity to use for control point extraction based on photon energy or max intensity
+        values : dict
+            Dictionary of values for fixed parameters
+        n_samples : int
+            Number of samples to initialize the GP model
+        num_iterations : int
+            Number of iterations for optimization
+        af : str
+            Acquisition function to use for optimization
+        prior : bool
+            Use prior information for optimization
+        mask : np.ndarray
+            Mask for powder image
+        seed : int
+            Random seed for reproducibility
+        """
+        if seed is not None:
+            np.random.seed(seed)
+
+        powder = self.make_powder(powder, mask)
+
+        self.make_calibrant()
+
+        self.minimal_intensity(Imin)
+
+        distances = np.arange(bounds['dist'][0], bounds['dist'][1], bounds['dist'][2])
+        scan_rank = self.distribute_scan(distances)
+
+        if len(scan_rank) > 0:
+            for dist in scan_rank:
+                self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed)
+        self.comm.Barrier()
+
+        self.scan = {}
+        self.scan['distance'] = self.comm.gather(self.dist, root=0) # in mm
+        self.scan['poni1'] = self.comm.gather(self.poni1, root=0) # in pixels
+        self.scan['poni2'] = self.comm.gather(self.poni2, root=0)
+        self.scan['rot1'] = self.comm.gather(self.rot1, root=0)
+        self.scan['rot2'] = self.comm.gather(self.rot2, root=0)
+        self.scan['rot3'] = self.comm.gather(self.rot3, root=0)
+        self.scan['residuals'] = self.comm.gather(self.residuals, root=0)
+        self.scan['bo_history'] = self.comm.gather(self.bo_history, root=0)
+        self.scan['best_idx'] = self.comm.gather(self.best_idx, root=0)
+
+        self.finalize()
+
+    def finalize(self):
+        if self.rank == 0:
+            for key in self.scan.keys():
+                self.scan[key] = np.array([item for sublist in self.scan[key] for item in sublist])
+            index = np.argmin(self.scan['residuals'])
+            self.distance = self.scan['distance'][index]
+            self.poni1 = self.scan['poni1'][index]
+            self.poni2 = self.scan['poni2'][index]
+            self.rot1 = self.scan['rot1'][index]
+            self.rot2 = self.scan['rot2'][index]
+            self.rot3 = self.scan['rot3'][index]
+            self.residuals = self.scan['residuals'][index]
+            self.bo_history = self.scan['bo_history'][index]
+            self.best_idx = self.scan['best_idx'][index]
 
     def grid_search_convergence_plot(self, bo_history, bounds, best_idx, grid_search, plot):
         """

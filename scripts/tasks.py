@@ -253,7 +253,6 @@ def bayes_pyFAI_geom(config):
         PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
         conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
         det = conv.detector
-        fix = [str(elem) for elem in task.fix.split()]
         powder = task.get("powder")
         Imin = task.get("Imin")
         n_samples = task.get("n_samples")
@@ -261,59 +260,41 @@ def bayes_pyFAI_geom(config):
         af = task.get("af")
         prior = task.get("prior")
         seed = task.get("seed")
-        geom_opts = {}
-        if fix == ['dist', 'rot1', 'rot2', 'rot3']:
-            poni1 = tuple([float(elem) for elem in task.poni1.split()])
-            poni2 = tuple([float(elem) for elem in task.poni2.split()])
-            bounds = {'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
-            dists = task.get("dist")
-        elif fix == ['rot1', 'rot2', 'rot3']:
-            poni1 = tuple([float(elem) for elem in task.poni1.split()])
-            poni2 = tuple([float(elem) for elem in task.poni2.split()])
-            dist = tuple([float(elem) for elem in task.dist.split()])
-            dists = np.arange(dist[0], dist[1], dist[2])
-            bounds = {'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
-        for dist in dists:
-            values = {'dist':dist, 'rot1':0, 'rot2':0, 'rot3':0}
-            logger.warning(f'Starting Bayesian optimization for geometry refinement...')
-            logger.warning(f'n_samples: {n_samples}, num_iterations: {num_iterations}, acquisition function: {af}, seed: {seed}')
-            geom_opt = BayesGeomOpt(
-                exp=setup.exp,
-                run=setup.run,
-                det_type=setup.det_type,
-                detector=det,
-                calibrant=task.calibrant,
-                fix=['dist', 'rot1', 'rot2', 'rot3'],
+        dist = tuple([float(elem) for elem in task.dist.split()])
+        poni1 = tuple([float(elem) for elem in task.poni1.split()])
+        poni2 = tuple([float(elem) for elem in task.poni2.split()])
+        bounds = {'dist':(dist[0], dist[1], dist[2]),'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
+        geom_opt = BayesGeomOpt(
+            exp=setup.exp,
+            run=setup.run,
+            det_type=setup.det_type,
+            detector=det,
+            calibrant=task.calibrant,
+        )
+        geom_opt.bayesian_opt_geom(
+            powder=powder,
+            bounds=bounds,
+            Imin=Imin,
+            n_samples=n_samples,
+            num_iterations=num_iterations,
+            af=af,
+            prior=prior,
+            seed=seed,
             )
-            bo_history, best_idx, residuals = geom_opt.bayesian_geom_opt(
-                powder=powder,
-                fix=['wavelength'],
-                Imin=Imin,
-                bounds=bounds,
-                values=values,
-                n_samples=n_samples,
-                num_iterations=num_iterations,
-                af=af,
-                prior=prior,
-                seed=seed,
-            )
-            geom_opts[dist] = {'residual': residuals, 'geom_opt':geom_opt, 'bo_history':bo_history, 'best_idx':best_idx}
-        best_dist = min(geom_opts, key=lambda x: geom_opts[x]['residual'])
-        best_geom_opt = geom_opts[best_dist]['geom_opt']
-        logger.warning(f"Refined PONI distance in m: {best_geom_opt.dist:.2e}")
-        logger.warning(f"Refined detector PONI in m: {best_geom_opt.poni1:.2e}, {best_geom_opt.poni2:.2e}")
-        logger.warning(f"Refined detector rotations in rad: \u03B8x = {best_geom_opt.rot1}, \u03B8y = {best_geom_opt.rot2}, \u03B8z = {best_geom_opt.rot3}")
-        logger.warning(f"Final score: {geom_opts[best_dist]['residual']}")
-        Xc = best_geom_opt.poni1+best_geom_opt.dist*(np.tan(best_geom_opt.rot2)/np.cos(best_geom_opt.rot1))
-        Yc = best_geom_opt.poni2-best_geom_opt.dist*(np.tan(best_geom_opt.rot1))
-        Zc = best_geom_opt.dist/(np.cos(best_geom_opt.rot1)*np.cos(best_geom_opt.rot2))
+        logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")
+        logger.warning(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
+        logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
+        logger.warning(f"Final score: {geom_opt.residuals}")
+        Xc = geom_opt.poni1+geom_opt.dist*(np.tan(geom_opt.rot2)/np.cos(geom_opt.rot1))
+        Yc = geom_opt.poni2-geom_opt.dist*(np.tan(geom_opt.rot1))
+        Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
         logger.warning(f"Refined detector distance in m: {Zc:.2e}")
         logger.warning(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
         poni_grid = tuple([float(elem) for elem in task.poni_grid.split()])
         bounds = {'poni1':(poni_grid[0], poni_grid[1]), 'poni2':(poni_grid[0], poni_grid[1])}
         grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/r{setup.run:04}/grid_search_{os.path.splitext(os.path.basename(powder))[0]}_#ncp.npy"))
         plot = os.path.join(setup.root_dir, f"figs/bayes_opt/{setup.exp}/bayes_opt_geom_r{setup.run:04}_seed_{seed}.png")
-        geom_opt.grid_search_convergence_plot(geom_opts[best_dist]['bo_history'], bounds, geom_opts[best_dist]['best_idx'], grid_search, plot)
+        geom_opt.grid_search_convergence_plot(geom_opt.bo_history, bounds, geom_opt.best_idx, grid_search, plot)
         logger.debug("Done!")
     logger.warning(f"Total duration: {task_durations['total duration'][0]} seconds")
 
