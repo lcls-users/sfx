@@ -452,7 +452,6 @@ class BayesGeomOpt:
         bo_history = {}
         y = np.zeros((n_samples))
         for i in range(n_samples):
-            print(f"Initializing sample {i+1}...")
             dist, poni1, poni2, rot1, rot2, rot3 = X_samples[i]
             geom_initial = Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=self.calibrant.wavelength)
             sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
@@ -485,7 +484,7 @@ class BayesGeomOpt:
             af = self.contextual_improvement
 
         print("Starting Bayesian optimization...")
-        for i in tqdm(range(num_iterations)):
+        for i in range(num_iterations):
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
             if af == self.upper_confidence_bound:
                 af_values = af(X_norm, gp_model, beta)
