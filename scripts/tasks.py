@@ -255,10 +255,10 @@ def bayes_pyFAI_geom(config):
         det = conv.detector
         powder = task.get("powder")
         Imin = task.get("Imin", 'max')
-        n_samples = task.get("n_samples") if task.get("n_samples") is not None else 50
-        num_iterations = task.get("num_iterations", 50) if task.get("num_iterations") is not None else 50
-        af = task.get("af", 'ucb') if task.get("af") is not None else 'ucb'
-        prior = task.get("prior", True) if task.get("prior") is not None else True
+        n_samples = task.get("n_samples", 50)
+        num_iterations = task.get("num_iterations", 50)
+        af = task.get("af", 'ucb')
+        prior = task.get("prior", True)
         seed = task.get("seed")
         dist = tuple([float(elem) for elem in task.dist.split()])
         poni1 = tuple([float(elem) for elem in task.poni1.split()])
