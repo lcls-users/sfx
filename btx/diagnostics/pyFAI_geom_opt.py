@@ -565,7 +565,7 @@ class BayesGeomOpt:
 
         self.minimal_intensity(Imin)
 
-        distances = np.arange(bounds['dist'][0], bounds['dist'][1], bounds['dist'][2])
+        distances = np.arange(bounds['dist'][0], bounds['dist'][1]+bounds['dist'][2], bounds['dist'][2])
         scan_rank = self.distribute_scan(distances)
 
         if len(scan_rank) > 0:
@@ -589,7 +589,7 @@ class BayesGeomOpt:
     def finalize(self):
         if self.rank == 0:
             for key in self.scan.keys():
-                self.scan[key] = np.array([item for sublist in self.scan[key] for item in sublist])
+                self.scan[key] = np.array([item for item in self.scan[key]])
             index = np.argmin(self.scan['residuals'])
             self.distance = self.scan['distance'][index]
             self.poni1 = self.scan['poni1'][index]
