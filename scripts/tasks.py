@@ -271,7 +271,7 @@ def bayes_pyFAI_geom(config):
             detector=det,
             calibrant=task.calibrant,
         )
-        geom_opt.bayesian_opt_geom(
+        geom_opt.bayes_opt_geom(
             powder=powder,
             bounds=bounds,
             Imin=Imin,
