@@ -812,7 +812,7 @@ def create_pypca(config, num_nodes = None, id_current_node = None):
     from btx.misc.get_max_events import main as compute_max_events
 
     setup = config.setup
-    task = config.create_pypca
+    task = config.create_pypca_multinodes
     exp = setup.exp
     run = task.run
     det_type = setup.det_type
