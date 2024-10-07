@@ -10,7 +10,7 @@ class JobScheduler:
 
     def __init__(self, jobfile, logdir='./', jobname='btx',
                  account='lcls', queue='ffbh3q', ncores=1, time='10:00:00',
-                 reservation="", mem='0', num_gpus=1, num_nodes=1):
+                 reservation="", mem='0', num_gpus=1):
         self.manager = 'SLURM'
         self.jobfile = jobfile
         self.logdir = logdir
@@ -23,7 +23,6 @@ class JobScheduler:
         self._data_systems_management()
         self.mem = mem
         self.num_gpus = num_gpus
-        self.num_nodes = num_nodes
 
     def _data_systems_management(self):
         """ List the Data Systems group folder paths. """
@@ -69,16 +68,15 @@ class JobScheduler:
         """ Write resource specification to submission script. """
         if(self.manager == 'SLURM'):
             template = ("#!/bin/bash\n"
-                    "#SBATCH -p {queue}\n"
-                    "#SBATCH --job-name={jobname}\n"
-                    "#SBATCH --output={output}\n"
-                    "#SBATCH --error={error}\n"
-                    "#SBATCH --nodes={num_nodes}\n"
-                    "#SBATCH --ntasks-per-node={ncores}\n"
-                    "#SBATCH --gpus-per-node={num_gpus}\n"
-                    "#SBATCH --time={time}\n"
-                    "#SBATCH --mem=0\n"
-                    "#SBATCH --exclusive\n\n")
+                        "#SBATCH -p {queue}\n"
+                        "#SBATCH --job-name={jobname}\n"
+                        "#SBATCH --output={output}\n"
+                        "#SBATCH --error={error}\n"
+                        "#SBATCH --ntasks={ncores}\n"
+                        "#SBATCH --time={time}\n"
+                        "#SBATCH --mem={mem}\n"
+                        "#SBATCH --mem=0\n"
+                        "#SBATCH --exclusive\n\n")
         else:
             raise NotImplementedError('JobScheduler not implemented.')
 
@@ -87,9 +85,7 @@ class JobScheduler:
             "jobname": self.jobname,
             "output": os.path.join(self.logdir, f"{self.jobname}.out"),
             "error": os.path.join(self.logdir, f"{self.jobname}.err"),
-            "num_nodes": self.num_nodes,
             "ncores": self.ncores,
-            "num_gpus": self.num_gpus,
             "time": self.time,
             "mem": self.mem
         }
@@ -144,41 +140,21 @@ class JobScheduler:
         """ Write application and source requested dependencies. """
         if dependencies:
             self._write_dependencies(dependencies)
-        
-        self._setup_distributed_env()
 
         if find_python_path:
             pythonpath = self._find_python_path()
         else:
             pythonpath = "python"
-
-        """with open(self.jobfile, 'a') as jfile:
-            jfile.write(f"srun {application.replace('python', pythonpath)}")"""
-        
+            
         with open(self.jobfile, 'a') as jfile:
-            jfile.write(f"mpirun -n {self.num_nodes * self.ncores} {application.replace('python', pythonpath)}")
+            jfile.write(application.replace("python", pythonpath))
 
-    def submit(self, interactive=False):
-        if interactive:
-            cmd = f"salloc -N {self.num_nodes} -n {self.ncores * self.num_nodes} -p {self.queue} -t {self.time} --gpus-per-node={self.num_gpus} {self.jobfile}"
-        else:
-            cmd = f"sbatch -W {self.jobfile}"
-        
-        os.system(cmd)
-        logger.info(cmd)
+    def submit(self):
+        """ Submit to queue. """
+        os.system(f"sbatch -W {self.jobfile}")
+        logger.info(f"sbatch -W {self.jobfile}")
 
     def clean_up(self):
         """ Add a line to delete submission file."""
         with open(self.jobfile, 'a') as jfile:
             jfile.write(f"if [ -f {self.jobfile} ]; then rm -f {self.jobfile}; fi")
-    
-    def _setup_distributed_env(self):
-        setup_code = (
-            "export MASTER_ADDR=$(hostname -s)-ib0\n"
-            "export MASTER_PORT=29500\n"
-            "export WORLD_SIZE=$(($SLURM_NNODES * $SLURM_NTASKS_PER_NODE))\n"
-            "export RANK=$SLURM_PROCID\n"
-            "export LOCAL_RANK=$SLURM_LOCALID\n\n"
-        )
-        with open(self.jobfile, 'a') as jfile:
-            jfile.write(setup_code)

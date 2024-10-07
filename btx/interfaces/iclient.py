@@ -185,6 +185,18 @@ def parse_input():
         required=False,
         type=int,
     )
+    parser.add_argument(
+        "--num_nodes",  
+        help="Number of nodes to use.",
+        required=False,
+        type=int,
+    )
+    parser.add_argument(
+        "--id_current_node",
+        help="ID of the current node.",
+        required=False,
+        type=int,
+    )
 
     return parser.parse_args()
 
@@ -266,12 +278,7 @@ if __name__ == "__main__":
     print("\nPython executable location from client:")
     print(sys.executable)
     print(f"Running on node: {socket.gethostname()}")
-    print(f"Node IP: {socket.gethostbyname(socket.gethostname())}")
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-    print(f"Rank: {rank}, Size: {size}")
-    print("=====================================\n",flush=True)
+
     
     start_time = time.time()
     params = parse_input()
@@ -309,6 +316,9 @@ if __name__ == "__main__":
     num_tot_images = sum(num_images)
     num_training_images = int(num_tot_images * training_percentage)
     loading_batch_size = params.loading_batch_size
+    num_nodes = params.num_nodes
+    id_current_node = params.id_current_node
+    num_tot_gpus = num_nodes * num_gpus
 
     mp.set_start_method('spawn', force=True)
 
@@ -389,8 +399,10 @@ if __name__ == "__main__":
                     current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
 
                     #Split the images into batches for each GPU
-                    current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+                    current_loading_batch = np.split(current_loading_batch, num_tot_gpus,axis=1)
+                    current_loading_batch = current_loading_batch[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
 
+                    print("Shape current batch:",current_loading_batch.shape,flush=True)
                     shape = current_loading_batch[0].shape
                     dtype = current_loading_batch[0].dtype
 
@@ -483,7 +495,8 @@ if __name__ == "__main__":
 
                         logging.info(f"Number of non-none images: {current_loading_batch.shape[0]}")
                         current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)
-                        current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+                        current_loading_batch = np.split(current_loading_batch, num_tot_gpus,axis=1)
+                        current_loading_batch = current_loading_batch[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
 
                         shape = current_loading_batch[0].shape
                         dtype = current_loading_batch[0].dtype

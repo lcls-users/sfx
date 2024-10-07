@@ -807,7 +807,7 @@ def t_sne(config):
     js.submit()
     print('All done!')
 
-def create_pypca(config):
+def create_pypca(config, num_nodes = None, id_current_node = None):
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.get_max_events import main as compute_max_events
 
@@ -835,6 +835,8 @@ def create_pypca(config):
     batch_size = task.batch_size
     path = task.path
     tag = task.tag
+    if num_nodes is not None:
+        tag = f"{tag}_node_{id_current_node}"
     num_gpus = task.num_gpus
     training_percentage = task.training_percentage
     smoothing_function = task.smoothing_function
@@ -842,7 +844,6 @@ def create_pypca(config):
     comm = MPI.COMM_WORLD
     ncores = comm.Get_size()
     compute_projected_images = task.compute_projected_images
-    num_nodes = 2
 
     if task.get('loading_batch_size') is not None:
         loading_batch_size = task.loading_batch_size
@@ -858,15 +859,24 @@ def create_pypca(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
-    command += "module load openmpi; export OMPI_MCA_btl_openib_allow_ib=1; export OMPI_MCA_btl=^openib; export UCX_TLS=rc,sm,self; export PMIX_MCA_gds=hash; export OMPI_MCA_pml=ucx"
-    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus} --compute_loss {compute_loss} --num_runs {num_runs} --compute_projected_images {compute_projected_images}"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus} --compute_loss {compute_loss} --num_runs {num_runs} --compute_projected_images {compute_projected_images} --num_nodes {num_nodes} --id_current_node {id_current_node}"
 
-    js = JobScheduler(os.path.join(".", f'create_pypca_{num_components}_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'create_pypca_{num_components}_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus, num_nodes = num_nodes)
+    js = JobScheduler(os.path.join(".", f'create_pypca_{num_components}_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'create_pypca_{num_components}_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
     js.clean_up()
     js.submit()
     print('All done!')
+
+def create_pypca_multinodes(config):
+    num_nodes = config.num_nodes
+    if num_nodes ==1:
+        create_pypca(config)
+    else:
+        for node in range (num_nodes):
+            create_pypca(config, num_nodes, node)
+    print('All nodes done!')
+
 
 def update_pypca(config):
     from btx.interfaces.ischeduler import JobScheduler
