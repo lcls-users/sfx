@@ -21,7 +21,6 @@ import gc
 import h5py
 import csv
 import ast
-from mpi4py import MPI
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader

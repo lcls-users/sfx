@@ -497,8 +497,5 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
     training_percentage=training_percentage,
     num_gpus=num_gpus
     )
-    
-    print(f"Running on node: {socket.gethostname()}")
-    print(f"Node IP: {socket.gethostbyname(socket.gethostname())}")
 
     ipca_instance.run_model()
