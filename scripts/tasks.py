@@ -807,7 +807,7 @@ def t_sne(config):
     js.submit()
     print('All done!')
 
-def create_pypca(config, num_nodes = None, id_current_node = None):
+def create_pypca(config, num_nodes = 1, id_current_node = 0):
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.get_max_events import main as compute_max_events
 
@@ -835,7 +835,7 @@ def create_pypca(config, num_nodes = None, id_current_node = None):
     batch_size = task.batch_size
     path = task.path
     tag = task.tag
-    if num_nodes is not None:
+    if num_nodes >1:
         tag = f"{tag}_node_{id_current_node}"
     num_gpus = task.num_gpus
     training_percentage = task.training_percentage

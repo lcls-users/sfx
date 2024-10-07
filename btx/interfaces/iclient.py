@@ -278,7 +278,6 @@ if __name__ == "__main__":
     print(sys.executable)
     print(f"Running on node: {socket.gethostname()}")
 
-    
     start_time = time.time()
     params = parse_input()
     exp = params.exp
