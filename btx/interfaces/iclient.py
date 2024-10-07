@@ -264,6 +264,8 @@ if __name__ == "__main__":
 
     print("\nPython executable location from client:")
     print(sys.executable)
+    print(f"Running on node: {socket.gethostname()}")
+    print(f"Node IP: {socket.gethostbyname(socket.gethostname())}")
     
     start_time = time.time()
     params = parse_input()
@@ -441,7 +443,6 @@ if __name__ == "__main__":
             print("\n=====================================",flush=True)
             loss_start_time = time.time()
             
-            print("ALLOOOOO",compute_projected_images)
             if compute_projected_images:
                 ##
                 all_norm_diff = []
