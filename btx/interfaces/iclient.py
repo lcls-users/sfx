@@ -21,6 +21,7 @@ import gc
 import h5py
 import csv
 import ast
+from mpi4py import MPI
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -266,6 +267,11 @@ if __name__ == "__main__":
     print(sys.executable)
     print(f"Running on node: {socket.gethostname()}")
     print(f"Node IP: {socket.gethostbyname(socket.gethostname())}")
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    print(f"Rank: {rank}, Size: {size}")
+    print("=====================================\n",flush=True)
     
     start_time = time.time()
     params = parse_input()
