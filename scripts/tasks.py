@@ -869,7 +869,7 @@ def create_pypca(config, num_nodes = None, id_current_node = None):
     print('All done!')
 
 def create_pypca_multinodes(config):
-    num_nodes = config.num_nodes
+    num_nodes = config.create_pypca_multinodes.num_nodes
     if num_nodes ==1:
         create_pypca(config)
     else:
