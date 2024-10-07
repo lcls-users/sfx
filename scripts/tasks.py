@@ -873,8 +873,10 @@ def create_pypca_multinodes(config):
     if num_nodes ==1:
         create_pypca(config)
     else:
-        for node in range (num_nodes):
-            create_pypca(config, num_nodes, node)
+        import multiprocessing
+        with multiprocessing.Pool(processes=num_nodes) as pool:
+            args = [(config, num_nodes, node) for node in range(num_nodes)]
+            pool.starmap(create_pypca, args)
     print('All nodes done!')
 
 
