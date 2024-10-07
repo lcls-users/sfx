@@ -77,7 +77,7 @@ class JobScheduler:
                     "#SBATCH --ntasks-per-node={ncores}\n"
                     "#SBATCH --gpus-per-node={num_gpus}\n"
                     "#SBATCH --time={time}\n"
-                    "#SBATCH --mem-per-node={mem}\n"
+                    "#SBATCH --mem={mem}\n"
                     "#SBATCH --exclusive\n\n")
         else:
             raise NotImplementedError('JobScheduler not implemented.')
