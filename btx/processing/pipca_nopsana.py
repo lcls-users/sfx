@@ -7,6 +7,8 @@ import psutil
 import gc
 import h5py
 
+import socket
+
 from matplotlib import pyplot as plt
 from matplotlib import colors
 from scipy.linalg import qr
@@ -496,4 +498,7 @@ def main(exp,run,det_type,num_images,num_components,batch_size,filename_with_tag
     num_gpus=num_gpus
     )
     
+    print(f"Running on node: {socket.gethostname()}")
+    print(f"Node IP: {socket.gethostbyname(socket.gethostname())}")
+
     ipca_instance.run_model()
