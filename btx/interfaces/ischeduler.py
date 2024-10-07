@@ -152,8 +152,11 @@ class JobScheduler:
         else:
             pythonpath = "python"
 
+        """with open(self.jobfile, 'a') as jfile:
+            jfile.write(f"srun {application.replace('python', pythonpath)}")"""
+        
         with open(self.jobfile, 'a') as jfile:
-            jfile.write(f"srun {application.replace('python', pythonpath)}")
+            jfile.write(f"mpirun -n {self.num_nodes * self.ncores} {application.replace('python', pythonpath)}")
 
     def submit(self, interactive=False):
         if interactive:
