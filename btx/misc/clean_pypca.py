@@ -20,7 +20,10 @@ def fuse_results(path,tag,num_nodes):
     fused_data['S'] = np.concatenate([data['S'] for data in all_data], axis=0)
     fused_data['V'] = np.concatenate([data['V'] for data in all_data], axis=0)
     fused_data['mu'] = np.concatenate([data['mu'] for data in all_data], axis=0)
-        
+    
+    if 'transformed_images' in all_data[0]:
+        fused_data['transformed_images'] = np.concatenate([data['transformed_images'] for data in all_data], axis=0)
+    
     return fused_data
 
 
