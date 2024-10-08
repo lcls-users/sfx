@@ -71,6 +71,7 @@ def write_fused_data(data, path, tag):
         f.create_dataset('S', data=data['S'])
         f.create_dataset('V', data=data['V'])
         f.create_dataset('mu', data=data['mu'])
+        f.create_dataset('transformed_images', data=data['transformed_images'])
 
 def delete_node_models(path, tag, num_nodes):
     for id_current_node in range(num_nodes):
