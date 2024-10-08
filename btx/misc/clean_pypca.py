@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 import os
+import time
 
 def fuse_results(path,tag,num_nodes):
     fused_data = {}
@@ -72,7 +73,15 @@ def delete_node_models(path, tag, num_nodes):
         os.remove(filename_with_tag)
 
 def clean_pypca(path, tag, num_nodes):
+    time1 = time.time()
     fused_data = fuse_results(path, tag, num_nodes)
+    time2 = time.time()
     write_fused_data(fused_data, path, tag)
+    time3 = time.time()
     delete_node_models(path, tag, num_nodes)
+    time4 = time.time()
+    print(f"Time to fuse: {time2-time1}")
+    print(f"Time to write: {time3-time2}")
+    print(f"Time to delete: {time4-time3}")
+    print(f"Total cleaning time: {time4-time1}")
 
