@@ -874,10 +874,15 @@ def create_pypca_multinodes(config):
         create_pypca(config)
     else:
         import multiprocessing
+        from btx.misc.clean_pypca import clean_pypca
         with multiprocessing.Pool(processes=num_nodes) as pool:
             args = [(config, num_nodes, node) for node in range(num_nodes)]
             pool.starmap(create_pypca, args)
+        
+        clean_pypca(config.create_pypca_multinodes.path, config.create_pypca_multinodes.tag, num_nodes)
+
     print('All nodes done!')
+
 
 
 def update_pypca(config):
