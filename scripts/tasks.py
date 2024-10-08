@@ -861,7 +861,7 @@ def create_pypca(config, num_nodes = 1, id_current_node = 0):
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
     command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --num_components {num_components} --batch_size {batch_size} --path {path} --tag {tag} --training_percentage {training_percentage} --smoothing_function {smoothing_function} --num_gpus {num_gpus} --compute_loss {compute_loss} --num_runs {num_runs} --compute_projected_images {compute_projected_images} --num_nodes {num_nodes} --id_current_node {id_current_node}"
 
-    js = JobScheduler(os.path.join(".", f'create_pypca_{num_components}_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'create_pypca_{num_components}_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
+    js = JobScheduler(os.path.join(".", f'create_pypca_{num_components}_{num_tot_images}_{batch_size}_node_{id_current_node}.sh'),queue = 'ampere', ncores=  1, jobname=f'create_pypca_{num_components}_{num_tot_images}_{batch_size}_node_{id_current_node}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
     js.clean_up()
