@@ -53,6 +53,9 @@ def unpack_model_file(filename):
         data['V'] = np.asarray(f.get('V'))
         data['mu'] = np.asarray(f.get('mu'))
 
+        if 'transformed_images' in f:
+            data['transformed_images'] = np.asarray(f.get('transformed_images'))
+
     return data
 
 def write_fused_data(data, path, tag):
