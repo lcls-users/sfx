@@ -588,6 +588,9 @@ if __name__ == "__main__":
                 create_or_update_dataset(f, 'total_variance', data=total_variance)
                 create_or_update_dataset(f, 'num_images', data=num_images)
 
+                if compute_projected_images:
+                    create_or_update_dataset(f, 'transformed_images', data=transformed_images)
+
     saving_end_time = time.time()
 
     print(f'Model saved to {filename_with_tag} in {saving_end_time-saving_start_time} seconds',flush=True) 
