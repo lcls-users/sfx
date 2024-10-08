@@ -6,8 +6,8 @@ def fuse_results(path,tag,num_nodes):
     fused_data = {}
     all_data = []
     for id_current_node in range(num_nodes):
-        tag = f"{tag}_node_{id_current_node}"
-        filename_with_tag = f"{path}pypca_model_{tag}.h5"
+        tag_current_id = f"{tag}_node_{id_current_node}"
+        filename_with_tag = f"{path}pypca_model_{tag_current_id}.h5"
         all_data.append(unpack_model_file(filename_with_tag))
     
     fused_data['exp'] = all_data[0]['exp']
@@ -67,8 +67,8 @@ def write_fused_data(data, path, tag):
 
 def delete_node_models(path, tag, num_nodes):
     for id_current_node in range(num_nodes):
-        tag = f"{tag}_node_{id_current_node}"
-        filename_with_tag = f"{path}pypca_model_{tag}.h5"
+        tag_current_id = f"{tag}_node_{id_current_node}"
+        filename_with_tag = f"{path}pypca_model_{tag_current_id}.h5"
         os.remove(filename_with_tag)
 
 def clean_pypca(path, tag, num_nodes):
