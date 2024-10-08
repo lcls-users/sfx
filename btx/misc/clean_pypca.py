@@ -42,7 +42,7 @@ def unpack_model_file(filename):
         data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
         data['run'] = int(np.asarray(f.get('run')))
         data['num_runs'] = int(np.asarray(f.get('num_runs')))
-        data['num_images'] = int(np.asarray(f.get('num_images')))
+        data['num_images'] = np.asarray(f.get('num_images'))
         data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1]
         data['start_offset'] = int(np.asarray(f.get('start_offset')))
         data['S'] = np.asarray(f.get('S'))
