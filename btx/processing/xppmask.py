@@ -293,27 +293,34 @@ class MeasureEMD:
             f.write(self.summary)
 
 class CalculatePValues:
-    def __init__(self, config):
-        self.emd_path = os.path.join(config['setup']['output_dir'], 'measure_emd', f"{config['setup']['exp']}_{config['setup']['run']}", 'emd_values.npy')
+    def __init__(self, config: Dict[str, Any], measure_emd: MeasureEMD):
         self.exp = config['setup']['exp']
         self.run = config['setup']['run']
         self.output_dir = get_task_output_dir(config, 'calculate_p_values')
         os.makedirs(self.output_dir, exist_ok=True)
-        self.null_dist_path = os.path.join(config['setup']['output_dir'], 'measure_emd', f"{config['setup']['exp']}_{config['setup']['run']}", 'emd_null_dist.npy')
+        self.measure_emd = measure_emd
         self.report_path = os.path.join(self.output_dir, 'pvalues_report.txt')
+        self.emd_values: Optional[np.ndarray] = None
+        self.null_distribution: Optional[np.ndarray] = None
+        self.p_values: Optional[np.ndarray] = None
 
-    def load_data(self):
-        self.emd_values = np.load(self.emd_path)
+    def load_data(self) -> None:
+        self.emd_values = self.measure_emd.emd_values
+        self.null_distribution = self.measure_emd.null_distribution
+        
         if self.emd_values.ndim != 2:
             raise ValueError(f"Expected 2D EMD values array, got {self.emd_values.ndim}D")
 
-        self.null_distribution = np.load(self.null_dist_path)
-
-    def calculate_p_values(self):
+    def calculate_p_values(self) -> None:
+        if self.emd_values is None or self.null_distribution is None:
+            raise ValueError("EMD values or null distribution not loaded. Call load_data() first.")
         self.p_values = calculate_p_values(self.emd_values, self.null_distribution)
         self.save_p_values()
 
-    def summarize(self):
+    def summarize(self) -> None:
+        if self.emd_values is None or self.null_distribution is None or self.p_values is None:
+            raise ValueError("Data not fully processed. Call calculate_p_values() first.")
+        
         summary = (
             f"P-value calculation for {self.exp} run {self.run}:\n"
             f" EMD values shape: {self.emd_values.shape}\n"
@@ -321,24 +328,28 @@ class CalculatePValues:
             f" P-values shape: {self.p_values.shape}\n"
         )
  
-        with open(f"{self.output_dir}_summary.txt", 'w') as f:
+        with open(os.path.join(self.output_dir, 'summary.txt'), 'w') as f:
             f.write(summary)
  
         self.summary = summary
         with open(self.report_path, 'w') as report_file:
             report_file.write(self.summary)
 
-    def report(self, report_path):
+    def report(self) -> None:
+        if not hasattr(self, 'summary'):
+            raise ValueError("Summary not generated. Call summarize() first.")
         with open(self.report_path, 'a') as f:
             f.write(self.summary)
  
-    def save_p_values(self, p_values_path=None):
+    def save_p_values(self, p_values_path: Optional[str] = None) -> None:
+        if self.p_values is None:
+            raise ValueError("P-values not calculated. Call calculate_p_values() first.")
+        
         if p_values_path is None:
             p_values_path = os.path.join(self.output_dir, "p_values.npy")
  
         p_values_png_path = os.path.join(self.output_dir, "p_values.png")
-        os.makedirs(self.output_dir, exist_ok=True)
- 
+        
         np.save(p_values_path, self.p_values)
         save_array_to_png(self.p_values, p_values_png_path)
 
