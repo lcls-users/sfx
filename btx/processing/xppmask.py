@@ -292,6 +292,8 @@ class MeasureEMD:
         with open(self.report_path, 'a') as f:
             f.write(self.summary)
 
+from typing import Dict, Any, Optional
+
 class CalculatePValues:
     def __init__(self, config: Dict[str, Any], measure_emd: MeasureEMD):
         self.exp = config['setup']['exp']
