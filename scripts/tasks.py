@@ -10,7 +10,7 @@ import csv
 import time
 import pickle
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Fetch the URL to post progress update
@@ -246,9 +246,9 @@ def bayes_pyFAI_geom(config):
     with TaskTimer(task_durations, "total duration"):
         geomfile = task.get("geomfile")
         if geomfile != '':
-            logger.warning(f"Using {geomfile} as input geometry")
+            logger.info(f"Using {geomfile} as input geometry")
         else:
-            logger.warning(f"No geometry files provided: using calibration data as input geometry")
+            logger.info(f"No geometry files provided: using calibration data as input geometry")
             geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
         PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
         conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
@@ -281,12 +281,12 @@ def bayes_pyFAI_geom(config):
             prior=prior,
             seed=seed,
             )
-        logger.warning(f"Refined PONI distance in m: {geom_opt.sg.geometry_refinement.param[0]:.2e}")
-        logger.warning(f"Refined detector PONI in m: {geom_opt.sg.geometry_refinement.param[1]:.2e}, {geom_opt.sg.geometry_refinement.param[2]:.2e}")
-        logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.sg.geometry_refinement.param[3]}, \u03B8y = {geom_opt.sg.geometry_refinement.param[4]}, \u03B8z = {geom_opt.sg.geometry_refinement.param[5]}")
-        logger.warning(f"Final score: {geom_opt.residuals}")
+        logger.info(f"Refined PONI distance in m: {geom_opt.sg.geometry_refinement.param[0]:.2e}")
+        logger.info(f"Refined detector PONI in m: {geom_opt.sg.geometry_refinement.param[1]:.2e}, {geom_opt.sg.geometry_refinement.param[2]:.2e}")
+        logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.sg.geometry_refinement.param[3]}, \u03B8y = {geom_opt.sg.geometry_refinement.param[4]}, \u03B8z = {geom_opt.sg.geometry_refinement.param[5]}")
+        logger.info(f"Final score: {geom_opt.residuals}")
         logger.debug("Done!")
-    logger.warning(f"Total duration: {task_durations['total duration'][0]} seconds")
+    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
 
 def hooke_jeeves_pyFAI_geom(config):

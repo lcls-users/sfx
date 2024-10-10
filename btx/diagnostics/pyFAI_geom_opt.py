@@ -312,10 +312,8 @@ class BayesGeomOpt:
             Path to mask file
         """
         if type(powder) == str:
-            print(f"Loading powder {powder}")
             powder_img = np.load(powder)
         elif type(powder) == int:
-            print("Computing powder from scratch")
             self.diagnostics.psi.counter = 0
             self.diagnostics.psi.calibrate = True
             powder_imgs = self.diagnostics.psi.get_images(powder, assemble=False)
@@ -343,7 +341,6 @@ class BayesGeomOpt:
         wavelength : float
             Wavelength of the experiment
         """
-        print("Defining calibrant...")
         calibrant = CALIBRANT_FACTORY(self.calibrant)
         wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
@@ -360,7 +357,6 @@ class BayesGeomOpt:
         Imin : int or str
             Minimum intensity to use for control point extraction based on photon energy or max intensity
         """
-        print("Defining minimal intensity...")
         if type(Imin) == str:
             Imin = np.max(self.powder_img) * 0.01
         else:
@@ -414,26 +410,19 @@ class BayesGeomOpt:
         if seed is not None:
             np.random.seed(seed)
 
-        print(f"Initializing Bayesian Optimization for dist = {dist}m...")
         self.values['dist'] = dist
-        print("Defining geometry parameter space...")
-        print(f"Search space: {self.space}")
         inputs = {}
         norm_inputs = {}
         for p in self.order:
             if p in self.space:
-                print(f"Defining search space for {p}...")
                 inputs[p] = np.arange(bounds[p][0], bounds[p][1]+bounds[p][2], bounds[p][2])
                 norm_inputs[p] = inputs[p]
             else:
-                print(f"Fixed parameter {p} with value {self.values[p]}")
                 inputs[p] = np.array([self.values[p]])
         X = np.array(np.meshgrid(*[inputs[p] for p in self.order])).T.reshape(-1, len(self.order))
         X_space = np.array(np.meshgrid(*[norm_inputs[p] for p in self.space])).T.reshape(-1, len(self.space))
         X_norm = (X_space - np.mean(X_space, axis=0)) / (np.max(X_space, axis=0) - np.min(X_space, axis=0))
-        print(f"Search space: {X_norm.shape[0]} points")
         if prior:
-            print("Using prior information...")
             means = np.mean(X_space, axis=0)
             cov = np.diag([((bounds[param][1] - bounds[param][0]) / 5)**2 for param in self.space])
             X_samples = np.random.multivariate_normal(means, cov, n_samples)
@@ -443,12 +432,10 @@ class BayesGeomOpt:
                     idx = self.order.index(p)
                     X_samples = np.insert(X_samples, idx, self.values[p], axis=1)
         else:
-            print("Randomly picking samples...")
             idx_samples = np.random.choice(X.shape[0], n_samples)
             X_samples = X[idx_samples]
             X_norm_samples = X_norm[idx_samples]
 
-        print("Initializing samples...")
         bo_history = {}
         y = np.zeros((n_samples))
         for i in range(n_samples):
@@ -459,11 +446,9 @@ class BayesGeomOpt:
             y[i] = len(sg.geometry_refinement.data)
             bo_history[f'init_sample_{i+1}'] = {'param':X_samples[i], 'score': y[i]}
 
-        print("Standardizing initial score values...")
         y_norm = (y - np.mean(y)) / np.std(y)
         best_score = np.max(y_norm)
 
-        print("Fitting Gaussian Process Regressor...")
         kernel = RBF(length_scale=0.3, length_scale_bounds=(0.2, 0.4)) \
                 * ConstantKernel(constant_value=1.0, constant_value_bounds=(0.5, 1.5)) \
                 + WhiteKernel(noise_level=0.001, noise_level_bounds = 'fixed')
@@ -483,7 +468,6 @@ class BayesGeomOpt:
         elif af == "ci":
             af = self.contextual_improvement
 
-        print("Starting Bayesian optimization...")
         for i in range(num_iterations):
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
             if af == self.upper_confidence_bound:
@@ -573,18 +557,17 @@ class BayesGeomOpt:
             results = [self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed) for dist in scan_distance]
         self.comm.Barrier()
 
-        self.scan = {}
-        self.scan['bo_history'] = self.comm.gather(results[0], root=0)
-        self.scan['SingleGeometry'] = self.comm.gather(results[1], root=0)
-        self.scan['residuals'] = self.comm.gather(results[2], root=0)
-        self.scan['best_idx'] = self.comm.gather(results[3], root=0)
-
-        self.finalize()
+        self.results = self.comm.gather(results, root=0)
+        if self.rank == 0:
+            self.finalize()
 
     def finalize(self):
         if self.rank == 0:
-            for key in self.scan.keys():
-                self.scan[key] = np.array([item for item in self.scan[key]])
+            self.scan = {}
+            self.scan['bo_history'] = [result[0] for result in self.results]
+            self.scan['SingleGeometry'] = [result[1] for result in self.results]
+            self.scan['residuals'] = [result[2] for result in self.results]
+            self.scan['best_idx'] = [result[3] for result in self.results]
             index = np.argmin(self.scan['residuals'])
             self.residuals = self.scan['residuals'][index]
             self.bo_history = self.scan['bo_history'][index]
