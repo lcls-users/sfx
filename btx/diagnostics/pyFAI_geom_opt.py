@@ -508,7 +508,8 @@ class BayesGeomOpt:
         sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
         residuals = sg.geometry_refinement.refine3(fix=['wavelength'])
-        return bo_history, sg, residuals, best_idx
+        result = [bo_history, sg, residuals, best_idx]
+        return result
 
     def bayes_opt_geom(self, powder, bounds, Imin='max', n_samples=50, num_iterations=50, af="ucb", prior=True, mask=None, seed=None):
         """
