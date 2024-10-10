@@ -293,67 +293,100 @@ class MeasureEMD:
             f.write(self.summary)
 
 from typing import Dict, Any, Optional
+import numpy as np
+import os
+import logging
+from pvalues import calculate_p_values
 
 class CalculatePValues:
-    def __init__(self, config: Dict[str, Any], measure_emd: MeasureEMD):
+    """Class for calculating p-values from EMD values and null distribution."""
+
+    def __init__(self, config: Dict[str, Any], emd_values: Optional[np.ndarray] = None, null_distribution: Optional[np.ndarray] = None):
+        """
+        Initialize the CalculatePValues class.
+
+        Args:
+            config: Configuration dictionary.
+            emd_values: Optional input EMD values array.
+            null_distribution: Optional input null distribution array.
+        """
         self.exp = config['setup']['exp']
         self.run = config['setup']['run']
         self.output_dir = get_task_output_dir(config, 'calculate_p_values')
         os.makedirs(self.output_dir, exist_ok=True)
-        self.measure_emd = measure_emd
         self.report_path = os.path.join(self.output_dir, 'pvalues_report.txt')
-        self.emd_values: Optional[np.ndarray] = None
-        self.null_distribution: Optional[np.ndarray] = None
-        self.p_values: Optional[np.ndarray] = None
+        self.logger = logging.getLogger(__name__)
+        self.input_arrays = {'emd_values': emd_values, 'null_distribution': null_distribution}
+        self.computed_arrays = {}
+        self.write_to_file = True
 
     def load_data(self) -> None:
-        self.emd_values = self.measure_emd.emd_values
-        self.null_distribution = self.measure_emd.null_distribution
+        """Load EMD values and null distribution if not provided during initialization."""
+        if self.input_arrays['emd_values'] is None or self.input_arrays['null_distribution'] is None:
+            raise ValueError("EMD values and null distribution must be provided either during initialization or by setting input_arrays.")
         
-        if self.emd_values.ndim != 2:
-            raise ValueError(f"Expected 2D EMD values array, got {self.emd_values.ndim}D")
+        if self.input_arrays['emd_values'].ndim != 2:
+            raise ValueError(f"Expected 2D EMD values array, got {self.input_arrays['emd_values'].ndim}D")
 
     def calculate_p_values(self) -> None:
-        if self.emd_values is None or self.null_distribution is None:
-            raise ValueError("EMD values or null distribution not loaded. Call load_data() first.")
-        self.p_values = calculate_p_values(self.emd_values, self.null_distribution)
+        """Calculate p-values from EMD values and null distribution."""
+        self.load_data()  # Ensure data is loaded
+        self.computed_arrays['p_values'] = calculate_p_values(self.input_arrays['emd_values'], self.input_arrays['null_distribution'])
         self.save_p_values()
 
     def summarize(self) -> None:
-        if self.emd_values is None or self.null_distribution is None or self.p_values is None:
-            raise ValueError("Data not fully processed. Call calculate_p_values() first.")
+        """Generate and save summary of the p-value calculation."""
+        if 'p_values' not in self.computed_arrays:
+            raise ValueError("P-values not calculated. Call calculate_p_values() first.")
         
         summary = (
             f"P-value calculation for {self.exp} run {self.run}:\n"
-            f" EMD values shape: {self.emd_values.shape}\n"
-            f" Null distribution length: {len(self.null_distribution)}\n"
-            f" P-values shape: {self.p_values.shape}\n"
+            f" EMD values shape: {self.input_arrays['emd_values'].shape}\n"
+            f" Null distribution length: {len(self.input_arrays['null_distribution'])}\n"
+            f" P-values shape: {self.computed_arrays['p_values'].shape}\n"
         )
  
-        with open(os.path.join(self.output_dir, 'summary.txt'), 'w') as f:
-            f.write(summary)
+        if self.write_to_file:
+            with open(os.path.join(self.output_dir, 'summary.txt'), 'w') as f:
+                f.write(summary)
  
         self.summary = summary
-        with open(self.report_path, 'w') as report_file:
-            report_file.write(self.summary)
+        if self.write_to_file:
+            with open(self.report_path, 'w') as report_file:
+                report_file.write(self.summary)
 
     def report(self) -> None:
+        """Append summary to the report file if write_to_file is True."""
         if not hasattr(self, 'summary'):
             raise ValueError("Summary not generated. Call summarize() first.")
-        with open(self.report_path, 'a') as f:
-            f.write(self.summary)
+        if self.write_to_file:
+            with open(self.report_path, 'a') as f:
+                f.write(self.summary)
  
-    def save_p_values(self, p_values_path: Optional[str] = None) -> None:
-        if self.p_values is None:
+    def save_p_values(self, p_values_path: Optional[str] = None) -> Optional[str]:
+        """Save p-values to file if write_to_file is True."""
+        if 'p_values' not in self.computed_arrays:
             raise ValueError("P-values not calculated. Call calculate_p_values() first.")
         
-        if p_values_path is None:
-            p_values_path = os.path.join(self.output_dir, "p_values.npy")
- 
-        p_values_png_path = os.path.join(self.output_dir, "p_values.png")
-        
-        np.save(p_values_path, self.p_values)
-        save_array_to_png(self.p_values, p_values_png_path)
+        if self.write_to_file:
+            if p_values_path is None:
+                p_values_path = os.path.join(self.output_dir, "p_values.npy")
+    
+            p_values_png_path = os.path.join(self.output_dir, "p_values.png")
+            
+            np.save(p_values_path, self.computed_arrays['p_values'])
+            save_array_to_png(self.computed_arrays['p_values'], p_values_png_path)
+            return p_values_path
+        return None
+
+    def get_computed_arrays(self) -> Dict[str, np.ndarray]:
+        """
+        Get the computed arrays.
+
+        Returns:
+            Dict[str, np.ndarray]: Dictionary of computed arrays.
+        """
+        return self.computed_arrays
 
 class BuildPumpProbeMasks:
     def __init__(self, config):
