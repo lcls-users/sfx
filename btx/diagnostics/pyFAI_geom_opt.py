@@ -524,10 +524,7 @@ class BayesGeomOpt:
         sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
         residuals = sg.geometry_refinement.refine3(fix=['wavelength'])
-        self.dist, self.poni1, self.poni2, self.rot1, self.rot2, self.rot3 = sg.geometry_refinement.param
-        self.bo_history = bo_history
-        self.best_idx = best_idx
-        self.residuals = residuals
+        return bo_history, sg, residuals, best_idx
 
     def bayes_opt_geom(self, powder, bounds, Imin='max', n_samples=50, num_iterations=50, af="ucb", prior=True, mask=None, seed=None):
         """
@@ -573,20 +570,14 @@ class BayesGeomOpt:
         scan_distance = self.comm.scatter(np.array_split(distances, self.size) if self.rank == 0 else None, root=0)
         
         if len(scan_distance) > 0:
-            for dist in scan_distance:
-                self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed)
+            results = [self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed) for dist in scan_distance]
         self.comm.Barrier()
 
         self.scan = {}
-        self.scan['distance'] = self.comm.gather(self.dist, root=0) # in mm
-        self.scan['poni1'] = self.comm.gather(self.poni1, root=0) # in pixels
-        self.scan['poni2'] = self.comm.gather(self.poni2, root=0)
-        self.scan['rot1'] = self.comm.gather(self.rot1, root=0)
-        self.scan['rot2'] = self.comm.gather(self.rot2, root=0)
-        self.scan['rot3'] = self.comm.gather(self.rot3, root=0)
-        self.scan['residuals'] = self.comm.gather(self.residuals, root=0)
-        self.scan['bo_history'] = self.comm.gather(self.bo_history, root=0)
-        self.scan['best_idx'] = self.comm.gather(self.best_idx, root=0)
+        self.scan['bo_history'] = self.comm.gather(results[0], root=0)
+        self.scan['SingleGeometry'] = self.comm.gather(results[1], root=0)
+        self.scan['residuals'] = self.comm.gather(results[2], root=0)
+        self.scan['best_idx'] = self.comm.gather(results[3], root=0)
 
         self.finalize()
 
@@ -595,14 +586,9 @@ class BayesGeomOpt:
             for key in self.scan.keys():
                 self.scan[key] = np.array([item for item in self.scan[key]])
             index = np.argmin(self.scan['residuals'])
-            self.distance = self.scan['distance'][index]
-            self.poni1 = self.scan['poni1'][index]
-            self.poni2 = self.scan['poni2'][index]
-            self.rot1 = self.scan['rot1'][index]
-            self.rot2 = self.scan['rot2'][index]
-            self.rot3 = self.scan['rot3'][index]
             self.residuals = self.scan['residuals'][index]
             self.bo_history = self.scan['bo_history'][index]
+            self.sg = self.scan['SingleGeometry'][index]
             self.best_idx = self.scan['best_idx'][index]
 
     def grid_search_convergence_plot(self, bo_history, bounds, best_idx, grid_search, plot):

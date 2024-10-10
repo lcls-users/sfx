@@ -281,20 +281,10 @@ def bayes_pyFAI_geom(config):
             prior=prior,
             seed=seed,
             )
-        logger.warning(f"Refined PONI distance in m: {geom_opt.dist:.2e}")
-        logger.warning(f"Refined detector PONI in m: {geom_opt.poni1:.2e}, {geom_opt.poni2:.2e}")
-        logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.rot1}, \u03B8y = {geom_opt.rot2}, \u03B8z = {geom_opt.rot3}")
+        logger.warning(f"Refined PONI distance in m: {geom_opt.sg.geometry_refinement.param[0]:.2e}")
+        logger.warning(f"Refined detector PONI in m: {geom_opt.sg.geometry_refinement.param[1]:.2e}, {geom_opt.sg.geometry_refinement.param[2]:.2e}")
+        logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.sg.geometry_refinement.param[3]}, \u03B8y = {geom_opt.sg.geometry_refinement.param[4]}, \u03B8z = {geom_opt.sg.geometry_refinement.param[5]}")
         logger.warning(f"Final score: {geom_opt.residuals}")
-        Xc = geom_opt.poni1+geom_opt.dist*(np.tan(geom_opt.rot2)/np.cos(geom_opt.rot1))
-        Yc = geom_opt.poni2-geom_opt.dist*(np.tan(geom_opt.rot1))
-        Zc = geom_opt.dist/(np.cos(geom_opt.rot1)*np.cos(geom_opt.rot2))
-        logger.warning(f"Refined detector distance in m: {Zc:.2e}")
-        logger.warning(f"Refined detector center in m: {Xc:.2e}, {Yc:.2e}")
-        poni_grid = tuple([float(elem) for elem in task.poni_grid.split()])
-        bounds = {'poni1':(poni_grid[0], poni_grid[1]), 'poni2':(poni_grid[0], poni_grid[1])}
-        grid_search = np.load(os.path.join(setup.root_dir, f"grid_search/{setup.exp}/r{setup.run:04}/grid_search_{os.path.splitext(os.path.basename(powder))[0]}_#ncp.npy"))
-        plot = os.path.join(setup.root_dir, f"figs/bayes_opt/{setup.exp}/bayes_opt_geom_r{setup.run:04}_seed_{seed}.png")
-        geom_opt.grid_search_convergence_plot(geom_opt.bo_history, bounds, geom_opt.best_idx, grid_search, plot)
         logger.debug("Done!")
     logger.warning(f"Total duration: {task_durations['total duration'][0]} seconds")
 
