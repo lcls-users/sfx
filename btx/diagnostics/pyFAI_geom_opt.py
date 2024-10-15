@@ -543,8 +543,6 @@ class BayesGeomOpt:
 
         self.minimal_intensity(Imin)
 
-        print(f'Number of processes: {self.size}')
-
         if self.rank == 0:
             distances = np.linspace(bounds['dist'][0], bounds['dist'][1], self.size)
         else:
