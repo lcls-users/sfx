@@ -263,7 +263,7 @@ def bayes_pyFAI_geom(config):
         dist = tuple([float(elem) for elem in task.dist.split()])
         poni1 = tuple([float(elem) for elem in task.poni1.split()])
         poni2 = tuple([float(elem) for elem in task.poni2.split()])
-        bounds = {'dist':(dist[0], dist[1], dist[2]),'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
+        bounds = {'dist':(dist[0], dist[1]),'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
         geom_opt = BayesGeomOpt(
             exp=setup.exp,
             run=setup.run,
