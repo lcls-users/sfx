@@ -508,7 +508,7 @@ class BayesGeomOpt:
         sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
         residuals = sg.geometry_refinement.refine3(fix=['wavelength'])
-        result = [bo_history, sg, residuals, best_idx]
+        result = {'bo_history': bo_history, 'SingleGeometry': sg, 'residuals': residuals, 'best_idx': best_idx}
         return result
 
     def bayes_opt_geom(self, powder, bounds, Imin='max', n_samples=50, num_iterations=50, af="ucb", prior=True, mask=None, seed=None):
@@ -552,25 +552,27 @@ class BayesGeomOpt:
         else:
             distances = None
 
-        distances = self.comm.scatter(distances , root=0)
-        print(f"Rank {self.rank} is working on distance {distances}")
-        results = self.bayes_opt_center(powder, distances, bounds, n_samples, num_iterations, af, prior, seed)
+        dist = self.distribute_scan(distances)
+        if len(dist) > 0:
+            print(f"Rank {self.rank} is working on distance {dist}")
+            results = self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed)
         self.comm.Barrier()
 
-        self.results = self.comm.gather(results, root=0)
+        self.scan = {}
+        self.scan['bo_history'] = self.comm.gather(results['bo_history'], root=0)
+        self.scan['SingleGeometry'] = self.comm.gather(results['SingleGeometry'], root=0)
+        self.scan['residuals'] = self.comm.gather(results['residuals'], root=0)
+        self.scan['best_idx'] = self.comm.gather(results['best_idx'], root=0)
         self.finalize()
 
     def finalize(self):
         if self.rank == 0:
-            self.scan = {}
-            self.scan['bo_history'] = [result[0] for result in self.results]
-            self.scan['SingleGeometry'] = [result[1] for result in self.results]
-            self.scan['residuals'] = [result[2] for result in self.results]
-            self.scan['best_idx'] = [result[3] for result in self.results]
-            index = np.argmin(self.scan['residuals'])
-            self.residuals = self.scan['residuals'][index]
+            for key in self.scan.keys():
+                self.scan[key] = np.array([item for sublist in self.scan[key] for item in sublist])  
+            index = np.argmin(self.scan['residuals']) 
             self.bo_history = self.scan['bo_history'][index]
             self.sg = self.scan['SingleGeometry'][index]
+            self.residuals = self.scan['residuals'][index]
             self.best_idx = self.scan['best_idx'][index]
 
     def grid_search_convergence_plot(self, bo_history, bounds, best_idx, grid_search, plot):
