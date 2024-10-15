@@ -14,6 +14,8 @@ from btx.diagnostics.run import RunDiagnostics
 from btx.misc.metrology import *
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel, ExpSineSquared
+from sklearn.utils.testing import ignore_warnings
+from sklearn.exceptions import ConvergenceWarning
 from scipy.stats import norm
 from tqdm import tqdm
 
@@ -382,6 +384,7 @@ class BayesGeomOpt:
         split_indices = np.append(np.array([0]), np.cumsum(split_indices)).astype(int) 
         return scan[split_indices[self.rank]:split_indices[self.rank+1]]
 
+    @ignore_warnings(category=ConvergenceWarning)
     def bayes_opt_center(self, powder_img, dist, bounds, n_samples=50, num_iterations=50, af="ucb", prior=True, seed=None):
         """
         Perform Bayesian Optimization on PONI center parameters, for a fixed distance
@@ -508,7 +511,8 @@ class BayesGeomOpt:
         sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
         residuals = sg.geometry_refinement.refine3(fix=['wavelength'])
-        result = {'bo_history': bo_history, 'SingleGeometry': sg, 'residuals': residuals, 'best_idx': best_idx}
+        params = sg.geometry_refinement.param
+        result = {'bo_history': bo_history, 'params': params, 'residuals': residuals, 'best_idx': best_idx}
         return result
 
     def bayes_opt_geom(self, powder, bounds, Imin='max', n_samples=50, num_iterations=50, af="ucb", prior=True, mask=None, seed=None):
