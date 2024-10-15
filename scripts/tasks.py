@@ -281,9 +281,9 @@ def bayes_pyFAI_geom(config):
             prior=prior,
             seed=seed,
             )
-        logger.info(f"Refined PONI distance in m: {geom_opt.sg.geometry_refinement.param[0]:.2e}")
-        logger.info(f"Refined detector PONI in m: {geom_opt.sg.geometry_refinement.param[1]:.2e}, {geom_opt.sg.geometry_refinement.param[2]:.2e}")
-        logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.sg.geometry_refinement.param[3]}, \u03B8y = {geom_opt.sg.geometry_refinement.param[4]}, \u03B8z = {geom_opt.sg.geometry_refinement.param[5]}")
+        logger.info(f"Refined PONI distance in m: {geom_opt.params[0]:.2e}")
+        logger.info(f"Refined detector PONI in m: {geom_opt.params[1]:.2e}, {geom_opt.params[2]:.2e}")
+        logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.params[3]}, \u03B8y = {geom_opt.params[4]}, \u03B8z = {geom_opt.params[5]}")
         logger.info(f"Final score: {geom_opt.residuals}")
         logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")

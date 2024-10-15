@@ -548,7 +548,7 @@ class BayesGeomOpt:
         else:
             distances = None
 
-        dist = self.distribute_scan(distances)
+        dist = self.comm.scatter(distances, root=0)
         print(f"Rank {self.rank} is working on distance {dist}")
         results = self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed)
         self.comm.Barrier()
