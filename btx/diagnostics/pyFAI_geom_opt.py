@@ -548,19 +548,17 @@ class BayesGeomOpt:
         self.minimal_intensity(Imin)
 
         if self.rank == 0:
-            distances = np.arange(bounds['dist'][0], bounds['dist'][1]+bounds['dist'][2], bounds['dist'][2])
+            distances = np.linspace(bounds['dist'][0], bounds['dist'][1], self.size)
         else:
             distances = None
 
-        scan_distance = self.comm.scatter(np.array_split(distances, self.size) if self.rank == 0 else None, root=0)
-        
-        if len(scan_distance) > 0:
-            results = [self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed) for dist in scan_distance]
+        distances = self.comm.scatter(distances , root=0)
+
+        results = self.bayes_opt_center(powder, distances, bounds, n_samples, num_iterations, af, prior, seed)
         self.comm.Barrier()
 
         self.results = self.comm.gather(results, root=0)
-        if self.rank == 0:
-            self.finalize()
+        self.finalize()
 
     def finalize(self):
         if self.rank == 0:
