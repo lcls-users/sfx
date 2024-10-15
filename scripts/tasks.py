@@ -238,54 +238,50 @@ def bayes_pyFAI_geom(config):
     from btx.diagnostics.pyFAI_geom_opt import BayesGeomOpt
     from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
     from btx.misc.shortcuts import TaskTimer
-    from mpi4py import MPI
 
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
     setup = config.setup
     task = config.bayes_pyFAI_geom
     task_durations = dict({})
     """ Bayesian Optimization for geometry. """
     with TaskTimer(task_durations, "total duration"):
-        if rank == 0:
-            geomfile = task.get("geomfile")
-            if geomfile != '':
-                logger.info(f"Using {geomfile} as input geometry")
-            else:
-                logger.info(f"No geometry files provided: using calibration data as input geometry")
-                geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
-            PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
-            conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
-            det = conv.detector
-            powder = task.get("powder")
-            Imin = task.get("Imin", 'max')
-            n_samples = task.get("n_samples", 50)
-            num_iterations = task.get("num_iterations", 50)
-            af = task.get("af", 'ucb')
-            prior = task.get("prior", True)
-            seed = task.get("seed")
-            dist = tuple([float(elem) for elem in task.dist.split()])
-            poni1 = tuple([float(elem) for elem in task.poni1.split()])
-            poni2 = tuple([float(elem) for elem in task.poni2.split()])
-            bounds = {'dist':(dist[0], dist[1]),'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
-            geom_opt = BayesGeomOpt(
-                exp=setup.exp,
-                run=setup.run,
-                det_type=setup.det_type,
-                detector=det,
-                calibrant=task.calibrant,
+        geomfile = task.get("geomfile")
+        if geomfile != '':
+            logger.info(f"Using {geomfile} as input geometry")
+        else:
+            logger.info(f"No geometry files provided: using calibration data as input geometry")
+            geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
+        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
+        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
+        det = conv.detector
+        powder = task.get("powder")
+        Imin = task.get("Imin", 'max')
+        n_samples = task.get("n_samples", 50)
+        num_iterations = task.get("num_iterations", 50)
+        af = task.get("af", 'ucb')
+        prior = task.get("prior", True)
+        seed = task.get("seed")
+        dist = tuple([float(elem) for elem in task.dist.split()])
+        poni1 = tuple([float(elem) for elem in task.poni1.split()])
+        poni2 = tuple([float(elem) for elem in task.poni2.split()])
+        bounds = {'dist':(dist[0], dist[1]),'poni1':(poni1[0], poni1[1], poni1[2]), 'poni2':(poni2[0], poni2[1], poni2[2])}
+        geom_opt = BayesGeomOpt(
+            exp=setup.exp,
+            run=setup.run,
+            det_type=setup.det_type,
+            detector=det,
+            calibrant=task.calibrant,
+        )
+        geom_opt.bayes_opt_geom(
+            powder=powder,
+            bounds=bounds,
+            Imin=Imin,
+            n_samples=n_samples,
+            num_iterations=num_iterations,
+            af=af,
+            prior=prior,
+            seed=seed,
             )
-            geom_opt.bayes_opt_geom(
-                powder=powder,
-                bounds=bounds,
-                Imin=Imin,
-                n_samples=n_samples,
-                num_iterations=num_iterations,
-                af=af,
-                prior=prior,
-                seed=seed,
-                )
+        if geom_opt.rank == 0:
             logger.info(f"Refined PONI distance in m: {geom_opt.params[0]:.2e}")
             logger.info(f"Refined detector PONI in m: {geom_opt.params[1]:.2e}, {geom_opt.params[2]:.2e}")
             logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.params[3]}, \u03B8y = {geom_opt.params[4]}, \u03B8z = {geom_opt.params[5]}")
