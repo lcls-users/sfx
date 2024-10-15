@@ -10,7 +10,7 @@ import csv
 import time
 import pickle
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # Fetch the URL to post progress update
