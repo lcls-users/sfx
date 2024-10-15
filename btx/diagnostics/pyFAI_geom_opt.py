@@ -543,15 +543,16 @@ class BayesGeomOpt:
 
         self.minimal_intensity(Imin)
 
+        print(f'Number of processes: {self.size}')
+
         if self.rank == 0:
             distances = np.linspace(bounds['dist'][0], bounds['dist'][1], self.size)
         else:
             distances = None
 
-        dist = np.zeros(1)
-        self.comm.Scatter(distances, dist, root=0)
+        dist = self.comm.scatter(distances, root=0)
         print(f"Rank {self.rank} is working on distance {dist}")
-        
+
         results = self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed)
         self.comm.Barrier()
 
