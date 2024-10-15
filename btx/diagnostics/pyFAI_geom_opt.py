@@ -374,15 +374,7 @@ class BayesGeomOpt:
         scan : list of distances
             parameter dist for initial estimates
         """
-        n_search = len(scan)
-        split_indices = np.zeros(self.size) 
-        for r in range(self.size):
-            num_per_rank = n_search // self.size
-            if r < (n_search % self.size):
-                num_per_rank += 1
-            split_indices[r] = num_per_rank
-        split_indices = np.append(np.array([0]), np.cumsum(split_indices)).astype(int) 
-        return scan[split_indices[self.rank]:split_indices[self.rank+1]]
+        return scan[self.rank]
 
     @ignore_warnings(category=ConvergenceWarning)
     def bayes_opt_center(self, powder_img, dist, bounds, n_samples=50, num_iterations=50, af="ucb", prior=True, seed=None):
@@ -572,7 +564,7 @@ class BayesGeomOpt:
     def finalize(self):
         if self.rank == 0:
             for key in self.scan.keys():
-                self.scan[key] = np.array([item for sublist in self.scan[key] for item in sublist])  
+                self.scan[key] = np.array([item for item in self.scan[key]])  
             index = np.argmin(self.scan['residuals']) 
             self.bo_history = self.scan['bo_history'][index]
             self.params = self.scan['params'][index]
