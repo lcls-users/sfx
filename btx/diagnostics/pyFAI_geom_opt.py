@@ -14,7 +14,7 @@ from btx.diagnostics.run import RunDiagnostics
 from btx.misc.metrology import *
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel, ExpSineSquared
-from sklearn.utils.testing import ignore_warnings
+from sklearn.utils._testing import ignore_warnings
 from sklearn.exceptions import ConvergenceWarning
 from scipy.stats import norm
 from tqdm import tqdm
