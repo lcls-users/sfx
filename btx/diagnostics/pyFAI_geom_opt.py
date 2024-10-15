@@ -564,7 +564,7 @@ class BayesGeomOpt:
 
         self.scan = {}
         self.scan['bo_history'] = self.comm.gather(results['bo_history'], root=0)
-        self.scan['SingleGeometry'] = self.comm.gather(results['SingleGeometry'], root=0)
+        self.scan['params'] = self.comm.gather(results['params'], root=0)
         self.scan['residuals'] = self.comm.gather(results['residuals'], root=0)
         self.scan['best_idx'] = self.comm.gather(results['best_idx'], root=0)
         self.finalize()
@@ -575,7 +575,7 @@ class BayesGeomOpt:
                 self.scan[key] = np.array([item for sublist in self.scan[key] for item in sublist])  
             index = np.argmin(self.scan['residuals']) 
             self.bo_history = self.scan['bo_history'][index]
-            self.sg = self.scan['SingleGeometry'][index]
+            self.params = self.scan['params'][index]
             self.residuals = self.scan['residuals'][index]
             self.best_idx = self.scan['best_idx'][index]
 
