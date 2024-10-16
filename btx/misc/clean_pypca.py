@@ -41,7 +41,7 @@ def fuse_results(path,tag,num_nodes,mode='create'):
         fused_data = {}
         all_data = []
         for id_current_node in range(num_nodes):
-            tag_current_id = f"{tag}_node_{id_current_node}_updated_model.h5"
+            tag_current_id = f"node_{id_current_node}_updated_model.h5"
             filename_with_tag = os.path.join(path, tag_current_id)
             all_data.append(unpack_model_file(filename_with_tag))
         
@@ -114,7 +114,7 @@ def write_fused_data(data, path, tag,mode = 'create'):
             f.create_dataset('projected_images', data=data['projected_images'])
     
     elif mode == 'update':
-        filename_with_tag = f"{path}pypca_model_{tag}.h5"
+        filename_with_tag = os.path.join(path, tag)
 
         with h5py.File(filename_with_tag, 'r+') as f:
             del f['S']
@@ -126,6 +126,8 @@ def write_fused_data(data, path, tag,mode = 'create'):
             f.create_dataset('V', data=data['V'])
             f.create_dataset('mu', data=data['mu'])
 
+        os.rename(filename_with_tag, f"{filename_with_tag}_updated_model.h5")
+        
 def delete_node_models(path, tag, num_nodes, mode = 'create'):
     if mode == 'create':
         for id_current_node in range(num_nodes):
@@ -136,6 +138,12 @@ def delete_node_models(path, tag, num_nodes, mode = 'create'):
     elif mode == 'reduce':
         for id_current_node in range(num_nodes):
             tag_current_id = f"{tag}_node_{id_current_node}.h5"
+            filename_with_tag = os.path.join(path, tag_current_id)
+            os.remove(filename_with_tag)
+    
+    elif mode == 'update':
+        for id_current_node in range(num_nodes):
+            tag_current_id = f"node_{id_current_node}_updated_model.h5"
             filename_with_tag = os.path.join(path, tag_current_id)
             os.remove(filename_with_tag)
 

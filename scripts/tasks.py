@@ -963,8 +963,7 @@ def update_pypca_multinodes(config):
         
         model_path = os.path.dirname(config.reduce_pypca_multinodes.model)
         tag = config.reduce_pypca_multinodes.model.split('/')[-1]
-        print(tag)
-        #clean_pypca(model_path, tag, num_nodes,mode='reduce')
+        clean_pypca(model_path, tag, num_nodes,mode='update')
 
     print('All nodes done!')
 
