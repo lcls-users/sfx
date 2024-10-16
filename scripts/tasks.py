@@ -1017,6 +1017,8 @@ def reduce_pypca_multinodes(config):
         algo_end_time = time.time()
         print(f"Algorithm time: {algo_end_time - algo_start_time}")
         
-        #clean_pypca(config.reduce_pypca_multinodes.path, config.reduce_pypca_multinodes.tag, num_nodes)
+        model_path = os.path.dirname(config.reduce_pypca_multinodes.model)
+        tag = f"projected_images_{config.setup.exp}_start_run_{config.reduce_pypca_multinodes.run}_num_images_{config.reduce_pypca_multinodes.num_images}"
+        clean_pypca(model_path, tag, num_nodes,mode='reduce')
 
     print('All nodes done!')

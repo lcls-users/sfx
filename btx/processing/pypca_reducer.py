@@ -349,9 +349,9 @@ if __name__ == "__main__":
    
     #Save the projected images
     input_path = os.path.dirname(filename)
-    output_path = os.path.join(input_path, f"projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}_node_{id_current_node}.h5")
+    output_path = os.path.join(input_path, f"projected_images_{exp}_start_run_{init_run}_num_images_{num_images_to_add}_node_{id_current_node}.h5")
     with h5py.File(output_path, 'w') as f:
         append_to_dataset(f, 'projected_images', projected_images)
     
-    print(f"Model saved under the name projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}_node_{id_current_node}.h5",flush=True)
+    print(f"Model saved under the name projected_images_{exp}_start_run_{init_run}_num_images_{num_images_to_add}_node_{id_current_node}.h5",flush=True)
     print("Process finished",flush=True)
