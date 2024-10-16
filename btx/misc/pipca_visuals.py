@@ -42,6 +42,7 @@ from sklearn.decomposition import IncrementalPCA
 
 def display_dashboard_pytorch(filename):
     """
+    OUTDATED: Waiting for Deeban's dashboard
     Displays an interactive dashboard with a PC plot, scree plot, 
     and intensity heatmaps of the selected source image as well as 
     its reconstructed image using the model obtained by pipca.
@@ -410,67 +411,6 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-"""def plot_t_sne_scatters(filename,type_of_embedding='t-SNE',eps=1,min_samples=3):
-    with open(filename, "rb") as f:
-        data = pickle.load(f)
-
-    embedding_tsne = np.array(data["embeddings_tsne"])
-    embedding_umap = np.array(data["embeddings_umap"])
-    S = np.array(data["S"])
-    num_gpus = len(S)
-
-    if type_of_embedding == 't-SNE':
-        embedding = embedding_tsne
-        fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
-
-        for rank in range(num_gpus):
-            df = pd.DataFrame({
-                't-SNE1': embedding[rank][:, 0],
-                't-SNE2': embedding[rank][:, 1],
-                'Index': np.arange(len(embedding[rank])),
-            })
-
-            dbscan = DBSCAN(eps=eps, min_samples=min_samples)  
-            df['Cluster'] = dbscan.fit_predict(df[['t-SNE1', 't-SNE2']])
-            
-            scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
-                                color='Cluster',  
-                                hover_data={'Index': True},
-                                labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
-                                title=f't-SNE projection (GPU {rank})')
-            
-
-            fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
-
-        fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
-        fig.show()
-
-    else :
-        embedding = embedding_umap
-        fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f'UMAP projection (GPU {rank})' for rank in range(num_gpus)])
-
-        for rank in range(num_gpus):
-            df = pd.DataFrame({
-                'UMAP1': embedding[rank][:, 0],
-                'UMAP2': embedding[rank][:, 1],
-                'Index': np.arange(len(embedding[rank])),
-            })
-
-            dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-            df['Cluster'] = dbscan.fit_predict(df[['UMAP1', 'UMAP2']])
-            
-            scatter = px.scatter(df, x='UMAP1', y='UMAP2', 
-                                color='Cluster',  # Utiliser la colonne 'Cluster' pour colorer les points
-                                hover_data={'Index': True},
-                                labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
-                                title=f'UMAP projection (GPU {rank})')
-                
-            fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
-
-        fig.update_layout(height=800, width=800, showlegend=False, title_text="UMAP Projections Across GPUs")
-        fig.show()
-"""
-
 def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_samples=3):
     with open(filename, "rb") as f:
         data = pickle.load(f)
@@ -594,7 +534,6 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_sample
         plt.show()
     else:
         print("Warning: No valid clusters found to create similarity heatmap.")
-
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
@@ -747,84 +686,6 @@ def display_dashboard(filename):
         
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
-
-def display_eigenimages(filename):
-    """
-    Displays a PC selector widget and a heatmap of the
-    eigenimage corresponding to the selected PC.
-    
-    Parameters
-    -----------------
-    filename : str
-            Name of the read document to display figures
-    """
-    data = unpack_pipca_model_file(filename)
-    
-    exp = data['exp']
-    run = data['run']
-    det_type = data['det_type']
-    start_img = data['start_img']
-    U = data['U']
-
-    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-    psi.counter = start_img
-    
-    # Create eigenimage dictionary and widget
-    eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
-    PC_options = list(eigenimages)
-    
-    component = pnw.Select(name='Components', value='PC1', options=PC_options)
-    widget_heatmap = pn.WidgetBox(component, width=150)
-    
-    # Define function to compute heatmap
-    @pn.depends(component.param.value)
-    def create_heatmap(component):
-        # Reshape selected eigenimage to work with construct_heatmap_data()
-        p, x, y = psi.det.shape()
-        pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-        
-        img = eigenimages[component]
-        img = img.reshape((p, x, y))
-        img = assemble_image_stack_batch(img, pixel_index_map)
-        
-        # Downsample so heatmap is at most 100 x 100
-        hm_data = construct_heatmap_data(img, 100)
-    
-        opts = dict(width=400, height=300, cmap='plasma', colorbar=True,
-                    symmetric=True, shared_axes=False, toolbar='above')
-        heatmap = hv.HeatMap(hm_data, label="%s Eigenimage" % (component.title())).aggregate(function=np.mean).opts(**opts)
-        
-        return heatmap
-    
-    return pn.Row(widget_heatmap, create_heatmap).servable('PiPCA Eigenimages')
-
-def unpack_pipca_model_file(filename):
-    """
-    Reads PiPCA model information from h5 file and returns its contents
-
-    Parameters
-    ----------
-    filename: str
-        name of h5 file you want to unpack
-
-    Returns
-    -------
-    data: dict
-        A dictionary containing the extracted data from the h5 file.
-    """
-    data = {}
-    with h5py.File(filename, 'r') as f:
-        data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
-        data['run'] = int(np.asarray(f.get('run')))
-        data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1]
-        data['start_img'] = int(np.asarray(f.get('start_offset')))
-        data['loadings'] = np.asarray(f.get('loadings'))
-        data['U'] = np.asarray(f.get('U'))
-        data['S'] = np.asarray(f.get('S'))
-        data['V'] = np.asarray(f.get('V'))
-        data['mu'] = np.asarray(f.get('mu'))
-
-    return data
 
 def unpack_ipca_pytorch_model_file(filename):
     """
@@ -1106,131 +967,4 @@ def compute_compression_loss(filename, num_components, random_images=False, num_
     print("Loss computation done")
 
     return average_loss, training_compression_losses, eval_compression_losses, run
-
-def classic_pca_test(filename, num_components):
-    """
-    Compute the average frobenius norm between eigenimages obtained via PiPCA and those obtained via classic PCA.
-    The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA.
-
-    Parameters:
-    -----------
-    filename : string
-        name of the h5 file
-    num_components: int
-        number of components used
-    
-    Returns:
-    --------
-    Losses between PiPCA and classic PCA
-    """
-
-    data = unpack_pipca_model_file(filename)
-    
-    exp, run, loadings, det_type, start_img, U, S, V = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V']
-
-    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-    psi.counter = start_img
-
-    PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
-    eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
-
-    #Get geometry
-    p, x, y = psi.det.shape()
-    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-
-    #Get images
-    imgs = psi.get_images(len(PCs['PC1']),assemble=False)
-    num_images = imgs.shape[0]
-
-    #Just be careful, there might have been a downsampling / binning in PiPCA
-    imgs = imgs[
-            [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
-        ]
-    imgs = np.reshape(imgs, (num_images, p, x, y))
-
-    #PiPCA eigenimages
-    list_eigenimages_pipca = []   
-    for i in range(num_components):
-        img = eigenimages[f'PC{i+1}']
-        img = img.reshape((p, x, y))
-        img = assemble_image_stack_batch(img, pixel_index_map)
-        list_eigenimages_pipca.append(img)
-
-    #Perform classic PCA
-    list_eigenimages_pca = []
-    pca = PCA(n_components=num_components)
-    pca.fit(imgs.reshape(num_images, -1))
-    eigenimages_classic = pca.components_
-    for i in range(num_components):
-        img = eigenimages_classic[i].reshape((p, x, y))
-        img = assemble_image_stack_batch(img, pixel_index_map)
-        list_eigenimages_pca.append(img)
-
-    return list_eigenimages_pipca, list_eigenimages_pca
-
-def sklearn_ipca_test(filename, num_components, batch_size):
-    """
-    Compute the average frobenius norm between eigenimages obtained via our PiPCA and those obtained via Sklearn IPCA.
-    The reconstructed images and their metadata (experiment name, run, detector, ...) are assumed to be found in the input file created by PiPCA.
-
-    Parameters:
-    -----------
-    filename : string
-        name of the h5 file
-    num_components: int
-        number of components used
-    batch_size: int
-        batch size used for PiPCA (will be the same for IPCA)
-    
-    Returns:
-    --------
-    Losses between PiPCA and classic IPCA (from Sklearn)
-    """
-
-    data = unpack_pipca_model_file(filename)
-    
-    exp, run, loadings, det_type, start_img, U, S, V = data['exp'], data['run'], data['loadings'], data['det_type'], data['start_img'], data['U'], data['S'], data['V']
-
-    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-    psi.counter = start_img
-
-    PCs = {f'PC{i}': v for i, v in enumerate(loadings, start=1)}
-    eigenimages = {f'PC{i}' : v for i, v in enumerate(U.T, start=1)}
-
-    #Get geometry
-    p, x, y = psi.det.shape()
-    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-
-    #Get images
-    imgs = psi.get_images(len(PCs['PC1']),assemble=False)
-    num_images = imgs.shape[0]
-
-    #Just be careful, there might have been a downsampling / binning in PiPCA
-    imgs = imgs[
-            [i for i in range(num_images) if not np.isnan(imgs[i : i + 1]).any()]
-        ]
-    imgs = np.reshape(imgs, (num_images, p, x, y))
-
-    #PiPCA eigenimages
-    list_eigenimages_pipca = []
-    for i in range(num_components):
-        img = eigenimages[f'PC{i+1}']
-        img = img.reshape((p, x, y))
-        img = assemble_image_stack_batch(img, pixel_index_map)
-        list_eigenimages_pipca.append(img)
-    
-    #Perform IPCA
-    list_eigenimages_ipca = []
-    ipca = IncrementalPCA(n_components=num_components, batch_size=batch_size)
-    for i in range(0, len(imgs), batch_size):
-        print(f"Processing batch {int(i/batch_size)+1} of {int(num_images/batch_size)}")
-        ipca.partial_fit(imgs[i:i+batch_size].reshape(batch_size, -1))
-        print(f"Batch {int(i/batch_size)+1} processed")
-    eigenimages_ipca = ipca.components_
-    for i in range(num_components):
-        img = eigenimages_ipca[i].reshape((p, x, y))
-        img = assemble_image_stack_batch(img, pixel_index_map)
-        list_eigenimages_ipca.append(img)
-    
-    return list_eigenimages_pipca, list_eigenimages_ipca
 
