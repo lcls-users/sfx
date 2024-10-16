@@ -1003,7 +1003,7 @@ def reduce_pypca(config,num_nodes = 1, id_current_node = 0):
     print('All done!')
 
 
-def create_pypca_multinodes(config):
+def reduce_pypca_multinodes(config):
     num_nodes = config.reduce_pypca_multinodes.num_nodes
     if num_nodes ==1:
         reduce_pypca(config)
