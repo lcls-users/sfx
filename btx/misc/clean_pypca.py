@@ -36,7 +36,20 @@ def fuse_results(path,tag,num_nodes,mode='create'):
             all_data.append(unpack_model_file(filename_with_tag))
         
         fused_data['projected_images'] = np.concatenate([data['projected_images'] for data in all_data], axis=0)
+    
+    elif mode == 'update':
+        fused_data = {}
+        all_data = []
+        for id_current_node in range(num_nodes):
+            tag_current_id = f"{tag}_node_{id_current_node}_updated_model.h5"
+            filename_with_tag = os.path.join(path, tag_current_id)
+            all_data.append(unpack_model_file(filename_with_tag))
         
+        fused_data['S'] = np.concatenate([data['S'] for data in all_data], axis=0)
+        fused_data['V'] = np.concatenate([data['V'] for data in all_data], axis=0)
+        fused_data['mu'] = np.concatenate([data['mu'] for data in all_data], axis=0)
+        fused_data['num_images'] = all_data[0]['num_images']
+
     return fused_data
 
 
@@ -62,15 +75,16 @@ def unpack_model_file(filename):
             #if reducing, only projected_images are needed
             return data
         
-        data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
-        data['run'] = int(np.asarray(f.get('run')))
-        data['num_runs'] = int(np.asarray(f.get('num_runs')))
-        data['num_images'] = np.asarray(f.get('num_images'))
-        data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1]
-        data['start_offset'] = int(np.asarray(f.get('start_offset')))
-        data['S'] = np.asarray(f.get('S'))
-        data['V'] = np.asarray(f.get('V'))
-        data['mu'] = np.asarray(f.get('mu'))
+        
+        data['exp'] = str(np.asarray(f.get('exp')))[2:-1] if 'exp' in f else None
+        data['run'] = int(np.asarray(f.get('run'))) if 'run' in f else None
+        data['num_runs'] = int(np.asarray(f.get('num_runs'))) if 'num_runs' in f else None
+        data['num_images'] = np.asarray(f.get('num_images')) if 'num_images' in f else None
+        data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1] if 'det_type' in f else None 
+        data['start_offset'] = int(np.asarray(f.get('start_offset'))) if 'start_offset' in f else None
+        data['S'] = np.asarray(f.get('S')) if 'S' in f else None
+        data['V'] = np.asarray(f.get('V')) if 'V' in f else None
+        data['mu'] = np.asarray(f.get('mu')) if 'mu' in f else None
 
         if 'transformed_images' in f:
             data['transformed_images'] = np.asarray(f.get('transformed_images'))
@@ -99,6 +113,19 @@ def write_fused_data(data, path, tag,mode = 'create'):
 
         with h5py.File(filename_with_tag, 'w') as f:
             f.create_dataset('projected_images', data=data['projected_images'])
+    
+    elif mode == 'update':
+        filename_with_tag = f"{path}pypca_model_{tag}.h5"
+
+        with h5py.File(filename_with_tag, 'r+') as f:
+            del f['S']
+            del f['V']
+            del f['mu']
+            del f['num_images']
+            f.create_dataset('num_images', data=data['num_images'])
+            f.create_dataset('S', data=data['S'])
+            f.create_dataset('V', data=data['V'])
+            f.create_dataset('mu', data=data['mu'])
 
 def delete_node_models(path, tag, num_nodes, mode = 'create'):
     if mode == 'create':
