@@ -358,7 +358,7 @@ if __name__ == "__main__":
             num_images_seen = 0
             for run in range(init_run, init_run + num_runs):
                 for event in range(start_offset, start_offset + num_images[run-init_run], loading_batch_size):
-
+                    #Gathers a loading batch of images
                     beginning_time = time.time()
 
                     if num_images_seen + loading_batch_size >= num_training_images:
@@ -383,15 +383,13 @@ if __name__ == "__main__":
                     intermediate_time = time.time()
                     l_time += intermediate_time-beginning_time
 
-
+                    #Cleans and formats the images
                     current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                    #Remove None images
                     current_len = current_loading_batch.shape[0]
                     num_images_seen += current_len
                     logging.info(f"Loaded {event+current_len} images from run {run}.")
                     print("Number of images seen:",num_images_seen,flush=True)
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
-
                     logging.info(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}")
                     #Apply the smoothing function
                     current_loading_batch = mapping_function(current_loading_batch, type_mapping = smoothing_function)

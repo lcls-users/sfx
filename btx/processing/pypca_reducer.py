@@ -240,6 +240,18 @@ def parse_input():
         required=True,
         type=int,
     )
+    parser.add_argument(
+        "--num_nodes",  
+        help="Number of nodes to use.",
+        required=False,
+        type=int,
+    )
+    parser.add_argument(
+        "--id_current_node",
+        help="ID of the current node.",
+        required=False,
+        type=int,
+    )
 
     return parser.parse_args()
 
@@ -255,6 +267,9 @@ if __name__ == "__main__":
     filename = params.model
     num_gpus = params.num_gpus
     num_runs = params.num_runs
+    id_current_node = params.id_current_node
+    num_nodes = params.num_nodes
+    num_tot_gpus = num_gpus * num_nodes
 
     if start_offset is None:
         start_offset = 0
@@ -305,7 +320,8 @@ if __name__ == "__main__":
                     print(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}",flush=True)
 
                     #Split the images into batches for each GPU
-                    current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+                    current_loading_batch = np.split(current_loading_batch, num_tot_gpus,axis=1)
+                    current_loading_batch = current_loading_batch[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
 
                     shape = current_loading_batch[0].shape
                     dtype = current_loading_batch[0].dtype
@@ -333,9 +349,9 @@ if __name__ == "__main__":
    
     #Save the projected images
     input_path = os.path.dirname(filename)
-    output_path = os.path.join(input_path, f"projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}.h5")
+    output_path = os.path.join(input_path, f"projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}_node_{id_current_node}.h5")
     with h5py.File(output_path, 'w') as f:
         append_to_dataset(f, 'projected_images', projected_images)
     
-    print(f"Model saved under the name projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}.h5",flush=True)
+    print(f"Model saved under the name projected_images_{exp}_run_{init_run}_to_{init_run+num_runs-1}_num_images_{num_images_to_add}_node_{id_current_node}.h5",flush=True)
     print("Process finished",flush=True)
