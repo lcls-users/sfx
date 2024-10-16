@@ -890,7 +890,7 @@ def create_pypca_multinodes(config):
 
     print('All nodes done!')
 
-def update_pypca(config):
+def update_pypca(config,num_nodes = 1, id_current_node = 0):
     from btx.interfaces.ischeduler import JobScheduler
     from btx.misc.get_max_events import main as compute_max_events
 
@@ -938,14 +938,34 @@ def update_pypca(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
-    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --lower_bound {lower_bound} --upper_bound {upper_bound} --model {model} --num_gpus {num_gpus}"
+    command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --lower_bound {lower_bound} --upper_bound {upper_bound} --model {model} --num_gpus {num_gpus} --num_nodes {num_nodes} --id_current_node {id_current_node}"
 
-    js = JobScheduler(os.path.join(".", f'update_pypca_{num_tot_images}_{batch_size}.sh'),queue = 'ampere', ncores=  1, jobname=f'update_pypca_{num_tot_images}_{batch_size}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
+    js = JobScheduler(os.path.join(".", f'update_pypca_{num_tot_images}_{batch_size}_node_{id_current_node}.sh'),queue = 'ampere', ncores=  1, jobname=f'update_pypca_{num_tot_images}_{batch_size}_node_{id_current_node}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
     js.write_header()
     js.write_main(f"{command}\n", dependencies=['psana'],find_python_path=False)
     js.clean_up()
     js.submit()
     print('All done!')
+
+def update_pypca_multinodes(config):
+    num_nodes = config.update_pypca_multinodes.num_nodes
+    if num_nodes ==1:
+        update_pypca(config)
+    else:
+        import multiprocessing
+        from btx.misc.clean_pypca import clean_pypca
+        algo_start_time = time.time()
+        with multiprocessing.Pool(processes=num_nodes) as pool:
+            args = [(config, num_nodes, node) for node in range(num_nodes)]
+            pool.starmap(update_pypca, args)
+        algo_end_time = time.time()
+        print(f"Algorithm time: {algo_end_time - algo_start_time}")
+        
+        #model_path = os.path.dirname(config.update_pypca_multinodes.model)
+        #tag = f"projected_images_{config.setup.exp}_start_run_{config.reduce_pypca_multinodes.run}_num_images_{config.reduce_pypca_multinodes.num_images}"
+        #clean_pypca(model_path, tag, num_nodes,mode='reduce')
+
+    print('All nodes done!')
 
 def reduce_pypca(config,num_nodes = 1, id_current_node = 0):
     from btx.interfaces.ischeduler import JobScheduler

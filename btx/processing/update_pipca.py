@@ -122,7 +122,7 @@ def create_shared_images(images):
         shm_list.append(shm)
     return shm_list
 
-def read_model_file(filename):
+def read_model_file(filename,id_current_node=0,num_gpus=4):
     """
     Reads PiPCA model information from h5 file and returns its contents
 
@@ -138,9 +138,9 @@ def read_model_file(filename):
     """
     data = {}
     with h5py.File(filename, 'r') as f:
-        data['V'] = np.asarray(f.get('V'))
-        data['mu'] = np.asarray(f.get('mu'))
-        data['S'] = np.asarray(f.get('S'))
+        data['V'] = np.asarray(f.get('V'))[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
+        data['mu'] = np.asarray(f.get('mu'))[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
+        data['S'] = np.asarray(f.get('S'))[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
         data['num_images'] = f.get('num_images')[()]
         data['num_components'] = data['V'].shape[2]
     return data
@@ -299,7 +299,7 @@ def compute_new_model(model_state_dict,batch_size,device_list,rank,shm_list,shap
     
     return model_state_dict
 
-def update_model(model, model_state_dict):
+def update_model(model, model_state_dict,id_current_node=0):
     """
     This function is used to update the iPCA model.
     """
@@ -311,7 +311,7 @@ def update_model(model, model_state_dict):
     
     new_num_images = model_state_dict[0]['num_images']
     
-    with h5py.File(model, 'r+') as f:
+    with h5py.File(f"node_{id_current_node}_model", 'r+') as f:
         create_or_update_dataset(f, 'V', data=V)
         create_or_update_dataset(f, 'mu', data=mu)
         create_or_update_dataset(f, 'S', data=S)
@@ -386,7 +386,18 @@ def parse_input():
         required=True,
         type=int,
     )
-
+    parser.add_argument(
+        "--num_nodes",  
+        help="Number of nodes to use.",
+        required=False,
+        type=int,
+    )
+    parser.add_argument(
+        "--id_current_node",
+        help="ID of the current node.",
+        required=False,
+        type=int,
+    )
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -403,6 +414,9 @@ if __name__ == "__main__":
     num_runs = params.num_runs
     lower_bound = params.lower_bound
     upper_bound = params.upper_bound
+    id_current_node = params.id_current_node
+    num_nodes = params.num_nodes
+    num_tot_gpus = num_gpus * num_nodes
 
     if start_offset is None:
         start_offset = 0
@@ -414,7 +428,7 @@ if __name__ == "__main__":
 
     mp.set_start_method('spawn', force=True)    
     #Reads current model
-    data = read_model_file(filename)
+    data = read_model_file(filename,id_current_node,num_gpus)
     all_norm_diff = []
     all_init_norm = []
     last_batch = False
@@ -465,7 +479,8 @@ if __name__ == "__main__":
                         print(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}",flush=True)
 
                         #Split the images into batches for each GPU
-                        current_loading_batch = np.split(current_loading_batch, num_gpus,axis=1)
+                        current_loading_batch = np.split(current_loading_batch, num_tot_gpus,axis=1)
+                        current_loading_batch = current_loading_batch[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
 
                         shape = current_loading_batch[0].shape
                         dtype = current_loading_batch[0].dtype
@@ -515,7 +530,7 @@ if __name__ == "__main__":
 
         #Update the model
         if update_or_not:
-            update_model(filename, model_state_dict)    
+            update_model(filename, model_state_dict,id_current_node)    
             print("Model updated and saved",flush=True)   
 
         print("Process finished",flush=True)
