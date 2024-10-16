@@ -91,7 +91,8 @@ def write_fused_data(data, path, tag,mode = 'create'):
             f.create_dataset('S', data=data['S'])
             f.create_dataset('V', data=data['V'])
             f.create_dataset('mu', data=data['mu'])
-            f.create_dataset('transformed_images', data=data['transformed_images'])
+            if 'transformed_images' in data:
+                f.create_dataset('transformed_images', data=data['transformed_images'])
 
     elif mode == 'reduce':
         filename_with_tag = os.path.join(path, f"{tag}.h5")
