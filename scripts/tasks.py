@@ -895,7 +895,7 @@ def update_pypca(config,num_nodes = 1, id_current_node = 0):
     from btx.misc.get_max_events import main as compute_max_events
 
     setup = config.setup
-    task = config.update_pypca
+    task = config.update_pypca_multinodes
     exp = setup.exp
     run = task.run
     det_type = setup.det_type
