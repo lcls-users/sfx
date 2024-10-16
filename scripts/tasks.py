@@ -820,7 +820,8 @@ def create_pypca(config, num_nodes = 1, id_current_node = 0):
     num_images = task.num_images
     num_tot_images = num_images
     distribution_images = [] 
-    ##
+
+    ## Computes number of runs and number of images per run
     num_runs = 0
     while num_images > 0:
         max_event = compute_max_events(exp, run+num_runs, det_type)
@@ -829,14 +830,17 @@ def create_pypca(config, num_nodes = 1, id_current_node = 0):
         num_images -= images_for_run
         num_runs += 1
     ##
+
     print(f"Number of runs: {num_runs}")
     num_images_str = json.dumps(distribution_images)
     num_components = task.num_components
     batch_size = task.batch_size
     path = task.path
     tag = task.tag
+
     if num_nodes >1:
         tag = f"{tag}_node_{id_current_node}"
+        
     num_gpus = task.num_gpus
     training_percentage = task.training_percentage
     smoothing_function = task.smoothing_function
