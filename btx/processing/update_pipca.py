@@ -311,7 +311,7 @@ def update_model(model, model_state_dict,id_current_node=0):
     
     new_num_images = model_state_dict[0]['num_images']
     
-    with h5py.File(f"node_{id_current_node}_model", 'r+') as f:
+    with h5py.File(f"node_{id_current_node}_model", 'w') as f:
         create_or_update_dataset(f, 'V', data=V)
         create_or_update_dataset(f, 'mu', data=mu)
         create_or_update_dataset(f, 'S', data=S)
