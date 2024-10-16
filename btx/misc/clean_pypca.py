@@ -31,7 +31,7 @@ def fuse_results(path,tag,num_nodes,mode='create'):
         fused_data = {}
         all_data = []
         for id_current_node in range(num_nodes):
-            tag_current_id = f"{tag}_node_{id_current_node}"
+            tag_current_id = f"{tag}_node_{id_current_node}.h5"
             filename_with_tag = os.path.join(path, tag_current_id)
             all_data.append(unpack_model_file(filename_with_tag))
         
