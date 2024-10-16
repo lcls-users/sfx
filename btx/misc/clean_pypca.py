@@ -52,7 +52,6 @@ def fuse_results(path,tag,num_nodes,mode='create'):
 
     return fused_data
 
-
 def unpack_model_file(filename):
     """
     Reads PyPCA model information from h5 file and returns its contents
