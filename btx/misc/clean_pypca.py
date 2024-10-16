@@ -59,7 +59,9 @@ def unpack_model_file(filename):
 
         if 'projected_images' in f:
             data['projected_images'] = np.asarray(f.get('projected_images'))
-            break #if reducing, only projected_images are needed
+            #if reducing, only projected_images are needed
+            return data
+        
         data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
         data['run'] = int(np.asarray(f.get('run')))
         data['num_runs'] = int(np.asarray(f.get('num_runs')))
