@@ -289,7 +289,7 @@ def bayes_pyFAI_geom(config):
             plot = f'{setup.root_dir}/figs/bayes_opt/bayes_opt_geom_r{setup.run:04}.png'
             geom_opt.visualize_results(powder=geom_opt.powder_img, bo_history=geom_opt.bo_history, sg=geom_opt.sg, plot=plot)
             logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'r{setup.run:04}.geom')}")
-            PyFAIToCrystFEL(detector=geom_opt.detector, params=geom_opt.params, in_file=in_file, out_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"))
+            PyFAIToCrystFEL(detector=geom_opt.detector, params=geom_opt.params, psana_file=in_file, out_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"))
             logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'{setup.run}-end.data')}")
             CrystFELToPsana(in_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"), det_type=setup.det_type.lower(), out_file=in_file.replace("0-end.data", f"{setup.run}-end.data"))
             logger.debug("Done!")
