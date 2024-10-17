@@ -10,7 +10,7 @@ import csv
 import time
 import pickle
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # Fetch the URL to post progress update
@@ -236,7 +236,7 @@ def grid_search_pyFAI_geom(config):
 
 def bayes_pyFAI_geom(config):
     from btx.diagnostics.pyFAI_geom_opt import BayesGeomOpt
-    from btx.diagnostics.converter import PsanaToPyFAI
+    from btx.diagnostics.converter import PsanaToPyFAI, PyFAIToCrystFEL, CrystFELToPsana
     from btx.misc.shortcuts import TaskTimer
 
     setup = config.setup
@@ -246,9 +246,9 @@ def bayes_pyFAI_geom(config):
     with TaskTimer(task_durations, "total duration"):
         in_file = task.get("in_file")
         if in_file != '':
-            logger.info(f"Using {in_file} as input geometry")
+            logger.warning(f"Using {in_file} as input geometry")
         else:
-            logger.info(f"No geometry files provided: using calibration data as input geometry")
+            logger.warning(f"No geometry files provided: using calibration data as input geometry")
             in_file = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
         psana_to_pyfai = PsanaToPyFAI(in_file, det_type=setup.det_type)
         detector = psana_to_pyfai.detector
@@ -281,10 +281,16 @@ def bayes_pyFAI_geom(config):
             seed=seed,
             )
         if geom_opt.rank == 0:
-            logger.info(f"Refined PONI distance in m: {geom_opt.params[0]:.2e}")
-            logger.info(f"Refined detector PONI in m: {geom_opt.params[1]:.2e}, {geom_opt.params[2]:.2e}")
-            logger.info(f"Refined detector rotations in rad: \u03B8x = {geom_opt.params[3]:.4e}, \u03B8y = {geom_opt.params[4]:.4e}, \u03B8z = {geom_opt.params[5]:.4e}")
-            logger.info(f"Final score: {geom_opt.residuals}")
+            logger.warning(f"Refined PONI distance in m: {geom_opt.params[0]:.2e}")
+            logger.warning(f"Refined detector PONI in m: {geom_opt.params[1]:.2e}, {geom_opt.params[2]:.2e}")
+            logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.params[3]:.4e}, \u03B8y = {geom_opt.params[4]:.4e}, \u03B8z = {geom_opt.params[5]:.4e}")
+            logger.warning(f"Final score: {geom_opt.residuals}")
+            plot = f'{setup.root_dir}/figs/bayes_opt/bayes_opt_geom_r{setup.run:04}.png'
+            geom_opt.visualize_results(powder=geom_opt.powder_img, bo_history=geom_opt.bo_history, sg=geom_opt.sg, plot=plot)
+            logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'r{setup.run:04}.geom')}")
+            PyFAIToCrystFEL(detector=geom_opt.detector, params=geom_opt.params, in_file=in_file, out_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"))
+            logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'{setup.run}-end.data')}")
+            CrystFELToPsana(in_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"), det_type=setup.det_type.lower(), out_file=in_file.replace("0-end.data", f"{setup.run}-end.data"))
             logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 

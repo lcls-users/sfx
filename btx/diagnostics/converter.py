@@ -187,7 +187,7 @@ class PsanaToCrystFEL:
     """
 
     def __init__(self, in_file, out_file, cframe=gu.CFRAME_PSANA):
-        self.convert_data_to_geom(inf_fil=in_file, out_file=out_file, cframe=cframe)
+        self.convert_data_to_geom(in_file=in_file, out_file=out_file, cframe=cframe)
 
     def convert_data_to_geom(self, in_file, out_file, cframe=gu.CFRAME_PSANA):
         """
@@ -543,11 +543,6 @@ class PsanaToPyFAI:
         x, y, z = x*1e-6, y*1e-6, z*1e-6
         geo1 = geo.get_seg_geo() # GeometryObject
         seg = geo1.algo # object of the SegmentGeometry subclass
-        nsegs = int(x.size/seg.size())
-        shape = (nsegs,) + seg.shape() # (nsegs, srows, scols)
-        x.shape = shape
-        y.shape = shape
-        z.shape = shape
         nmods = self.detector.n_modules
         nasics = self.detector.n_asics
         asics_shape = self.detector.asics_shape
@@ -555,19 +550,22 @@ class PsanaToPyFAI:
         ss_size = self.detector.ss_size
         # Flattened ss dim, fs dim, 4 corners, 3 coordinates (x, y, z)
         pyfai_fmt = np.zeros([nmods * ss_size * asics_shape[0], fs_size * asics_shape[1], 4, 3])
-        for n in range(nsegs):
+        for n in range(nmods):
             arows, acols = seg.asic_rows_cols()
             pix_size = seg.pixel_scale_size()
             res = 1e6/pix_size
+            xn = x[n, :]
+            yn = y[n, :]
+            zn = z[n, :]
             for a,(r0,c0) in enumerate(seg.asic0indices()):
                 vfs = np.array((\
-                    x[r0,c0+acols-1] - x[r0,c0],\
-                    y[r0,c0+acols-1] - y[r0,c0],\
-                    z[r0,c0+acols-1] - z[r0,c0]))
+                    xn[r0,c0+acols-1] - xn[r0,c0],\
+                    yn[r0,c0+acols-1] - yn[r0,c0],\
+                    zn[r0,c0+acols-1] - zn[r0,c0]))
                 vss = np.array((\
-                    x[r0+arows-1,c0] - x[r0,c0],\
-                    y[r0+arows-1,c0] - y[r0,c0],\
-                    z[r0+arows-1,c0] - z[r0,c0]))
+                    xn[r0+arows-1,c0] - xn[r0,c0],\
+                    yn[r0+arows-1,c0] - yn[r0,c0],\
+                    zn[r0+arows-1,c0] - zn[r0,c0]))
                 nfs = vfs/np.linalg.norm(vfs)
                 nss = vss/np.linalg.norm(vss)
                 if nasics == 1:
@@ -576,33 +574,33 @@ class PsanaToPyFAI:
                 else:
                     arow = a // (nasics//2)
                     acol = a % (nasics//2)
-                ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
                 fs_portion = slice(acol * fs_size, (acol + 1) * fs_size)
+                ss_portion = slice(arow * ss_size, (arow + 1) * ss_size)
                 slab_offset = n * asics_shape[0] * ss_size
-                ss_portion_slab = slice(arow * ss_size + slab_offset, (arow + 1) * ss_size + slab_offset)
                 fs_portion_slab = slice(acol * fs_size, (acol + 1) * fs_size)
+                ss_portion_slab = slice(arow * ss_size + slab_offset, (arow + 1) * ss_size + slab_offset)
                 ssx, ssy, ssz = np.array(nss) / res
                 fsx, fsy, fsz = np.array(nfs) / res
-                cx = x[n, ss_portion, fs_portion]
-                cy = y[n, ss_portion, fs_portion]
-                cz = z[n, ss_portion, fs_portion]
+                xna = x[n, ss_portion, fs_portion]
+                yna = y[n, ss_portion, fs_portion]
+                zna = z[n, ss_portion, fs_portion]
                 ss_units = np.array([0, 1, 1, 0])
                 fs_units = np.array([0, 0, 1, 1])
-                x = cx[:, :, np.newaxis] + ss_units * ssx + fs_units * fsx
-                y = cy[:, :, np.newaxis] + ss_units * ssy + fs_units * fsy
-                z = cz[:, :, np.newaxis] + ss_units * ssz + fs_units * fsz
-                if len(np.unique(z))==1:
-                    z[:, :, :] = 0
+                xnac = xna[:, :, np.newaxis] + ss_units * ssx + fs_units * fsx
+                ynac = yna[:, :, np.newaxis] + ss_units * ssy + fs_units * fsy
+                znac = zna[:, :, np.newaxis] + ss_units * ssz + fs_units * fsz
+                if len(np.unique(znac))==1:
+                    znac = np.zeros_like(znac)
                 else:
-                    z[:, :, :] -= np.mean(z)
+                    znac -= np.mean(znac)
                 if cframe==0:
-                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 0] = z
-                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 1] = x
-                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 2] = y
+                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 0] = znac
+                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 1] = xnac
+                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 2] = ynac
                 elif cframe==1:
-                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 0] = z
-                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 1] = y
-                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 2] = x
+                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 0] = znac
+                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 1] = ynac
+                    pyfai_fmt[ss_portion_slab, fs_portion_slab, :, 2] = xnac
         return pyfai_fmt
 
 class PyFAIToCrystFEL:
@@ -677,7 +675,7 @@ class PyFAIToCrystFEL:
             params = self.params
         cos_rot1 = np.cos(params[3])
         cos_rot2 = np.cos(params[4])
-        z_offset = -params[0](1 + 1/(cos_rot1*cos_rot2))
+        z_offset = -params[0]*(1 + 1/(cos_rot1*cos_rot2))
         return z_offset
     
     def scale_to_µm(self, x, y, z):
