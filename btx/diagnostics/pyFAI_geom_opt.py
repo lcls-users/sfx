@@ -706,11 +706,11 @@ class BayesGeomOpt:
             if ai is not None and cp.calibrant is not None:
                 tth = cp.calibrant.get_2th()
                 ttha = ai.twoThetaArray()
-                ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=2, linestyles="dashed")
+                ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=1, linestyles="dashed")
             ax.legend()
         return ax
 
-    def visualize_results(self, powder, bo_history, sg, plot=''):
+    def visualize_results(self, powder, bo_history, detector, params, plot=''):
         """
         Visualize fit, plotting (1) the BO convergence, (2) the radial profile and (3) the powder image.
 
@@ -718,9 +718,14 @@ class BayesGeomOpt:
         ----------
         powder : np.ndarray
             Powder image
+        bo_history : dict
+            Dictionary containing the history of optimization
+        detector : PyFAI(Detector)
+            PyFAI detector object
         params : list
-
-
+            List of parameters for the best fit
+        plot : str
+            Path to save plot
         """
         fig = plt.figure(figsize=(8,8),dpi=120)
         nrow,ncol=2,2
@@ -738,7 +743,7 @@ class BayesGeomOpt:
 
         # Plotting radial profiles with peaks
         ax2 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol-icol)
-        ai = sg.geometry_refinement
+        ai = AzimuthalIntegrator(dist=params[0], detector=detector, wavelength=self.calibrant.wavelength)
         res = ai.integrate1d(powder, 1000)
         jupyter.plot1d(res, calibrant=self.calibrant, label='Radial Profile', ax=ax2)
         irow = +1

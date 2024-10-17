@@ -286,12 +286,14 @@ def bayes_pyFAI_geom(config):
             logger.warning(f"Refined detector PONI in m: {geom_opt.params[1]:.2e}, {geom_opt.params[2]:.2e}")
             logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.params[3]:.4e}, \u03B8y = {geom_opt.params[4]:.4e}, \u03B8z = {geom_opt.params[5]:.4e}")
             logger.warning(f"Final score: {geom_opt.residuals}")
-            plot = f'{setup.root_dir}/figs/bayes_opt/bayes_opt_geom_r{setup.run:04}.png'
-            geom_opt.visualize_results(powder=geom_opt.powder_img, bo_history=geom_opt.bo_history, sg=geom_opt.sg, plot=plot)
             logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'r{setup.run:04}.geom')}")
             PyFAIToCrystFEL(detector=geom_opt.detector, params=geom_opt.params, psana_file=in_file, out_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"))
             logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'{setup.run}-end.data')}")
             CrystFELToPsana(in_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"), det_type=setup.det_type, out_file=in_file.replace("0-end.data", f"{setup.run}-end.data"))
+            psana_to_pyfai = PsanaToPyFAI(in_file.replace("0-end.data", f"{setup.run}-end.data"), det_type=setup.det_type)
+            detector = psana_to_pyfai.detector
+            plot = f'{setup.root_dir}/figs/bayes_opt/bayes_opt_geom_r{setup.run:04}.png'
+            geom_opt.visualize_results(powder=geom_opt.powder_img, bo_history=geom_opt.bo_history, detector=detector, params=geom_opt.params, plot=plot)
             logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
