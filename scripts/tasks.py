@@ -9,6 +9,7 @@ import yaml
 import csv
 import time
 import pickle
+import sys
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -250,7 +251,7 @@ def bayes_pyFAI_geom(config):
         else:
             logger.warning(f"No geometry files provided: using calibration data as input geometry")
             in_file = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
-        psana_to_pyfai = PsanaToPyFAI(in_file, det_type=setup.det_type)
+        psana_to_pyfai = PsanaToPyFAI(in_file, det_type=setup.det_type.lower())
         detector = psana_to_pyfai.detector
         powder = task.get("powder")
         Imin = task.get("Imin", 'max')
