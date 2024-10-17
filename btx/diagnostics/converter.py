@@ -243,17 +243,17 @@ class CrystFELToPyFAI:
         det_type : str
             Detector type
         """
-        if det_type == "epix10k2m":
+        if det_type.lower() == "epix10k2m":
             return ePix10k2M()
-        elif "epix10kaquad" in det_type:
+        elif "epix10kaquad" in det_type.lower():
             return ePix10kaQuad()
-        elif det_type == "jungfrau1m":
+        elif det_type.lower() == "jungfrau1m":
             return Jungfrau1M()
-        elif det_type == "jungfrau4m":
+        elif det_type.lower() == "jungfrau4m":
             return Jungfrau4M()
-        elif det_type == "rayonix":
+        elif det_type.lower() == "rayonix":
             return Rayonix()
-        elif det_type == "rayonix2":
+        elif det_type.lower() == "rayonix2":
             return Rayonix2()
         else:
             raise ValueError("Detector type not recognized")
@@ -520,17 +520,17 @@ class PsanaToPyFAI:
         det_type : str
             Detector type
         """
-        if det_type == "epix10k2m":
+        if det_type.lower() == "epix10k2m":
             return ePix10k2M()
-        elif "epix10kaquad" in det_type:
+        elif "epix10kaquad" in det_type.lower():
             return ePix10kaQuad()
-        elif det_type == "jungfrau1m":
+        elif det_type.lower() == "jungfrau1m":
             return Jungfrau1M()
-        elif det_type == "jungfrau4m":
+        elif det_type.lower() == "jungfrau4m":
             return Jungfrau4M()
-        elif det_type == "rayonix":
+        elif det_type.lower() == "rayonix":
             return Rayonix()
-        elif det_type == "rayonix2":
+        elif det_type.lower() == "rayonix2":
             return Rayonix2()
         else:
             raise ValueError("Detector type not recognized")
@@ -844,7 +844,7 @@ class CrystFELToPsana:
             False
 
     @staticmethod
-    def header_psana(list_of_cmts=[], dettype='N/A'):
+    def header_psana(list_of_cmts=[], det_type='N/A'):
         comments = '\n'.join(['# CFELCMT:%02d %s'%(i,s) for i,s in enumerate(list_of_cmts)])
         return\
         '\n# TITLE      Geometry constants converted from CrystFEL by genuine psana'\
@@ -855,7 +855,7 @@ class CrystFELToPsana:
         +'\n# COMMAND    %s' % ' '.join(sys.argv)\
         +'\n# RELEASE    %s' % gu.get_enviroment('CONDA_DEFAULT_ENV')\
         +'\n# CALIB_TYPE geometry'\
-        +'\n# DETTYPE    %s' % dettype\
+        +'\n# DETTYPE    %s' % det_type\
         +'\n# DETECTOR   N/A'\
         '\n# METROLOGY  N/A'\
         '\n# EXPERIMENT N/A'\
@@ -950,7 +950,7 @@ class CrystFELToPsana:
         self.valid = True
 
 
-    def geom_to_data(self, pars, out_file):
+    def geom_to_data(self, pars, det_type, out_file):
         segname, panasics = pars
         sg = sgs.Create(segname=segname, pbits=0, use_wide_pix_center=False)
 
@@ -964,7 +964,7 @@ class CrystFELToPsana:
 
         zoffset_m = self.dict_of_pars.get('coffset', 0) # in meters
 
-        recs = CrystFELToPsana.header_psana(list_of_cmts=self.list_of_comments, dettype=self.det_type)
+        recs = CrystFELToPsana.header_psana(list_of_cmts=self.list_of_comments, det_type=det_type)
 
         segz = np.array([self.dict_of_pars[k].get('coffset', 0) for k in panasics.split(',')])
         meanroundz = round(segz.mean()*1e6)*1e-6 # round z to 1µm
@@ -1001,4 +1001,4 @@ class CrystFELToPsana:
 
     def convert_geom_to_data(self, det_type, out_file):
         pars = DETTYPE_TO_PARS.get(det_type.lower(), None)
-        self.geom_to_data(pars, out_file)
+        self.geom_to_data(pars, det_type, out_file)

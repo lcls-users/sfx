@@ -251,7 +251,7 @@ def bayes_pyFAI_geom(config):
         else:
             logger.warning(f"No geometry files provided: using calibration data as input geometry")
             in_file = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
-        psana_to_pyfai = PsanaToPyFAI(in_file, det_type=setup.det_type.lower())
+        psana_to_pyfai = PsanaToPyFAI(in_file, det_type=setup.det_type)
         detector = psana_to_pyfai.detector
         powder = task.get("powder")
         Imin = task.get("Imin", 'max')
@@ -291,7 +291,7 @@ def bayes_pyFAI_geom(config):
             logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'r{setup.run:04}.geom')}")
             PyFAIToCrystFEL(detector=geom_opt.detector, params=geom_opt.params, psana_file=in_file, out_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"))
             logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'{setup.run}-end.data')}")
-            CrystFELToPsana(in_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"), det_type=setup.det_type.lower(), out_file=in_file.replace("0-end.data", f"{setup.run}-end.data"))
+            CrystFELToPsana(in_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"), det_type=setup.det_type, out_file=in_file.replace("0-end.data", f"{setup.run}-end.data"))
             logger.debug("Done!")
     logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
 
