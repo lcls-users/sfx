@@ -293,9 +293,10 @@ def bayes_pyFAI_geom(config):
             psana_to_pyfai = PsanaToPyFAI(in_file.replace("0-end.data", f"{setup.run}-end.data"), det_type=setup.det_type)
             detector = psana_to_pyfai.detector
             plot = f'{setup.root_dir}/figs/bayes_opt/bayes_opt_geom_r{setup.run:04}.png'
+            logger.warning(f'Printing for debug {[geom_opt.bo_history[key]['score'] for key in geom_opt.bo_history.keys()]}')
             geom_opt.visualize_results(powder=geom_opt.powder_img, bo_history=geom_opt.bo_history, detector=detector, params=geom_opt.params, plot=plot)
             logger.debug("Done!")
-    logger.info(f"Total duration: {task_durations['total duration'][0]} seconds")
+    logger.warning(f"Total duration: {task_durations['total duration'][0]} seconds")
 
 
 def hooke_jeeves_pyFAI_geom(config):

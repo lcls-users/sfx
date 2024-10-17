@@ -698,16 +698,11 @@ class BayesGeomOpt:
                 cmap="viridis",
                 norm=colornorm)
         ax.set_title(label)
-        if cp is not None:
-            for lbl in cp.get_labels():
-                pt = np.array(cp.get(lbl=lbl).points)
-                if len(pt) > 0:
-                    ax.scatter(pt[:,0], pt[:, 1], label=lbl)
-            if ai is not None and cp.calibrant is not None:
-                tth = cp.calibrant.get_2th()
-                ttha = ai.twoThetaArray()
-                ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=1, linestyles="dashed")
-            ax.legend()
+        if ai is not None and cp.calibrant is not None:
+            tth = cp.calibrant.get_2th()
+            ttha = ai.twoThetaArray()
+            ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=1, linestyles="dashed")
+        ax.legend()
         return ax
 
     def visualize_results(self, powder, bo_history, detector, params, plot=''):
@@ -728,7 +723,7 @@ class BayesGeomOpt:
             Path to save plot
         """
         fig = plt.figure(figsize=(8,8),dpi=120)
-        nrow,ncol=2,2
+        nrow,ncol=2,4
         irow,icol=0,0
         
         # Plotting BO convergence
@@ -739,7 +734,7 @@ class BayesGeomOpt:
         ax1.set_xlabel('Iteration')
         ax1.set_ylabel('Best score so far')
         ax1.set_title('Convergence Plot')
-        icol += 1
+        icol += 2
 
         # Plotting radial profiles with peaks
         ax2 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol-icol)
@@ -751,6 +746,7 @@ class BayesGeomOpt:
         # Plotting stacked powder
         geometry = Geometry(dist=params[0])
         sg = SingleGeometry(f'Max {self.calibrant_name}', powder, calibrant=self.calibrant, detector=detector, geometry=geometry)
+        sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
         ax3 = plt.subplot2grid((nrow, ncol), (irow, 0), rowspan=nrow-irow, colspan=ncol)
         self.display(sg=sg, label=f'Max {self.calibrant_name}', ax=ax3)
 
