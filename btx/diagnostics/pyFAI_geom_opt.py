@@ -749,6 +749,8 @@ class BayesGeomOpt:
         irow = +1
 
         # Plotting stacked powder
+        geometry = Geometry(dist=params[0])
+        sg = SingleGeometry(f'Max {self.calibrant_name}', powder, calibrant=self.calibrant, detector=detector, geometry=geometry)
         ax3 = plt.subplot2grid((nrow, ncol), (irow, 0), rowspan=nrow-irow, colspan=ncol)
         self.display(sg=sg, label=f'Max {self.calibrant_name}', ax=ax3)
 
