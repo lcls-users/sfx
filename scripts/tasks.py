@@ -236,7 +236,7 @@ def grid_search_pyFAI_geom(config):
 
 def bayes_pyFAI_geom(config):
     from btx.diagnostics.pyFAI_geom_opt import BayesGeomOpt
-    from btx.diagnostics.converter import CrystFELtoPyFAI, PsanatoCrystFEL
+    from btx.diagnostics.converter import PsanaToPyFAI
     from btx.misc.shortcuts import TaskTimer
 
     setup = config.setup
@@ -244,15 +244,14 @@ def bayes_pyFAI_geom(config):
     task_durations = dict({})
     """ Bayesian Optimization for geometry. """
     with TaskTimer(task_durations, "total duration"):
-        geomfile = task.get("geomfile")
-        if geomfile != '':
-            logger.info(f"Using {geomfile} as input geometry")
+        in_file = task.get("in_file")
+        if in_file != '':
+            logger.info(f"Using {in_file} as input geometry")
         else:
             logger.info(f"No geometry files provided: using calibration data as input geometry")
-            geomfile = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
-        PsanatoCrystFEL(geomfile, geomfile.replace(".data", ".geom"), det_type=setup.det_type)
-        conv = CrystFELtoPyFAI(geomfile.replace(".data", ".geom"), psana_file=geomfile, det_type=setup.det_type)
-        det = conv.detector
+            in_file = f'/sdf/data/lcls/ds/mfx/{setup.exp}/calib/*/geometry/0-end.data'
+        psana_to_pyfai = PsanaToPyFAI(in_file, det_type=setup.det_type)
+        detector = psana_to_pyfai.detector
         powder = task.get("powder")
         Imin = task.get("Imin", 'max')
         n_samples = task.get("n_samples", 50)
@@ -268,7 +267,7 @@ def bayes_pyFAI_geom(config):
             exp=setup.exp,
             run=setup.run,
             det_type=setup.det_type,
-            detector=det,
+            detector=detector,
             calibrant=task.calibrant,
         )
         geom_opt.bayes_opt_geom(
