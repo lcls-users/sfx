@@ -343,6 +343,7 @@ class BayesGeomOpt:
         wavelength : float
             Wavelength of the experiment
         """
+        self.calibrant_name = self.calibrant
         calibrant = CALIBRANT_FACTORY(self.calibrant)
         wavelength = self.diagnostics.psi.get_wavelength() * 1e-10
         photon_energy = 1.23984197386209e-09 / wavelength
@@ -502,6 +503,7 @@ class BayesGeomOpt:
         geom_initial = Geometry(dist=dist, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=self.detector, wavelength=self.calibrant.wavelength)
         sg = SingleGeometry("extract_cp", powder_img, calibrant=self.calibrant, detector=self.detector, geometry=geom_initial)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
+        self.sg = sg
         residuals = sg.geometry_refinement.refine3(fix=['wavelength'])
         params = sg.geometry_refinement.param
         result = {'bo_history': bo_history, 'params': params, 'residuals': residuals, 'best_idx': best_idx}
@@ -662,6 +664,91 @@ class BayesGeomOpt:
             ax[2].axhline(y=scores[best_idx], color='green', linestyle='dashed')
         fig.tight_layout()
         fig.savefig(plot)
+
+    def display(self, powder=None, cp=None, ai=None, label=None, sg=None, ax=None):
+        """
+        Display an image with the control points and the calibrated rings
+
+        Parameters
+        ----------
+        powder : np.ndarray
+        """
+        from matplotlib.colors import SymLogNorm
+        if ax is None:
+            _fig, ax = plt.subplots()
+        if sg is not None:
+            if powder is None:
+                powder = sg.image
+            if cp is None:
+                cp = sg.control_points
+            if ai is None:
+                ai = sg.geometry_refinement
+            if label is None:
+                label = sg.label
+        try:
+            colornorm = SymLogNorm(1, base=10,
+                                vmin=np.nanmin(powder),
+                                vmax=np.nanmax(powder))
+        except:  # elder version of matplotlib <3.2 do not support the base kwarg.
+            colornorm = SymLogNorm(1,
+                                vmin=np.nanmin(powder),
+                                vmax=np.nanmax(powder))
+        ax.imshow(powder.T,
+                origin="lower",
+                cmap="viridis",
+                norm=colornorm)
+        ax.set_title(label)
+        if cp is not None:
+            for lbl in cp.get_labels():
+                pt = np.array(cp.get(lbl=lbl).points)
+                if len(pt) > 0:
+                    ax.scatter(pt[:,0], pt[:, 1], label=lbl)
+            if ai is not None and cp.calibrant is not None:
+                tth = cp.calibrant.get_2th()
+                ttha = ai.twoThetaArray()
+                ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=2, linestyles="dashed")
+            ax.legend()
+        return ax
+
+    def visualize_results(self, powder, bo_history, sg, plot=''):
+        """
+        Visualize fit, plotting (1) the BO convergence, (2) the radial profile and (3) the powder image.
+
+        Parameters
+        ----------
+        powder : np.ndarray
+            Powder image
+        params : list
+
+
+        """
+        fig = plt.figure(figsize=(8,8),dpi=120)
+        nrow,ncol=2,2
+        irow,icol=0,0
+        
+        # Plotting BO convergence
+        ax1 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol)
+        scores = [bo_history[key]['score'] for key in bo_history.keys()]
+        ax1.plot(np.maximum.accumulate(scores))
+        ax1.set_xticks(np.arange(len(scores), step=5))
+        ax1.set_xlabel('Iteration')
+        ax1.set_ylabel('Best score so far')
+        ax1.set_title('Convergence Plot')
+        icol += 1
+
+        # Plotting radial profiles with peaks
+        ax2 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol-icol)
+        ai = sg.geometry_refinement
+        res = ai.integrate1d(powder, 1000)
+        jupyter.plot1d(res, calibrant=self.calibrant, label='Radial Profile', ax=ax2)
+        irow = +1
+
+        # Plotting stacked powder
+        ax3 = plt.subplot2grid((nrow, ncol), (irow, 0), rowspan=nrow-irow, colspan=ncol)
+        self.display(sg=sg, label=f'Max {self.calibrant_name}', ax=ax3)
+
+        if plot != '':
+            fig.savefig(plot, dpi=300)
 
 class HookeJeevesGeomOpt:
     """
