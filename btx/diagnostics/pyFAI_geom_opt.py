@@ -723,25 +723,25 @@ class BayesGeomOpt:
             Path to save plot
         """
         fig = plt.figure(figsize=(8,8),dpi=120)
-        nrow,ncol=2,4
+        nrow,ncol=2,2
         irow,icol=0,0
         
         # Plotting BO convergence
-        ax1 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol)
+        ax1 = plt.subplot2grid((nrow, ncol), (irow, icol))
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         ax1.plot(np.maximum.accumulate(scores))
         ax1.set_xticks(np.arange(len(scores), step=5))
         ax1.set_xlabel('Iteration')
         ax1.set_ylabel('Best score so far')
         ax1.set_title('Convergence Plot')
-        icol += 2
+        icol += 1
 
         # Plotting radial profiles with peaks
         ax2 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol-icol)
         ai = AzimuthalIntegrator(dist=params[0], detector=detector, wavelength=self.calibrant.wavelength)
         res = ai.integrate1d(powder, 1000)
         jupyter.plot1d(res, calibrant=self.calibrant, label='Radial Profile', ax=ax2)
-        irow = +1
+        irow += 1
 
         # Plotting stacked powder
         geometry = Geometry(dist=params[0])
