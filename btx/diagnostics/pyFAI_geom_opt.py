@@ -695,7 +695,7 @@ class BayesGeomOpt:
             ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=0.5, linestyles="dashed")
         return ax
     
-    def plot1d(self, result, calibrant=None, label=None, ax=None):
+    def radial_integration(self, result, calibrant=None, label=None, ax=None):
         """
         Display the powder diffraction pattern
 
@@ -774,7 +774,7 @@ class BayesGeomOpt:
         ax2 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol-icol)
         ai = AzimuthalIntegrator(dist=params[0], detector=detector, wavelength=self.calibrant.wavelength)
         res = ai.integrate1d(powder, 1000)
-        self.plot1d(res, calibrant=self.calibrant, ax=ax2)
+        self.radial_integration(res, calibrant=self.calibrant, ax=ax2)
         irow += 1
 
         # Plotting stacked powder
