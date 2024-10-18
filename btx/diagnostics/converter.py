@@ -661,22 +661,26 @@ class PyFAIToCrystFEL:
         rotation_matrix = np.dot(np.dot(rot3, rot2), rot1)  # 3x3 matrix
         return rotation_matrix
     
-    def correct_z_offset(self, params):
+    def correct_z_offset(self, z, params):
         """
         Correct the Z coordinates since PyFAI apply +dist on detector Z coordinates
         Note: need to apply -dist and substract by the true detector-sample distance
 
         Parameters
         ----------
+        z : np.ndarray
+            Z coordinate in meters
         params : list
             Detector parameters found by PyFAI calibration
         """
+        z -= np.mean(z)
         if params is None:
             params = self.params
         cos_rot1 = np.cos(params[3])
         cos_rot2 = np.cos(params[4])
-        z_offset = params[0]*(2/(cos_rot1*cos_rot2))
-        return z_offset
+        distance_sample_detector = params[0]*(1/(cos_rot1*cos_rot2))
+        z -= distance_sample_detector
+        return z
     
     def scale_to_µm(self, x, y, z):
         """
@@ -718,8 +722,7 @@ class PyFAIToCrystFEL:
         coord_det = np.vstack((p1, p2, p3))
         coord_sample = np.dot(self.rotation_matrix(params), coord_det)
         x, y, z = coord_sample
-        z_offset = self.correct_z_offset(params)
-        z -= z_offset
+        z = self.correct_z_offset(z, params)
         X = np.reshape(x, (self.detector.n_modules, self.detector.ss_size * self.detector.asics_shape[0], self.detector.fs_size * self.detector.asics_shape[1]))
         Y = np.reshape(y, (self.detector.n_modules, self.detector.ss_size * self.detector.asics_shape[0], self.detector.fs_size * self.detector.asics_shape[1]))
         Z = np.reshape(z, (self.detector.n_modules, self.detector.ss_size * self.detector.asics_shape[0], self.detector.fs_size * self.detector.asics_shape[1]))
