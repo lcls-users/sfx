@@ -695,7 +695,7 @@ class BayesGeomOpt:
             ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=0.5, linestyles="dashed")
         return ax
     
-    def plot1d(result, calibrant=None, label=None, ax=None):
+    def plot1d(self, result, calibrant=None, label=None, ax=None):
         """
         Display the powder diffraction pattern
 
