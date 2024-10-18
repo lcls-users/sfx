@@ -774,7 +774,7 @@ class BayesGeomOpt:
         ax2 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol-icol)
         ai = AzimuthalIntegrator(dist=params[0], detector=detector, wavelength=self.calibrant.wavelength)
         res = ai.integrate1d(powder, 1000)
-        self.plot1d(res, calibrant=self.calibrant, label='Radial Profile', ax=ax2)
+        self.plot1d(res, calibrant=self.calibrant, ax=ax2)
         irow += 1
 
         # Plotting stacked powder
@@ -782,7 +782,7 @@ class BayesGeomOpt:
         sg = SingleGeometry(f'Max {self.calibrant_name}', powder, calibrant=self.calibrant, detector=detector, geometry=geometry)
         sg.extract_cp(max_rings=5, pts_per_deg=1, Imin=self.Imin)
         ax3 = plt.subplot2grid((nrow, ncol), (irow, 0), rowspan=nrow-irow, colspan=ncol)
-        self.display(sg=sg, label=f'Max {self.calibrant_name}', ax=ax3)
+        self.display(sg=sg, ax=ax3)
 
         if plot != '':
             fig.savefig(plot, dpi=300)
