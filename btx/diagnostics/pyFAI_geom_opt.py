@@ -673,7 +673,6 @@ class BayesGeomOpt:
         ----------
         powder : np.ndarray
         """
-        from matplotlib.colors import SymLogNorm
         if ax is None:
             _fig, ax = plt.subplots()
         if sg is not None:
@@ -685,25 +684,60 @@ class BayesGeomOpt:
                 ai = sg.geometry_refinement
             if label is None:
                 label = sg.label
-        try:
-            colornorm = SymLogNorm(1, base=10,
-                                vmin=np.nanmin(powder),
-                                vmax=np.nanmax(powder))
-        except:  # elder version of matplotlib <3.2 do not support the base kwarg.
-            colornorm = SymLogNorm(1,
-                                vmin=np.nanmin(powder),
-                                vmax=np.nanmax(powder))
         ax.imshow(powder.T,
                 origin="lower",
                 cmap="viridis",
-                norm=colornorm)
+                vmax=self.Imin)
         ax.set_title(label)
         if ai is not None and cp.calibrant is not None:
             tth = cp.calibrant.get_2th()
             ttha = ai.twoThetaArray()
-            ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=1, linestyles="dashed")
-        ax.legend()
+            ax.contour(ttha.T, levels=tth, cmap="autumn", linewidths=0.5, linestyles="dashed")
         return ax
+    
+    def plot1d(result, calibrant=None, label=None, ax=None):
+        """
+        Display the powder diffraction pattern
+
+        Parameters
+        ----------
+        result : np.ndarray
+            Powder diffraction pattern
+        calibrant : Calibrant
+            Calibrant object
+        label : str
+            Name of the curve
+        ax : plt.Axes
+            Matplotlib axes
+        """
+        from matplotlib import lines
+
+        if ax is None:
+            _fig, ax = plt.subplots()
+
+        try:
+            unit = result.unit
+        except:
+            unit = None
+        if len(result) == 3:
+            ax.errorbar(*result, label=label)
+        else:
+            ax.plot(*result, label=label)
+
+        if label:
+            ax.legend()
+        if calibrant and unit:
+            x_values = calibrant.get_peaks(unit)
+            if x_values is not None:
+                for x in x_values:
+                    line = lines.Line2D([x, x], ax.axis()[2:4],
+                                        color='red', linestyle='--', linewidth=0.5)
+                    ax.add_line(line)
+
+        ax.set_title("Radial Profile")
+        if unit:
+            ax.set_xlabel(unit.label)
+        ax.set_ylabel("Intensity")
 
     def visualize_results(self, powder, bo_history, detector, params, plot=''):
         """
@@ -730,7 +764,7 @@ class BayesGeomOpt:
         ax1 = plt.subplot2grid((nrow, ncol), (irow, icol))
         scores = [bo_history[key]['score'] for key in bo_history.keys()]
         ax1.plot(np.maximum.accumulate(scores))
-        ax1.set_xticks(np.arange(len(scores), step=5))
+        ax1.set_xticks(np.arange(len(scores), step=20))
         ax1.set_xlabel('Iteration')
         ax1.set_ylabel('Best score so far')
         ax1.set_title('Convergence Plot')
@@ -740,7 +774,7 @@ class BayesGeomOpt:
         ax2 = plt.subplot2grid((nrow, ncol), (irow, icol), colspan=ncol-icol)
         ai = AzimuthalIntegrator(dist=params[0], detector=detector, wavelength=self.calibrant.wavelength)
         res = ai.integrate1d(powder, 1000)
-        jupyter.plot1d(res, calibrant=self.calibrant, label='Radial Profile', ax=ax2)
+        self.plot1d(res, calibrant=self.calibrant, label='Radial Profile', ax=ax2)
         irow += 1
 
         # Plotting stacked powder
