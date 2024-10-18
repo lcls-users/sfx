@@ -675,7 +675,7 @@ class PyFAIToCrystFEL:
             params = self.params
         cos_rot1 = np.cos(params[3])
         cos_rot2 = np.cos(params[4])
-        z_offset = -params[0]*(1 + 1/(cos_rot1*cos_rot2))
+        z_offset = params[0]*(2/(cos_rot1*cos_rot2))
         return z_offset
     
     def scale_to_µm(self, x, y, z):

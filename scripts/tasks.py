@@ -284,8 +284,8 @@ def bayes_pyFAI_geom(config):
         if geom_opt.rank == 0:
             logger.warning(f"Refined PONI distance in m: {geom_opt.params[0]:.2e}")
             logger.warning(f"Refined detector PONI in m: {geom_opt.params[1]:.2e}, {geom_opt.params[2]:.2e}")
-            logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.params[3]:.4e}, \u03B8y = {geom_opt.params[4]:.4e}, \u03B8z = {geom_opt.params[5]:.4e}")
-            logger.warning(f"Final score: {geom_opt.residuals}")
+            logger.warning(f"Refined detector rotations in rad: \u03B8x = {geom_opt.params[3]:.2e}, \u03B8y = {geom_opt.params[4]:.2e}, \u03B8z = {geom_opt.params[5]:.2e}")
+            logger.warning(f"Final score: {geom_opt.residuals:.2e}")
             logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'r{setup.run:04}.geom')}")
             PyFAIToCrystFEL(detector=geom_opt.detector, params=geom_opt.params, psana_file=in_file, out_file=in_file.replace("0-end.data", f"r{setup.run:04}.geom"))
             logger.warning(f"Saving geometry to {in_file.replace('0-end.data', f'{setup.run}-end.data')}")
@@ -293,7 +293,6 @@ def bayes_pyFAI_geom(config):
             psana_to_pyfai = PsanaToPyFAI(in_file.replace("0-end.data", f"{setup.run}-end.data"), det_type=setup.det_type)
             detector = psana_to_pyfai.detector
             plot = f'{setup.root_dir}/figs/bayes_opt/bayes_opt_geom_r{setup.run:04}.png'
-            logger.warning(f'Printing for debug {geom_opt.bo_history.keys()}')
             geom_opt.visualize_results(powder=geom_opt.powder_img, bo_history=geom_opt.bo_history, detector=detector, params=geom_opt.params, plot=plot)
             logger.debug("Done!")
     logger.warning(f"Total duration: {task_durations['total duration'][0]} seconds")
