@@ -265,6 +265,7 @@ class BayesGeomOpt:
         calibrant,
     ):
         self.diagnostics = RunDiagnostics(exp, run, det_type=det_type)
+        self.det_type = det_type.lower()
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
@@ -354,6 +355,7 @@ class BayesGeomOpt:
     def minimal_intensity(self, Imin):
         """
         Define minimal intensity for control point extraction
+        Note: this is a heuristic that has been found to work well but may need some tuning.
 
         Parameters
         ----------
@@ -361,7 +363,11 @@ class BayesGeomOpt:
             Minimum intensity to use for control point extraction based on photon energy or max intensity
         """
         if type(Imin) == str:
-            Imin = np.max(self.powder_img) * 0.01
+            if 'rayonix' not in self.det_type: 
+                Imin = np.max(self.powder_img) * 0.01
+            else:
+                self.powder_img = self.powder_img[self.powder_img > 1e3]
+                Imin = np.max(self.powder_img) * 0.01
         else:
             Imin = Imin * self.photon_energy
         self.Imin = Imin
