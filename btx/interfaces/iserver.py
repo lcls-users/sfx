@@ -58,16 +58,16 @@ def worker_process(server_socket):
 
             timestamps = timestamp.__dict__
             fiducial,nanoseconds,seconds,time = timestamps['fiducial'],timestamps['nanoseconds'],timestamps['seconds'],timestamps['time']
-            
+
             response_data = json.dumps({
                 'name': shm.name,
                 'shape': data.shape,
                 'dtype': str(data.dtype),
                 'timestamp': str(timestamp),
-                'fiducial': fiducial,
-                'nanoseconds': nanoseconds,
-                'seconds': seconds,
-                'time': time,
+                'fiducial': str(fiducial),
+                'nanoseconds': str(nanoseconds),
+                'seconds': str(seconds),
+                'time': str(time),
             })
 
             # Send response with shared memory details
