@@ -63,7 +63,6 @@ def worker_process(server_socket):
                 'dtype': str(data.dtype),
                 'timestamp': str(timestamp),
                 'type_timestamp': str(type(timestamp)),
-                'dict_timestamp': str(timestamp.__dict__),
             })
 
             # Send response with shared memory details
