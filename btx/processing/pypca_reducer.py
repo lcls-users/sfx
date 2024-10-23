@@ -308,8 +308,8 @@ if __name__ == "__main__":
 
                     for batch in dataloader_iter:
                         current_loading_batch.append(batch)
-                        print(np.array(batch).shape,flush=True)
-                    
+                        print(np.array(batch[0]).shape,flush=True)
+                        print(batch[1],flush=True)                    
                         if num_images_seen + len(current_loading_batch) >= num_images_to_add and current_loading_batch != []:
                             last_batch = True
                             break
