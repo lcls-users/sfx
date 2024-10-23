@@ -59,6 +59,7 @@ class IPCRemotePsanaDataset(Dataset):
                 'detector_name': detector_name,
                 'event'        : event,
                 'mode'         : 'calib',
+                'get_timestamp': True,
             })
             sock.sendall(request_data.encode('utf-8'))
 
@@ -70,6 +71,7 @@ class IPCRemotePsanaDataset(Dataset):
             shm_name = response_json['name']
             shape    = response_json['shape']
             dtype    = np.dtype(response_json['dtype'])
+            timestamp = response_json['timestamp']
 
             # Initialize shared memory outside of try block to ensure it's in scope for finally block
             shm = None
@@ -79,7 +81,7 @@ class IPCRemotePsanaDataset(Dataset):
                 data_array = np.ndarray(shape, dtype=dtype, buffer=shm.buf)
 
                 # Convert to numpy array (this creates a copy of the data)
-                result = np.array(data_array)
+                result = np.array(data_array), timestamp
             finally:
                 # Ensure shared memory is closed even if an exception occurs
                 if shm:
@@ -285,6 +287,8 @@ if __name__ == "__main__":
     V = data['V']
     mu = data['mu']
 
+    timestamps_list = []
+
     last_batch = False
     projected_images = [[] for i in range(num_gpus)]
     with Pool(processes=num_gpus) as pool:
@@ -304,19 +308,27 @@ if __name__ == "__main__":
                     dataloader_iter = iter(dataloader)
 
                     for batch in dataloader_iter:
-                        current_loading_batch.append(batch)
+                        images, timestamps = zip(*batch)
+                        current_loading_batch.extend(images)
+                        timestamps_list.extend(timestamps)
+
                         if num_images_seen + len(current_loading_batch) >= num_images_to_add and current_loading_batch != []:
                             last_batch = True
                             break
 
-                    current_loading_batch = np.concatenate(current_loading_batch, axis=0)
+                    #current_loading_batch = np.concatenate(current_loading_batch, axis=0)
+                    current_loading_batch = np.array(current_loading_batch)
+
+                    print(current_loading_batch.shape,flush=True)
+                    print(timestamps_list,flush=True)
+                    
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
                     num_images_seen += current_len
                     print(f"Loaded {event+current_len} images from run {run}.",flush=True)
                     print("Number of images seen:",num_images_seen,flush=True)
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
-
+        
                     print(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}",flush=True)
 
                     #Split the images into batches for each GPU

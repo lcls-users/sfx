@@ -425,6 +425,9 @@ class PsanaImg:
         img  = data[int(id_panel)] if id_panel is not None else data
 
         return img
+    
+    def get_timestamp(self, event_num):
+        return self.timestamps[event_num]
 
 
     def assemble(self, multipanel = None, mode = "image", fake_event_num = 0):

@@ -41,10 +41,16 @@ def worker_process(server_socket):
             detector_name = request_data.get('detector_name')
             event         = request_data.get('event')
             mode          = request_data.get('mode')
+            get_timestamp = request_data.get('get_timestamp')
 
             # Fetch psana image data
             psana_img = get_psana_img(exp, run, access_mode, detector_name)
             data = psana_img.get(event, None, mode)
+
+            if get_timestamp not in [None, False]:
+                timestamp = psana_img.get_timestamp(event)
+            else:
+                timestamp = None         
 
             if data is None:
                 data = np.full((16, 352, 384), np.nan, dtype=np.float32) # Return a dummy array if data is None, shape is based on observation and doesn't adapt to all images
@@ -57,7 +63,8 @@ def worker_process(server_socket):
             response_data = json.dumps({
                 'name': shm.name,
                 'shape': data.shape,
-                'dtype': str(data.dtype)
+                'dtype': str(data.dtype),
+                'timestamp': timestamp
             })
             # Send response with shared memory details
             connection.sendall(response_data.encode('utf-8'))
