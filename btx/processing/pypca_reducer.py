@@ -319,6 +319,7 @@ if __name__ == "__main__":
 
                     current_loading_batch = np.concatenate(current_loading_batch, axis=0)
                     current_timestamps = np.array(chain.from_iterable(current_timestamps))
+                    print(current_timestamps)
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
                     num_images_seen += current_len
