@@ -3,7 +3,7 @@ from typing import Dict, Any, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from btx.processing.types import MakeHistogramInput, MakeHistogramOutput
+from btx.processing.btx_types import MakeHistogramInput, MakeHistogramOutput
 
 class MakeHistogram:
     """Generate histograms from XPP data."""
