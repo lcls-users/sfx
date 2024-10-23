@@ -22,6 +22,8 @@ import h5py
 import csv
 import ast
 
+from itertools import chain
+
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
@@ -316,14 +318,14 @@ if __name__ == "__main__":
                             break
 
                     current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-
+                    current_timestamps = np.array(chain.from_iterable(current_timestamps))
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
                     num_images_seen += current_len
                     print(f"Loaded {event+current_len} images from run {run}.",flush=True)
                     print("Number of images seen:",num_images_seen,flush=True)
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
-                    print(current_timestamps)
+                    current_timestamps = current_timestamps[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
                     timestamps_list.append(current_timestamps)
                     print(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}",flush=True)
 
