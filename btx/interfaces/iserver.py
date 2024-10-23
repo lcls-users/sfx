@@ -56,16 +56,16 @@ def worker_process(server_socket):
             shared_array = np.ndarray(data.shape, dtype=data.dtype, buffer=shm.buf)
             shared_array[:] = data
 
-            timestamps = timestamp.__dict__
-            dict_to_send = {}
-            for key in timestamps:
-                dict_to_send[key] = str(timestamps[key])
-            
-            dict_to_send['name'] = shm.name
-            dict_to_send['shape'] = data.shape
-            dict_to_send['dtype'] = str(data.dtype)
 
-            response_data = json.dumps({dict_to_send})
+            response_data = json.dumps({
+                "shm_name": shm.name,
+                "shape": data.shape,
+                "dtype": str(data.dtype),
+                "fiducial": int(timestamp.fiducial()),
+                "time": int(timestamp.time()),
+                "nanoseconds": int(timestamp.nanoseconds()),
+                "seconds": int(timestamp.seconds()),
+            })
 
             # Send response with shared memory details
             connection.sendall(response_data.encode('utf-8'))
