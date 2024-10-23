@@ -73,6 +73,8 @@ class IPCRemotePsanaDataset(Dataset):
             shape    = response_json['shape']
             dtype    = np.dtype(response_json['dtype'])
             timestamp = response_json['timestamp']
+            type_timestamps = response_json['type_timestamps']
+            print(type_timestamps)
 
             # Initialize shared memory outside of try block to ensure it's in scope for finally block
             shm = None
