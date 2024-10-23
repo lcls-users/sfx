@@ -3,7 +3,7 @@ from typing import Dict, Any, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from btx.processing.types import LoadDataInput, LoadDataOutput
+from btx.processing.btx_types import LoadDataInput, LoadDataOutput
 
 class LoadData:
     """Load and preprocess XPP data."""
