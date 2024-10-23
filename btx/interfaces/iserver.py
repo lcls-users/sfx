@@ -60,7 +60,7 @@ def worker_process(server_socket):
                 'name': shm.name,
                 'shape': data.shape,
                 'dtype': str(data.dtype),
-                'timestamp': timestamp
+                'timestamp': str(timestamp)
             })
 
             # Send response with shared memory details
