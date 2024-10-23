@@ -62,7 +62,7 @@ def worker_process(server_socket):
                 'shape': data.shape,
                 'dtype': str(data.dtype),
                 'timestamp': str(timestamp),
-                'type_timestamp': type(timestamp),
+                'type_timestamp': str(type(timestamp)),
                 'dict_timestamp': str(timestamp.__dict__),
             })
 
