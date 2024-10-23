@@ -56,13 +56,18 @@ def worker_process(server_socket):
             shared_array = np.ndarray(data.shape, dtype=data.dtype, buffer=shm.buf)
             shared_array[:] = data
 
-
+            timestamps = timestamp.__dict__
+            fiducial,nanoseconds,seconds,time = timestamps['fiducial'],timestamps['nanoseconds'],timestamps['seconds'],timestamps['time']
+            
             response_data = json.dumps({
                 'name': shm.name,
                 'shape': data.shape,
                 'dtype': str(data.dtype),
                 'timestamp': str(timestamp),
-                'type_timestamp': str(type(timestamp)),
+                'fiducial': fiducial,
+                'nanoseconds': nanoseconds,
+                'seconds': seconds,
+                'time': time,
             })
 
             # Send response with shared memory details
