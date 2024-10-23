@@ -283,7 +283,7 @@ class BayesGeomOpt:
         return ei
 
     @staticmethod
-    def upper_confidence_bound(X, gp_model, beta=2):
+    def upper_confidence_bound(X, gp_model, best_y=None, beta=1.96):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         ucb = y_pred + beta * y_std
         return ucb
@@ -296,7 +296,7 @@ class BayesGeomOpt:
         return pi
     
     @staticmethod
-    def contextual_improvement(X, gp_model, best_y):
+    def contextual_improvement(X, gp_model, best_y, hyperparam=None):
         y_pred, y_std = gp_model.predict(X, return_std=True)
         cv = np.mean(y_std**2) / best_y
         z = (y_pred - best_y + cv) / y_std 
@@ -459,27 +459,26 @@ class BayesGeomOpt:
         visited_idx = list([])
 
         if af == "ucb":
-            beta = 2
+            if hyperparam is None:
+                hyperparam = {'beta': 1.96}
+            hyperparam = hyperparam['beta']
             af = self.upper_confidence_bound
         elif af == "ei":
-            epsilon = 0
+            if hyperparam is None:
+                hyperparam = {'epsilon': 0}
+            hyperparam = hyperparam['epsilon']
             af = self.expected_improvement
         elif af == "pi":
-            epsilon = 0
+            if hyperparam is None:
+                hyperparam = {'epsilon': 0}
+            hyperparam = hyperparam['epsilon']
             af = self.probability_of_improvement
         elif af == "ci":
             af = self.contextual_improvement
 
         for i in range(num_iterations):
             # 1. Generate the Acquisition Function values using the Gaussian Process Regressor
-            if af == self.upper_confidence_bound:
-                af_values = af(X_norm, gp_model, beta)
-            elif af == self.expected_improvement:
-                af_values = af(X_norm, gp_model, best_score, epsilon)
-            elif af == self.probability_of_improvement:
-                af_values = af(X_norm, gp_model, best_score, epsilon)
-            elif af == self.contextual_improvement:
-                af_values = af(X_norm, gp_model, best_score)   
+            af_values = af(X_norm, gp_model, best_score, hyperparam)
             af_values[visited_idx] = -np.inf         
             
             # 2. Select the next set of parameters based on the Acquisition Function
