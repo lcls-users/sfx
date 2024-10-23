@@ -68,16 +68,15 @@ class IPCRemotePsanaDataset(Dataset):
             response_data = sock.recv(4096).decode('utf-8')
             response_json = json.loads(response_data)
 
+            timestamp = []
             # Use the JSON data to access the shared memory
             shm_name = response_json['name']
             shape    = response_json['shape']
             dtype    = np.dtype(response_json['dtype'])
-            timestamp = response_json['timestamp']
-            fiducial = response_json['fiducial']
-            nanoseconds = response_json['nanoseconds']
-            seconds = response_json['seconds']
-            time = response_json['time']
-            timestamp = (fiducial,nanoseconds,seconds,time)
+            for keys in response_json:
+                if keys != 'name' and keys != 'shape' and keys != 'dtype':
+                    timestamp.append(ast.literal_eval(keys))
+                    break
 
             print(timestamp)
 
