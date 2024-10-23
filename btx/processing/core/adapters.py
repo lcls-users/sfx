@@ -84,6 +84,10 @@ class TaskAdapter(Task, Generic[InputT, OutputT]):
         sig = inspect.signature(self.task_instance.run)
         params = list(sig.parameters.values())
         
+        print(f"Class signature: {inspect.signature(type(self.task_instance).run)}")
+        print(f"Instance signature: {inspect.signature(self.task_instance.run)}")
+        print(f"Parameters found: {[p.name for p in params]}")
+        
         # Must have self and input_data parameter
         if len(params) != 2:  # self and input_data
             raise AdapterValidationError(
