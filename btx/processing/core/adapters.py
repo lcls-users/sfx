@@ -110,14 +110,14 @@ class TaskAdapter(Task, Generic[InputT, OutputT]):
             print(f"Plot diagnostics class signature: {inspect.signature(type(self.task_instance).plot_diagnostics)}")
             print(f"Plot diagnostics instance signature: {inspect.signature(self.task_instance.plot_diagnostics)}")
             print(f"Plot diagnostics parameters found: {[p.name for p in diag_params]}")
-            if len(diag_params) != 3:  # self, output, save_dir
+            if len(diag_params) != 2:  # output, save_dir (self is implicit)
                 raise AdapterValidationError(
                     f"Task {self.name} plot_diagnostics method must have exactly "
-                    f"three parameters (got {len(diag_params)})"
+                    f"two parameters (got {len(diag_params)})"
                 )
             
             # Validate parameter names
-            expected_names = ['self', 'output', 'save_dir']
+            expected_names = ['output', 'save_dir']
             actual_names = [p.name for p in diag_params]
             if actual_names != expected_names:
                 raise AdapterValidationError(
