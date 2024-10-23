@@ -57,18 +57,15 @@ def worker_process(server_socket):
             shared_array[:] = data
 
             timestamps = timestamp.__dict__
-            fiducial,nanoseconds,seconds,time = timestamps['fiducial'],timestamps['nanoseconds'],timestamps['seconds'],timestamps['time']
+            dict_to_send = {}
+            for key in timestamps:
+                dict_to_send[key] = str(timestamps[key])
+            
+            dict_to_send['name'] = shm.name
+            dict_to_send['shape'] = data.shape
+            dict_to_send['dtype'] = str(data.dtype)
 
-            response_data = json.dumps({
-                'name': shm.name,
-                'shape': data.shape,
-                'dtype': str(data.dtype),
-                'timestamp': str(timestamp),
-                'fiducial': str(fiducial),
-                'nanoseconds': str(nanoseconds),
-                'seconds': str(seconds),
-                'time': str(time),
-            })
+            response_data = json.dumps({dict_to_send})
 
             # Send response with shared memory details
             connection.sendall(response_data.encode('utf-8'))
