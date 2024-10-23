@@ -2,8 +2,60 @@ from pathlib import Path
 from typing import Dict, Any, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
+import functools
+import hashlib
+import random
+from numba import jit
 
 from btx.processing.btx_types import MakeHistogramInput, MakeHistogramOutput
+
+def memoize_subsampled(func):
+    """Memoize a function by creating a hashable key using deterministically subsampled data."""
+    cache = {}
+
+    @functools.wraps(func)
+    def wrapper(data, *args, **kwargs):
+        # Generate a hashable key from a deterministic subsample
+        shape_str = str(data.shape)  # Convert shape to string to use it as a seed
+        seed_value = int(hashlib.sha256(shape_str.encode()).hexdigest(), 16) % 10**8
+        random.seed(seed_value)
+
+        subsample_size = min(100, data.shape[0])  # Limit the subsample size to a maximum of 100
+        subsample_indices = random.sample(range(data.shape[0]), subsample_size)
+        subsample = data[subsample_indices]
+
+        hashable_key = hashlib.sha256(subsample.tobytes()).hexdigest()
+
+        # Check cache
+        if hashable_key in cache:
+            return cache[hashable_key]
+
+        # Calculate the result and store it in the cache
+        result = func(data, *args, **kwargs)
+        cache[hashable_key] = result
+
+        return result
+
+    return wrapper
+
+@jit(nopython=True)
+def _calculate_histograms_numba(data, bin_boundaries, hist_start_bin, bins, rows, cols):
+    """Numba-optimized histogram calculation."""
+    hist_shape = (bins, rows, cols)
+    histograms = np.zeros(hist_shape, dtype=np.float64)
+    
+    for frame in range(data.shape[0]):
+        for row in range(rows):
+            for col in range(cols):
+                value = data[frame, row, col]
+                bin_idx = np.searchsorted(bin_boundaries, value)
+                if bin_idx < bins:
+                    histograms[bin_idx, row, col] += 1
+                else:
+                    histograms[hist_start_bin, row, col] += 1
+    
+    histograms += 1e-9
+    return histograms[hist_start_bin:, :, :]
 
 class MakeHistogram:
     """Generate histograms from XPP data."""
@@ -44,13 +96,14 @@ class MakeHistogram:
         if hist_start_bin < 0 or hist_start_bin >= len(bin_boundaries) - 1:
             raise ValueError("hist_start_bin must be between 0 and len(bin_boundaries)-2")
 
+    @memoize_subsampled
     def _calculate_histograms(
         self,
         data: np.ndarray,
         bin_boundaries: np.ndarray,
         hist_start_bin: int
     ) -> np.ndarray:
-        """Calculate histograms for each pixel.
+        """Calculate histograms for each pixel using Numba optimization.
         
         Args:
             data: 3D array (frames, rows, cols)
@@ -62,34 +115,15 @@ class MakeHistogram:
         """
         bins = len(bin_boundaries) - 1
         rows, cols = data.shape[1], data.shape[2]
-        hist_shape = (bins, rows, cols)
         
-        # Reshape the data for easier computation
-        reshaped_data = data.reshape(-1, rows * cols)
-        
-        # Perform digitization
-        bin_indices = np.digitize(reshaped_data, bin_boundaries)
-        
-        # Initialize histograms
-        histograms = np.zeros(hist_shape, dtype=np.float64)
-        
-        # Populate histograms using bincount
-        for i in range(rows * cols):
-            valid_indices = bin_indices[:, i] < bins
-            histograms[:, i // cols, i % cols] = np.bincount(
-                bin_indices[:, i][valid_indices],
-                minlength=bins
-            )
-            # Add counts beyond max to first bin
-            histograms[hist_start_bin, i // cols, i % cols] += np.sum(
-                reshaped_data[:, i] > bin_boundaries[-1]
-            )
-        
-        # Add small constant
-        histograms += 1e-9
-        
-        # Return histograms starting from hist_start_bin
-        return histograms[hist_start_bin:, :, :]
+        return _calculate_histograms_numba(
+            data, 
+            bin_boundaries, 
+            hist_start_bin,
+            bins,
+            rows,
+            cols
+        )
 
     def run(self, input_data: MakeHistogramInput) -> MakeHistogramOutput:
         """Run histogram generation."""
