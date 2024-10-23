@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, NamedTuple
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -7,8 +7,12 @@ import matplotlib.pyplot as plt
 from btx.processing.types import (
     PumpProbeAnalysisInput,
     PumpProbeAnalysisOutput,
-    DelayGroup
 )
+
+class DelayData(NamedTuple):
+    """Container for frames and I0 values at a specific delay."""
+    frames: np.ndarray
+    I0: np.ndarray
 
 class PumpProbeAnalysis:
     """Analyze pump-probe time series data."""
@@ -42,124 +46,119 @@ class PumpProbeAnalysis:
         if not isinstance(sig_level, (int, float)) or not 0 < sig_level < 1:
             raise ValueError("significance_level must be between 0 and 1")
 
-    def _group_by_delay(self, input_data: PumpProbeAnalysisInput) -> List[DelayGroup]:
-        """Group frames by delay value using binning."""
+    def _group_by_delay(
+        self, 
+        input_data: PumpProbeAnalysisInput
+    ) -> Tuple[Dict[float, DelayData], Dict[float, DelayData]]:
+        """Group frames by delay value.
+        
+        Returns:
+            Tuple of (laser_on_groups, laser_off_groups) dictionaries mapping 
+            delays to frame data
+        """
         min_count = self.config['pump_probe_analysis']['min_count']
         delays = input_data.load_data_output.binned_delays
         
-        # Define bins with reasonable width (e.g., 1 ps)
-        bin_width = 1.0  # ps
-        min_delay = np.floor(np.min(delays))
-        max_delay = np.ceil(np.max(delays))
-        bin_edges = np.arange(min_delay - bin_width/2, max_delay + bin_width, bin_width)
-        bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
+        # Use the unique binned delays directly - they were already properly binned in LoadData
+        unique_delays = np.unique(delays)
         
         print(f"\nDelay grouping diagnostics:")
-        print(f"Delay range: {min_delay:.1f} to {max_delay:.1f} ps")
-        print(f"Bin width: {bin_width} ps")
-        print(f"Number of bins: {len(bin_centers)}")
+        print(f"Delay range: {delays.min():.1f} to {delays.max():.1f} ps")
+        print(f"Number of bins: {len(unique_delays)}")
         
-        # Plot delay distribution
-        plt.figure(figsize=(10, 6))
-        plt.hist(delays, bins=50, alpha=0.5, label='All delays')
-        plt.hist(delays[input_data.load_data_output.laser_on_mask], bins=50, alpha=0.5, label='Laser on')
-        plt.hist(delays[input_data.load_data_output.laser_off_mask], bins=50, alpha=0.5, label='Laser off')
-        for edge in bin_edges:
-            plt.axvline(edge, color='k', linestyle='--', alpha=0.2)
-        plt.xlabel('Delay (ps)')
-        plt.ylabel('Count')
-        plt.title('Delay Distribution')
-        plt.legend()
-        plt.grid(True)
+        # Group frames by bin center
+        stacks_on = {}
+        stacks_off = {}
         
-        # Save diagnostic plot
-        save_dir = Path("processing/temp/diagnostic_plots")
-        save_dir.mkdir(parents=True, exist_ok=True)
-        plt.savefig(save_dir / 'delay_distribution.png')
-        plt.close()
-        
-        delay_groups = []
-        for bin_center, left_edge, right_edge in zip(bin_centers, bin_edges[:-1], bin_edges[1:]):
-            # Find frames in this bin
-            bin_mask = (delays >= left_edge) & (delays < right_edge)
+        for delay in unique_delays:
+            # Find frames matching this delay exactly
+            delay_mask = delays == delay
             
             # Split into on/off
-            on_mask = bin_mask & input_data.load_data_output.laser_on_mask
-            off_mask = bin_mask & input_data.load_data_output.laser_off_mask
+            on_mask = delay_mask & input_data.load_data_output.laser_on_mask
+            off_mask = delay_mask & input_data.load_data_output.laser_off_mask
             
             n_on = np.sum(on_mask)
             n_off = np.sum(off_mask)
             
-            print(f"Delay bin [{left_edge:.1f}, {right_edge:.1f}) ps: {n_on} on frames, {n_off} off frames")
+            print(f"Delay {delay:.1f} ps: {n_on} on frames, {n_off} off frames")
             
             # Only include groups with sufficient frames
             if n_on >= min_count and n_off >= min_count:
-                group = DelayGroup(
-                    delay=bin_center,
-                    on_frames=input_data.load_data_output.data[on_mask],
-                    off_frames=input_data.load_data_output.data[off_mask],
-                    on_I0=input_data.load_data_output.I0[on_mask],
-                    off_I0=input_data.load_data_output.I0[off_mask]
+                stacks_on[delay] = DelayData(
+                    frames=input_data.load_data_output.data[on_mask],
+                    I0=input_data.load_data_output.I0[on_mask]
                 )
-                delay_groups.append(group)
+                stacks_off[delay] = DelayData(
+                    frames=input_data.load_data_output.data[off_mask],
+                    I0=input_data.load_data_output.I0[off_mask]
+                )
         
-        print(f"Created {len(delay_groups)} delay groups meeting minimum count requirement")
+        print(f"Created {len(stacks_on)} delay groups meeting minimum count requirement")
         
-        if not delay_groups:
+        if not stacks_on:
             plt.figure(figsize=(10, 6))
             plt.hist(delays, bins=100)
             plt.xlabel('Delay (ps)')
             plt.ylabel('Count')
             plt.title('Delay Distribution - Empty Groups')
+            save_dir = Path("processing/temp/diagnostic_plots")
+            save_dir.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_dir / 'delay_distribution_empty.png')
             plt.close()
             raise ValueError(
                 f"No delay groups met the minimum frame count requirement of {min_count}.\n"
-                f"Check delay_distribution.png and delay_distribution_empty.png for diagnostics."
+                f"Check delay_distribution_empty.png for diagnostics."
             )
         
-        return sorted(delay_groups, key=lambda x: x.delay)
+        return stacks_on, stacks_off
 
     def _calculate_signals(
         self,
         frames: np.ndarray,
-        I0: np.ndarray,
         signal_mask: np.ndarray,
         bg_mask: np.ndarray
-    ) -> Tuple[float, float]:
-        """Calculate normalized signal and uncertainty for a group of frames."""
-        # Sum over spatial dimensions for each frame
-        signal_sum = np.sum(frames * signal_mask[None, :, :], axis=(1, 2))
-        bg_sum = np.sum(frames * bg_mask[None, :, :], axis=(1, 2))
+    ) -> Tuple[float, float, float]:
+        """Calculate signal, background and total variance for a group of frames.
+        
+        For each frame:
+        1. Sum over signal region
+        2. Sum over background region (scaled)
+        3. Calculate mean and standard error across frames
+        
+        Args:
+            frames: Array of frames
+            signal_mask: Signal region mask
+            bg_mask: Background region mask
+            
+        Returns:
+            Tuple of (signal, background, total_variance)
+        """
+        # Calculate per-frame sums
+        signal_sums = np.sum(frames * signal_mask[None, :, :], axis=(1,2))
+        bg_sums = np.sum(frames * bg_mask[None, :, :], axis=(1,2))
         
         # Scale background by mask sizes
         scale_factor = np.sum(signal_mask) / np.sum(bg_mask)
-        bg_sum *= scale_factor
+        bg_sums *= scale_factor
         
-        # Normalize by I0
-        norm_signal = signal_sum / I0
-        norm_bg = bg_sum / I0
+        # Calculate means and standard errors
+        signal_mean = np.mean(signal_sums)
+        bg_mean = np.mean(bg_sums)
         
-        # Calculate means
-        mean_signal = np.mean(norm_signal)
-        mean_bg = np.mean(norm_bg)
+        # Use standard error of the mean for each component
+        n_frames = len(frames)
+        signal_var = np.var(signal_sums, ddof=1) / n_frames  # ddof=1 for sample variance
+        bg_var = np.var(bg_sums, ddof=1) / n_frames
         
-        # Calculate standard errors
-        signal_err = np.std(norm_signal) / np.sqrt(len(norm_signal))
-        bg_err = np.std(norm_bg) / np.sqrt(len(norm_bg))
-        
-        # Final signal and error
-        final_signal = mean_signal - mean_bg
-        final_err = np.sqrt(signal_err**2 + bg_err**2)
-        
-        return final_signal, final_err
+        return signal_mean, bg_mean, signal_var + bg_var
 
     def run(self, input_data: PumpProbeAnalysisInput) -> PumpProbeAnalysisOutput:
         """Run pump-probe analysis."""
         # Group frames by delay
-        delay_groups = self._group_by_delay(input_data)
+        stacks_on, stacks_off = self._group_by_delay(input_data)
         
-        if not delay_groups:
+        if not stacks_on:
             raise ValueError("No delay groups met the minimum frame count requirement")
         
         # Process each delay group
@@ -173,22 +172,35 @@ class PumpProbeAnalysis:
         signal_mask = input_data.masks_output.signal_mask
         bg_mask = input_data.masks_output.background_mask
         
-        for group in delay_groups:
-            delays.append(group.delay)
-            n_frames[group.delay] = (len(group.on_frames), len(group.off_frames))
+        for delay in sorted(stacks_on.keys()):
+            # Get frame stacks
+            on_data = stacks_on[delay]
+            off_data = stacks_off[delay]
             
-            # Calculate signals
-            on_signal, on_std = self._calculate_signals(
-                group.on_frames, group.on_I0, signal_mask, bg_mask
+            # Store frame counts
+            n_frames[delay] = (len(on_data.frames), len(off_data.frames))
+            
+            # Calculate signals and background
+            signal_on, bg_on, var_on = self._calculate_signals(
+                on_data.frames, signal_mask, bg_mask
             )
-            off_signal, off_std = self._calculate_signals(
-                group.off_frames, group.off_I0, signal_mask, bg_mask
+            signal_off, bg_off, var_off = self._calculate_signals(
+                off_data.frames, signal_mask, bg_mask
             )
             
-            signals_on.append(on_signal)
-            signals_off.append(off_signal)
-            std_devs_on.append(on_std)
-            std_devs_off.append(off_std)
+            # Normalize by I0 after background subtraction
+            norm_signal_on = (signal_on - bg_on) / np.mean(on_data.I0)
+            norm_signal_off = (signal_off - bg_off) / np.mean(off_data.I0)
+            
+            # Propagate errors through I0 normalization
+            std_dev_on = np.sqrt(var_on) / np.mean(on_data.I0)
+            std_dev_off = np.sqrt(var_off) / np.mean(off_data.I0)
+            
+            delays.append(delay)
+            signals_on.append(norm_signal_on)
+            signals_off.append(norm_signal_off)
+            std_devs_on.append(std_dev_on)
+            std_devs_off.append(std_dev_off)
         
         # Convert to arrays
         delays = np.array(delays)
@@ -203,12 +215,12 @@ class PumpProbeAnalysis:
             std_devs_on, std_devs_off
         )
         
-        # Calculate mean I0 values
+        # Calculate mean I0 values across all delays
         mean_I0_on = np.mean([
-            np.mean(group.on_I0) for group in delay_groups
+            np.mean(stacks_on[delay].I0) for delay in delays
         ])
         mean_I0_off = np.mean([
-            np.mean(group.off_I0) for group in delay_groups
+            np.mean(stacks_off[delay].I0) for delay in delays
         ])
         
         return PumpProbeAnalysisOutput(
@@ -224,7 +236,6 @@ class PumpProbeAnalysis:
             n_frames_per_delay=n_frames
         )
 
-
     def _calculate_p_values(
         self,
         signals_on: np.ndarray,
@@ -232,11 +243,12 @@ class PumpProbeAnalysis:
         std_devs_on: np.ndarray,
         std_devs_off: np.ndarray
     ) -> np.ndarray:
-        """Calculate p-values comparing on/off signals."""
-        delta_signals = np.abs(signals_on - signals_off)
+        """Calculate p-values comparing on/off signals using two-tailed t-test."""
+        delta_signals = signals_on - signals_off  # Note: no abs() here for proper two-sided test
         combined_stds = np.sqrt(std_devs_on**2 + std_devs_off**2)
         z_scores = delta_signals / combined_stds
-        return 2 * (1 - stats.norm.cdf(z_scores))
+        # Two-tailed test - use absolute z-score
+        return 2 * (1 - stats.norm.cdf(np.abs(z_scores)))
 
     def plot_diagnostics(
         self,
