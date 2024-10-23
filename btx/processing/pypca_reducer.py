@@ -323,7 +323,7 @@ if __name__ == "__main__":
                     print(f"Loaded {event+current_len} images from run {run}.",flush=True)
                     print("Number of images seen:",num_images_seen,flush=True)
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
-                    current_timestamps = np.array(current_timestamps)[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+                    print(current_timestamps)
                     timestamps_list.append(current_timestamps)
                     print(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}",flush=True)
 
