@@ -71,7 +71,6 @@ class IPCRemotePsanaDataset(Dataset):
             shape    = response_json['shape']
             dtype    = np.dtype(response_json['dtype'])
             timestamp = response_json['timestamp']
-            print(timestamp,flush=True)
 
             # Initialize shared memory outside of try block to ensure it's in scope for finally block
             shm = None
@@ -81,7 +80,7 @@ class IPCRemotePsanaDataset(Dataset):
                 data_array = np.ndarray(shape, dtype=dtype, buffer=shm.buf)
 
                 # Convert to numpy array (this creates a copy of the data)
-                result = np.array(data_array), timestamp
+                result = [np.array(data_array), timestamp]
             finally:
                 # Ensure shared memory is closed even if an exception occurs
                 if shm:
@@ -307,20 +306,15 @@ if __name__ == "__main__":
                     dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
                     dataloader_iter = iter(dataloader)
 
-                    print("Checkpoint",flush=True)
-
                     for batch in dataloader_iter:
-                        print(batch,flush=True)
-                        images, timestamps = zip(*batch)
-                        current_loading_batch.extend(images)
-                        timestamps_list.extend(timestamps)
-
+                        current_loading_batch.append(batch)
+                        print(np.array(batch).shape,flush=True)
+                    
                         if num_images_seen + len(current_loading_batch) >= num_images_to_add and current_loading_batch != []:
                             last_batch = True
                             break
 
-                    #current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                    current_loading_batch = np.array(current_loading_batch)
+                    current_loading_batch = np.concatenate(current_loading_batch, axis=0)
 
                     print(current_loading_batch.shape,flush=True)
                     print(timestamps_list,flush=True)
