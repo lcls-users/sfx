@@ -384,7 +384,7 @@ class BayesGeomOpt:
         return scan[self.rank]
 
     @ignore_warnings(category=ConvergenceWarning)
-    def bayes_opt_center(self, powder_img, dist, bounds, n_samples=50, num_iterations=50, af="ucb", prior=True, seed=None):
+    def bayes_opt_center(self, powder_img, dist, bounds, n_samples=50, num_iterations=50, af="ucb", hyperparam=None, prior=True, seed=None):
         """
         Perform Bayesian Optimization on PONI center parameters, for a fixed distance
         
@@ -404,6 +404,8 @@ class BayesGeomOpt:
             Number of iterations for optimization
         af : str
             Acquisition function to use for optimization
+        hyperparam : dict
+            Dictionary of hyperparameters for the acquisition functions
         prior : bool
             Use prior information for optimization
         seed : int
@@ -514,7 +516,7 @@ class BayesGeomOpt:
         result = {'bo_history': bo_history, 'params': params, 'residuals': residuals, 'best_idx': best_idx}
         return result
 
-    def bayes_opt_geom(self, powder, bounds, Imin='max', n_samples=50, num_iterations=50, af="ucb", prior=True, mask=None, seed=None):
+    def bayes_opt_geom(self, powder, bounds, Imin='max', n_samples=50, num_iterations=50, af="ucb", hyperparam=None, prior=True, mask=None, seed=None):
         """
         From guessed initial geometry, optimize the geometry using Bayesian Optimization on pyFAI package
 
@@ -534,6 +536,8 @@ class BayesGeomOpt:
             Number of iterations for optimization
         af : str
             Acquisition function to use for optimization
+        hyperparam : dict
+            Dictionary of hyperparameters for the acquisition functions
         prior : bool
             Use prior information for optimization
         mask : np.ndarray
@@ -558,7 +562,7 @@ class BayesGeomOpt:
         dist = self.comm.scatter(distances, root=0)
         print(f"Rank {self.rank} is working on distance {dist}")
 
-        results = self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, prior, seed)
+        results = self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, hyperparam, prior, seed)
         self.comm.Barrier()
 
         self.scan = {}
