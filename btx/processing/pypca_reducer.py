@@ -307,6 +307,8 @@ if __name__ == "__main__":
                     dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
                     dataloader_iter = iter(dataloader)
 
+                    print("Checkpoint",flush=True)
+
                     for batch in dataloader_iter:
                         images, timestamps = zip(*batch)
                         current_loading_batch.extend(images)
@@ -321,7 +323,7 @@ if __name__ == "__main__":
 
                     print(current_loading_batch.shape,flush=True)
                     print(timestamps_list,flush=True)
-                    
+
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
                     num_images_seen += current_len
