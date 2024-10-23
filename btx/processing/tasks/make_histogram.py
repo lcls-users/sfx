@@ -14,9 +14,9 @@ def memoize_subsampled(func):
     cache = {}
 
     @functools.wraps(func)
-    def wrapper(data, *args, **kwargs):
+    def wrapper(self, data, *args, **kwargs):  # Add 'self' as first parameter
         # Generate a hashable key from a deterministic subsample
-        shape_str = str(data.shape)  # Convert shape to string to use it as a seed
+        shape_str = str(data.shape)  # Now data is the actual array
         seed_value = int(hashlib.sha256(shape_str.encode()).hexdigest(), 16) % 10**8
         random.seed(seed_value)
 
@@ -31,7 +31,7 @@ def memoize_subsampled(func):
             return cache[hashable_key]
 
         # Calculate the result and store it in the cache
-        result = func(data, *args, **kwargs)
+        result = func(self, data, *args, **kwargs)  # Pass self to the original function
         cache[hashable_key] = result
 
         return result
