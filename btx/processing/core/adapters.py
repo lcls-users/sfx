@@ -107,6 +107,9 @@ class TaskAdapter(Task, Generic[InputT, OutputT]):
         if hasattr(self.task_instance, 'plot_diagnostics'):
             diag_sig = inspect.signature(self.task_instance.plot_diagnostics)
             diag_params = list(diag_sig.parameters.values())
+            print(f"Plot diagnostics class signature: {inspect.signature(type(self.task_instance).plot_diagnostics)}")
+            print(f"Plot diagnostics instance signature: {inspect.signature(self.task_instance.plot_diagnostics)}")
+            print(f"Plot diagnostics parameters found: {[p.name for p in diag_params]}")
             if len(diag_params) != 3:  # self, output, save_dir
                 raise AdapterValidationError(
                     f"Task {self.name} plot_diagnostics method must have exactly "
