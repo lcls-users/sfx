@@ -299,6 +299,7 @@ if __name__ == "__main__":
                         last_batch = True
 
                     current_loading_batch = []
+                    current_timestamps = []
                     requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[run-init_run]))]
 
                     server_address = ('localhost', 5000)
@@ -307,17 +308,14 @@ if __name__ == "__main__":
                     dataloader_iter = iter(dataloader)
 
                     for batch in dataloader_iter:
-                        current_loading_batch.append(batch)
-                        print(np.array(batch[0]).shape,flush=True)
-                        print(batch[1],flush=True)                    
+                        current_loading_batch.append(batch[0])
+                        current_timestamps.append(batch[1])
+
                         if num_images_seen + len(current_loading_batch) >= num_images_to_add and current_loading_batch != []:
                             last_batch = True
                             break
 
                     current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-
-                    print(current_loading_batch.shape,flush=True)
-                    print(timestamps_list,flush=True)
 
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
@@ -325,7 +323,8 @@ if __name__ == "__main__":
                     print(f"Loaded {event+current_len} images from run {run}.",flush=True)
                     print("Number of images seen:",num_images_seen,flush=True)
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
-        
+                    current_timestamps = current_timestamps[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
+                    timestamps_list.append(current_timestamps)
                     print(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}",flush=True)
 
                     #Split the images into batches for each GPU
@@ -361,6 +360,7 @@ if __name__ == "__main__":
     output_path = os.path.join(input_path, f"projected_images_{exp}_start_run_{init_run}_num_images_{num_images_to_add}_node_{id_current_node}.h5")
     with h5py.File(output_path, 'w') as f:
         append_to_dataset(f, 'projected_images', projected_images)
+        append_to_dataset(f, 'timestamps', np.concatenate(timestamps_list, axis=0))
     
     print(f"Model saved under the name projected_images_{exp}_start_run_{init_run}_num_images_{num_images_to_add}_node_{id_current_node}.h5",flush=True)
     print("Process finished",flush=True)
