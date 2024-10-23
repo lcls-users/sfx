@@ -59,7 +59,6 @@ class IPCRemotePsanaDataset(Dataset):
                 'detector_name': detector_name,
                 'event'        : event,
                 'mode'         : 'calib',
-                'get_timestamp': True,
             })
             sock.sendall(request_data.encode('utf-8'))
 

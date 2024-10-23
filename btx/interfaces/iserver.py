@@ -41,20 +41,16 @@ def worker_process(server_socket):
             detector_name = request_data.get('detector_name')
             event         = request_data.get('event')
             mode          = request_data.get('mode')
-            get_timestamp = request_data.get('get_timestamp')
 
             # Fetch psana image data
             psana_img = get_psana_img(exp, run, access_mode, detector_name)
             data = psana_img.get(event, None, mode)
-
-            if get_timestamp not in [None, False]:
-                timestamp = psana_img.get_timestamp(event)
-            else:
-                timestamp = None         
+            timestamp = psana_img.get_timestamp(event)      
 
             if data is None:
                 data = np.full((16, 352, 384), np.nan, dtype=np.float32) # Return a dummy array if data is None, shape is based on observation and doesn't adapt to all images
 
+                
             # Keep numpy array in a shared memory
             shm = shared_memory.SharedMemory(create=True, size=data.nbytes)
             shared_array = np.ndarray(data.shape, dtype=data.dtype, buffer=shm.buf)
@@ -66,6 +62,7 @@ def worker_process(server_socket):
                 'dtype': str(data.dtype),
                 'timestamp': timestamp
             })
+
             # Send response with shared memory details
             connection.sendall(response_data.encode('utf-8'))
 
