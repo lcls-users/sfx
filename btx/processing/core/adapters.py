@@ -88,18 +88,18 @@ class TaskAdapter(Task, Generic[InputT, OutputT]):
         print(f"Instance signature: {inspect.signature(self.task_instance.run)}")
         print(f"Parameters found: {[p.name for p in params]}")
         
-        # Must have self and input_data parameter
-        if len(params) != 2:  # self and input_data
+        # Must have input_data parameter (self is implicit)
+        if len(params) != 1:  # just input_data
             raise AdapterValidationError(
-                f"Task {self.name} run method must have exactly two parameters "
+                f"Task {self.name} run method must have exactly one parameter "
                 f"(got {len(params)})"
             )
         
-        # Second parameter (after self) must be input_data
-        input_param = params[1]
+        # Parameter must be named input_data
+        input_param = params[0]
         if input_param.name != 'input_data':
             raise AdapterValidationError(
-                f"Task {self.name} run method second parameter must be named "
+                f"Task {self.name} run method parameter must be named "
                 "'input_data' (got '{input_param.name}')"
             )
         
