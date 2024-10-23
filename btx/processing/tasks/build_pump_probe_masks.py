@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 import numpy as np
 from scipy import ndimage
+from scipy.ndimage import binary_dilation
 import matplotlib.pyplot as plt
 import warnings
 
@@ -12,7 +13,13 @@ from btx.processing.types import (
 )
 
 class BuildPumpProbeMasks:
-    """Generate signal and background masks from p-values."""
+    """Generate signal and background masks from p-values with ROI-based clustering.
+    
+    This implementation uses ROI-connected clustering for signal identification,
+    with data-aware rectification and proper handling of negative clusters. The
+    background mask is generated using binary dilation targeting a specific size
+    relative to the signal mask.
+    """
     
     def __init__(self, config: Dict[str, Any]):
         """Initialize mask generation task.
@@ -58,163 +65,199 @@ class BuildPumpProbeMasks:
         if masks_config['bg_mask_thickness'] <= 0:
             raise ValueError("bg_mask_thickness must be positive")
 
+    def _rectify_filter_mask(self, mask: np.ndarray, data: np.ndarray) -> np.ndarray:
+        """Rectify mask orientation based on data values.
+        
+        Args:
+            mask: Binary mask to rectify
+            data: Original histogram data
+            
+        Returns:
+            Rectified binary mask
+        """
+        imgs_sum = data.sum(axis=0)
+        
+        if mask.sum() == 0:
+            return ~mask
+            
+        mean_1 = imgs_sum[mask].mean()
+        mean_0 = imgs_sum[~mask].mean()
+        
+        return ~mask if mean_1 < mean_0 else mask
+
     def _identify_roi_connected_cluster(
         self,
-        mask: np.ndarray,
-        x1: int,
-        x2: int,
-        y1: int,
-        y2: int
-    ) -> np.ndarray:
-        """Identify clusters connected to ROI region."""
-        # Label connected components
-        labels, num_features = ndimage.label(mask)
-        if num_features == 0:
-            return np.zeros_like(mask)
-            
-        # Find unique labels in ROI
-        roi_labels = np.unique(labels[x1:x2, y1:y2])
-        roi_labels = roi_labels[roi_labels != 0]  # Remove background label
+        p_values: np.ndarray,
+        threshold: float,
+        roi_x_start: int,
+        roi_x_end: int,
+        roi_y_start: int,
+        roi_y_end: int
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Find cluster connected to ROI.
         
-        # Create output mask
-        result = np.zeros_like(mask)
-        for label in roi_labels:
-            result |= (labels == label)
+        Args:
+            p_values: Array of p-values
+            threshold: P-value threshold
+            roi_x_start, roi_x_end, roi_y_start, roi_y_end: ROI coordinates
             
-        return result
+        Returns:
+            Tuple of (labeled array, ROI cluster mask)
+        """
+        porous_pixels = p_values > threshold
+        labeled_array, _ = ndimage.label(porous_pixels)
+        seed_x = (roi_x_start + roi_x_end) // 2
+        seed_y = (roi_y_start + roi_y_end) // 2
+        roi_cluster_label = labeled_array[seed_x, seed_y]
+        return labeled_array, labeled_array == roi_cluster_label
 
-    def _filter_clusters(
+    def _filter_negative_clusters(
         self,
-        mask: np.ndarray,
+        cluster_array: np.ndarray,
+        data: np.ndarray,
         min_size: int = 10
     ) -> np.ndarray:
-        """Remove small clusters from mask."""
-        # Label connected components
-        labels, num_features = ndimage.label(mask)
-        if num_features == 0:
-            return mask
+        """Filter out small negative clusters.
+        
+        Args:
+            cluster_array: Binary array of clusters
+            data: Original histogram data
+            min_size: Minimum cluster size to keep
             
-        # Calculate cluster sizes
-        sizes = np.bincount(labels.ravel())
+        Returns:
+            Filtered binary mask
+        """
+        # First rectify the mask orientation
+        cluster_array = self._rectify_filter_mask(cluster_array, data)
         
-        # Create mask of clusters to keep
-        keep_labels = (sizes > min_size)
-        keep_labels[0] = 0  # Don't keep background
+        # Invert array to work with negative clusters
+        inverted_array = np.logical_not(cluster_array)
         
-        return keep_labels[labels]
+        # Label inverted regions
+        labeled_array, _ = ndimage.label(inverted_array)
+        
+        # Count size of each cluster
+        cluster_sizes = np.bincount(labeled_array.ravel())
+        
+        # Find small clusters
+        small_clusters = np.where(cluster_sizes < min_size)[0]
+        
+        # Create mask of small clusters
+        small_cluster_mask = np.isin(labeled_array, small_clusters)
+        
+        # Return original mask with small negative clusters filled
+        return np.logical_or(cluster_array, small_cluster_mask)
+
+    def _infill_binary_array(self, data: np.ndarray, array: np.ndarray) -> np.ndarray:
+        """Fill holes keeping only largest component.
+        
+        Args:
+            data: Original histogram data
+            array: Binary array to infill
+            
+        Returns:
+            Infilled binary mask
+        """
+        # Rectify mask orientation again
+        labeled_array, num_features = ndimage.label(
+            self._rectify_filter_mask(array, data)
+        )
+        
+        # Find largest component
+        largest_component = 0
+        largest_size = 0
+        for i in range(1, num_features + 1):
+            size = np.sum(labeled_array == i)
+            if size > largest_size:
+                largest_size = size
+                largest_component = i
+                
+        return labeled_array == largest_component
 
     def _create_continuous_buffer(
         self,
         signal_mask: np.ndarray,
-        thickness: int
+        initial_thickness: int = 10,
+        num_pixels: Optional[int] = None,
+        separator_thickness: int = 5
     ) -> np.ndarray:
-        """Create a continuous buffer around signal regions."""
-        buffer = np.zeros_like(signal_mask)
+        """Create continuous buffer around signal targeting specific size.
         
-        # Label connected regions in signal mask
-        signal_labels, num_signals = ndimage.label(signal_mask)
-        
-        # Process each signal region separately
-        for i in range(1, num_signals + 1):
-            signal_region = signal_labels == i
+        Args:
+            signal_mask: Binary signal mask
+            initial_thickness: Initial dilation thickness
+            num_pixels: Target number of pixels in buffer
+            separator_thickness: Thickness of separator between signal and buffer
             
-            # Calculate distance from this signal region
-            distances = ndimage.distance_transform_edt(~signal_region)
-            
-            # Add buffer zone around this region
-            buffer |= (distances <= thickness)
+        Returns:
+            Binary buffer mask
+        """
+        if num_pixels is not None:
+            available_space = np.prod(signal_mask.shape) - np.sum(signal_mask)
+            if num_pixels > available_space:
+                raise ValueError("Target pixels exceeds available space")
         
+        if signal_mask.sum() == 0:
+            raise ValueError("Signal mask is empty")
+        
+        # Create separator gap
+        dilated_signal = binary_dilation(signal_mask, iterations=separator_thickness)
+        
+        # Grow buffer until target size reached
+        current_num_pixels = 0
+        thickness = 0
+        while num_pixels is not None and current_num_pixels < num_pixels:
+            thickness += 1
+            buffer = binary_dilation(dilated_signal, iterations=thickness) & (~dilated_signal)
+            current_num_pixels = np.sum(buffer)
+            
         return buffer
 
     def _create_background_mask(
         self,
-        signal_with_buffer: np.ndarray,
-        bg_mask_mult: float
+        signal_mask: np.ndarray,
+        bg_mask_mult: float,
+        thickness: int,
+        separator_thickness: int = 5
     ) -> np.ndarray:
-        """Create background mask considering signal buffer."""
-        # Calculate distances from buffered signal
-        distances = ndimage.distance_transform_edt(~signal_with_buffer)
+        """Create background mask targeting specific size relative to signal.
         
-        # Background thickness is relative to image size
-        bg_thickness = float(signal_with_buffer.shape[0]) * bg_mask_mult
+        Args:
+            signal_mask: Binary signal mask
+            bg_mask_mult: Multiple of signal mask size for background
+            thickness: Initial thickness for dilation
+            separator_thickness: Thickness of separator between signal and background
+            
+        Returns:
+            Binary background mask
+        """
+        num_pixels_signal = np.sum(signal_mask)
+        target_bg_pixels = int(num_pixels_signal * bg_mask_mult)
         
-        # Create background mask excluding signal buffer
-        return (distances <= bg_thickness) & (~signal_with_buffer)
+        return self._create_continuous_buffer(
+            signal_mask,
+            initial_thickness=thickness,
+            num_pixels=target_bg_pixels,
+            separator_thickness=separator_thickness
+        )
 
-    def run(
-        self,
-        input_data: BuildPumpProbeMasksInput
-    ) -> BuildPumpProbeMasksOutput:
-        """Run mask generation."""
-        # Validate inputs
-        self._validate_inputs(input_data)
-        
-        # Get parameters
-        mask_config = self.config['generate_masks']
-        threshold = mask_config['threshold']
-        bg_mult = mask_config['bg_mask_mult']
-        thickness = mask_config['bg_mask_thickness']
-        x1, x2, y1, y2 = self.config['setup']['background_roi_coords']
-        
-        # 1. Initial thresholding
-        initial_mask = input_data.p_values_output.p_values < threshold
-        
-        # 2. Identify signal clusters (ignoring ROI for now)
-        signal_clusters = initial_mask.copy()
-        
-        # 3. Filter small clusters
-        filtered_mask = self._filter_clusters(signal_clusters, min_size=10)
-        
-        # 4. Infill holes in signal mask
-        final_signal_mask = ndimage.binary_fill_holes(filtered_mask)
-        
-        # 5. Generate background mask
-        # First create safety buffer around signal
-        continuous_buffer = self._create_continuous_buffer(
-            final_signal_mask,
-            thickness
-        )
-        
-        # Then create background mask
-        background_mask = self._create_background_mask(
-            continuous_buffer,
-            bg_mult
-        )
-        
-        # 6. Validate masks
-        self._validate_masks(final_signal_mask, background_mask)
-        
-        # 7. Print statistics
-        self._print_mask_statistics(final_signal_mask, background_mask)
-        
-        # Store intermediate results
-        intermediate_masks = SignalMaskStages(
-            initial=initial_mask,
-            roi_masked=signal_clusters,
-            filtered=filtered_mask,
-            final=final_signal_mask
-        )
-        
-        return BuildPumpProbeMasksOutput(
-            signal_mask=final_signal_mask,
-            background_mask=background_mask,
-            intermediate_masks=intermediate_masks
-        )
-    
-    def _validate_inputs(
-        self,
-        input_data: BuildPumpProbeMasksInput
-    ) -> None:
+    def _validate_inputs(self, input_data: BuildPumpProbeMasksInput) -> None:
         """Validate input data dimensions."""
         p_values = input_data.p_values_output.p_values
         histograms = input_data.histogram_output.histograms
         
+        # Check histogram data exists
+        if histograms is None:
+            raise ValueError("Missing histogram data")
+        
+        # Check dimensions match
         if p_values.shape != histograms.shape[1:]:
             raise ValueError(
                 f"P-value shape {p_values.shape} doesn't match "
                 f"histogram shape {histograms.shape[1:]}"
             )
-            
+        
+        # Validate ROI coordinates
         x1, x2, y1, y2 = self.config['setup']['background_roi_coords']
         if not (0 <= x1 < x2 <= p_values.shape[0] and
                 0 <= y1 < y2 <= p_values.shape[1]):
@@ -243,16 +286,70 @@ class BuildPumpProbeMasks:
         if background_size == 0:
             raise ValueError("Background mask is empty")
             
-        if signal_size > total_size * 0.5:
+        # Check relative sizes
+        if background_size < signal_size * self.config['generate_masks']['bg_mask_mult'] * 0.9:
             warnings.warn(
-                f"Signal mask covers {signal_size/total_size:.1%} of image",
+                f"Background mask smaller than expected: {background_size} pixels vs "
+                f"target {signal_size * self.config['generate_masks']['bg_mask_mult']}",
                 RuntimeWarning
             )
-        if background_size > total_size * 0.5:
-            warnings.warn(
-                f"Background mask covers {background_size/total_size:.1%} of image",
-                RuntimeWarning
-            )
+
+    def run(self, input_data: BuildPumpProbeMasksInput) -> BuildPumpProbeMasksOutput:
+        """Run mask generation."""
+        # Validate inputs
+        self._validate_inputs(input_data)
+        
+        # Get parameters
+        mask_config = self.config['generate_masks']
+        threshold = mask_config['threshold']
+        bg_mult = mask_config['bg_mask_mult']
+        thickness = mask_config['bg_mask_thickness']
+        x1, x2, y1, y2 = self.config['setup']['background_roi_coords']
+        
+        # Get data
+        p_values = input_data.p_values_output.p_values
+        histograms = input_data.histogram_output.histograms
+        
+        # 1. Initial ROI cluster identification
+        _, roi_cluster = self._identify_roi_connected_cluster(
+            p_values, threshold, x1, x2, y1, y2
+        )
+        
+        # 2. Filter negative clusters
+        filtered_mask = self._filter_negative_clusters(
+            roi_cluster, histograms, min_size=10
+        )
+        
+        # 3. Infill to get final signal mask
+        final_signal_mask = self._infill_binary_array(histograms, filtered_mask)
+        
+        # 4. Generate background mask
+        background_mask = self._create_background_mask(
+            final_signal_mask,
+            bg_mask_mult=bg_mult,
+            thickness=thickness,
+            separator_thickness=5
+        )
+        
+        # 5. Validate masks
+        self._validate_masks(final_signal_mask, background_mask)
+        
+        # 6. Print statistics
+        self._print_mask_statistics(final_signal_mask, background_mask)
+        
+        # Store intermediate results
+        intermediate_masks = SignalMaskStages(
+            initial=roi_cluster,
+            roi_masked=filtered_mask,
+            filtered=filtered_mask,  # Reuse since filtering is different now
+            final=final_signal_mask
+        )
+        
+        return BuildPumpProbeMasksOutput(
+            signal_mask=final_signal_mask,
+            background_mask=background_mask,
+            intermediate_masks=intermediate_masks
+        )
 
     def _print_mask_statistics(
         self,
@@ -276,60 +373,70 @@ class BuildPumpProbeMasks:
         print(f"Minimum distance between masks: {min_distance:.1f} pixels")
 
     def plot_diagnostics(
-        self,
-        output: BuildPumpProbeMasksOutput,
-        save_dir: Path
-    ) -> None:
-        """Generate diagnostic plots."""
-        save_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 1. Plot mask generation stages
-        fig, axes = plt.subplots(2, 2, figsize=(12, 12))
-        fig.suptitle('Signal Mask Generation Stages')
-        
-        stages = [
-            ('Initial Threshold', output.intermediate_masks.initial),
-            ('Signal Clusters', output.intermediate_masks.roi_masked),
-            ('Filtered', output.intermediate_masks.filtered),
-            ('Final Signal', output.intermediate_masks.final)
-        ]
-        
-        for ax, (title, mask) in zip(axes.flat, stages):
-            ax.imshow(mask, cmap='RdBu')
-            ax.set_title(title)
-        
-        plt.tight_layout()
-        plt.savefig(save_dir / 'mask_generation_stages.png')
-        plt.close()
-        
-        # 2. Plot final masks
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-        
-        ax1.imshow(output.signal_mask, cmap='RdBu')
-        ax1.set_title('Signal Mask')
-        
-        ax2.imshow(output.background_mask, cmap='RdBu')
-        ax2.set_title('Background Mask')
-        
-        plt.tight_layout()
-        plt.savefig(save_dir / 'final_masks.png')
-        plt.close()
-        
-        # 3. Plot distance transform
-        fig, ax = plt.subplots(figsize=(8, 8))
-        
-        # Calculate distance from signal mask
-        dist = ndimage.distance_transform_edt(~output.signal_mask)
-        
-        # Plot distance with background mask contour
-        im = ax.imshow(dist, cmap='viridis')
-        plt.colorbar(im, ax=ax, label='Distance (pixels)')
-        
-        # Add background mask contour
-        ax.contour(output.background_mask, colors='r', levels=[0.5],
-                  linewidths=2, label='Background Mask')
-        
-        ax.set_title('Distance from Signal to Background')
-        plt.tight_layout()
-        plt.savefig(save_dir / 'mask_distance.png')
-        plt.close()
+            self,
+            output: BuildPumpProbeMasksOutput,
+            save_dir: Path
+        ) -> None:
+            """Generate diagnostic plots.
+            
+            Args:
+                output: Output from mask generation
+                save_dir: Directory to save plots
+            """
+            save_dir.mkdir(parents=True, exist_ok=True)
+            
+            # 1. Plot mask generation stages
+            fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+            fig.suptitle('Signal Mask Generation Stages')
+            
+            stages = [
+                ('Initial ROI Cluster', output.intermediate_masks.initial),
+                ('Filtered Clusters', output.intermediate_masks.roi_masked),
+                ('Final Signal Mask', output.intermediate_masks.final),
+                ('Background Mask', output.background_mask)
+            ]
+            
+            for ax, (title, mask) in zip(axes.flat, stages):
+                ax.imshow(mask, cmap='RdBu')
+                ax.set_title(title)
+            
+            plt.tight_layout()
+            plt.savefig(save_dir / 'mask_generation_stages.png')
+            plt.close()
+            
+            # 2. Plot final masks
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+            
+            ax1.imshow(output.signal_mask)
+            ax1.set_title('Signal Mask')
+            
+            ax2.imshow(output.background_mask)
+            ax2.set_title('Background Mask')
+            
+            plt.tight_layout()
+            plt.savefig(save_dir / 'final_masks.png')
+            plt.close()
+            
+            # 3. Plot distance transform
+            fig, ax = plt.subplots(figsize=(8, 8))
+            
+            # Calculate distance from signal mask
+            dist = ndimage.distance_transform_edt(~output.signal_mask)
+            
+            # Plot distance with background mask contour
+            im = ax.imshow(dist, cmap='viridis')
+            plt.colorbar(im, ax=ax, label='Distance (pixels)')
+            
+            # Add background mask contour
+            ax.contour(
+                output.background_mask,
+                colors='r',
+                levels=[0.5],
+                linewidths=2,
+                label='Background Mask'
+            )
+            
+            ax.set_title('Distance from Signal to Background')
+            plt.tight_layout()
+            plt.savefig(save_dir / 'mask_distance.png')
+            plt.close()
