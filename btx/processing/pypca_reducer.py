@@ -310,6 +310,7 @@ if __name__ == "__main__":
                     print("Checkpoint",flush=True)
 
                     for batch in dataloader_iter:
+                        print(batch,flush=True)
                         images, timestamps = zip(*batch)
                         current_loading_batch.extend(images)
                         timestamps_list.extend(timestamps)
