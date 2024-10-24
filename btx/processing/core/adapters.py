@@ -1,7 +1,7 @@
 # btx/processing/core/adapters.py
 """Task adaptation and registry components."""
 
-from typing import Dict, Any, Type, Optional
+from typing import Dict, Any, Type, Optional, Callable
 from dataclasses import dataclass
 from pathlib import Path
 
