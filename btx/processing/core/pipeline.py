@@ -3,6 +3,26 @@ from dataclasses import dataclass
 from pathlib import Path
 from .task import Task
 
+class PipelineBuilder:
+    """Builder pattern for Pipeline construction."""
+    
+    def __init__(self, name: str):
+        self.pipeline = Pipeline(name)
+    
+    def add(self, name: str, task: Task, depends_on: Optional[List[str]] = None) -> 'PipelineBuilder':
+        """Add a task to the pipeline."""
+        self.pipeline.add_task(name, task, depends_on)
+        return self
+    
+    def set_diagnostics_dir(self, path: Path) -> 'PipelineBuilder':
+        """Set directory for diagnostic outputs."""
+        self.pipeline.diagnostics_dir = path
+        return self
+    
+    def build(self) -> Pipeline:
+        """Return the constructed pipeline."""
+        return self.pipeline
+
 @dataclass
 class PipelineResult:
     """Container for pipeline execution results."""

@@ -12,7 +12,7 @@ def array_summary(arr):
     return f"Array(shape={arr.shape}, dtype={arr.dtype})"
 
 from btx.processing.core.adapters import TaskAdapter, registry as task_registry
-from btx.processing.core.pipeline import Pipeline, PipelineResult
+from btx.processing.core.pipeline import Pipeline, PipelineResult, PipelineBuilder
 from btx.processing.btx_types import (
     LoadDataInput, LoadDataOutput,
     MakeHistogramInput, MakeHistogramOutput,
