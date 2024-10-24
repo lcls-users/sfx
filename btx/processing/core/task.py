@@ -13,21 +13,8 @@ class Task(ABC):
         
         Args:
             config: Configuration dictionary for the task
-            
-        Raises:
-            ValueError: If configuration validation fails
         """
         self.config = config
-        self._validate_config()
-    
-    @abstractmethod
-    def _validate_config(self) -> None:
-        """Validate task configuration.
-        
-        Raises:
-            ValueError: If configuration is invalid
-        """
-        pass
     
     @abstractmethod
     def run(self, input_data: Any) -> Any:
@@ -40,7 +27,6 @@ class Task(ABC):
             Task output data
             
         Raises:
-            ValueError: If input data is invalid
             RuntimeError: If task execution fails
         """
         pass
