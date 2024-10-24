@@ -105,37 +105,31 @@ class Pipeline:
             depends_on: List of task names this task depends on
             
         Raises:
-            ValueError: If dependencies are invalid or create cycles
+            ValueError: If task name already exists
+            RuntimeError: If dependencies create cycles
         """
         if name in self.tasks:
             raise ValueError(f"Task {name} already exists in pipeline")
         
         self.tasks[name] = task
         self.dependencies[name] = set(depends_on or [])
-        self._validate_dependencies()
         self._compute_execution_order()
     
-    def _validate_dependencies(self) -> None:
-        """Validate task dependencies and check for cycles.
+    def _compute_execution_order(self) -> None:
+        """Compute topological sort of tasks based on dependencies.
         
         Raises:
-            ValueError: If dependencies are invalid or create cycles
+            RuntimeError: If dependencies create cycles or reference missing tasks
         """
-        # Check all dependencies exist
-        for task_name, deps in self.dependencies.items():
-            for dep in deps:
-                if dep not in self.tasks:
-                    raise ValueError(f"Task {task_name} depends on non-existent task {dep}")
-        
-        # Check for cycles
+        self.execution_order = []
         visited = set()
-        path = set()
+        path = set()  # For cycle detection
         
         def visit(task_name: str) -> None:
             if task_name in path:
                 cycle = list(path)
                 cycle.append(task_name)
-                raise ValueError(f"Cyclic dependency detected: {' -> '.join(cycle)}")
+                raise RuntimeError(f"Cyclic dependency detected: {' -> '.join(cycle)}")
             
             if task_name in visited:
                 return
@@ -144,26 +138,11 @@ class Pipeline:
             path.add(task_name)
             
             for dep in self.dependencies[task_name]:
+                if dep not in self.tasks:
+                    raise RuntimeError(f"Task {task_name} depends on non-existent task {dep}")
                 visit(dep)
             
             path.remove(task_name)
-        
-        for task_name in self.tasks:
-            visit(task_name)
-    
-    def _compute_execution_order(self) -> None:
-        """Compute topological sort of tasks based on dependencies."""
-        self.execution_order = []
-        visited = set()
-        
-        def visit(task_name: str) -> None:
-            if task_name in visited:
-                return
-            
-            visited.add(task_name)
-            for dep in self.dependencies[task_name]:
-                visit(dep)
-            
             self.execution_order.append(task_name)
         
         for task_name in self.tasks:
