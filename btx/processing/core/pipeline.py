@@ -21,60 +21,26 @@ class Pipeline:
         self.diagnostics_dir: Optional[Path] = None
     
     def add_task(self, name: str, task: Task, depends_on: Optional[List[str]] = None) -> None:
-        """Add a task to the pipeline."""
+        """Add a task to the pipeline, maintaining addition order."""
         if name in self.tasks:
             raise ValueError(f"Task {name} already exists")
         
         self.tasks[name] = task
         self.dependencies[name] = set(depends_on or [])
-        self._compute_execution_order()
-    
-    def _compute_execution_order(self) -> None:
-        """Compute topological sort of tasks."""
-        self.execution_order = []
-        visited = set()
-        path = set()
-        
-        def visit(task_name: str) -> None:
-            if task_name in path:
-                cycle = list(path)
-                cycle.append(task_name)
-                raise RuntimeError(f"Cyclic dependency detected: {' -> '.join(cycle)}")
-            
-            if task_name in visited:
-                return
-            
-            visited.add(task_name)
-            path.add(task_name)
-            
-            for dep in self.dependencies[task_name]:
-                if dep not in self.tasks:
-                    raise RuntimeError(f"Task {task_name} depends on non-existent task {dep}")
-                visit(dep)
-            
-            path.remove(task_name)
-            self.execution_order.append(task_name)
-        
-        for task_name in self.tasks:
-            visit(task_name)
+        self.execution_order.append(name)
     
     def run(self, initial_input: Optional[Any] = None) -> Dict[str, TaskResult]:
-        """Run the pipeline."""
+        """Run the pipeline, assuming valid DAG structure."""
         results = {}
         
         for task_name in self.execution_order:
             task = self.tasks[task_name]
+            deps = self.dependencies[task_name]
             
-            # Prepare input
-            if not self.dependencies[task_name] and task_name == self.execution_order[0]:
-                task_input = initial_input
-            else:
-                deps = self.dependencies[task_name]
-                if len(deps) == 1:
-                    task_input = results[next(iter(deps))].output
-                else:
-                    # For multiple dependencies, pass dictionary of outputs
-                    task_input = {dep: results[dep].output for dep in deps}
+            # Simplified input handling
+            task_input = initial_input if not deps else \
+                        results[next(iter(deps))].output if len(deps) == 1 else \
+                        {dep: results[dep].output for dep in deps}
             
             # Run task
             try:

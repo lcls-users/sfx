@@ -8,34 +8,28 @@ from pathlib import Path
 from .task import Task
 
 @dataclass
-class TaskAdapter(Task):
-    """Simplified adapter to wrap task classes."""
-    task_instance: Any
+class TaskAdapter:
+    """Minimal adapter to wrap task classes."""
+    task: Any
     name: str
+    config: Dict[str, Any]
 
     def __init__(self, task_class: Type[Any], config: Dict[str, Any], name: str):
-        """Initialize task adapter.
-        
-        Args:
-            task_class: Original task class to wrap
-            config: Configuration dictionary
-            name: Task name for error reporting
-        """
-        super().__init__(config)
-        self.task_instance = task_class(config)
+        self.task = task_class(config)
         self.name = name
+        self.config = config
     
     def run(self, input_data: Any = None) -> Any:
         """Run the wrapped task."""
         try:
-            return self.task_instance.run(input_data)
+            return self.task.run(input_data)
         except Exception as e:
             raise RuntimeError(f"Task {self.name} failed: {str(e)}") from e
     
     def plot_diagnostics(self, output: Any, save_dir: Optional[Path] = None) -> None:
         """Generate diagnostic plots if supported."""
-        if hasattr(self.task_instance, 'plot_diagnostics'):
-            self.task_instance.plot_diagnostics(output, save_dir)
+        if hasattr(self.task, 'plot_diagnostics'):
+            self.task.plot_diagnostics(output, save_dir)
 
 class TaskRegistry:
     """Simplified registry of tasks."""
