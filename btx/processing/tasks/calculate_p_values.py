@@ -17,19 +17,12 @@ class CalculatePValues:
                 - calculate_pvalues.significance_threshold: P-value threshold (default: 0.05)
         """
         self.config = config
-        self._validate_config()
         
-    def _validate_config(self) -> None:
-        """Validate configuration parameters."""
+        # Set defaults
         if 'calculate_pvalues' not in self.config:
             self.config['calculate_pvalues'] = {}
-            
         if 'significance_threshold' not in self.config['calculate_pvalues']:
             self.config['calculate_pvalues']['significance_threshold'] = 0.05
-            
-        threshold = self.config['calculate_pvalues']['significance_threshold']
-        if not 0 < threshold < 1:
-            raise ValueError("significance_threshold must be between 0 and 1")
 
     def _calculate_p_values(
         self,

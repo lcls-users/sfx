@@ -19,26 +19,7 @@ class MeasureEMD:
                 - calculate_emd.num_permutations: Number of bootstrap samples
         """
         self.config = config
-        self._validate_config()
         
-    def _validate_config(self) -> None:
-        """Validate configuration parameters."""
-        if 'setup' not in self.config:
-            raise ValueError("Missing 'setup' section in config")
-            
-        if 'background_roi_coords' not in self.config['setup']:
-            raise ValueError("Missing background_roi_coords in setup")
-            
-        roi = self.config['setup']['background_roi_coords']
-        if not isinstance(roi, (list, tuple)) or len(roi) != 4:
-            raise ValueError("background_roi_coords must be [x1, x2, y1, y2]")
-            
-        if not all(isinstance(x, (int, np.integer)) for x in roi):
-            raise ValueError("All ROI coordinates must be integers")
-            
-        if not (roi[0] < roi[1] and roi[2] < roi[3]):
-            raise ValueError("Invalid ROI coordinates (start must be less than end)")
-            
         # Set defaults
         if 'calculate_emd' not in self.config:
             self.config['calculate_emd'] = {}
