@@ -330,8 +330,6 @@ if __name__ == "__main__":
                     current_times = list(chain.from_iterable(current_times))
                     current_nanoseconds = list(chain.from_iterable(current_nanoseconds))
                     current_seconds = list(chain.from_iterable(current_seconds))
-
-                    print(current_timestamps)
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
                     num_images_seen += current_len
