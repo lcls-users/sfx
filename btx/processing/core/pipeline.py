@@ -1,7 +1,15 @@
-from typing import Dict, Any, Optional, Set, List
+from typing import Dict, Any, Optional, Set, List, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from .task import Task
+
+@dataclass
+class PipelineResult:
+    """Container for pipeline execution results."""
+    success: bool
+    results: Dict[str, 'TaskResult']
+    execution_order: Sequence[str]
+    error: Optional[str] = None
 
 @dataclass
 class TaskResult:
@@ -29,9 +37,11 @@ class Pipeline:
         self.dependencies[name] = set(depends_on or [])
         self.execution_order.append(name)
     
-    def run(self, initial_input: Optional[Any] = None) -> Dict[str, TaskResult]:
+    def run(self, initial_input: Optional[Any] = None) -> PipelineResult:
         """Run the pipeline, assuming valid DAG structure."""
         results = {}
+        success = True
+        error = None
         
         for task_name in self.execution_order:
             task = self.tasks[task_name]
@@ -57,6 +67,13 @@ class Pipeline:
                     success=False,
                     error=str(e)
                 )
+                success = False
+                error = str(e)
                 break
         
-        return results
+        return PipelineResult(
+            success=success,
+            results=results,
+            execution_order=self.execution_order,
+            error=error
+        )

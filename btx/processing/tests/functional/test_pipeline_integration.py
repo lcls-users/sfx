@@ -11,12 +11,8 @@ def array_summary(arr):
         return "None"
     return f"Array(shape={arr.shape}, dtype={arr.dtype})"
 
-from btx.processing.core import (
-    PipelineBuilder,
-    task_registry,
-    TaskAdapter,
-    Pipeline
-)
+from btx.processing.core.adapters import TaskAdapter, registry as task_registry
+from btx.processing.core.pipeline import Pipeline, PipelineResult
 from btx.processing.btx_types import (
     LoadDataInput, LoadDataOutput,
     MakeHistogramInput, MakeHistogramOutput,
