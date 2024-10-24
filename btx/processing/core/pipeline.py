@@ -1,4 +1,6 @@
-from typing import Dict, Any, Optional, Set, List, Sequence
+from typing import Dict, Any, Optional, Set, List, Sequence, TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Type
 from dataclasses import dataclass
 from pathlib import Path
 from .task import Task
@@ -19,7 +21,7 @@ class PipelineBuilder:
         self.pipeline.diagnostics_dir = path
         return self
     
-    def build(self) -> Pipeline:
+    def build(self) -> 'Pipeline':
         """Return the constructed pipeline."""
         return self.pipeline
 
