@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import wasserstein_distance
 import warnings
 
-from btx.processing.types import MeasureEMDInput, MeasureEMDOutput
+from btx.processing.btx_types import MeasureEMDInput, MeasureEMDOutput
 
 class MeasureEMD:
     """Calculate Earth Mover's Distance between pixel histograms and background."""
