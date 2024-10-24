@@ -1,4 +1,6 @@
 # btx/processing/core/adapters.py
+"""Task adaptation and registry components."""
+
 from typing import Dict, Any, Type, Optional, TypeVar, Generic, Callable
 from dataclasses import dataclass
 import inspect
@@ -6,7 +8,6 @@ from datetime import datetime
 from pathlib import Path
 
 from .task import Task
-from .pipeline import TaskResult
 
 # Generic type variables for input/output types
 InputT = TypeVar('InputT')
@@ -65,8 +66,7 @@ class TaskAdapter(Task, Generic[InputT, OutputT]):
     def _validate_config(self) -> None:
         """Config validation is handled by wrapped task's __init__."""
         pass
-
-
+    
     def _validate_task_interface(self) -> None:
         """Validate that wrapped task has required interface.
         
@@ -84,22 +84,18 @@ class TaskAdapter(Task, Generic[InputT, OutputT]):
         sig = inspect.signature(self.task_instance.run)
         params = list(sig.parameters.values())
         
-        print(f"Class signature: {inspect.signature(type(self.task_instance).run)}")
-        print(f"Instance signature: {inspect.signature(self.task_instance.run)}")
-        print(f"Parameters found: {[p.name for p in params]}")
-        
-        # Must have input_data parameter (self is implicit)
-        if len(params) != 1:  # just input_data
+        # Must have self and input_data parameter
+        if len(params) != 2:  # self and input_data
             raise AdapterValidationError(
-                f"Task {self.name} run method must have exactly one parameter "
+                f"Task {self.name} run method must have exactly two parameters "
                 f"(got {len(params)})"
             )
         
-        # Parameter must be named input_data
-        input_param = params[0]
+        # Second parameter (after self) must be input_data
+        input_param = params[1]
         if input_param.name != 'input_data':
             raise AdapterValidationError(
-                f"Task {self.name} run method parameter must be named "
+                f"Task {self.name} run method second parameter must be named "
                 "'input_data' (got '{input_param.name}')"
             )
         
@@ -107,17 +103,14 @@ class TaskAdapter(Task, Generic[InputT, OutputT]):
         if hasattr(self.task_instance, 'plot_diagnostics'):
             diag_sig = inspect.signature(self.task_instance.plot_diagnostics)
             diag_params = list(diag_sig.parameters.values())
-            print(f"Plot diagnostics class signature: {inspect.signature(type(self.task_instance).plot_diagnostics)}")
-            print(f"Plot diagnostics instance signature: {inspect.signature(self.task_instance.plot_diagnostics)}")
-            print(f"Plot diagnostics parameters found: {[p.name for p in diag_params]}")
-            if len(diag_params) != 2:  # output, save_dir (self is implicit)
+            if len(diag_params) != 3:  # self, output, save_dir
                 raise AdapterValidationError(
                     f"Task {self.name} plot_diagnostics method must have exactly "
-                    f"two parameters (got {len(diag_params)})"
+                    f"three parameters (got {len(diag_params)})"
                 )
             
             # Validate parameter names
-            expected_names = ['output', 'save_dir']
+            expected_names = ['self', 'output', 'save_dir']
             actual_names = [p.name for p in diag_params]
             if actual_names != expected_names:
                 raise AdapterValidationError(
