@@ -98,15 +98,9 @@ def test_histogram_pipeline(
     data, I0, delays, on_mask, off_mask = synthetic_data
     
     # Register tasks
-    task_registry.register(
-        "load_data", LoadData, LoadDataInput, LoadDataOutput
-    )
-    task_registry.register(
-        "make_histogram", MakeHistogram, MakeHistogramInput, MakeHistogramOutput
-    )
-    task_registry.register(
-        "measure_emd", MeasureEMD, MeasureEMDInput, MeasureEMDOutput
-    )
+    task_registry.register("load_data", LoadData)
+    task_registry.register("make_histogram", MakeHistogram)
+    task_registry.register("measure_emd", MeasureEMD)
     
     # Build pipeline
     pipeline = (PipelineBuilder("Histogram Pipeline")
@@ -175,14 +169,8 @@ def test_analysis_pipeline(
     )
     
     # Register tasks
-    task_registry.register(
-        "calculate_pvalues", CalculatePValues,
-        CalculatePValuesInput, CalculatePValuesOutput
-    )
-    task_registry.register(
-        "build_masks", BuildPumpProbeMasks,
-        BuildPumpProbeMasksInput, BuildPumpProbeMasksOutput
-    )
+    task_registry.register("calculate_pvalues", CalculatePValues)
+    task_registry.register("build_masks", BuildPumpProbeMasks)
     
     # Build pipeline
     pipeline = (PipelineBuilder("Analysis Pipeline")
