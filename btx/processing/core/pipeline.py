@@ -4,7 +4,11 @@ if TYPE_CHECKING:
 from dataclasses import dataclass
 from pathlib import Path
 from .task import Task
-from btx.processing.btx_types import MakeHistogramInput
+from btx.processing.btx_types import (
+    MakeHistogramInput, MeasureEMDInput, 
+    CalculatePValuesInput, BuildPumpProbeMasksInput,
+    PumpProbeAnalysisInput
+)
 
 class PipelineBuilder:
     """Builder pattern for Pipeline construction."""
@@ -84,19 +88,52 @@ class Pipeline:
                     prev_output = results[dep].output
                     print(f"Previous output type from {dep}: {type(prev_output)}")
                     
-                    # Wrap output in appropriate input type
+                    # Wrap output in appropriate input type based on task name
                     if task_name == "make_histogram":
                         print("Creating MakeHistogramInput")
                         task_input = MakeHistogramInput(
                             config=task.config,
                             load_data_output=prev_output
                         )
+                    elif task_name == "measure_emd":
+                        print("Creating MeasureEMDInput")
+                        task_input = MeasureEMDInput(
+                            config=task.config,
+                            histogram_output=prev_output
+                        )
+                    elif task_name == "calculate_pvalues":
+                        print("Creating CalculatePValuesInput")
+                        task_input = CalculatePValuesInput(
+                            config=task.config,
+                            emd_output=prev_output
+                        )
                     else:
                         task_input = prev_output
                     print(f"Created input type: {type(task_input)}")
                 else:
                     # Multiple dependencies
-                    task_input = {dep: results[dep].output for dep in deps}
+                    if task_name == "build_masks":
+                        # Need both histogram and p-values outputs
+                        hist_output = results["make_histogram"].output
+                        pval_output = results["calculate_pvalues"].output
+                        print("Creating BuildPumpProbeMasksInput")
+                        task_input = BuildPumpProbeMasksInput(
+                            config=task.config,
+                            histogram_output=hist_output,
+                            p_values_output=pval_output
+                        )
+                    elif task_name == "pump_probe_analysis":
+                        # Need both load_data and masks outputs
+                        load_output = results["load_data"].output
+                        masks_output = results["build_masks"].output
+                        print("Creating PumpProbeAnalysisInput")
+                        task_input = PumpProbeAnalysisInput(
+                            config=task.config,
+                            load_data_output=load_output,
+                            masks_output=masks_output
+                        )
+                    else:
+                        task_input = {dep: results[dep].output for dep in deps}
                 
                 # Run task
                 print(f"Running task {task_name}")
