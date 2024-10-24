@@ -7,8 +7,7 @@ from .pipeline import Pipeline, PipelineResult, TaskResult
 from .builders import PipelineBuilder
 from .adapters import (
     TaskAdapter, TaskRegistry, register_task,
-    registry as task_registry,
-    AdapterValidationError
+    registry as task_registry
 )
 
 __all__ = [
@@ -20,6 +19,5 @@ __all__ = [
     'TaskAdapter',
     'TaskRegistry',
     'register_task',
-    'task_registry',
-    'AdapterValidationError'
+    'task_registry'
 ]
