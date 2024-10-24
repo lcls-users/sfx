@@ -4,6 +4,7 @@ if TYPE_CHECKING:
 from dataclasses import dataclass
 from pathlib import Path
 from .task import Task
+from btx.processing.btx_types import MakeHistogramInput
 
 class PipelineBuilder:
     """Builder pattern for Pipeline construction."""
