@@ -6,7 +6,7 @@ from scipy.ndimage import binary_dilation
 import matplotlib.pyplot as plt
 import warnings
 
-from btx.processing.types import (
+from btx.processing.btx_types import (
     BuildPumpProbeMasksInput,
     BuildPumpProbeMasksOutput,
     SignalMaskStages

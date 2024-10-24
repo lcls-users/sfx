@@ -4,7 +4,7 @@ import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
 
-from btx.processing.types import (
+from btx.processing.btx_types import (
     PumpProbeAnalysisInput,
     PumpProbeAnalysisOutput,
 )
