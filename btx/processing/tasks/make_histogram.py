@@ -69,32 +69,17 @@ class MakeHistogram:
                 - make_histogram.hist_start_bin: Index of first bin to include
         """
         self.config = config
-        self._validate_config()
-        
-    def _validate_config(self) -> None:
-        """Validate configuration parameters."""
-        if 'make_histogram' not in self.config:
-            raise ValueError("Missing 'make_histogram' section in config")
-            
-        hist_config = self.config['make_histogram']
         
         # Set defaults if not provided
+        if 'make_histogram' not in self.config:
+            self.config['make_histogram'] = {}
+        hist_config = self.config['make_histogram']
+        
         if 'bin_boundaries' not in hist_config:
             hist_config['bin_boundaries'] = np.arange(5, 30, 0.2)
         if 'hist_start_bin' not in hist_config:
             hist_config['hist_start_bin'] = 1
         
-        bin_boundaries = hist_config['bin_boundaries']
-        if not isinstance(bin_boundaries, (list, tuple, np.ndarray)):
-            raise ValueError("bin_boundaries must be array-like")
-        if len(bin_boundaries) < 2:
-            raise ValueError("bin_boundaries must have at least 2 values")
-        
-        hist_start_bin = hist_config['hist_start_bin']
-        if not isinstance(hist_start_bin, (int, np.integer)):
-            raise ValueError("hist_start_bin must be an integer")
-        if hist_start_bin < 0 or hist_start_bin >= len(bin_boundaries) - 1:
-            raise ValueError("hist_start_bin must be between 0 and len(bin_boundaries)-2")
 
     @memoize_subsampled
     def _calculate_histograms(
