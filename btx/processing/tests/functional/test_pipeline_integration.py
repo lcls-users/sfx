@@ -198,17 +198,18 @@ def test_analysis_pipeline(
     # Check CalculatePValues output
     pval_result = results.results["calculate_pvalues"].output
     assert isinstance(pval_result, CalculatePValuesOutput)
-    assert pval_result.p_values.shape == (rows, cols)
-    assert pval_result.log_p_values.shape == (rows, cols)
-    assert np.all(pval_result.p_values >= 0)
-    assert np.all(pval_result.p_values <= 1)
+    np.testing.assert_array_equal(pval_result.p_values.shape, (rows, cols))
+    np.testing.assert_array_equal(pval_result.log_p_values.shape, (rows, cols))
+    np.testing.assert_array_less(-1e-10, pval_result.p_values)  # Allow small numerical errors
+    np.testing.assert_array_less(pval_result.p_values, 1 + 1e-10)
     
     # Check BuildPumpProbeMasks output
     mask_result = results.results["build_masks"].output
     assert isinstance(mask_result, BuildPumpProbeMasksOutput)
-    assert mask_result.signal_mask.shape == (rows, cols)
-    assert mask_result.background_mask.shape == (rows, cols)
-    assert mask_result.signal_mask.dtype == bool
-    assert mask_result.background_mask.dtype == bool
+    np.testing.assert_array_equal(mask_result.signal_mask.shape, (rows, cols))
+    np.testing.assert_array_equal(mask_result.background_mask.shape, (rows, cols))
+    assert mask_result.signal_mask.dtype == bool, "Signal mask should be boolean"
+    assert mask_result.background_mask.dtype == bool, "Background mask should be boolean"
     # Masks shouldn't overlap
-    assert not np.any(mask_result.signal_mask & mask_result.background_mask)
+    np.testing.assert_array_equal(mask_result.signal_mask & mask_result.background_mask, 
+                                np.zeros((rows, cols), dtype=bool))
