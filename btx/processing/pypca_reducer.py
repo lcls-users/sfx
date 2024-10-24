@@ -291,8 +291,6 @@ if __name__ == "__main__":
     data = read_model_file(filename)
     V = data['V']
     mu = data['mu']
-
-    timestamps = {}
     fiducials_list, times_list, nanoseconds_list, seconds_list = [], [], [], []
 
     last_batch = False
@@ -376,17 +374,20 @@ if __name__ == "__main__":
     for rank in range(num_gpus):
         projected_images[rank] = np.concatenate(projected_images[rank], axis=0)
     
-    timestamps['fiducials'] = np.concatenate(fiducials_list, axis=0)
-    timestamps['times'] = np.concatenate(times_list, axis=0)
-    timestamps['nanoseconds'] = np.concatenate(nanoseconds_list, axis=0)
-    timestamps['seconds'] = np.concatenate(seconds_list, axis=0)
+    fiducials_list = np.concatenate(fiducials_list, axis=0)
+    times_list = np.concatenate(times_list, axis=0)
+    nanoseconds_list = np.concatenate(nanoseconds_list, axis=0)
+    seconds_list = np.concatenate(seconds_list, axis=0)
 
     #Save the projected images
     input_path = os.path.dirname(filename)
     output_path = os.path.join(input_path, f"projected_images_{exp}_start_run_{init_run}_num_images_{num_images_to_add}_node_{id_current_node}.h5")
     with h5py.File(output_path, 'w') as f:
         append_to_dataset(f, 'projected_images', projected_images)
-        append_to_dataset(f, 'timestamps', timestamps)
+        append_to_dataset(f, 'fiducials', fiducials_list)
+        append_to_dataset(f, 'times', times_list)
+        append_to_dataset(f, 'nanoseconds', nanoseconds_list)
+        append_to_dataset(f, 'seconds', seconds_list)
     
     print(f"Model saved under the name projected_images_{exp}_start_run_{init_run}_num_images_{num_images_to_add}_node_{id_current_node}.h5",flush=True)
     print("Process finished",flush=True)
