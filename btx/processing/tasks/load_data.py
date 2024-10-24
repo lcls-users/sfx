@@ -8,7 +8,6 @@ from btx.processing.btx_types import LoadDataInput, LoadDataOutput
 class LoadData:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self._validate_config()
         
     def run(self, input_data: Optional[LoadDataInput]) -> LoadDataOutput:  # Modified signature
         """Run the data loading and preprocessing.
