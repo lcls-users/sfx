@@ -3,6 +3,13 @@ from typing import Dict, Any
 import pytest
 import numpy as np
 from pathlib import Path
+from numpy.testing import assert_array_equal, assert_array_less
+
+def array_summary(arr):
+    """Return a brief summary of an array instead of its full contents"""
+    if arr is None:
+        return "None"
+    return f"Array(shape={arr.shape}, dtype={arr.dtype})"
 
 from btx.processing.core import (
     PipelineBuilder,
@@ -131,21 +138,26 @@ def test_histogram_pipeline(
     # Check LoadData output
     load_result = results.results["load_data"].output
     assert isinstance(load_result, LoadDataOutput)
-    assert load_result.data.shape == data.shape
-    assert load_result.binned_delays.shape == delays.shape
+    assert_array_equal(load_result.data.shape, data.shape, 
+                      err_msg=f"Data shape mismatch: got {array_summary(load_result.data)}")
+    assert_array_equal(load_result.binned_delays.shape, delays.shape,
+                      err_msg=f"Delays shape mismatch: got {array_summary(load_result.binned_delays)}")
     
     # Check MakeHistogram output
     hist_result = results.results["make_histogram"].output
     assert isinstance(hist_result, MakeHistogramOutput)
     n_bins = len(base_config['make_histogram']['bin_boundaries']) - 1
     expected_bins = n_bins - base_config['make_histogram']['hist_start_bin']
-    assert hist_result.histograms.shape == (expected_bins, rows, cols)
+    assert_array_equal(hist_result.histograms.shape, (expected_bins, rows, cols),
+                      err_msg=f"Histogram shape mismatch: got {array_summary(hist_result.histograms)}")
     
     # Check MeasureEMD output
     emd_result = results.results["measure_emd"].output
     assert isinstance(emd_result, MeasureEMDOutput)
-    assert emd_result.emd_values.shape == (rows, cols)
-    assert len(emd_result.null_distribution) == base_config['calculate_emd']['num_permutations']
+    assert_array_equal(emd_result.emd_values.shape, (rows, cols),
+                      err_msg=f"EMD values shape mismatch: got {array_summary(emd_result.emd_values)}")
+    assert len(emd_result.null_distribution) == base_config['calculate_emd']['num_permutations'], \
+           f"Null distribution length mismatch: got {len(emd_result.null_distribution)}"
 
 def test_analysis_pipeline(
     base_config: Dict[str, Any],
@@ -198,18 +210,24 @@ def test_analysis_pipeline(
     # Check CalculatePValues output
     pval_result = results.results["calculate_pvalues"].output
     assert isinstance(pval_result, CalculatePValuesOutput)
-    np.testing.assert_array_equal(pval_result.p_values.shape, (rows, cols))
-    np.testing.assert_array_equal(pval_result.log_p_values.shape, (rows, cols))
-    np.testing.assert_array_less(-1e-10, pval_result.p_values)  # Allow small numerical errors
-    np.testing.assert_array_less(pval_result.p_values, 1 + 1e-10)
+    assert_array_equal(pval_result.p_values.shape, (rows, cols),
+                      err_msg=f"P-values shape mismatch: got {array_summary(pval_result.p_values)}")
+    assert_array_equal(pval_result.log_p_values.shape, (rows, cols),
+                      err_msg=f"Log p-values shape mismatch: got {array_summary(pval_result.log_p_values)}")
+    assert_array_less(-1e-10, pval_result.p_values,
+                     err_msg="P-values below valid range")  # Allow small numerical errors
+    assert_array_less(pval_result.p_values, 1 + 1e-10,
+                     err_msg="P-values above valid range")
     
     # Check BuildPumpProbeMasks output
     mask_result = results.results["build_masks"].output
     assert isinstance(mask_result, BuildPumpProbeMasksOutput)
-    np.testing.assert_array_equal(mask_result.signal_mask.shape, (rows, cols))
-    np.testing.assert_array_equal(mask_result.background_mask.shape, (rows, cols))
+    assert_array_equal(mask_result.signal_mask.shape, (rows, cols),
+                      err_msg=f"Signal mask shape mismatch: got {array_summary(mask_result.signal_mask)}")
+    assert_array_equal(mask_result.background_mask.shape, (rows, cols),
+                      err_msg=f"Background mask shape mismatch: got {array_summary(mask_result.background_mask)}")
     assert mask_result.signal_mask.dtype == bool, "Signal mask should be boolean"
     assert mask_result.background_mask.dtype == bool, "Background mask should be boolean"
     # Masks shouldn't overlap
-    np.testing.assert_array_equal(mask_result.signal_mask & mask_result.background_mask, 
-                                np.zeros((rows, cols), dtype=bool))
+    overlap = mask_result.signal_mask & mask_result.background_mask
+    assert not overlap.any(), "Signal and background masks overlap"
