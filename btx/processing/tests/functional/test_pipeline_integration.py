@@ -125,6 +125,9 @@ def test_histogram_pipeline(
     # Run pipeline
     results = pipeline.run(input_data)
     
+    # Get dimensions from input data
+    _, rows, cols = data.shape
+    
     # Validate results
     assert results.success
     assert set(results.execution_order) == {"load_data", "make_histogram", "measure_emd"}
@@ -159,8 +162,8 @@ def test_analysis_pipeline(
     synthetic_data: tuple
 ):
     """Test pipeline from MeasureEMD through BuildPumpProbeMasks."""
-    # Mock a MeasureEMDOutput as input
-    rows = cols = 100
+    data, _, _, _, _ = synthetic_data
+    _, rows, cols = data.shape
     mock_emd_output = MeasureEMDOutput(
         emd_values=np.random.normal(0, 1, (rows, cols)),
         null_distribution=np.abs(np.random.normal(0, 1, 1000)),
