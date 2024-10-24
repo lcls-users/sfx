@@ -72,7 +72,10 @@ class IPCRemotePsanaDataset(Dataset):
             shm_name = response_json['shm_name']
             shape    = response_json['shape']
             dtype    = np.dtype(response_json['dtype'])
-            timestamp = [int(response_json['fiducial']), int(response_json['nanoseconds']), int(response_json['seconds']), int(response_json['time'])]
+            fiducial = int(response_json['fiducial'])
+            time = int(response_json['time'])
+            nanoseconds = int(response_json['nanoseconds'])
+            seconds = int(response_json['seconds'])
 
 
             # Initialize shared memory outside of try block to ensure it's in scope for finally block
@@ -83,7 +86,7 @@ class IPCRemotePsanaDataset(Dataset):
                 data_array = np.ndarray(shape, dtype=dtype, buffer=shm.buf)
 
                 # Convert to numpy array (this creates a copy of the data)
-                result = [np.array(data_array), timestamp]
+                result = [np.array(data_array), fiducial, time, nanoseconds, seconds]
             finally:
                 # Ensure shared memory is closed even if an exception occurs
                 if shm:
@@ -289,7 +292,8 @@ if __name__ == "__main__":
     V = data['V']
     mu = data['mu']
 
-    timestamps_list = []
+    timestamps = {}
+    fiducials_list, times_list, nanoseconds_list, seconds_list = [], [], [], []
 
     last_batch = False
     projected_images = [[] for i in range(num_gpus)]
@@ -302,7 +306,7 @@ if __name__ == "__main__":
                         last_batch = True
 
                     current_loading_batch = []
-                    current_timestamps = []
+                    current_fiducials, current_times, current_nanoseconds, current_seconds = [], [], [], []
                     requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[run-init_run]))]
 
                     server_address = ('localhost', 5000)
@@ -312,15 +316,21 @@ if __name__ == "__main__":
 
                     for batch in dataloader_iter:
                         current_loading_batch.append(batch[0])
-                        current_timestamps.append(batch[1])
-                        print(batch[1])
+                        current_fiducials.append(batch[1])
+                        current_times.append(batch[2])
+                        current_nanoseconds.append(batch[3])
+                        current_seconds.append(batch[4])
 
                         if num_images_seen + len(current_loading_batch) >= num_images_to_add and current_loading_batch != []:
                             last_batch = True
                             break
 
                     current_loading_batch = np.concatenate(current_loading_batch, axis=0)
-                    current_timestamps = np.array(list(chain.from_iterable(current_timestamps)))
+                    current_fiducials = list(chain.from_iterable(current_fiducials))
+                    current_times = list(chain.from_iterable(current_times))
+                    current_nanoseconds = list(chain.from_iterable(current_nanoseconds))
+                    current_seconds = list(chain.from_iterable(current_seconds))
+
                     print(current_timestamps)
                     #Remove None images
                     current_len = current_loading_batch.shape[0]
@@ -328,8 +338,16 @@ if __name__ == "__main__":
                     print(f"Loaded {event+current_len} images from run {run}.",flush=True)
                     print("Number of images seen:",num_images_seen,flush=True)
                     current_loading_batch = current_loading_batch[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
-                    current_timestamps = current_timestamps[[i for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]]
-                    timestamps_list.append(current_timestamps)
+                    current_fiducials = [current_fiducials[i] for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]
+                    current_times = [current_times[i] for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]
+                    current_nanoseconds = [current_nanoseconds[i] for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]
+                    current_seconds = [current_seconds[i] for i in range(current_len) if not np.isnan(current_loading_batch[i : i + 1]).any()]
+
+                    fiducials_list.append(current_fiducials)
+                    times_list.append(current_times)
+                    nanoseconds_list.append(current_nanoseconds)
+                    seconds_list.append(current_seconds)
+                    
                     print(f"Number of non-none images in the current batch: {current_loading_batch.shape[0]}",flush=True)
 
                     #Split the images into batches for each GPU
@@ -359,13 +377,18 @@ if __name__ == "__main__":
     #Creates a reduced dataset
     for rank in range(num_gpus):
         projected_images[rank] = np.concatenate(projected_images[rank], axis=0)
-   
+    
+    timestamps['fiducials'] = np.concatenate(fiducials_list, axis=0)
+    timestamps['times'] = np.concatenate(times_list, axis=0)
+    timestamps['nanoseconds'] = np.concatenate(nanoseconds_list, axis=0)
+    timestamps['seconds'] = np.concatenate(seconds_list, axis=0)
+
     #Save the projected images
     input_path = os.path.dirname(filename)
     output_path = os.path.join(input_path, f"projected_images_{exp}_start_run_{init_run}_num_images_{num_images_to_add}_node_{id_current_node}.h5")
     with h5py.File(output_path, 'w') as f:
         append_to_dataset(f, 'projected_images', projected_images)
-        append_to_dataset(f, 'timestamps', np.concatenate(timestamps_list, axis=0))
+        append_to_dataset(f, 'timestamps', timestamps)
     
     print(f"Model saved under the name projected_images_{exp}_start_run_{init_run}_num_images_{num_images_to_add}_node_{id_current_node}.h5",flush=True)
     print("Process finished",flush=True)
