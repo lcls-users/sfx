@@ -26,25 +26,16 @@ class PumpProbeAnalysis:
                 - pump_probe_analysis.significance_level: P-value threshold
         """
         self.config = config
-        self._validate_config()
         
-    def _validate_config(self) -> None:
-        """Validate configuration parameters."""
+        # Set defaults
         if 'pump_probe_analysis' not in self.config:
-            raise ValueError("Missing 'pump_probe_analysis' section in config")
+            self.config['pump_probe_analysis'] = {}
             
-        required_params = ['min_count', 'significance_level']
-        for param in required_params:
-            if param not in self.config['pump_probe_analysis']:
-                raise ValueError(f"Missing required parameter: {param}")
-        
-        min_count = self.config['pump_probe_analysis']['min_count']
-        if not isinstance(min_count, (int, np.integer)) or min_count < 1:
-            raise ValueError("min_count must be a positive integer")
-            
-        sig_level = self.config['pump_probe_analysis']['significance_level']
-        if not isinstance(sig_level, (int, float)) or not 0 < sig_level < 1:
-            raise ValueError("significance_level must be between 0 and 1")
+        analysis_config = self.config['pump_probe_analysis']
+        if 'min_count' not in analysis_config:
+            analysis_config['min_count'] = 10
+        if 'significance_level' not in analysis_config:
+            analysis_config['significance_level'] = 0.05
 
     def _group_by_delay(
         self, 
