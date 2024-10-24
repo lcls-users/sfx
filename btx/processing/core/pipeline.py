@@ -65,18 +65,42 @@ class Pipeline:
         success = True
         error = None
         
+        print("\n=== Starting Pipeline Execution ===")
+        
         for task_name in self.execution_order:
+            print(f"\n--- Executing task: {task_name} ---")
             task = self.tasks[task_name]
             deps = self.dependencies[task_name]
             
-            # Simplified input handling
-            task_input = initial_input if not deps else \
-                        results[next(iter(deps))].output if len(deps) == 1 else \
-                        {dep: results[dep].output for dep in deps}
-            
-            # Run task
             try:
+                # Determine input based on dependencies
+                if not deps:
+                    task_input = initial_input
+                    print(f"Using initial input type: {type(task_input)}")
+                elif len(deps) == 1:
+                    # Single dependency
+                    dep = next(iter(deps))
+                    prev_output = results[dep].output
+                    print(f"Previous output type from {dep}: {type(prev_output)}")
+                    
+                    # Wrap output in appropriate input type
+                    if task_name == "make_histogram":
+                        print("Creating MakeHistogramInput")
+                        task_input = MakeHistogramInput(
+                            config=task.config,
+                            load_data_output=prev_output
+                        )
+                    else:
+                        task_input = prev_output
+                    print(f"Created input type: {type(task_input)}")
+                else:
+                    # Multiple dependencies
+                    task_input = {dep: results[dep].output for dep in deps}
+                
+                # Run task
+                print(f"Running task {task_name}")
                 output = task.run(task_input)
+                print(f"Task {task_name} completed with output type: {type(output)}")
                 
                 if self.diagnostics_dir:
                     task.plot_diagnostics(output, self.diagnostics_dir / task_name)
@@ -84,6 +108,7 @@ class Pipeline:
                 results[task_name] = TaskResult(output=output, success=True)
                 
             except Exception as e:
+                print(f"ERROR in task {task_name}: {str(e)}")
                 results[task_name] = TaskResult(
                     output=None,
                     success=False,
