@@ -1,82 +1,25 @@
 from pathlib import Path
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Optional
 import numpy as np
 import matplotlib.pyplot as plt
 
 from btx.processing.btx_types import LoadDataInput, LoadDataOutput
 
 class LoadData:
-    """Load and preprocess XPP data."""
-    
     def __init__(self, config: Dict[str, Any]):
-        """Initialize with configuration.
-        
-        Args:
-            config: Dictionary containing:
-                - setup.run: Run number
-                - setup.exp: Experiment number
-                - load_data.roi: ROI coordinates [x1, x2, y1, y2]
-                - load_data.energy_filter: Energy filter parameters [E0, dE]
-                - load_data.i0_threshold: I0 threshold value
-                - load_data.time_bin: Time bin size in ps
-        """
         self.config = config
         self._validate_config()
         
-    def _validate_config(self) -> None:
-        """Validate configuration parameters."""
-        if 'setup' not in self.config:
-            raise ValueError("Missing 'setup' section in config")
-            
-        for param in ['run', 'exp']:
-            if param not in self.config['setup']:
-                raise ValueError(f"Missing required setup parameter: {param}")
-                
-        if 'load_data' not in self.config:
-            raise ValueError("Missing 'load_data' section in config")
-            
-        for param in ['roi', 'time_bin']:
-            if param not in self.config['load_data']:
-                raise ValueError(f"Missing required load_data parameter: {param}")
-                
-        roi = self.config['load_data']['roi']
-        if not isinstance(roi, (list, tuple)) or len(roi) != 4:
-            raise ValueError("ROI must be list/tuple of 4 integers")
-            
-        if not all(isinstance(x, (int, np.integer)) for x in roi):
-            raise ValueError("All ROI values must be integers")
-            
-        if not (roi[0] < roi[1] and roi[2] < roi[3]):
-            raise ValueError("Invalid ROI coordinates (start must be less than end)")
-
-    def _calculate_binned_delays(self, raw_delays: np.ndarray) -> np.ndarray:
-        """Calculate binned delays from raw delay values."""
-        time_bin = float(self.config['load_data']['time_bin'])
+    def run(self, input_data: Optional[LoadDataInput]) -> LoadDataOutput:  # Modified signature
+        """Run the data loading and preprocessing.
         
-        # Handle NaN values
-        valid_delays = raw_delays[~np.isnan(raw_delays)]
-        if len(valid_delays) == 0:
-            raise ValueError("No valid delay values found")
+        Args:
+            input_data: Optional input data for synthetic testing
             
-        delay_min = np.floor(valid_delays.min())
-        delay_max = np.ceil(valid_delays.max())
-        
-        # Create bins
-        half_bin = time_bin / 2
-        bins = np.arange(delay_min - half_bin, delay_max + time_bin, time_bin)
-        
-        # Bin the delays
-        binned_indices = np.digitize(raw_delays, bins, right=True)
-        binned_delays = bins[binned_indices - 1] + half_bin
-        
-        # Clip to valid range
-        binned_delays = np.clip(binned_delays, delay_min, delay_max)
-        
-        return binned_delays
-
-    def run(self, input_data: LoadDataInput) -> LoadDataOutput:
-        """Run the data loading and preprocessing."""
-        if input_data.data is not None:
+        Returns:
+            LoadDataOutput containing processed data
+        """
+        if input_data is not None:
             # Use provided synthetic data
             data = input_data.data
             I0 = input_data.I0
