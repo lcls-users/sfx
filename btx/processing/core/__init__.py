@@ -4,7 +4,6 @@
 # Import and expose all core components
 from .task import Task
 from .pipeline import Pipeline, PipelineResult, TaskResult
-from .builders import PipelineBuilder
 from .adapters import (
     TaskAdapter, TaskRegistry, register_task,
     registry as task_registry
