@@ -44,8 +44,9 @@ def load_pump_probe_data(
     print('roi', roi)
     frames = frames[:, y1:y2, x1:x2]
     
-    # Create LoadDataInput
-    input_data = LoadDataInput(
+    # Use LoadData to properly bin the delays
+    loader = LoadData(config)
+    load_data_output = loader.process(
         config=config,
         data=frames,
         I0=I0,
@@ -53,10 +54,6 @@ def load_pump_probe_data(
         laser_on_mask=laser_on_mask,
         laser_off_mask=laser_off_mask
     )
-    
-    # Use LoadData to properly bin the delays
-    loader = LoadData(config)
-    load_data_output = loader.run(input_data)
     
     return load_data_output, frames
 

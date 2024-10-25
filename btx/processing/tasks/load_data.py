@@ -113,6 +113,35 @@ class LoadData:
         
         return binned_delays
 
+    def process(self, config: Dict[str, Any],
+                data: Optional[np.ndarray] = None,
+                I0: Optional[np.ndarray] = None,
+                laser_delays: Optional[np.ndarray] = None,
+                laser_on_mask: Optional[np.ndarray] = None,
+                laser_off_mask: Optional[np.ndarray] = None) -> LoadDataOutput:
+        """Process data directly from inputs.
+        
+        Args:
+            config: Configuration dictionary
+            data: Optional (frames, rows, cols) array
+            I0: Optional (frames,) array
+            laser_delays: Optional (frames,) array
+            laser_on_mask: Optional (frames,) boolean array
+            laser_off_mask: Optional (frames,) boolean array
+            
+        Returns:
+            LoadDataOutput containing processed data
+        """
+        input_data = LoadDataInput(
+            config=config,
+            data=data,
+            I0=I0,
+            laser_delays=laser_delays,
+            laser_on_mask=laser_on_mask,
+            laser_off_mask=laser_off_mask
+        )
+        return self.run(input_data)
+
     def run(self, input_data: LoadDataInput) -> LoadDataOutput:
         """Run the data loading and preprocessing."""
         if input_data.data is not None:
