@@ -66,27 +66,36 @@ class PumpProbeAnalysis:
         print("\n=== Starting _group_by_delay ===")
         min_count = self.config['pump_probe_analysis']['min_count']
         delays = input_data.load_data_output.binned_delays
+        time_bin = float(self.config['load_data']['time_bin'])
         
-        # Use delays directly - no rounding
-        unique_delays = np.unique(delays)
-        print(f"Using {len(unique_delays)} unique delays: {unique_delays}")
+        # Use unique with isclose-based comparison
+        unique_delays = []
+        remaining_delays = delays.copy()
+        
+        while len(remaining_delays) > 0:
+            current = remaining_delays[0]
+            mask = np.isclose(remaining_delays, current, rtol=1e-5, atol=time_bin/10)
+            if np.any(mask):
+                # Use mean of close values as the representative delay
+                cluster = remaining_delays[mask]
+                unique_delays.append(np.mean(cluster))
+                remaining_delays = remaining_delays[~mask]
+        
+        unique_delays = np.array(unique_delays)
+        print(f"Found {len(unique_delays)} unique delay groups: {unique_delays}")
         
         # Group frames by delay
         stacks_on = {}
         stacks_off = {}
         
-        # Print total number of frames before grouping
-        total_frames = len(delays)
-        print(f"Total frames before grouping: {total_frames}")
-        
-        # Process each unique delay
         for delay in unique_delays:
-            # Find all frames in this delay bin
-            delay_mask = (delays == delay)
+            # Find all frames in this delay bin using isclose
+            delay_mask = np.isclose(delays, delay, rtol=1e-5, atol=time_bin/10)
             
             # Debug info about delay mask
             delay_indices = np.where(delay_mask)[0]
-            print(f"\nDelay {delay:.2f}ps (found in {len(delay_indices)} frames):")
+            print(f"\nDelay {delay:.3f}ps (found in {len(delay_indices)} frames):")
+            print(f"  Delay values in this group: {np.unique(delays[delay_mask])}")
             print(f"  Delay indices: {delay_indices}")
             
             # Split into on/off
@@ -104,9 +113,6 @@ class PumpProbeAnalysis:
             print(f"  OFF indices: {off_indices}")
             print(f"  Found {n_on} ON frames and {n_off} OFF frames")
             
-            if len(delay_indices) > 0:
-                print(f"  Using binned delay value: {delay:.3f}ps")
-            
             if n_on >= min_count and n_off >= min_count:
                 print(f"  ✓ Accepted (>= {min_count} frames)")
                 stacks_on[delay] = DelayData(
@@ -120,27 +126,17 @@ class PumpProbeAnalysis:
             else:
                 print(f"  ✗ Rejected (< {min_count} frames)")
         
-        # Print summary of grouping
+        # Print summary
         print("\nGrouping summary:")
         print(f"Number of delay points with sufficient frames: {len(stacks_on)}")
         if stacks_on:
             print("Frame counts per delay point:")
             for delay in sorted(stacks_on.keys()):
-                print(f"  {delay:.2f}ps: {len(stacks_on[delay].frames)} ON, {len(stacks_off[delay].frames)} OFF")
+                print(f"  {delay:.3f}ps: {len(stacks_on[delay].frames)} ON, {len(stacks_off[delay].frames)} OFF")
         
         if not stacks_on:
-            plt.figure(figsize=(10, 6))
-            plt.hist(delays, bins=100)
-            plt.xlabel('Delay (ps)')
-            plt.ylabel('Count')
-            plt.title('Delay Distribution - Empty Groups')
-            save_dir = Path("processing/temp/diagnostic_plots")
-            save_dir.mkdir(parents=True, exist_ok=True)
-            plt.savefig(save_dir / 'delay_distribution_empty.png')
-            plt.close()
             raise ValueError(
-                f"No delay groups met the minimum frame count requirement of {min_count}.\n"
-                f"Check delay_distribution_empty.png for diagnostics."
+                f"No delay groups met the minimum frame count requirement of {min_count}."
             )
         
         return stacks_on, stacks_off

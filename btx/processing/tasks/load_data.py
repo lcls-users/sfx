@@ -64,8 +64,15 @@ class LoadData:
         """Calculate binned delays from raw delay values.
         All delay binning should happen here, and only here."""
         time_bin = float(self.config['load_data']['time_bin'])
-        print(f"\nBinning delays with time_bin={time_bin}")
-        print(f"Input delays range: {np.nanmin(raw_delays):.2f} to {np.nanmax(raw_delays):.2f}")
+        print("\n=== LoadData Delay Binning ===")
+        print(f"Binning delays with time_bin={time_bin}")
+        print(f"Input delays range: {np.nanmin(raw_delays):.3f} to {np.nanmax(raw_delays):.3f}")
+        
+        # Add detailed debugging for input values
+        unique_raw = np.unique(raw_delays[~np.isnan(raw_delays)])
+        print(f"Input unique delay values ({len(unique_raw)}):")
+        print(unique_raw)
+        print(f"Input delay spacings: {np.diff(unique_raw)}")
         
         # Check if already properly binned
         if validate_delay_binning(raw_delays, time_bin):
@@ -83,15 +90,27 @@ class LoadData:
         # Create bins centered on multiples of time_bin
         bins = np.arange(delay_min, delay_max + time_bin, time_bin)
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        print(f"Created {len(bins)-1} bins with centers: {bin_centers}")
+        print(f"\nBin edges: {bins}")
+        print(f"Bin centers: {bin_centers}")
         
         # Bin the delays using searchsorted
         indices = np.searchsorted(bins, raw_delays) - 1
         indices = np.clip(indices, 0, len(bin_centers) - 1)
         binned_delays = bin_centers[indices]
         
-        print(f"Output delays range: {np.nanmin(binned_delays):.2f} to {np.nanmax(binned_delays):.2f}")
-        print(f"Unique output values: {np.unique(binned_delays[~np.isnan(binned_delays)])}")
+        # Add detailed debugging for output values
+        unique_binned = np.unique(binned_delays[~np.isnan(binned_delays)])
+        print(f"\nOutput unique delay values ({len(unique_binned)}):")
+        print(unique_binned)
+        print(f"Output delay spacings: {np.diff(unique_binned)}")
+        
+        # Check if any delays are too close together
+        min_spacing = np.min(np.diff(unique_binned))
+        if min_spacing < time_bin * 0.9:  # Allow 10% tolerance
+            print(f"WARNING: Some output delays are closer than time_bin!")
+            print(f"Minimum spacing: {min_spacing} (should be ~{time_bin})")
+        
+        print(f"Output delays range: {np.nanmin(binned_delays):.3f} to {np.nanmax(binned_delays):.3f}")
         
         return binned_delays
 
