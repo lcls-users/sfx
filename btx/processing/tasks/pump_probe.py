@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from btx.processing.btx_types import (
     PumpProbeAnalysisInput,
     PumpProbeAnalysisOutput,
+    LoadDataOutput,
+    BuildPumpProbeMasksOutput
 )
 
 import warnings
