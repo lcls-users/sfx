@@ -4,7 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 
-from btx.processing.btx_types import CalculatePValuesInput, CalculatePValuesOutput
+from btx.processing.btx_types import (
+    CalculatePValuesInput, CalculatePValuesOutput,
+    MeasureEMDOutput
+)
 
 class CalculatePValues:
     """Calculate p-values from EMD values and null distribution."""
