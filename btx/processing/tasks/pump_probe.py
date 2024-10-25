@@ -447,9 +447,8 @@ class PumpProbeAnalysis:
             axes[2,0].set_ylabel('Count')
             axes[2,0].legend()
             
-            # QQ plot of differences
-            stats.probplot(net_signal_on - net_signal_off, dist="norm", plot=axes[2,1])
-            axes[2,1].set_title('Q-Q Plot of Signal Differences')
+            # Leave second subplot empty
+            axes[2,1].set_visible(False)
             
             # Add statistical information
             stats_text = (
