@@ -53,6 +53,10 @@ class PumpProbeAnalysis:
             analysis_config['min_count'] = 10
         if 'significance_level' not in analysis_config:
             analysis_config['significance_level'] = 0.05
+        if 'E0' not in analysis_config:
+            analysis_config['E0'] = 8.8  # keV
+        if 'dE' not in analysis_config:
+            analysis_config['dE'] = 2.0  # keV
 
     def _group_by_delay(
         self, 
@@ -116,6 +120,15 @@ class PumpProbeAnalysis:
         
         return stacks_on, stacks_off
 
+    def _make_energy_filter(self, frames: np.ndarray) -> np.ndarray:
+        """Create energy filter mask based on config parameters."""
+        E0 = self.config['pump_probe_analysis']['E0']
+        dE = self.config['pump_probe_analysis']['dE']
+        
+        # Create rectangular window
+        energy_mask = (frames >= (E0 - dE)) & (frames <= (E0 + dE))
+        return energy_mask
+
     def _calculate_signals(
         self,
         frames: np.ndarray,
@@ -123,9 +136,13 @@ class PumpProbeAnalysis:
         bg_mask: np.ndarray
     ) -> Tuple[float, float, float]:
         """Calculate signal, background and total variance for a group of frames."""
+        # Apply energy filter to each frame
+        energy_mask = self._make_energy_filter(frames)
+        filtered_frames = frames * energy_mask
+        
         # Calculate per-frame sums
-        signal_sums = np.sum(frames * signal_mask[None, :, :], axis=(1,2))
-        bg_sums = np.sum(frames * bg_mask[None, :, :], axis=(1,2))
+        signal_sums = np.sum(filtered_frames * signal_mask[None, :, :], axis=(1,2))
+        bg_sums = np.sum(filtered_frames * bg_mask[None, :, :], axis=(1,2))
         
         # Scale background by mask sizes
         scale_factor = np.sum(signal_mask) / np.sum(bg_mask)
