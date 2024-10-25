@@ -324,7 +324,13 @@ class PumpProbeAnalysis:
         log_p_values = -np.log10(output.p_values)
         print("\nLog p-values just before plotting:")
         for d, lp in zip(output.delays, log_p_values):
-            print(f"Delay {d:.1f} ps: -log10(p)={lp if not np.isinf(lp) else 'inf':.1f}")
+            try:
+                if np.isinf(lp):
+                    print(f"Delay {d:.1f} ps: -log10(p)=inf")
+                else:
+                    print(f"Delay {d:.1f} ps: -log10(p)={lp:.1f}")
+            except (ValueError, TypeError):
+                print(f"Delay {d:.1f} ps: -log10(p)=ERROR")
         
         ax3.scatter(output.delays, log_p_values,
                    color='red', label='-log(p-value)')
