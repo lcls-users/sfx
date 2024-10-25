@@ -284,10 +284,10 @@ class PumpProbeAnalysis:
         save_dir.mkdir(parents=True, exist_ok=True)
         
         # Create main overview figure
-        fig = plt.figure(figsize=(15, 9))
+        fig = plt.figure(figsize=(8, 12))
                 
         # 1. Time traces with error bars
-        ax1 = fig.add_subplot(131)
+        ax1 = fig.add_subplot(211)
         ax1.errorbar(output.delays, output.signals_on,
                     yerr=output.std_devs_on, fmt='rs-',
                     label='Laser On', capsize=3)
@@ -299,19 +299,8 @@ class PumpProbeAnalysis:
         ax1.legend()
         ax1.grid(True)
         
-        # 2. Difference signal
-        ax2 = fig.add_subplot(132)
-        diff_signal = output.signals_on - output.signals_off
-        diff_std = np.sqrt(output.std_devs_on**2 + output.std_devs_off**2)
-        ax2.errorbar(output.delays, diff_signal,
-                    yerr=diff_std, fmt='bo-',
-                    label='On - Off', capsize=3)
-        ax2.set_xlabel('Time Delay (ps)')
-        ax2.set_ylabel('Signal Difference')
-        ax2.grid(True)
-        
-        # 3. Statistical significance with proper infinity handling
-        ax3 = fig.add_subplot(133)
+        # 2. Statistical significance with proper infinity handling
+        ax2 = fig.add_subplot(212)
         
         # Convert p-values to log scale with capped infinities
         max_log_p = 16  # Maximum value to show on plot
@@ -328,22 +317,22 @@ class PumpProbeAnalysis:
                 log_p_values[i] = max_log_p
         
         # Create scatter plot with processed values
-        scatter = ax3.scatter(output.delays, log_p_values,
+        scatter = ax2.scatter(output.delays, log_p_values,
                              color='red', label='-log(p-value)')
         
         # Add significance line
         sig_level = self.config['pump_probe_analysis']['significance_level']
         sig_line = -np.log10(sig_level)
-        ax3.axhline(y=sig_line, color='k', linestyle='--',
+        ax2.axhline(y=sig_line, color='k', linestyle='--',
                     label=f'p={sig_level}')
         
         # Set y-axis limits explicitly
-        ax3.set_ylim(0, max_log_p * 1.1)  # Add 10% padding above max
+        ax2.set_ylim(0, max_log_p * 1.1)  # Add 10% padding above max
         
-        ax3.set_xlabel('Time Delay (ps)')
-        ax3.set_ylabel('-log10(P-value)')
-        ax3.legend()
-        ax3.grid(True)
+        ax2.set_xlabel('Time Delay (ps)')
+        ax2.set_ylabel('-log10(P-value)')
+        ax2.legend()
+        ax2.grid(True)
         
         
         plt.tight_layout()
