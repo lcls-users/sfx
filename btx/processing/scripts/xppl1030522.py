@@ -116,11 +116,10 @@ make_histogram.plot_diagnostics(histogram_output, diagnostics_dir / "make_histog
 
 print("\nMeasuring EMD...")
 measure_emd = MeasureEMD(config)
-emd_input = MeasureEMDInput(
+emd_output = measure_emd.process(
     config=config,
     histogram_output=histogram_output
 )
-emd_output = measure_emd.run(emd_input)
 measure_emd.plot_diagnostics(emd_output, diagnostics_dir / "measure_emd")
 
 print("\nCalculating p-values...")

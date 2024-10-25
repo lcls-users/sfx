@@ -105,6 +105,23 @@ class MeasureEMD:
         
         return np.array(null_emd_values)
 
+    def process(self, config: Dict[str, Any],
+                histogram_output: MakeHistogramOutput) -> MeasureEMDOutput:
+        """Process EMD calculation directly from inputs.
+        
+        Args:
+            config: Configuration dictionary
+            histogram_output: Output from MakeHistogram task
+            
+        Returns:
+            MeasureEMDOutput containing EMD values and null distribution
+        """
+        input_data = MeasureEMDInput(
+            config=config,
+            histogram_output=histogram_output
+        )
+        return self.run(input_data)
+
     def run(self, input_data: MeasureEMDInput) -> MeasureEMDOutput:
         """Run EMD calculation.
         
