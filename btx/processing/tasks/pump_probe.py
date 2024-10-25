@@ -53,10 +53,10 @@ class PumpProbeAnalysis:
             analysis_config['min_count'] = 10
         if 'significance_level' not in analysis_config:
             analysis_config['significance_level'] = 0.05
-        if 'E0' not in analysis_config:
-            analysis_config['E0'] = 8.8  # keV
-        if 'dE' not in analysis_config:
-            analysis_config['dE'] = 2.0  # keV
+        if 'Emin' not in analysis_config:
+            analysis_config['Emin'] = 7.0  # keV
+        if 'Emax' not in analysis_config:
+            analysis_config['Emax'] = float('inf')  # keV
 
     def _group_by_delay(
         self, 
@@ -122,11 +122,11 @@ class PumpProbeAnalysis:
 
     def _make_energy_filter(self, frames: np.ndarray) -> np.ndarray:
         """Create energy filter mask based on config parameters."""
-        E0 = self.config['pump_probe_analysis']['E0']
-        dE = self.config['pump_probe_analysis']['dE']
+        Emin = self.config['pump_probe_analysis']['Emin']
+        Emax = self.config['pump_probe_analysis']['Emax']
         
-        # Create rectangular window
-        energy_mask = (frames >= (E0 - dE)) & (frames <= (E0 + dE))
+        # Create energy window
+        energy_mask = (frames >= Emin) & (frames <= Emax)
         return energy_mask
 
     def _calculate_signals(
@@ -298,7 +298,7 @@ class PumpProbeAnalysis:
         energy_mask = self._make_energy_filter(all_frames)
         filtered_counts = np.sum(all_frames * energy_mask, axis=0)
         im2 = ax2.imshow(filtered_counts, origin='lower', cmap='viridis')
-        ax2.set_title(f'Energy Filtered Map (E0={self.config["pump_probe_analysis"]["E0"]}, dE={self.config["pump_probe_analysis"]["dE"]})')
+        ax2.set_title(f'Energy Filtered Map (Emin={self.config["pump_probe_analysis"]["Emin"]}, Emax={self.config["pump_probe_analysis"]["Emax"]})')
         plt.colorbar(im2, ax=ax2)
         
         # 3. Time traces with error bars (bottom left)
