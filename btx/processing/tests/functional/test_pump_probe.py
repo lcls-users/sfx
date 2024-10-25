@@ -134,8 +134,8 @@ def generate_synthetic_pump_probe_data(
     
     # Create frames with Poisson noise
     for i in range(n_frames):
-        # Base pattern - use Poisson distribution
-        lambda_matrix = np.full((rows, cols), base_counts)
+        # Base pattern with Poisson background (lambda=5)
+        lambda_matrix = np.full((rows, cols), base_counts) + np.random.poisson(lam=5, size=(rows, cols))
         
         # Add signal for laser-on frames
         if laser_on[i]:
