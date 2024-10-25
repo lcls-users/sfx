@@ -161,6 +161,9 @@ class PumpProbeAnalysis:
         signal_mask: np.ndarray,
         bg_mask: np.ndarray
     ) -> Tuple[float, float, float]:
+        print(f"\n=== Processing {len(frames)} frames in _calculate_signals ===")
+        print(f"Signal mask sum: {np.sum(signal_mask)}")
+        print(f"Background mask sum: {np.sum(bg_mask)}")
         """Calculate signal, background and total variance for a group of frames."""
         # Apply energy filter to each frame
         energy_mask = self._make_energy_filter(frames)
@@ -302,6 +305,14 @@ class PumpProbeAnalysis:
     ) -> None:
         """Generate diagnostic plots with proper infinity handling."""
         save_dir.mkdir(parents=True, exist_ok=True)
+        
+        print("\n=== Signal Shape Debug ===")
+        print(f"signals_on shape: {output.signals_on.shape}")
+        print(f"signals_off shape: {output.signals_off.shape}")
+        print(f"delays: {output.delays}")
+        print("\nFrame counts per delay:")
+        for delay, (n_on, n_off) in output.n_frames_per_delay.items():
+            print(f"Delay {delay:.3f}: {n_on} on, {n_off} off")
         
         # Create four-panel overview figure
         fig = plt.figure(figsize=(16, 16))
