@@ -259,8 +259,15 @@ class PumpProbeAnalysis:
         print("\nP-value calculation debug:")
         print("Raw p-values directly after calculation:")
         for d, z, p in zip(delta_signals, z_scores, p_values):
-            print(f"Delta={d:.3f}, Z={z:.1f}, p={p:.2e}, -log10(p)={-np.log10(p) if p > 0 else 'inf':.1f}")
+            try:
+                p_str = f"{p:.2e}" if isinstance(p, (int, float)) else str(p)
+                log_p = f"{-np.log10(p):.1f}" if p > 0 else "inf"
+                print(f"Delta={d:.3f}, Z={z:.1f}, p={p_str}, -log10(p)={log_p}")
+            except (ValueError, TypeError):
+                print(f"Delta={d:.3f}, Z={z:.1f}, p=ERROR, -log10(p)=ERROR")
         
+        # Ensure p_values are numeric, replace any invalid values with 1.0
+        p_values = np.array([p if isinstance(p, (int, float)) else 1.0 for p in p_values])
         return p_values
 
     def plot_diagnostics(
