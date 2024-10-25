@@ -280,21 +280,12 @@ class PumpProbeAnalysis:
         output: PumpProbeAnalysisOutput,
         save_dir: Path
     ) -> None:
-        """Generate diagnostic plots."""
-        print("\nP-values at plotting time:")
-        for delay, p in zip(output.delays, output.p_values):
-            try:
-                p_str = f"{p:.2e}" if isinstance(p, (int, float)) else str(p)
-                log_p = f"{-np.log10(p):.1f}" if isinstance(p, (int, float)) and p > 0 else "inf"
-                print(f"Delay {delay:.1f} ps: p={p_str}, -log10(p)={log_p}")
-            except (ValueError, TypeError):
-                print(f"Delay {delay:.1f} ps: p=ERROR, -log10(p)=ERROR")
-        
+        """Generate diagnostic plots with proper infinity handling."""
         save_dir.mkdir(parents=True, exist_ok=True)
         
         # Create main overview figure
         fig = plt.figure(figsize=(15, 12))
-            
+                
         # 1. Time traces with error bars
         ax1 = fig.add_subplot(221)
         ax1.errorbar(output.delays, output.signals_on,
@@ -319,27 +310,38 @@ class PumpProbeAnalysis:
         ax2.set_ylabel('Signal Difference')
         ax2.grid(True)
         
-        # 3. Statistical significance
+        # 3. Statistical significance with proper infinity handling
         ax3 = fig.add_subplot(223)
-        log_p_values = -np.log10(output.p_values)
-        print("\nLog p-values just before plotting:")
-        for d, lp in zip(output.delays, log_p_values):
-            try:
-                if np.isinf(lp):
-                    print(f"Delay {d:.1f} ps: -log10(p)=inf")
-                else:
-                    print(f"Delay {d:.1f} ps: -log10(p)={lp:.1f}")
-            except (ValueError, TypeError):
-                print(f"Delay {d:.1f} ps: -log10(p)=ERROR")
         
-        ax3.scatter(output.delays, log_p_values,
-                   color='red', label='-log(p-value)')
+        # Convert p-values to log scale with capped infinities
+        max_log_p = 16  # Maximum value to show on plot
+        log_p_values = np.zeros_like(output.p_values)
+        
+        print("\nP-value processing for plotting:")
+        for i, (delay, p_val) in enumerate(zip(output.delays, output.p_values)):
+            if p_val > 0:
+                log_p = -np.log10(p_val)
+                print(f"Delay {delay:4.1f} ps: p={p_val:.2e} -> log_p={log_p:.1f}")
+                log_p_values[i] = log_p
+            else:
+                print(f"Delay {delay:4.1f} ps: p=0 -> setting to max_log_p={max_log_p}")
+                log_p_values[i] = max_log_p
+        
+        # Create scatter plot with processed values
+        scatter = ax3.scatter(output.delays, log_p_values,
+                             color='red', label='-log(p-value)')
+        
+        # Add significance line
         sig_level = self.config['pump_probe_analysis']['significance_level']
         sig_line = -np.log10(sig_level)
         ax3.axhline(y=sig_line, color='k', linestyle='--',
-                   label=f'p={sig_level}')
+                    label=f'p={sig_level}')
+        
+        # Set y-axis limits explicitly
+        ax3.set_ylim(0, max_log_p * 1.1)  # Add 10% padding above max
+        
         ax3.set_xlabel('Time Delay (ps)')
-        ax3.set_ylabel('-log(P-value)')
+        ax3.set_ylabel('-log10(P-value)')
         ax3.legend()
         ax3.grid(True)
         
@@ -424,9 +426,7 @@ class PumpProbeAnalysis:
             axes[2,0].legend()
             
             # QQ plot of differences
-            from scipy import stats
-            diff_signals = net_signal_on - net_signal_off
-            stats.probplot(diff_signals, dist="norm", plot=axes[2,1])
+            stats.probplot(net_signal_on - net_signal_off, dist="norm", plot=axes[2,1])
             axes[2,1].set_title('Q-Q Plot of Signal Differences')
             
             # Add statistical information
@@ -437,6 +437,7 @@ class PumpProbeAnalysis:
                 f'Signal mean ± SE (off): {np.mean(net_signal_off):.2e} ± {np.std(net_signal_off)/np.sqrt(len(net_signal_off)):.2e}\n'
                 f'Signal CV (on/off): {np.std(net_signal_on)/np.mean(net_signal_on):.2%}/{np.std(net_signal_off)/np.mean(net_signal_off):.2%}\n'
                 f'P-value: {output.p_values[idx]:.2e}\n'
+                f'Log p-value: {log_p_values[idx]:.1f}\n'
                 f'Z-score: {(np.mean(net_signal_on) - np.mean(net_signal_off))/np.sqrt(output.std_devs_on[idx]**2 + output.std_devs_off[idx]**2):.2f}'
             )
             plt.figtext(0.02, 0.02, stats_text, fontsize=10, family='monospace')
