@@ -111,11 +111,10 @@ load_data_output, frames = load_pump_probe_data(
 
 print("\nCreating histogram...")
 make_histogram = MakeHistogram(config)
-histogram_input = MakeHistogramInput(
+histogram_output = make_histogram.process(
     config=config,
     load_data_output=load_data_output
 )
-histogram_output = make_histogram.run(histogram_input)
 make_histogram.plot_diagnostics(histogram_output, diagnostics_dir / "make_histogram")
 
 print("\nMeasuring EMD...")
