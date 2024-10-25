@@ -284,10 +284,10 @@ class PumpProbeAnalysis:
         save_dir.mkdir(parents=True, exist_ok=True)
         
         # Create main overview figure
-        fig = plt.figure(figsize=(15, 12))
+        fig = plt.figure(figsize=(15, 9))
                 
         # 1. Time traces with error bars
-        ax1 = fig.add_subplot(221)
+        ax1 = fig.add_subplot(131)
         ax1.errorbar(output.delays, output.signals_on,
                     yerr=output.std_devs_on, fmt='rs-',
                     label='Laser On', capsize=3)
@@ -300,7 +300,7 @@ class PumpProbeAnalysis:
         ax1.grid(True)
         
         # 2. Difference signal
-        ax2 = fig.add_subplot(222)
+        ax2 = fig.add_subplot(132)
         diff_signal = output.signals_on - output.signals_off
         diff_std = np.sqrt(output.std_devs_on**2 + output.std_devs_off**2)
         ax2.errorbar(output.delays, diff_signal,
@@ -311,7 +311,7 @@ class PumpProbeAnalysis:
         ax2.grid(True)
         
         # 3. Statistical significance with proper infinity handling
-        ax3 = fig.add_subplot(223)
+        ax3 = fig.add_subplot(133)
         
         # Convert p-values to log scale with capped infinities
         max_log_p = 16  # Maximum value to show on plot
@@ -345,16 +345,6 @@ class PumpProbeAnalysis:
         ax3.legend()
         ax3.grid(True)
         
-        # 4. Relative errors
-        ax4 = fig.add_subplot(224)
-        rel_error_on = output.std_devs_on / np.abs(output.signals_on) * 100
-        rel_error_off = output.std_devs_off / np.abs(output.signals_off) * 100
-        ax4.plot(output.delays, rel_error_on, 'rs-', label='Laser On')
-        ax4.plot(output.delays, rel_error_off, 'ks-', label='Laser Off')
-        ax4.set_xlabel('Time Delay (ps)')
-        ax4.set_ylabel('Relative Error (%)')
-        ax4.legend()
-        ax4.grid(True)
         
         plt.tight_layout()
         plt.savefig(save_dir / 'overview_diagnostics.png')
