@@ -50,7 +50,7 @@ class PumpProbeAnalysis:
             
         analysis_config = self.config['pump_probe_analysis']
         if 'min_count' not in analysis_config:
-            analysis_config['min_count'] = 10
+            analysis_config['min_count'] = 1
         if 'significance_level' not in analysis_config:
             analysis_config['significance_level'] = 0.05
         if 'Emin' not in analysis_config:
