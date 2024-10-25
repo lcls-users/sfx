@@ -197,15 +197,23 @@ class MeasureEMD:
             output.null_distribution,
             bins=50,
             density=True,
-            alpha=0.5
+            alpha=0.5,
+            label='Null'
+        )
+        ax4.hist(
+            output.emd_values.ravel(),
+            bins=100,
+            density=True,
+            alpha=0.5,
+            label='Data'
         )
         ax4.axvline(
             np.median(output.null_distribution),
             color='r',
             linestyle='--',
-            label='Median'
+            label='Null Median'
         )
-        ax4.set_title('Null Distribution')
+        ax4.set_title('EMD Value Distribution')
         ax4.set_xlabel('EMD Value')
         ax4.set_ylabel('Density')
         ax4.grid(True)
@@ -213,29 +221,4 @@ class MeasureEMD:
         
         plt.tight_layout()
         plt.savefig(save_dir / 'measure_emd_diagnostics.png')
-        plt.close()
-        
-        # Additional diagnostic: EMD value distribution
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.hist(
-            output.emd_values.ravel(),
-            bins=100,
-            density=True,
-            alpha=0.5,
-            label='Data'
-        )
-        ax.hist(
-            output.null_distribution,
-            bins=50,
-            density=True,
-            alpha=0.5,
-            label='Null'
-        )
-        ax.set_title('EMD Value Distribution vs Null')
-        ax.set_xlabel('EMD Value')
-        ax.set_ylabel('Density')
-        ax.grid(True)
-        ax.legend()
-        plt.tight_layout()
-        plt.savefig(save_dir / 'measure_emd_distribution.png')
         plt.close()
