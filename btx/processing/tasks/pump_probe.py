@@ -221,7 +221,12 @@ class PumpProbeAnalysis:
         
         print("\nP-values before creating output:")
         for d, p in zip(delays, p_values):
-            print(f"Delay {d:.1f} ps: p={p:.2e}, -log10(p)={-np.log10(p) if p > 0 else 'inf':.1f}")
+            try:
+                p_str = f"{p:.2e}" if isinstance(p, (int, float)) else str(p)
+                log_p = f"{-np.log10(p):.1f}" if isinstance(p, (int, float)) and p > 0 else "inf"
+                print(f"Delay {d:.1f} ps: p={p_str}, -log10(p)={log_p}")
+            except (ValueError, TypeError):
+                print(f"Delay {d:.1f} ps: p=ERROR, -log10(p)=ERROR")
         
         # Calculate mean I0 values across all delays
         mean_I0_on = np.mean([
