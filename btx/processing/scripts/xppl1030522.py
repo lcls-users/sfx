@@ -132,12 +132,11 @@ calculate_pvalues.plot_diagnostics(pvalues_output, diagnostics_dir / "calculate_
 
 print("\nBuilding masks...")
 build_masks = BuildPumpProbeMasks(config)
-masks_input = BuildPumpProbeMasksInput(
+masks_output = build_masks.process(
     config=config,
     histogram_output=histogram_output,
     p_values_output=pvalues_output
 )
-masks_output = build_masks.run(masks_input)
 build_masks.plot_diagnostics(masks_output, diagnostics_dir / "build_masks")
 
 print("\nRunning pump-probe analysis...")
