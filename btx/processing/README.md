@@ -32,13 +32,10 @@ This is a Python framework for analyzing X-ray Pump-Probe experimental data at l
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-organization/btx.git
+git clone git@github.com:hoidn/btx.git
 
 # Navigate to the project directory
 cd btx
-
-# Install dependencies
-pip install -r requirements.txt
 
 # Install the package in development mode
 pip install -e .
