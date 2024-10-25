@@ -63,14 +63,14 @@ class PumpProbeAnalysis:
         input_data: PumpProbeAnalysisInput
     ) -> Tuple[Dict[float, DelayData], Dict[float, DelayData]]:
         """Group frames by delay value."""
-        # print("\n=== Starting _group_by_delay ===")
+        print("\n=== Starting _group_by_delay ===")
         min_count = self.config['pump_probe_analysis']['min_count']
         delays = input_data.load_data_output.binned_delays
         time_bin = float(self.config['load_data']['time_bin'])
         
         # Get unique delays more safely
         sorted_delays = np.sort(np.unique(delays))
-        # print(f"Initial unique delays: {sorted_delays}")
+        print(f"Initial unique delays: {sorted_delays}")
         
         # Group delays that are within time_bin/10 of each other
         unique_delays = []
@@ -88,7 +88,7 @@ class PumpProbeAnalysis:
             unique_delays.append(np.mean(current_group))
         
         unique_delays = np.array(unique_delays)
-        # print(f"Found {len(unique_delays)} unique delay groups: {unique_delays}")
+        print(f"Found {len(unique_delays)} unique delay groups: {unique_delays}")
         
         # Group frames by delay
         stacks_on = {}
@@ -100,9 +100,9 @@ class PumpProbeAnalysis:
             
             # Debug info about delay mask
             delay_indices = np.where(delay_mask)[0]
-            # print(f"\nDelay {delay:.3f}ps (found in {len(delay_indices)} frames):")
-            # print(f"  Delay values in this group: {np.unique(delays[delay_mask])}")
-            # print(f"  Delay indices: {delay_indices}")    
+            print(f"\nDelay {delay:.3f}ps (found in {len(delay_indices)} frames):")
+            print(f"  Delay values in this group: {np.unique(delays[delay_mask])}")
+            print(f"  Delay indices: {delay_indices}")    
             # Split into on/off
             on_mask = delay_mask & input_data.load_data_output.laser_on_mask
             off_mask = delay_mask & input_data.load_data_output.laser_off_mask
@@ -114,12 +114,12 @@ class PumpProbeAnalysis:
             n_on = len(on_indices)
             n_off = len(off_indices)
             
-            # print(f"  ON indices: {on_indices}")
-            # print(f"  OFF indices: {off_indices}")
-            # print(f"  Found {n_on} ON frames and {n_off} OFF frames")
+            print(f"  ON indices: {on_indices}")
+            print(f"  OFF indices: {off_indices}")
+            print(f"  Found {n_on} ON frames and {n_off} OFF frames")
             
             if n_on >= min_count and n_off >= min_count:
-                # print(f"  ✓ Accepted (>= {min_count} frames)")
+                print(f"  ✓ Accepted (>= {min_count} frames)")
                 stacks_on[delay] = DelayData(
                     frames=input_data.load_data_output.data[on_mask],
                     I0=input_data.load_data_output.I0[on_mask]
@@ -129,15 +129,15 @@ class PumpProbeAnalysis:
                     I0=input_data.load_data_output.I0[off_mask]
                 )
             else:
-                # print(f"  ✗ Rejected (< {min_count} frames)")
+                print(f"  ✗ Rejected (< {min_count} frames)")
         
         # Print summary
-        # print("\nGrouping summary:")
-        # print(f"Number of delay points with sufficient frames: {len(stacks_on)}")
-#        if stacks_on:
-#            # print("Frame counts per delay point:")
-#            for delay in sorted(stacks_on.keys()):
-                # print(f"  {delay:.3f}ps: {len(stacks_on[delay].frames)} ON, {len(stacks_off[delay].frames)} OFF")
+        print("\nGrouping summary:")
+        print(f"Number of delay points with sufficient frames: {len(stacks_on)}")
+        if stacks_on:
+            print("Frame counts per delay point:")
+            for delay in sorted(stacks_on.keys()):
+                print(f"  {delay:.3f}ps: {len(stacks_on[delay].frames)} ON, {len(stacks_off[delay].frames)} OFF")
         
         if not stacks_on:
             raise ValueError(
@@ -161,9 +161,9 @@ class PumpProbeAnalysis:
         signal_mask: np.ndarray,
         bg_mask: np.ndarray
     ) -> Tuple[float, float, float]:
-        # print(f"\n=== Processing {len(frames)} frames in _calculate_signals ===")
-        # print(f"Signal mask sum: {np.sum(signal_mask)}")
-        # print(f"Background mask sum: {np.sum(bg_mask)}")
+        print(f"\n=== Processing {len(frames)} frames in _calculate_signals ===")
+        print(f"Signal mask sum: {np.sum(signal_mask)}")
+        print(f"Background mask sum: {np.sum(bg_mask)}")
         """Calculate signal, background and total variance for a group of frames."""
         # Apply energy filter to each frame
         energy_mask = self._make_energy_filter(frames)
@@ -248,11 +248,11 @@ class PumpProbeAnalysis:
         std_devs_on = np.array(std_devs_on)
         std_devs_off = np.array(std_devs_off)
         
-        # print("\nFinal error statistics:")
-        # print(f"Mean signal ON std dev: {np.mean(std_devs_on):.3f}")
-        # print(f"Mean signal OFF std dev: {np.mean(std_devs_off):.3f}")
-        # print(f"Relative errors ON: {np.mean(std_devs_on/np.abs(signals_on))*100:.1f}%")
-        # print(f"Relative errors OFF: {np.mean(std_devs_off/np.abs(signals_off))*100:.1f}%")
+        print("\nFinal error statistics:")
+        print(f"Mean signal ON std dev: {np.mean(std_devs_on):.3f}")
+        print(f"Mean signal OFF std dev: {np.mean(std_devs_off):.3f}")
+        print(f"Relative errors ON: {np.mean(std_devs_on/np.abs(signals_on))*100:.1f}%")
+        print(f"Relative errors OFF: {np.mean(std_devs_off/np.abs(signals_off))*100:.1f}%")
         
         # Calculate p-values
         p_values = self._calculate_p_values(
@@ -306,13 +306,13 @@ class PumpProbeAnalysis:
         """Generate diagnostic plots with proper infinity handling."""
         save_dir.mkdir(parents=True, exist_ok=True)
         
-        # print("\n=== Signal Shape Debug ===")
-        # print(f"signals_on shape: {output.signals_on.shape}")
-        # print(f"signals_off shape: {output.signals_off.shape}")
-        # print(f"delays: {output.delays}")
-        # print("\nFrame counts per delay:")
-#        for delay, (n_on, n_off) in output.n_frames_per_delay.items():
-            # print(f"Delay {delay:.3f}: {n_on} on, {n_off} off")
+        print("\n=== Signal Shape Debug ===")
+        print(f"signals_on shape: {output.signals_on.shape}")
+        print(f"signals_off shape: {output.signals_off.shape}")
+        print(f"delays: {output.delays}")
+        print("\nFrame counts per delay:")
+        for delay, (n_on, n_off) in output.n_frames_per_delay.items():
+            print(f"Delay {delay:.3f}: {n_on} on, {n_off} off")
         
         # Create four-panel overview figure
         fig = plt.figure(figsize=(16, 16))
