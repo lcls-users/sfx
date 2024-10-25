@@ -277,50 +277,45 @@ class PumpProbeAnalysis:
         """Generate diagnostic plots with proper infinity handling."""
         save_dir.mkdir(parents=True, exist_ok=True)
         
-        # First create the heatmap plots
-        fig_maps, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        # Create four-panel overview figure
+        fig = plt.figure(figsize=(16, 16))
         
-        # Get all frames from all delays
+        # Get all frames from all delays for intensity maps
         all_frames = np.concatenate([
             np.concatenate([self.stacks_on[d].frames, self.stacks_off[d].frames])
             for d in output.delays
         ])
         
-        # Total counts map (before filtering)
+        # 1. Total counts map (top left)
+        ax1 = fig.add_subplot(221)
         total_counts = np.sum(all_frames, axis=0)
         im1 = ax1.imshow(total_counts, origin='lower', cmap='viridis')
         ax1.set_title('Total Counts Map')
         plt.colorbar(im1, ax=ax1)
         
-        # Energy filtered map
+        # 2. Energy filtered map (top right)
+        ax2 = fig.add_subplot(222)
         energy_mask = self._make_energy_filter(all_frames)
         filtered_counts = np.sum(all_frames * energy_mask, axis=0)
         im2 = ax2.imshow(filtered_counts, origin='lower', cmap='viridis')
         ax2.set_title(f'Energy Filtered Map (E0={self.config["pump_probe_analysis"]["E0"]}, dE={self.config["pump_probe_analysis"]["dE"]})')
         plt.colorbar(im2, ax=ax2)
         
-        plt.tight_layout()
-        plt.savefig(save_dir / 'intensity_maps.png')
-        plt.close()
-
-        # Create main overview figure
-        fig = plt.figure(figsize=(8, 12))
-                
-        # 1. Time traces with error bars
-        ax1 = fig.add_subplot(211)
-        ax1.errorbar(output.delays, output.signals_on,
+        # 3. Time traces with error bars (bottom left)
+        ax3 = fig.add_subplot(223)
+        ax3.errorbar(output.delays, output.signals_on,
                     yerr=output.std_devs_on, fmt='rs-',
                     label='Laser On', capsize=3)
-        ax1.errorbar(output.delays, output.signals_off,
+        ax3.errorbar(output.delays, output.signals_off,
                     yerr=output.std_devs_off, fmt='ks-',
                     label='Laser Off', capsize=3, alpha=0.5)
-        ax1.set_xlabel('Time Delay (ps)')
-        ax1.set_ylabel('Normalized Signal')
-        ax1.legend()
-        ax1.grid(True)
+        ax3.set_xlabel('Time Delay (ps)')
+        ax3.set_ylabel('Normalized Signal')
+        ax3.legend()
+        ax3.grid(True)
         
-        # 2. Statistical significance with proper infinity handling
-        ax2 = fig.add_subplot(212)
+        # 4. Statistical significance (bottom right)
+        ax4 = fig.add_subplot(224)
         
         # Convert p-values to log scale with capped infinities
         max_log_p = 16  # Maximum value to show on plot
@@ -334,23 +329,22 @@ class PumpProbeAnalysis:
                 log_p_values[i] = max_log_p
         
         # Create scatter plot with processed values
-        scatter = ax2.scatter(output.delays, log_p_values,
+        scatter = ax4.scatter(output.delays, log_p_values,
                              color='red', label='-log(p-value)')
         
         # Add significance line
         sig_level = self.config['pump_probe_analysis']['significance_level']
         sig_line = -np.log10(sig_level)
-        ax2.axhline(y=sig_line, color='k', linestyle='--',
+        ax4.axhline(y=sig_line, color='k', linestyle='--',
                     label=f'p={sig_level}')
         
         # Set y-axis limits explicitly
-        ax2.set_ylim(0, max_log_p * 1.1)  # Add 10% padding above max
+        ax4.set_ylim(0, max_log_p * 1.1)  # Add 10% padding above max
         
-        ax2.set_xlabel('Time Delay (ps)')
-        ax2.set_ylabel('-log10(P-value)')
-        ax2.legend()
-        ax2.grid(True)
-        
+        ax4.set_xlabel('Time Delay (ps)')
+        ax4.set_ylabel('-log10(P-value)')
+        ax4.legend()
+        ax4.grid(True)
         
         plt.tight_layout()
         plt.savefig(save_dir / 'overview_diagnostics.png')
