@@ -130,6 +130,7 @@ class PumpProbeAnalysis:
                 )
             else:
                 # print(f"  ✗ Rejected (< {min_count} frames)")
+                continue
         
         # Print summary
         # print("\nGrouping summary:")
