@@ -61,25 +61,28 @@ class LoadData:
         return data_cleaned
 
     def _calculate_binned_delays(self, raw_delays: np.ndarray) -> np.ndarray:
-        """Calculate binned delays from raw delay values.
-        All delay binning should happen here, and only here."""
+        """Calculate binned delays from raw delay values."""
         time_bin = float(self.config['load_data']['time_bin'])
         print("\n=== LoadData Delay Binning ===")
         print(f"Binning delays with time_bin={time_bin}")
-        print(f"Input delays range: {np.nanmin(raw_delays):.3f} to {np.nanmax(raw_delays):.3f}")
         
-        # Add detailed debugging for input values
+        # First check if actually pre-binned
         unique_raw = np.unique(raw_delays[~np.isnan(raw_delays)])
-        print(f"Input unique delay values ({len(unique_raw)}):")
-        print(unique_raw)
-        print(f"Input delay spacings: {np.diff(unique_raw)}")
+        spacings = np.diff(unique_raw)
+        print(f"Input delay statistics:")
+        print(f"- Number of unique delays: {len(unique_raw)}")
+        print(f"- Spacing statistics:")
+        print(f"  - Min spacing: {np.min(spacings):.6f}")
+        print(f"  - Max spacing: {np.max(spacings):.6f}")
+        print(f"  - Mean spacing: {np.mean(spacings):.6f}")
+        print(f"  - Median spacing: {np.median(spacings):.6f}")
         
-        # Check if already properly binned
-        if validate_delay_binning(raw_delays, time_bin):
-            print("Delays already properly binned, returning as-is")
-            return raw_delays
-        
-        # Handle NaN values
+        # Check if data needs rebinning
+        properly_binned = validate_delay_binning(raw_delays, time_bin)
+        print(f"\nData {'IS' if properly_binned else 'IS NOT'} properly binned to {time_bin} ps")
+            
+        # Force rebinning
+        print("\nForce rebinning to correct time_bin size...")
         valid_delays = raw_delays[~np.isnan(raw_delays)]
         if len(valid_delays) == 0:
             raise ValueError("No valid delay values found")
@@ -90,27 +93,23 @@ class LoadData:
         # Create bins centered on multiples of time_bin
         bins = np.arange(delay_min, delay_max + time_bin, time_bin)
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        print(f"\nBin edges: {bins}")
-        print(f"Bin centers: {bin_centers}")
+        print(f"Created {len(bins)-1} bins with centers spaced by {time_bin} ps")
         
-        # Bin the delays using searchsorted
+        # Bin the delays
         indices = np.searchsorted(bins, raw_delays) - 1
         indices = np.clip(indices, 0, len(bin_centers) - 1)
         binned_delays = bin_centers[indices]
         
-        # Add detailed debugging for output values
+        # Verify output binning
         unique_binned = np.unique(binned_delays[~np.isnan(binned_delays)])
-        print(f"\nOutput unique delay values ({len(unique_binned)}):")
-        print(unique_binned)
-        print(f"Output delay spacings: {np.diff(unique_binned)}")
-        
-        # Check if any delays are too close together
-        min_spacing = np.min(np.diff(unique_binned))
-        if min_spacing < time_bin * 0.9:  # Allow 10% tolerance
-            print(f"WARNING: Some output delays are closer than time_bin!")
-            print(f"Minimum spacing: {min_spacing} (should be ~{time_bin})")
-        
-        print(f"Output delays range: {np.nanmin(binned_delays):.3f} to {np.nanmax(binned_delays):.3f}")
+        spacings_binned = np.diff(unique_binned)
+        print(f"\nOutput delay statistics:")
+        print(f"- Number of unique delays: {len(unique_binned)}")
+        print(f"- Spacing statistics:")
+        print(f"  - Min spacing: {np.min(spacings_binned):.6f}")
+        print(f"  - Max spacing: {np.max(spacings_binned):.6f}")
+        print(f"  - Mean spacing: {np.mean(spacings_binned):.6f}")
+        print(f"  - Median spacing: {np.median(spacings_binned):.6f}")
         
         return binned_delays
 
