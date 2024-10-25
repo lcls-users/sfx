@@ -23,6 +23,31 @@ class LoadData:
         self.config = config
         
         
+    def _apply_energy_threshold(self, data: np.ndarray) -> np.ndarray:
+        """Apply energy thresholding to the data.
+        
+        Args:
+            data: Input image data array
+            
+        Returns:
+            Thresholded image data array
+        """
+        E0, dE = self.config['load_data']['energy_filter']
+        
+        # Define threshold bands
+        thresh_1, thresh_2 = E0 - dE, E0 + dE
+        thresh_3, thresh_4 = 2 * E0 - dE, 2 * E0 + dE
+        thresh_5, thresh_6 = 3 * E0 - dE, 3 * E0 + dE
+        
+        # Apply thresholding
+        data_cleaned = data.copy()
+        data_cleaned[(data_cleaned < thresh_1)
+                     | ((data_cleaned > thresh_2) & (data_cleaned < thresh_3))
+                     | ((data_cleaned > thresh_4) & (data_cleaned < thresh_5))
+                     | (data_cleaned > thresh_6)] = 0
+                     
+        return data_cleaned
+
     def _calculate_binned_delays(self, raw_delays: np.ndarray) -> np.ndarray:
         """Calculate binned delays from raw delay values."""
         time_bin = float(self.config['load_data']['time_bin'])
@@ -76,9 +101,12 @@ class LoadData:
                 self.config['load_data'].get('time_tool', [0., 0.005])
             )
             
+        # Apply energy thresholding
+        data = self._apply_energy_threshold(data)
+    
         # Calculate binned delays
         binned_delays = self._calculate_binned_delays(laser_delays)
-        
+    
         return LoadDataOutput(
             data=data,
             I0=I0,
