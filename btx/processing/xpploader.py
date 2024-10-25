@@ -29,13 +29,7 @@ def get_imgs_thresh(run_number, experiment_number, roi,
     thresh_5, thresh_6 = 3 * E0 - dE, 3 * E0 + dE
 
     imgs = rr.jungfrau1M.ROI_0_area[:, roi[0]:roi[1], roi[2]:roi[3]]
-    imgs_cleaned = imgs.copy()
-    imgs_cleaned[(imgs_cleaned < thresh_1)
-                 | ((imgs_cleaned > thresh_2) & (imgs_cleaned < thresh_3))
-                 | ((imgs_cleaned > thresh_4) & (imgs_cleaned < thresh_5))
-                 | (imgs_cleaned > thresh_6)] = 0
-    
-    imgs_thresh = imgs_cleaned#* mask[roi[0]:roi[1], roi[2]:roi[3]]
+    imgs_thresh = imgs  # * mask[roi[0]:roi[1], roi[2]:roi[3]] if mask needed
 
     tt_arg = time_tool[0]
     laser_delays = np.array(rr.enc.lasDelay) + np.array(rr.tt.FLTPOS_PS) * tt_arg
