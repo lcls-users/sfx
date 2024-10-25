@@ -110,21 +110,7 @@ class PumpProbeAnalysis:
         signal_mask: np.ndarray,
         bg_mask: np.ndarray
     ) -> Tuple[float, float, float]:
-        """Calculate signal, background and total variance for a group of frames.
-        
-        For each frame:
-        1. Sum over signal region
-        2. Sum over background region (scaled)
-        3. Calculate mean and standard error across frames
-        
-        Args:
-            frames: Array of frames
-            signal_mask: Signal region mask
-            bg_mask: Background region mask
-            
-        Returns:
-            Tuple of (signal, background, total_variance)
-        """
+        """Calculate signal, background and total variance for a group of frames."""
         # Calculate per-frame sums
         signal_sums = np.sum(frames * signal_mask[None, :, :], axis=(1,2))
         bg_sums = np.sum(frames * bg_mask[None, :, :], axis=(1,2))
@@ -133,23 +119,37 @@ class PumpProbeAnalysis:
         scale_factor = np.sum(signal_mask) / np.sum(bg_mask)
         bg_sums *= scale_factor
         
-        # Calculate means and standard errors
+        # Calculate means
         signal_mean = np.mean(signal_sums)
         bg_mean = np.mean(bg_sums)
         
-        # Use standard error of the mean for each component
+        # Calculate variances with detailed prints
         n_frames = len(frames)
-        signal_var = np.var(signal_sums, ddof=1) / n_frames  # ddof=1 for sample variance
+        signal_var = np.var(signal_sums, ddof=1) / n_frames
         bg_var = np.var(bg_sums, ddof=1) / n_frames
+        
+        print("\nDiagnostic information for error calculation:")
+        print(f"Number of frames: {n_frames}")
+        print(f"Signal sums range: {np.min(signal_sums):.1f} to {np.max(signal_sums):.1f}")
+        print(f"Signal mean: {signal_mean:.1f}")
+        print(f"Signal standard deviation: {np.std(signal_sums, ddof=1):.1f}")
+        print(f"Signal variance: {np.var(signal_sums, ddof=1):.1f}")
+        print(f"Signal standard error: {np.sqrt(signal_var):.1f}")
+        print(f"Background standard error: {np.sqrt(bg_var):.1f}")
+        print(f"Combined standard error: {np.sqrt(signal_var + bg_var):.1f}")
         
         return signal_mean, bg_mean, signal_var + bg_var
 
     def run(self, input_data: PumpProbeAnalysisInput) -> PumpProbeAnalysisOutput:
-        """Run pump-probe analysis."""
-        # Group frames by delay
-        stacks_on, stacks_off = self._group_by_delay(input_data)
+        """Run pump-probe analysis with additional error diagnostics."""
+        # Store masks and data for diagnostics
+        self.signal_mask = input_data.masks_output.signal_mask
+        self.bg_mask = input_data.masks_output.background_mask
         
-        if not stacks_on:
+        # Group frames by delay
+        self.stacks_on, self.stacks_off = self._group_by_delay(input_data)
+        
+        if not self.stacks_on:
             raise ValueError("No delay groups met the minimum frame count requirement")
         
         # Process each delay group
@@ -160,32 +160,39 @@ class PumpProbeAnalysis:
         std_devs_off = []
         n_frames = {}
         
-        signal_mask = input_data.masks_output.signal_mask
-        bg_mask = input_data.masks_output.background_mask
-        
-        for delay in sorted(stacks_on.keys()):
+        for delay in sorted(self.stacks_on.keys()):
             # Get frame stacks
-            on_data = stacks_on[delay]
-            off_data = stacks_off[delay]
+            on_data = self.stacks_on[delay]
+            off_data = self.stacks_off[delay]
             
             # Store frame counts
             n_frames[delay] = (len(on_data.frames), len(off_data.frames))
             
-            # Calculate signals and background
+            print(f"\nProcessing delay {delay:.1f} ps")
+            print("Laser ON:")
             signal_on, bg_on, var_on = self._calculate_signals(
-                on_data.frames, signal_mask, bg_mask
+                on_data.frames, self.signal_mask, self.bg_mask
             )
+            
+            print("\nLaser OFF:")
             signal_off, bg_off, var_off = self._calculate_signals(
-                off_data.frames, signal_mask, bg_mask
+                off_data.frames, self.signal_mask, self.bg_mask
             )
             
             # Normalize by I0 after background subtraction
-            norm_signal_on = (signal_on - bg_on) / np.mean(on_data.I0)
-            norm_signal_off = (signal_off - bg_off) / np.mean(off_data.I0)
+            I0_mean_on = np.mean(on_data.I0)
+            I0_mean_off = np.mean(off_data.I0)
+            
+            norm_signal_on = (signal_on - bg_on) / I0_mean_on
+            norm_signal_off = (signal_off - bg_off) / I0_mean_off
             
             # Propagate errors through I0 normalization
-            std_dev_on = np.sqrt(var_on) / np.mean(on_data.I0)
-            std_dev_off = np.sqrt(var_off) / np.mean(off_data.I0)
+            std_dev_on = np.sqrt(var_on) / I0_mean_on
+            std_dev_off = np.sqrt(var_off) / I0_mean_off
+            
+            print(f"\nFinal normalized values for delay {delay:.1f} ps:")
+            print(f"Signal ON: {norm_signal_on:.3f} ± {std_dev_on:.3f}")
+            print(f"Signal OFF: {norm_signal_off:.3f} ± {std_dev_off:.3f}")
             
             delays.append(delay)
             signals_on.append(norm_signal_on)
@@ -200,18 +207,28 @@ class PumpProbeAnalysis:
         std_devs_on = np.array(std_devs_on)
         std_devs_off = np.array(std_devs_off)
         
+        print("\nFinal error statistics:")
+        print(f"Mean signal ON std dev: {np.mean(std_devs_on):.3f}")
+        print(f"Mean signal OFF std dev: {np.mean(std_devs_off):.3f}")
+        print(f"Relative errors ON: {np.mean(std_devs_on/np.abs(signals_on))*100:.1f}%")
+        print(f"Relative errors OFF: {np.mean(std_devs_off/np.abs(signals_off))*100:.1f}%")
+        
         # Calculate p-values
         p_values = self._calculate_p_values(
             signals_on, signals_off,
             std_devs_on, std_devs_off
         )
         
+        print("\nP-values before creating output:")
+        for d, p in zip(delays, p_values):
+            print(f"Delay {d:.1f} ps: p={p:.2e}, -log10(p)={-np.log10(p) if p > 0 else 'inf':.1f}")
+        
         # Calculate mean I0 values across all delays
         mean_I0_on = np.mean([
-            np.mean(stacks_on[delay].I0) for delay in delays
+            np.mean(self.stacks_on[delay].I0) for delay in delays
         ])
         mean_I0_off = np.mean([
-            np.mean(stacks_off[delay].I0) for delay in delays
+            np.mean(self.stacks_off[delay].I0) for delay in delays
         ])
         
         return PumpProbeAnalysisOutput(
@@ -226,7 +243,6 @@ class PumpProbeAnalysis:
             mean_I0_off=mean_I0_off,
             n_frames_per_delay=n_frames
         )
-
     def _calculate_p_values(
         self,
         signals_on: np.ndarray,
@@ -235,11 +251,17 @@ class PumpProbeAnalysis:
         std_devs_off: np.ndarray
     ) -> np.ndarray:
         """Calculate p-values comparing on/off signals using two-tailed t-test."""
-        delta_signals = signals_on - signals_off  # Note: no abs() here for proper two-sided test
+        delta_signals = signals_on - signals_off  
         combined_stds = np.sqrt(std_devs_on**2 + std_devs_off**2)
         z_scores = delta_signals / combined_stds
-        # Two-tailed test - use absolute z-score
-        return 2 * (1 - stats.norm.cdf(np.abs(z_scores)))
+        p_values = 2 * (1 - stats.norm.cdf(np.abs(z_scores)))
+        
+        print("\nP-value calculation debug:")
+        print("Raw p-values directly after calculation:")
+        for d, z, p in zip(delta_signals, z_scores, p_values):
+            print(f"Delta={d:.3f}, Z={z:.1f}, p={p:.2e}, -log10(p)={-np.log10(p) if p > 0 else 'inf':.1f}")
+        
+        return p_values
 
     def plot_diagnostics(
         self,
@@ -247,11 +269,15 @@ class PumpProbeAnalysis:
         save_dir: Path
     ) -> None:
         """Generate diagnostic plots."""
+        print("\nP-values at plotting time:")
+        for delay, p in zip(output.delays, output.p_values):
+            print(f"Delay {delay:.1f} ps: p={p:.2e}, -log10(p)={-np.log10(p) if p > 0 else 'inf':.1f}")
+        
         save_dir.mkdir(parents=True, exist_ok=True)
         
-        # Create main figure with subplots
+        # Create main overview figure
         fig = plt.figure(figsize=(15, 12))
-        
+            
         # 1. Time traces with error bars
         ax1 = fig.add_subplot(221)
         ax1.errorbar(output.delays, output.signals_on,
@@ -276,9 +302,14 @@ class PumpProbeAnalysis:
         ax2.set_ylabel('Signal Difference')
         ax2.grid(True)
         
-        # 3. P-values
+        # 3. Statistical significance
         ax3 = fig.add_subplot(223)
-        ax3.scatter(output.delays, output.log_p_values,
+        log_p_values = -np.log10(output.p_values)
+        print("\nLog p-values just before plotting:")
+        for d, lp in zip(output.delays, log_p_values):
+            print(f"Delay {d:.1f} ps: -log10(p)={lp if not np.isinf(lp) else 'inf':.1f}")
+        
+        ax3.scatter(output.delays, log_p_values,
                    color='red', label='-log(p-value)')
         sig_level = self.config['pump_probe_analysis']['significance_level']
         sig_line = -np.log10(sig_level)
@@ -289,19 +320,104 @@ class PumpProbeAnalysis:
         ax3.legend()
         ax3.grid(True)
         
-        # 4. Number of frames per delay
+        # 4. Relative errors
         ax4 = fig.add_subplot(224)
-        delays = list(output.n_frames_per_delay.keys())
-        n_on = [v[0] for v in output.n_frames_per_delay.values()]
-        n_off = [v[1] for v in output.n_frames_per_delay.values()]
-        ax4.bar(delays, n_on, alpha=0.5, label='Laser On')
-        ax4.bar(delays, n_off, alpha=0.5, label='Laser Off')
-        ax4.axhline(y=self.config['pump_probe_analysis']['min_count'],
-                   color='r', linestyle='--', label='Min Count')
+        rel_error_on = output.std_devs_on / np.abs(output.signals_on) * 100
+        rel_error_off = output.std_devs_off / np.abs(output.signals_off) * 100
+        ax4.plot(output.delays, rel_error_on, 'rs-', label='Laser On')
+        ax4.plot(output.delays, rel_error_off, 'ks-', label='Laser Off')
         ax4.set_xlabel('Time Delay (ps)')
-        ax4.set_ylabel('Number of Frames')
+        ax4.set_ylabel('Relative Error (%)')
         ax4.legend()
+        ax4.grid(True)
         
         plt.tight_layout()
-        plt.savefig(save_dir / 'pump_probe_diagnostics.png')
+        plt.savefig(save_dir / 'overview_diagnostics.png')
         plt.close()
+
+        # Plot detailed diagnostics for selected delay points
+        delay_indices = [0, len(output.delays)//2, -1]  # First, middle, and last delays
+        for idx in delay_indices:
+            delay = output.delays[idx]
+            
+            # Get data from stored stacks
+            frames_on = self.stacks_on[delay].frames
+            frames_off = self.stacks_off[delay].frames
+            I0_on = self.stacks_on[delay].I0
+            I0_off = self.stacks_off[delay].I0
+            
+            # Calculate statistics
+            signal_sums_on = np.sum(frames_on * self.signal_mask[None, :, :], axis=(1,2))
+            signal_sums_off = np.sum(frames_off * self.signal_mask[None, :, :], axis=(1,2))
+            bg_sums_on = np.sum(frames_on * self.bg_mask[None, :, :], axis=(1,2))
+            bg_sums_off = np.sum(frames_off * self.bg_mask[None, :, :], axis=(1,2))
+            
+            scale_factor = np.sum(self.signal_mask) / np.sum(self.bg_mask)
+            net_signal_on = (signal_sums_on - scale_factor * bg_sums_on) / np.mean(I0_on)
+            net_signal_off = (signal_sums_off - scale_factor * bg_sums_off) / np.mean(I0_off)
+            
+            # Create detailed diagnostic figure
+            fig, axes = plt.subplots(3, 2, figsize=(15, 18))
+            fig.suptitle(f'Detailed Diagnostics for Delay {delay:.2f} ps', fontsize=16)
+            
+            # Raw signal distributions
+            axes[0,0].hist(signal_sums_on, bins='auto', alpha=0.5, label='Laser On')
+            axes[0,0].hist(signal_sums_off, bins='auto', alpha=0.5, label='Laser Off')
+            axes[0,0].set_title('Raw Signal Distributions')
+            axes[0,0].set_xlabel('Integrated Signal')
+            axes[0,0].set_ylabel('Count')
+            axes[0,0].legend()
+            
+            # Background distributions
+            axes[0,1].hist(bg_sums_on * scale_factor, bins='auto', alpha=0.5, label='Laser On')
+            axes[0,1].hist(bg_sums_off * scale_factor, bins='auto', alpha=0.5, label='Laser Off')
+            axes[0,1].set_title('Scaled Background Distributions')
+            axes[0,1].set_xlabel('Integrated Background (scaled)')
+            axes[0,1].set_ylabel('Count')
+            axes[0,1].legend()
+            
+            # Frame-to-frame variations
+            axes[1,0].plot(np.arange(len(signal_sums_on)), signal_sums_on, 'r.', label='Signal On')
+            axes[1,0].plot(np.arange(len(signal_sums_off)), signal_sums_off, 'b.', label='Signal Off')
+            axes[1,0].set_title('Frame-to-Frame Signal Variation')
+            axes[1,0].set_xlabel('Frame Number')
+            axes[1,0].set_ylabel('Integrated Signal')
+            axes[1,0].legend()
+            
+            # I0 variations
+            axes[1,1].plot(np.arange(len(I0_on)), I0_on, 'r.', label='I0 On')
+            axes[1,1].plot(np.arange(len(I0_off)), I0_off, 'b.', label='I0 Off')
+            axes[1,1].set_title('Frame-to-Frame I0 Variation')
+            axes[1,1].set_xlabel('Frame Number')
+            axes[1,1].set_ylabel('I0')
+            axes[1,1].legend()
+            
+            # Net signal distributions
+            axes[2,0].hist(net_signal_on, bins='auto', alpha=0.5, label='Laser On')
+            axes[2,0].hist(net_signal_off, bins='auto', alpha=0.5, label='Laser Off')
+            axes[2,0].set_title('Normalized Net Signal Distributions')
+            axes[2,0].set_xlabel('Net Signal (normalized)')
+            axes[2,0].set_ylabel('Count')
+            axes[2,0].legend()
+            
+            # QQ plot of differences
+            from scipy import stats
+            diff_signals = net_signal_on - net_signal_off
+            stats.probplot(diff_signals, dist="norm", plot=axes[2,1])
+            axes[2,1].set_title('Q-Q Plot of Signal Differences')
+            
+            # Add statistical information
+            stats_text = (
+                f'Statistics:\n'
+                f'N frames (on/off): {len(signal_sums_on)}/{len(signal_sums_off)}\n'
+                f'Signal mean ± SE (on): {np.mean(net_signal_on):.2e} ± {np.std(net_signal_on)/np.sqrt(len(net_signal_on)):.2e}\n'
+                f'Signal mean ± SE (off): {np.mean(net_signal_off):.2e} ± {np.std(net_signal_off)/np.sqrt(len(net_signal_off)):.2e}\n'
+                f'Signal CV (on/off): {np.std(net_signal_on)/np.mean(net_signal_on):.2%}/{np.std(net_signal_off)/np.mean(net_signal_off):.2%}\n'
+                f'P-value: {output.p_values[idx]:.2e}\n'
+                f'Z-score: {(np.mean(net_signal_on) - np.mean(net_signal_off))/np.sqrt(output.std_devs_on[idx]**2 + output.std_devs_off[idx]**2):.2f}'
+            )
+            plt.figtext(0.02, 0.02, stats_text, fontsize=10, family='monospace')
+            
+            plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+            plt.savefig(save_dir / f'detailed_diagnostics_delay_{delay:.2f}ps.png')
+            plt.close()
