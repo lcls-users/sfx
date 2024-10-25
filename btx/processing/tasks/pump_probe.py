@@ -213,6 +213,29 @@ class PumpProbeAnalysis:
         
         return signal_mean, bg_mean, variance
 
+    def process(
+        self,
+        config: Dict[str, Any],
+        load_data_output: LoadDataOutput,
+        masks_output: BuildPumpProbeMasksOutput
+    ) -> PumpProbeAnalysisOutput:
+        """Process pump-probe analysis with raw inputs.
+        
+        Args:
+            config: Configuration dictionary
+            load_data_output: Output from LoadData task
+            masks_output: Output from BuildPumpProbeMasks task
+            
+        Returns:
+            PumpProbeAnalysisOutput with calculated signals and uncertainties
+        """
+        input_data = PumpProbeAnalysisInput(
+            config=config,
+            load_data_output=load_data_output,
+            masks_output=masks_output
+        )
+        return self.run(input_data)
+
     def run(self, input_data: PumpProbeAnalysisInput) -> PumpProbeAnalysisOutput:
         """Run pump-probe analysis with corrected error propagation.
         
@@ -221,7 +244,17 @@ class PumpProbeAnalysis:
             
         Returns:
             PumpProbeAnalysisOutput with calculated signals and uncertainties
+            
+        .. deprecated:: 2.0.0
+           Use process() instead. This method will be removed in a future version.
         """
+        import warnings
+        warnings.warn(
+            "The run() method is deprecated. Use process() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
         # Store masks for diagnostics
         self.signal_mask = input_data.masks_output.signal_mask
         self.bg_mask = input_data.masks_output.background_mask

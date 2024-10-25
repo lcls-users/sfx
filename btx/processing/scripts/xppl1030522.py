@@ -141,12 +141,11 @@ build_masks.plot_diagnostics(masks_output, diagnostics_dir / "build_masks")
 
 print("\nRunning pump-probe analysis...")
 pump_probe = PumpProbeAnalysis(config)
-pump_probe_input = PumpProbeAnalysisInput(
+pump_probe_output = pump_probe.process(
     config=config,
     load_data_output=load_data_output,
     masks_output=masks_output
 )
-pump_probe_output = pump_probe.run(pump_probe_input)
 pump_probe.plot_diagnostics(pump_probe_output, diagnostics_dir / "pump_probe")
 
 print("\nProcessing complete! Results saved in:", output_dir)
