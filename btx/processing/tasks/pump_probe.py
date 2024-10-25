@@ -277,6 +277,32 @@ class PumpProbeAnalysis:
         """Generate diagnostic plots with proper infinity handling."""
         save_dir.mkdir(parents=True, exist_ok=True)
         
+        # First create the heatmap plots
+        fig_maps, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        # Get all frames from all delays
+        all_frames = np.concatenate([
+            np.concatenate([self.stacks_on[d].frames, self.stacks_off[d].frames])
+            for d in output.delays
+        ])
+        
+        # Total counts map (before filtering)
+        total_counts = np.sum(all_frames, axis=0)
+        im1 = ax1.imshow(total_counts, origin='lower', cmap='viridis')
+        ax1.set_title('Total Counts Map')
+        plt.colorbar(im1, ax=ax1)
+        
+        # Energy filtered map
+        energy_mask = self._make_energy_filter(all_frames)
+        filtered_counts = np.sum(all_frames * energy_mask, axis=0)
+        im2 = ax2.imshow(filtered_counts, origin='lower', cmap='viridis')
+        ax2.set_title(f'Energy Filtered Map (E0={self.config["pump_probe_analysis"]["E0"]}, dE={self.config["pump_probe_analysis"]["dE"]})')
+        plt.colorbar(im2, ax=ax2)
+        
+        plt.tight_layout()
+        plt.savefig(save_dir / 'intensity_maps.png')
+        plt.close()
+
         # Create main overview figure
         fig = plt.figure(figsize=(8, 12))
                 
