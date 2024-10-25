@@ -62,37 +62,53 @@ class PumpProbeAnalysis:
         self, 
         input_data: PumpProbeAnalysisInput
     ) -> Tuple[Dict[float, DelayData], Dict[float, DelayData]]:
-        """Group frames by delay value.
-        
-        Returns:
-            Tuple of (laser_on_groups, laser_off_groups) dictionaries mapping 
-            delays to frame data
-        """
+        """Group frames by delay value."""
+        print("\n=== Starting _group_by_delay ===")
         min_count = self.config['pump_probe_analysis']['min_count']
         delays = input_data.load_data_output.binned_delays
         
-        # Use the unique binned delays directly - they were already properly binned in LoadData
+        # Use delays directly - no rounding
         unique_delays = np.unique(delays)
+        print(f"Using {len(unique_delays)} unique delays: {unique_delays}")
         
-        
-        # Group frames by bin center
+        # Group frames by delay
         stacks_on = {}
         stacks_off = {}
         
+        # Print total number of frames before grouping
+        total_frames = len(delays)
+        print(f"Total frames before grouping: {total_frames}")
+        
+        # Process each unique delay
         for delay in unique_delays:
-            # Find frames matching this delay exactly
-            delay_mask = delays == delay
+            # Find all frames in this delay bin
+            delay_mask = (delays == delay)
+            
+            # Debug info about delay mask
+            delay_indices = np.where(delay_mask)[0]
+            print(f"\nDelay {delay:.2f}ps (found in {len(delay_indices)} frames):")
+            print(f"  Delay indices: {delay_indices}")
             
             # Split into on/off
             on_mask = delay_mask & input_data.load_data_output.laser_on_mask
             off_mask = delay_mask & input_data.load_data_output.laser_off_mask
             
-            n_on = np.sum(on_mask)
-            n_off = np.sum(off_mask)
+            # Debug info about laser masks
+            on_indices = np.where(on_mask)[0]
+            off_indices = np.where(off_mask)[0]
             
+            n_on = len(on_indices)
+            n_off = len(off_indices)
             
-            # Only include groups with sufficient frames
+            print(f"  ON indices: {on_indices}")
+            print(f"  OFF indices: {off_indices}")
+            print(f"  Found {n_on} ON frames and {n_off} OFF frames")
+            
+            if len(delay_indices) > 0:
+                print(f"  Using binned delay value: {delay:.3f}ps")
+            
             if n_on >= min_count and n_off >= min_count:
+                print(f"  ✓ Accepted (>= {min_count} frames)")
                 stacks_on[delay] = DelayData(
                     frames=input_data.load_data_output.data[on_mask],
                     I0=input_data.load_data_output.I0[on_mask]
@@ -101,7 +117,16 @@ class PumpProbeAnalysis:
                     frames=input_data.load_data_output.data[off_mask],
                     I0=input_data.load_data_output.I0[off_mask]
                 )
+            else:
+                print(f"  ✗ Rejected (< {min_count} frames)")
         
+        # Print summary of grouping
+        print("\nGrouping summary:")
+        print(f"Number of delay points with sufficient frames: {len(stacks_on)}")
+        if stacks_on:
+            print("Frame counts per delay point:")
+            for delay in sorted(stacks_on.keys()):
+                print(f"  {delay:.2f}ps: {len(stacks_on[delay].frames)} ON, {len(stacks_off[delay].frames)} OFF")
         
         if not stacks_on:
             plt.figure(figsize=(10, 6))

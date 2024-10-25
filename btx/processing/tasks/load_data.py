@@ -5,6 +5,19 @@ import matplotlib.pyplot as plt
 
 from btx.processing.btx_types import LoadDataInput, LoadDataOutput
 
+def validate_delay_binning(delays: np.ndarray, time_bin: float) -> bool:
+    """Verify if delays are properly binned according to time_bin."""
+    if len(delays) == 0:
+        return False
+        
+    unique = np.unique(delays[~np.isnan(delays)])
+    print(f"Found {len(unique)} unique delays: {unique}")
+    
+    # Check spacing between delays
+    spacings = np.diff(unique)
+    print(f"Delay spacings: {spacings}")
+    return np.allclose(spacings, time_bin, rtol=1e-3)
+
 class LoadData:
     """Load and preprocess XPP data."""
     
@@ -21,7 +34,6 @@ class LoadData:
                 - load_data.time_bin: Time bin size in ps
         """
         self.config = config
-        
         
     def _apply_energy_threshold(self, data: np.ndarray) -> np.ndarray:
         """Apply energy thresholding to the data.
@@ -49,8 +61,16 @@ class LoadData:
         return data_cleaned
 
     def _calculate_binned_delays(self, raw_delays: np.ndarray) -> np.ndarray:
-        """Calculate binned delays from raw delay values."""
+        """Calculate binned delays from raw delay values.
+        All delay binning should happen here, and only here."""
         time_bin = float(self.config['load_data']['time_bin'])
+        print(f"\nBinning delays with time_bin={time_bin}")
+        print(f"Input delays range: {np.nanmin(raw_delays):.2f} to {np.nanmax(raw_delays):.2f}")
+        
+        # Check if already properly binned
+        if validate_delay_binning(raw_delays, time_bin):
+            print("Delays already properly binned, returning as-is")
+            return raw_delays
         
         # Handle NaN values
         valid_delays = raw_delays[~np.isnan(raw_delays)]
@@ -60,16 +80,18 @@ class LoadData:
         delay_min = np.floor(valid_delays.min())
         delay_max = np.ceil(valid_delays.max())
         
-        # Create bins
-        half_bin = time_bin / 2
-        bins = np.arange(delay_min - half_bin, delay_max + time_bin, time_bin)
+        # Create bins centered on multiples of time_bin
+        bins = np.arange(delay_min, delay_max + time_bin, time_bin)
+        bin_centers = (bins[:-1] + bins[1:]) / 2
+        print(f"Created {len(bins)-1} bins with centers: {bin_centers}")
         
-        # Bin the delays
-        binned_indices = np.digitize(raw_delays, bins, right=True)
-        binned_delays = bins[binned_indices - 1] + half_bin
+        # Bin the delays using searchsorted
+        indices = np.searchsorted(bins, raw_delays) - 1
+        indices = np.clip(indices, 0, len(bin_centers) - 1)
+        binned_delays = bin_centers[indices]
         
-        # Clip to valid range
-        binned_delays = np.clip(binned_delays, delay_min, delay_max)
+        print(f"Output delays range: {np.nanmin(binned_delays):.2f} to {np.nanmax(binned_delays):.2f}")
+        print(f"Unique output values: {np.unique(binned_delays[~np.isnan(binned_delays)])}")
         
         return binned_delays
 
@@ -137,15 +159,15 @@ class LoadData:
         ax2.legend()
         
         # 3. Delay distribution
-        ax3.hist(output.laser_delays[output.laser_on_mask], bins=50, 
+        ax3.hist(output.binned_delays[output.laser_on_mask], bins=50, 
                  alpha=0.5, label='Laser On')
-        ax3.hist(output.laser_delays[output.laser_off_mask], bins=50,
+        ax3.hist(output.binned_delays[output.laser_off_mask], bins=50,
                  alpha=0.5, label='Laser Off')
         ax3.set_title('Delay Distribution')
         ax3.set_xlabel('Delay (ps)')
         ax3.legend()
         
-        # 4. Binned delays vs raw delays
+        # 4. Raw vs binned delays
         ax4.scatter(output.laser_delays, output.binned_delays, alpha=0.1)
         ax4.plot([output.laser_delays.min(), output.laser_delays.max()],
                 [output.laser_delays.min(), output.laser_delays.max()],
