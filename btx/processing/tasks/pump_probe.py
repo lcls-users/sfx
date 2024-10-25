@@ -68,18 +68,24 @@ class PumpProbeAnalysis:
         delays = input_data.load_data_output.binned_delays
         time_bin = float(self.config['load_data']['time_bin'])
         
-        # Use unique with isclose-based comparison
-        unique_delays = []
-        remaining_delays = delays.copy()
+        # Get unique delays more safely
+        sorted_delays = np.sort(np.unique(delays))
+        print(f"Initial unique delays: {sorted_delays}")
         
-        while len(remaining_delays) > 0:
-            current = remaining_delays[0]
-            mask = np.isclose(remaining_delays, current, rtol=1e-5, atol=time_bin/10)
-            if np.any(mask):
-                # Use mean of close values as the representative delay
-                cluster = remaining_delays[mask]
-                unique_delays.append(np.mean(cluster))
-                remaining_delays = remaining_delays[~mask]
+        # Group delays that are within time_bin/10 of each other
+        unique_delays = []
+        current_group = [sorted_delays[0]]
+        
+        for d in sorted_delays[1:]:
+            if np.abs(d - current_group[0]) <= time_bin/10:
+                current_group.append(d)
+            else:
+                unique_delays.append(np.mean(current_group))
+                current_group = [d]
+        
+        # Don't forget last group
+        if current_group:
+            unique_delays.append(np.mean(current_group))
         
         unique_delays = np.array(unique_delays)
         print(f"Found {len(unique_delays)} unique delay groups: {unique_delays}")
@@ -96,8 +102,7 @@ class PumpProbeAnalysis:
             delay_indices = np.where(delay_mask)[0]
             print(f"\nDelay {delay:.3f}ps (found in {len(delay_indices)} frames):")
             print(f"  Delay values in this group: {np.unique(delays[delay_mask])}")
-            print(f"  Delay indices: {delay_indices}")
-            
+            print(f"  Delay indices: {delay_indices}")    
             # Split into on/off
             on_mask = delay_mask & input_data.load_data_output.laser_on_mask
             off_mask = delay_mask & input_data.load_data_output.laser_off_mask
