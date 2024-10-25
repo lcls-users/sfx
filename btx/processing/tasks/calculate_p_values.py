@@ -55,6 +55,23 @@ class CalculatePValues:
                 
         return p_values
 
+    def process(self, config: Dict[str, Any],
+                emd_output: MeasureEMDOutput) -> CalculatePValuesOutput:
+        """Process p-value calculation directly from inputs.
+        
+        Args:
+            config: Configuration dictionary
+            emd_output: Output from MeasureEMD task
+            
+        Returns:
+            CalculatePValuesOutput containing p-values and derived data
+        """
+        input_data = CalculatePValuesInput(
+            config=config,
+            emd_output=emd_output
+        )
+        return self.run(input_data)
+
     def run(self, input_data: CalculatePValuesInput) -> CalculatePValuesOutput:
         """Run p-value calculation.
         

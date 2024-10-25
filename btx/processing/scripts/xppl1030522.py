@@ -124,11 +124,10 @@ measure_emd.plot_diagnostics(emd_output, diagnostics_dir / "measure_emd")
 
 print("\nCalculating p-values...")
 calculate_pvalues = CalculatePValues(config)
-pvalues_input = CalculatePValuesInput(
+pvalues_output = calculate_pvalues.process(
     config=config,
     emd_output=emd_output
 )
-pvalues_output = calculate_pvalues.run(pvalues_input)
 calculate_pvalues.plot_diagnostics(pvalues_output, diagnostics_dir / "calculate_pvalues")
 
 print("\nBuilding masks...")
