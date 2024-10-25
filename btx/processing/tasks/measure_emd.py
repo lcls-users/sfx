@@ -181,7 +181,7 @@ class MeasureEMD:
         # 3. Average background histogram
         ax3 = fig.add_subplot(223)
         ax3.semilogy(
-            output.avg_hist_edges[:-1],
+            output.avg_hist_edges, # removed last elt truncation
             output.avg_histogram,
             'b-',
             label='Background'

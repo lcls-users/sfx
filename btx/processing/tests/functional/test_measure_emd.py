@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from btx.processing.tasks.measure_emd import MeasureEMD
-from btx.processing.types import (
+from btx.processing.btx_types import (
     MeasureEMDInput,
     MakeHistogramOutput,
     LoadDataOutput

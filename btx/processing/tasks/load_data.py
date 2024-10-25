@@ -6,19 +6,51 @@ import matplotlib.pyplot as plt
 from btx.processing.btx_types import LoadDataInput, LoadDataOutput
 
 class LoadData:
+    """Load and preprocess XPP data."""
+    
     def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        
-    def run(self, input_data: Optional[LoadDataInput]) -> LoadDataOutput:  # Modified signature
-        """Run the data loading and preprocessing.
+        """Initialize with configuration.
         
         Args:
-            input_data: Optional input data for synthetic testing
-            
-        Returns:
-            LoadDataOutput containing processed data
+            config: Dictionary containing:
+                - setup.run: Run number
+                - setup.exp: Experiment number
+                - load_data.roi: ROI coordinates [x1, x2, y1, y2]
+                - load_data.energy_filter: Energy filter parameters [E0, dE]
+                - load_data.i0_threshold: I0 threshold value
+                - load_data.time_bin: Time bin size in ps
         """
-        if input_data is not None:
+        self.config = config
+        
+        
+    def _calculate_binned_delays(self, raw_delays: np.ndarray) -> np.ndarray:
+        """Calculate binned delays from raw delay values."""
+        time_bin = float(self.config['load_data']['time_bin'])
+        
+        # Handle NaN values
+        valid_delays = raw_delays[~np.isnan(raw_delays)]
+        if len(valid_delays) == 0:
+            raise ValueError("No valid delay values found")
+            
+        delay_min = np.floor(valid_delays.min())
+        delay_max = np.ceil(valid_delays.max())
+        
+        # Create bins
+        half_bin = time_bin / 2
+        bins = np.arange(delay_min - half_bin, delay_max + time_bin, time_bin)
+        
+        # Bin the delays
+        binned_indices = np.digitize(raw_delays, bins, right=True)
+        binned_delays = bins[binned_indices - 1] + half_bin
+        
+        # Clip to valid range
+        binned_delays = np.clip(binned_delays, delay_min, delay_max)
+        
+        return binned_delays
+
+    def run(self, input_data: LoadDataInput) -> LoadDataOutput:
+        """Run the data loading and preprocessing."""
+        if input_data.data is not None:
             # Use provided synthetic data
             data = input_data.data
             I0 = input_data.I0

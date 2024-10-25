@@ -65,41 +65,41 @@ class Pipeline:
         self.execution_order.append(name)
     
     def run(self, initial_input: Optional[Any] = None) -> PipelineResult:
-        """Run the pipeline, assuming valid DAG structure."""
         results = {}
         success = True
         error = None
-        
+
         print("\n=== Starting Pipeline Execution ===")
-        
+
         for task_name in self.execution_order:
             print(f"\n--- Executing task: {task_name} ---")
             task = self.tasks[task_name]
             deps = self.dependencies[task_name]
-            
+
             try:
                 # Determine input based on dependencies
                 if not deps:
-                    task_input = initial_input
-                    print(f"Using initial input type: {type(task_input)}")
-                elif len(deps) == 1:
-                    # Single dependency
-                    dep = next(iter(deps))
-                    prev_output = results[dep].output
-                    print(f"Previous output type from {dep}: {type(prev_output)}")
-                    
-                    # Wrap output in appropriate input type based on task name
+                    prev_output = initial_input
+                    print(f"Using initial input type: {type(prev_output)}")
                     if task_name == "make_histogram":
                         print("Creating MakeHistogramInput")
                         task_input = MakeHistogramInput(
                             config=task.config,
                             load_data_output=prev_output
                         )
-                    elif task_name == "measure_emd":
+                    else:
+                        task_input = prev_output
+                elif len(deps) == 1:
+                    # Single dependency
+                    dep = next(iter(deps))
+                    prev_output = results[dep].output
+                    print(f"Previous output type from {dep}: {type(prev_output)}")
+
+                    if task_name == "measure_emd":
                         print("Creating MeasureEMDInput")
                         task_input = MeasureEMDInput(
                             config=task.config,
-                            histogram_output=prev_output
+                            histogram_output=prev_output  # Corrected here
                         )
                     elif task_name == "calculate_pvalues":
                         print("Creating CalculatePValuesInput")
@@ -109,7 +109,6 @@ class Pipeline:
                         )
                     else:
                         task_input = prev_output
-                    print(f"Created input type: {type(task_input)}")
                 else:
                     # Multiple dependencies
                     if task_name == "build_masks":
@@ -134,17 +133,17 @@ class Pipeline:
                         )
                     else:
                         task_input = {dep: results[dep].output for dep in deps}
-                
+
                 # Run task
                 print(f"Running task {task_name}")
                 output = task.run(task_input)
                 print(f"Task {task_name} completed with output type: {type(output)}")
-                
+
                 if self.diagnostics_dir:
                     task.plot_diagnostics(output, self.diagnostics_dir / task_name)
-                
+
                 results[task_name] = TaskResult(output=output, success=True)
-                
+
             except Exception as e:
                 print(f"ERROR in task {task_name}: {str(e)}")
                 results[task_name] = TaskResult(
@@ -155,7 +154,7 @@ class Pipeline:
                 success = False
                 error = str(e)
                 break
-        
+
         return PipelineResult(
             success=success,
             results=results,

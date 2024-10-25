@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 
 from btx.processing.tasks.make_histogram import MakeHistogram
-from btx.processing.types import MakeHistogramInput, LoadDataOutput
+from btx.processing.btx_types import MakeHistogramInput, LoadDataOutput
 from btx.processing.tests.functional.data_generators import generate_synthetic_frames
 
 def test_make_histogram_validation():

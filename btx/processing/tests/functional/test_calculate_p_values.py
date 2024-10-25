@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from btx.processing.tasks.calculate_p_values import CalculatePValues
-from btx.processing.types import (
+from btx.processing.btx_types import (
     CalculatePValuesInput,
     MeasureEMDOutput
 )

@@ -5,7 +5,7 @@ from scipy import stats, optimize, fft
 import matplotlib.pyplot as plt
 
 from btx.processing.tasks.pump_probe import PumpProbeAnalysis
-from btx.processing.types import (
+from btx.processing.btx_types import (
     PumpProbeAnalysisInput,
     PumpProbeAnalysisOutput,
     LoadDataOutput,
@@ -64,16 +64,31 @@ def generate_signal_profile(delays: np.ndarray, profile_type: str = 'step', **kw
 
 def generate_synthetic_pump_probe_data(
     n_frames: int = 1000,
-    rows: int = 50,
-    cols: int = 50,
+    rows: int = 100,
+    cols: int = 100,
     delay_range: Tuple[float, float] = (-10, 20),
     n_delay_bins: int = 20,
-    noise_level: float = 0.05,
+    base_counts: float = 100.0,  # Base counts for Poisson distribution
     signal_profile: str = 'exponential',
     profile_params: dict = None,
     min_frames_per_bin: int = 20
 ):
-    """Generate synthetic pump-probe data with various signal profiles."""
+    """Generate synthetic pump-probe data with various signal profiles using Poisson noise.
+
+    Args:
+        n_frames: Number of frames to generate
+        rows: Number of rows in each frame
+        cols: Number of columns in each frame
+        delay_range: (min_delay, max_delay) in ps
+        n_delay_bins: Number of delay time bins
+        base_counts: Base count rate for Poisson distribution
+        signal_profile: Type of signal profile to generate
+        profile_params: Parameters for the signal profile
+        min_frames_per_bin: Minimum frames per delay bin
+
+    Returns:
+        Tuple of LoadDataOutput, BuildPumpProbeMasksOutput, and true signal values
+    """
     if profile_params is None:
         profile_params = {}
     
@@ -83,7 +98,7 @@ def generate_synthetic_pump_probe_data(
     bin_edges = np.linspace(delay_min, delay_max, n_delay_bins + 1)
     delay_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
     
-    # Use specified frames per bin without forcing minimum
+    # Use specified frames per bin
     frames_per_bin = min_frames_per_bin
     n_frames = frames_per_bin * n_delay_bins
     
@@ -117,21 +132,23 @@ def generate_synthetic_pump_probe_data(
     # Generate time-dependent signal
     signal_values = generate_signal_profile(delays, signal_profile, **profile_params)
     
-    # Create frames
+    # Create frames with Poisson noise
     for i in range(n_frames):
-        # Base pattern with noise
-        frame = np.random.normal(1.0, noise_level, (rows, cols))
+        # Base pattern - use Poisson distribution
+        lambda_matrix = np.full((rows, cols), base_counts)
         
         # Add signal for laser-on frames
         if laser_on[i]:
-            frame[20:30, 20:30] += signal_values[i]
+            lambda_matrix[20:30, 20:30] *= (1 + signal_values[i])
         
-        frames[i] = frame
+        # Generate Poisson random numbers
+        frames[i] = np.random.poisson(lambda_matrix) / 10
     
-    # Generate I0 values
-    I0 = np.random.normal(1000, 50, n_frames)
+    # Generate I0 values - also using Poisson for consistency
+    I0_base = 1000
+    I0 = np.random.poisson(I0_base, n_frames)
     # Add correlation with signal for laser-on frames
-    I0[laser_on] *= (1 + 0.1 * signal_values[laser_on])
+    I0[laser_on] = np.random.poisson(I0_base * (1 + 0.1 * signal_values[laser_on]))
     
     # Create outputs
     load_data_output = LoadDataOutput(
@@ -402,7 +419,7 @@ def test_pump_probe_statistics():
     load_data_output, masks_output, _ = generate_synthetic_pump_probe_data(
         n_frames=2000,
         n_delay_bins=30,
-        noise_level=0.02,
+        noise_level=.5,
         signal_profile='exponential',
         profile_params={'amplitude': 0.0}  # No signal
     )

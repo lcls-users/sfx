@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from btx.processing.tasks.build_pump_probe_masks import BuildPumpProbeMasks
-from btx.processing.types import (
+from btx.processing.btx_types import (
     BuildPumpProbeMasksInput,
     MakeHistogramOutput,
     CalculatePValuesOutput
