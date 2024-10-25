@@ -9,7 +9,9 @@ import warnings
 from btx.processing.btx_types import (
     BuildPumpProbeMasksInput,
     BuildPumpProbeMasksOutput,
-    SignalMaskStages
+    SignalMaskStages,
+    MakeHistogramOutput,
+    CalculatePValuesOutput
 )
 
 class BuildPumpProbeMasks:
