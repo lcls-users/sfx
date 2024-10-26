@@ -1,56 +1,188 @@
-# xppPumpProbe Analysis Pipeline
+# XPP Analysis Framework
 
-*xppPumpProbe* is an analysis pipeline for analyzing pump-probe experiments at XPP. The pipeline processes and analyzes data from pump-probe experiments, including loading raw data using smd, generating histograms, calculating Earth Mover's Distance (EMD), computing p-values, generating masks, and performing pump-probe analysis. The data loader may have to be redefined per-experiment, but the other components are reusable as is.
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## Pipeline Structure
+## Overview
 
-The *xppPumpProbe* analysis pipeline consists of several tasks that are executed sequentially. Each task is implemented as a separate class in the `xppmask.py` file. The tasks are:
+This is a Python framework for analyzing X-ray Pump-Probe experimental data at light source facilities. It provides a pipeline for processing, analyzing, and validating experimental results using histogram-based signal analysis and Earth Mover's Distance (EMD) calculations.
 
-1. **LoadData**: Loads raw data for pump-probe analysis.
-2. **MakeHistogram**: Generates normalized histograms from loaded data.
-3. **MeasureEMD**: Calculates Earth Mover's Distance (EMD) between histograms and a reference histogram.
-4. **CalculatePValues**: Calculates p-values from EMD values and a null distribution.
-5. **BuildPumpProbeMasks**: Generates binary masks based on p-values and ROI coordinates.
-6. **PumpProbeAnalysis**: Performs pump-probe analysis using the generated masks and data.
+## Key Features
 
-## Configuration
+- **Data Processing Pipeline**
+  - HDF5 experimental file integration
+  - Automated mask generation
+  - Histogram-based signal analysis
+  - Earth Mover's Distance (EMD) calculations
+  - Statistical significance testing
+  - Pump-probe time series analysis
 
-todo
-## Task Descriptions
+- **Performance Features**
+  - Numba-accelerated computations
+  - Memoization for repeated calculations
+  - Efficient memory management
 
-### LoadData
+- **Diagnostics**
+  - Visual analysis at each pipeline stage
+  - Statistical validation reporting
+  - Performance profiling
+  - Automated quality checks
 
-The `LoadData` task is responsible for loading raw data for pump-probe analysis. It uses the `get_imgs_thresh` function from the `xpploader.py` file to load the data based on the specified run number, experiment number, ROI, energy filter, I0 threshold, IPM position filter, time bin, and time tool parameters.
+## Quick Start
 
-### MakeHistogram
+### Basic Configuration
 
-The `MakeHistogram` task generates normalized histograms from the loaded data. It uses the `calculate_histograms` function from the `histogram_analysis.py` file to create the histograms. The generated histograms are saved as a numpy file, and a summary file with histogram information is created.
+```python
+import numpy as np
+from pathlib import Path
+from btx.processing.tasks import (
+    LoadData, MakeHistogram, MeasureEMD,
+    CalculatePValues, BuildPumpProbeMasks, PumpProbeAnalysis
+)
 
-### MeasureEMD
+# Configure the analysis pipeline
+config = {
+    'setup': {
+        'run': 190,
+        'exp': 'xppl1030522',
+        'background_roi_coords': [0, 15, 0, 40]  # Background ROI for analysis
+    },
+    'load_data': {
+        'roi': (170, 250, 135, 215),  # Region of interest for processing
+        'energy_filter': [9.0, 5.0],   # Energy filtering parameters
+        'time_bin': 2.0,               # Time binning in ps
+        'time_tool': [0.0, 0.015]      # TimeTool parameters
+    },
+    'make_histogram': {
+        'bin_boundaries': np.arange(5, 30, 0.2),
+        'hist_start_bin': 1
+    },
+    'calculate_pvalues': {
+        'significance_threshold': 0.05
+    },
+    'generate_masks': {
+        'threshold': 0.05,
+        'bg_mask_mult': 2.0,
+        'bg_mask_thickness': 5
+    },
+    'pump_probe_analysis': {
+        'min_count': 2,
+        'significance_level': 0.05
+    }
+}
 
-The `MeasureEMD` task calculates the Earth Mover's Distance (EMD) between histograms and a reference histogram. It uses the `calculate_emd_values` function from the `pvalues.py` file to compute the EMD values. The EMD values are saved as a numpy file, and a null distribution of EMD values is generated and saved as a separate numpy file. A summary file with EMD calculation information is also created.
+# Setup output directory for results and diagnostics
+output_dir = Path("pipeline_results")
+output_dir.mkdir(exist_ok=True)
+diagnostics_dir = output_dir / "diagnostics"
+diagnostics_dir.mkdir(exist_ok=True)
+```
 
-### CalculatePValues
+### Loading and Processing Data
 
-The `CalculatePValues` task calculates p-values from EMD values and a null distribution. It uses the `calculate_p_values` function from the `analysis_tasks.py` file to compute the p-values. The p-values are saved as a numpy file, and a summary file with p-value calculation information is generated.
+```python
+# Load data from NPZ file
+from btx.processing.btx_types import LoadDataInput
 
-### BuildPumpProbeMasks
+def load_pump_probe_data(npz_path, roi, config):
+    """Load and preprocess pump-probe data."""
+    with np.load(npz_path) as data:
+        frames = data['frames'][:, roi[2]:roi[3], roi[0]:roi[1]]
+        
+        return LoadData(config).run(LoadDataInput(
+            config=config,
+            data=frames,
+            I0=data['I0'],
+            laser_delays=data['delays'],
+            laser_on_mask=data['laser_on_mask'],
+            laser_off_mask=data['laser_off_mask']
+        ))
 
-The `BuildPumpProbeMasks` task generates binary signal and background masks based on the p-values, histograms, and ROI coordinates. It uses the `generate_signal_mask` and `generate_background_mask` functions from the `analysis_tasks.py` file to create the masks. The binary signal and background masks are saved as separate numpy files, and a summary file with mask generation information is produced.
+# Process through pipeline
+load_data_output, _ = load_pump_probe_data(
+    'path/to/your/data.npz',
+    roi=config['load_data']['roi'],
+    config=config
+)
 
-### PumpProbeAnalysis
+# Generate histograms
+histogram = MakeHistogram(config)
+histogram_output = histogram.run(MakeHistogramInput(
+    config=config,
+    load_data_output=load_data_output
+))
 
-The `PumpProbeAnalysis` task performs the pump-probe analysis using the generated masks and loaded data. It groups images into stacks, generates intensity vs. delay curves, calculates p-values, plots the results, and saves the output files. The task produces a pump-probe plot, pump-probe curves data, a summary file, and a report file.
+# Calculate Earth Mover's Distance
+emd = MeasureEMD(config)
+emd_output = emd.run(MeasureEMDInput(
+    config=config,
+    histogram_output=histogram_output
+))
 
-## Running the Pipeline
+# Calculate statistical significance
+pvals = CalculatePValues(config)
+pvals_output = pvals.run(CalculatePValuesInput(
+    config=config,
+    emd_output=emd_output
+))
 
-To run the *xppPumpProbe* analysis pipeline, follow these steps:
+# Generate analysis masks
+masks = BuildPumpProbeMasks(config)
+masks_output = masks.run(BuildPumpProbeMasksInput(
+    config=config,
+    histogram_output=histogram_output,
+    p_values_output=pvals_output
+))
 
-1. Prepare the YAML configuration file with the necessary parameters for each task.
-2. Create an instance of each task class in the desired order, passing the configuration dictionary to the constructor.
-3. Call the appropriate methods of each task instance to load data, perform computations, summarize results, report results, and save outputs. The output files and plots will be generated in the specified output directories.
+# Perform pump-probe analysis
+analysis = PumpProbeAnalysis(config)
+results = analysis.run(PumpProbeAnalysisInput(
+    config=config,
+    load_data_output=load_data_output,
+    masks_output=masks_output
+))
+```
 
+## Pipeline Components
 
-## Testing
+The BTX pipeline consists of the following stages:
 
-The *xppPumpProbe* pipeline includes a test script located in the `tests/test_xppmask.py` file. The test script contains individual test functions for each task and an integration test function (`test_pump_probe_analysis`) that runs all tasks in sequence. To run the tests, execute the `test_xppmask.py` script.
+1. **Data Loading** (`LoadData`)
+   - Raw data ingestion
+   - Preprocessing
+   - Initial validation
+
+2. **Histogram Generation** (`MakeHistogram`)
+   - Numba-optimized computation
+   - Configurable binning
+   - Memoization
+
+3. **EMD Calculation** (`MeasureEMD`)
+   - Background ROI validation
+   - Wasserstein distance computation
+   - Null distribution generation
+
+4. **Statistical Analysis** (`CalculatePValues`)
+   - P-value calculation
+   - Multiple testing correction
+   - Significance thresholding
+
+5. **Mask Generation** (`BuildPumpProbeMasks`)
+   - ROI-connected clustering
+   - Buffer zone generation
+   - Quality validation
+
+6. **Time Series Analysis** (`PumpProbeAnalysis`)
+   - Delay-based grouping
+   - Signal calculation
+   - Error propagation
+
+## Requirements
+
+- Python 3.8+
+- NumPy
+- SciPy
+- Matplotlib
+- Numba
+- H5py
+- PyTables
