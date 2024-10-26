@@ -96,9 +96,11 @@ BuildPumpProbeMasks  |
            \         |
           PumpProbeAnalysis
 ```
-Why this structure? First, it allows caching of intermediate results. If we want to run an optimization loop with respect to input (configuration) parameters of the mask calculation task, for example, it is necessary to memoize CalculatePValues or its expensive updstream tasks. We *could* do this while black boxing the entire pipeline, but exposing the intermediate steps as a DAG gives the user more clarity and control over what is going on.
+Why this structure? First, it allows caching and visual inspection of intermediate results. If we want to run an optimization loop with respect to input (configuration) parameters of the signal-finding task, for example, it is necessary to memoize CalculatePValues or its expensive upstream tasks. (The actual current behavior is that MakeHistogram, the most expensive step, is memoized by default.) 
 
-Second, our goal is to provide an extensible library, not a monolithic analysis script. Because the tasks are explicitly composable and have well-defined, stateless behavior, it is much easier to add new capability. For example, extending the pump-probe analysis to multiple diffraction peaks would simply require a customized implementation of BuildPumpProbeMasks that returns multiple signal masks instead of a single one. The user would then just run PumpProbeAnalysis on each of those outputs. 
+We *could* do these things while black boxing the entire pipeline, but exposing the intermediate steps as a DAG - with explicit inputs, outputs and visual monitoring for each component - gives the user more clarity and control over what is going on. 
+
+Second, our goal is to provide an extensible library, not a monolithic analysis script. Because the tasks are explicitly composable and have well-defined, stateless behavior, it is much easier to add new capability. For example, extending the pump-probe analysis to multiple diffraction peaks would simply require a customized replacement of BuildPumpProbeMasks that returns multiple signal masks instead of a single one. The user would then just run PumpProbeAnalysis on each of those outputs. 
 
 1. **Data Loading** (`LoadData`)
    - Input: Raw experimental data (frames, I0 values, laser delays, masks)
@@ -132,7 +134,7 @@ Second, our goal is to provide an extensible library, not a monolithic analysis 
      - Multiple testing correction
      - Significance thresholding
 
-5. **Mask Generation** (`BuildPumpProbeMasks`)
+5. **Signal-finding / Mask Generation** (`BuildPumpProbeMasks`)
    - Input: MakeHistogram output and CalculatePValues output
    - Output: Signal mask, background mask, intermediate mask stages
    - Key operations:
