@@ -431,9 +431,11 @@ class PeakFinder:
         print("Shape of V: ",V.shape)
         print("Shape of mu: ",mu.shape)
         for rank in range(len(S)):
-            rec_img = np.dot(projected_images[rank][start_idx:end_idx,:], V[rank].T) + mu[rank]
-            rec_img = rec_img.reshape((int(a/len(S)),b,c))
-            rec_imgs.append(rec_img)
+            for counter in range(start_idx, end_idx):
+                rec_img = np.dot(projected_images[rank][counter,:], V[rank].T) + mu[rank]
+                print("Shape of rec_img: ",rec_img.shape)
+                rec_img = rec_img.reshape((int(a/len(S)),b,c))
+                rec_imgs.append(rec_img)
 
         rec_img = np.concatenate(rec_imgs, axis=0)
         rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
