@@ -188,12 +188,6 @@ def reduce_images(V,mu,batch_size,device_list,rank,shm_list,shape,dtype):
     transformed_images = torch.cat(transformed_images, dim=0)
     transformed_images = transformed_images.cpu().numpy()
 
-    """existing_shm.close()
-    existing_shm.unlink()
-    torch.cuda.empty_cache()
-    gc.collect()"""
-    print('checkpoint',flush=True)
-
     return transformed_images
     
 def parse_input():
@@ -315,7 +309,7 @@ if __name__ == "__main__":
 
                     server_address = ('localhost', 5000)
                     dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-                    dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
+                    dataloader = DataLoader(dataset, batch_size=20, num_workers=2, prefetch_factor = None)
                     dataloader_iter = iter(dataloader)
 
                     for batch in dataloader_iter:
@@ -376,7 +370,7 @@ if __name__ == "__main__":
                     
                     torch.cuda.empty_cache()
                     gc.collect()
-                    
+
                     if last_batch:
                         break
 
