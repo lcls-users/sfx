@@ -69,7 +69,7 @@ class IPCRemotePsanaDataset(Dataset):
             response_json = json.loads(response_data)
 
             # Use the JSON data to access the shared memory
-            shm_name = response_json['shm_name']
+            shm_name = response_json['name']
             shape    = response_json['shape']
             dtype    = np.dtype(response_json['dtype'])
             fiducial = int(response_json['fiducial'])

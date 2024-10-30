@@ -58,7 +58,7 @@ def worker_process(server_socket):
 
 
             response_data = json.dumps({
-                "shm_name": shm.name,
+                "name": shm.name,
                 "shape": data.shape,
                 "dtype": str(data.dtype),
                 "fiducial": int(timestamp.fiducial()),
