@@ -181,7 +181,8 @@ def find_peaks(config):
                     tag=task.tag, mask=mask_file, psana_mask=task.psana_mask, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr,
                     son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm,
-                    calibdir=task.get('calibdir'), pv_camera_length=setup.get('pv_camera_length'))
+                    calibdir=task.get('calibdir'), pv_camera_length=setup.get('pv_camera_length'),
+                    pypca_model_filename=task.get('pypca_model_filename'), pypca_reduced_filename=task.get('pypca_reduced_filename'))
     logger.info(f'Performing peak finding for run {setup.run} of {setup.exp}...')
     pf.find_peaks()
     pf.curate_cxi()

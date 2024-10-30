@@ -23,7 +23,8 @@ class PeakFinder:
     def __init__(self, exp, run, det_type, outdir, event_receiver=None, event_code=None, event_logic=True,
                  tag='', mask=None, psana_mask=True, pv_camera_length=None,
                  min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., atot_thr=120., 
-                 son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0, calibdir=None):
+                 son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0, calibdir=None,
+                 pypca_reduced_filename=None, pypca_model_filename=None):
         
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -51,6 +52,12 @@ class PeakFinder:
                                     event_receiver, event_code, event_logic, calibdir=calibdir)
         self.set_up_cxi(tag)
         self.set_up_algorithm(mask_file=mask, psana_mask=psana_mask)
+
+        #set-up pypca
+        self.pypca_model = None
+        self.pypca_reduced_filename = None
+        self.pypca_model_filename = None
+        self.rec_imgs = None
         
     def set_up_psana_interface(self, exp, run, det_type,
                                event_receiver=None, event_code=None, event_logic=True, calibdir=None):
@@ -71,7 +78,20 @@ class PeakFinder:
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
                                   event_receiver=event_receiver, event_code=event_code, event_logic=event_logic,
                                   calibdir=calibdir)
+        ########## ADDITIONAL CODE ##########
+        self.uncompress_pypca()
+        print("Uncompressed pypca model")
+        #####################################
         self.psi.distribute_events(self.rank, self.size)
+        ########## ADDITIONAL CODE ##########
+        self.reconstruct_images()
+        self.pypca_model['S']=None
+        self.pypca_model['V']=None
+        self.pypca_model['mu']=None
+        self.pypca_model['projected_images']=None
+        print("Reconstructed images")
+        #####################################
+
         self.n_events = self.psi.max_events
 
         # additional self variables for tracking peak stats
@@ -319,8 +339,14 @@ class PeakFinder:
             if not self.psi.skip_event(evt):
 
                 # retrieve calibrated image
-                self.psi.get_timestamp(evt.get(EventId))
-                img = self.psi.det.calib(evt=evt)
+                """self.psi.get_timestamp(evt.get(EventId))
+                img = self.psi.det.calib(evt=evt)"""
+
+                self.psi.seconds.append(self.pypca_model['seconds'][idx+start_idx])
+                self.psi.nanoseconds.append(self.pypca_model['nanoseconds'][idx+start_idx])
+                self.psi.fiducials.append(self.pypca_model['fiducials'][idx+start_idx])
+                img = self.rec_imgs[idx]
+
                 if img is None:
                     empty_images += 1
                     continue
@@ -357,6 +383,57 @@ class PeakFinder:
 
         if empty_images != 0:
             logger.debug(f"Rank {self.rank} encountered {empty_images} empty images.")
+
+    def uncompress_pypca(self):
+        """
+        Uncompress the pypca file
+        """
+
+        reduced_filename = self.pypca_reduced_filename ########## CHANGE THIS TO THE CORRECT FILENAME
+        model_filename = self.pypca_model_filename ########## CHANGE THIS TO THE CORRECT FILENAME
+        data = {}
+        with h5py.File(reduced_filename, 'r') as f:
+            data['projected_images'] = np.asarray(f.get('projected_images'))
+            data['fiducials'] = np.asarray(f.get('fiducials'))
+            data['times'] = np.asarray(f.get('times'))
+            data['nanoseconds'] = np.asarray(f.get('nanoseconds'))
+            data['seconds'] = np.asarray(f.get('seconds'))
+        
+        with h5py.File(model_filename, 'r') as f:
+            data['S'] = np.asarray(f.get('S')) 
+            data['V'] = np.asarray(f.get('V')) 
+            data['mu'] = np.asarray(f.get('mu')) 
+        
+        self.pypca_model = data
+
+    def reconstruct_images(self):
+        """
+        Reconstruct the images from the pypca model
+        """
+
+        S = self.pypca_model['S']
+        V = self.pypca_model['V']
+        mu = self.pypca_model['mu']
+        projected_images = self.pypca_model['projected_images']
+
+        from btx.interfaces.ipsana import (retrieve_pixel_index_map,assemble_image_stack_batch,)   
+
+        start_idx, end_idx = self.psi.counter, self.psi.max_events
+
+        a,b,c = self.psi.det.shape()
+        pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.psi.run))
+
+        rec_imgs = []
+
+        for rank in range(len(S)):
+            rec_img = np.dot(projected_images[rank][start_idx:end_idx,:], V[rank].T) + mu[rank]
+            rec_img = rec_img.reshape((int(a/len(S)),b,c))
+            rec_imgs.append(rec_img)
+
+        rec_img = np.concatenate(rec_imgs, axis=0)
+        rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
+    
+        self.rec_imgs = rec_img
 
     def summarize(self):
         """
@@ -632,6 +709,8 @@ def parse_input():
     parser.add_argument('--dr', help='Width of ring for background evaluation in pixels', required=False, type=float, default=2.0)
     parser.add_argument('--nsigm', help='Intensity threshold to include pixel in connected group', required=False, type=float, default=7.0)
     parser.add_argument('--calibdir', help='Alternative calibration directory', required=False, type=str)
+    parser.add_argument('--pypca_reduced_filename', help='Path to reduced pypca file', required=True, type=str)
+    parser.add_argument('--pypca_model_filename', help='Path to pypca model file', required=True, type=str)
     
     return parser.parse_args()
 
