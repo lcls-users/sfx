@@ -1008,7 +1008,7 @@ def reduce_pypca(config,num_nodes = 1, id_current_node = 0):
     server_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/interfaces/iserver.py")
     client_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),  "../btx/processing/pypca_reducer.py")
 
-    command = "which python; ulimit -n 4096;"
+    command = "which python; ulimit -n 6000;"
     command += f"python {server_path} & echo 'Server is running'"
     command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images_str}'"
     command += "; sleep 10"
