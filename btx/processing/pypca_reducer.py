@@ -190,7 +190,10 @@ def reduce_images(V,mu,batch_size,device_list,rank,shm_list,shape,dtype):
 
     existing_shm.close()
     existing_shm.unlink()
-
+    torch.cuda.empty_cache()
+    gc.collect()
+    print('checkpoint',flush=True)
+    
     return transformed_images
     
 def parse_input():
