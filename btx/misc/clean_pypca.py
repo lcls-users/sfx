@@ -36,7 +36,10 @@ def fuse_results(path,tag,num_nodes,mode='create'):
             all_data.append(unpack_model_file(filename_with_tag))
         
         fused_data['projected_images'] = np.concatenate([data['projected_images'] for data in all_data], axis=0)
-        fused_data['timestamps'] = all_data[0]['timestamps']
+        fused_data['fiducials'] = np.concatenate([data['fiducials'] for data in all_data], axis=0)
+        fused_data['seconds'] = np.concatenate([data['seconds'] for data in all_data], axis=0)
+        fused_data['nanoseconds'] = np.concatenate([data['nanoseconds'] for data in all_data], axis=0)
+        fused_data['times'] = np.concatenate([data['times'] for data in all_data], axis=0)
 
     elif mode == 'update':
         fused_data = {}
@@ -72,7 +75,6 @@ def unpack_model_file(filename):
 
         if 'projected_images' in f:
             data['projected_images'] = np.asarray(f.get('projected_images'))
-            data['timestamps'] = np.asarray(f.get('timestamps'))
             #if reducing, only projected_images are needed
             return data
         
@@ -89,6 +91,11 @@ def unpack_model_file(filename):
 
         if 'transformed_images' in f:
             data['transformed_images'] = np.asarray(f.get('transformed_images'))
+        
+        data['fiducials'] = np.asarray(f.get('fiducials')) if 'fiducials' in f else None
+        data['seconds'] = np.asarray(f.get('seconds')) if 'seconds' in f else None
+        data['nanoseconds'] = np.asarray(f.get('nanoseconds')) if 'nanoseconds' in f else None
+        data['times'] = np.asarray(f.get('times')) if 'times' in f else None
 
     return data
 
@@ -114,8 +121,10 @@ def write_fused_data(data, path, tag,mode = 'create'):
 
         with h5py.File(filename_with_tag, 'w') as f:
             f.create_dataset('projected_images', data=data['projected_images'])
-            print(data['timestamps'])
-            f.create_dataset('timestamps', data=data['timestamps'])
+            f.create_dataset('fiducials', data=data['fiducials'])
+            f.create_dataset('seconds', data=data['seconds'])
+            f.create_dataset('nanoseconds', data=data['nanoseconds'])
+            f.create_dataset('times', data=data['times'])
     
     elif mode == 'update':
         filename_with_tag = os.path.join(path, tag)
