@@ -47,17 +47,19 @@ class PeakFinder:
         self.clen = pv_camera_length # float, clen distance in mm, or str for a pv code
         self.outdir = outdir # str, path for saving cxi files
 
+        #set-up pypca
+        self.pypca_model = None
+        self.pypca_reduced_filename = pypca_reduced_filename
+        self.pypca_model_filename = pypca_model_filename
+        self.rec_imgs = None
+        
         # set up class
         self.set_up_psana_interface(exp, run, det_type,
                                     event_receiver, event_code, event_logic, calibdir=calibdir)
         self.set_up_cxi(tag)
         self.set_up_algorithm(mask_file=mask, psana_mask=psana_mask)
 
-        #set-up pypca
-        self.pypca_model = None
-        self.pypca_reduced_filename = pypca_reduced_filename
-        self.pypca_model_filename = pypca_model_filename
-        self.rec_imgs = None
+        
         
     def set_up_psana_interface(self, exp, run, det_type,
                                event_receiver=None, event_code=None, event_logic=True, calibdir=None):
