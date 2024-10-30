@@ -55,8 +55,8 @@ class PeakFinder:
 
         #set-up pypca
         self.pypca_model = None
-        self.pypca_reduced_filename = None
-        self.pypca_model_filename = None
+        self.pypca_reduced_filename = pypca_reduced_filename
+        self.pypca_model_filename = pypca_model_filename
         self.rec_imgs = None
         
     def set_up_psana_interface(self, exp, run, det_type,
@@ -722,7 +722,7 @@ if __name__ == '__main__':
                     mask=params.mask, psana_mask=params.psana_mask, min_peaks=params.min_peaks, max_peaks=params.max_peaks,
                     npix_min=params.npix_min, npix_max=params.npix_max, amax_thr=params.amax_thr, atot_thr=params.atot_thr, 
                     son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm,
-                    calibdir=params.calibdir)
+                    calibdir=params.calibdir, pypca_reduced_filename=params.pypca_reduced_filename, pypca_model_filename=params.pypca_model_filename)
     pf.find_peaks()
     pf.curate_cxi()
     pf.summarize()
