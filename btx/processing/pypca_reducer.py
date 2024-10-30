@@ -188,6 +188,9 @@ def reduce_images(V,mu,batch_size,device_list,rank,shm_list,shape,dtype):
     transformed_images = torch.cat(transformed_images, dim=0)
     transformed_images = transformed_images.cpu().numpy()
 
+    existing_shm.close()
+    existing_shm.unlink()
+
     return transformed_images
     
 def parse_input():
