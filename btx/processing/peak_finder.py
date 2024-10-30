@@ -52,7 +52,7 @@ class PeakFinder:
         self.pypca_reduced_filename = pypca_reduced_filename
         self.pypca_model_filename = pypca_model_filename
         self.rec_imgs = None
-        
+
         # set up class
         self.set_up_psana_interface(exp, run, det_type,
                                     event_receiver, event_code, event_logic, calibdir=calibdir)
@@ -427,6 +427,9 @@ class PeakFinder:
 
         rec_imgs = []
 
+        print("Shape of projected images: ",projected_images.shape)
+        print("Shape of V: ",V.shape)
+        print("Shape of mu: ",mu.shape)
         for rank in range(len(S)):
             rec_img = np.dot(projected_images[rank][start_idx:end_idx,:], V[rank].T) + mu[rank]
             rec_img = rec_img.reshape((int(a/len(S)),b,c))
