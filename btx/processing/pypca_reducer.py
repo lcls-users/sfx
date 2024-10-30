@@ -369,7 +369,14 @@ if __name__ == "__main__":
 
                     for rank in range(num_gpus):
                         projected_images[rank].append(results[rank])
-            
+
+                    for shm in shm_list:
+                        shm.close()
+                        shm.unlink()
+                    
+                    torch.cuda.empty_cache()
+                    gc.collect()
+                    
                     if last_batch:
                         break
 
