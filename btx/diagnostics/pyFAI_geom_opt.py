@@ -545,6 +545,8 @@ class BayesGeomOpt:
         seed : int
             Random seed for reproducibility
         """
+        from time import time
+        from datetime import datetime
         if seed is not None:
             np.random.seed(seed)
 
@@ -561,8 +563,12 @@ class BayesGeomOpt:
 
         dist = self.comm.scatter(distances, root=0)
         print(f"Rank {self.rank} is working on distance {dist}")
-
+        start = datetime.now()
+        t0 = time()
         results = self.bayes_opt_center(powder, dist, bounds, n_samples, num_iterations, af, hyperparam, prior, seed)
+        t1 = time()
+        with open(f'/sdf/home/l/lconreux/launchpad/btx_bayes_opt_center_rank_{self.rank}.txt', 'w') as f:
+            f.write(f"Bayesian Optimization on Center with distance {dist:.2f} on Rank {self.rank} started at {start} and took {t1-t0:.2f} seconds")
         self.comm.Barrier()
 
         self.scan = {}
