@@ -123,7 +123,7 @@ def write_fused_data(data, path, tag,mode = 'create'):
             num_gpus = data['S'].shape[0]
             num_components = data['S'].shape[1]
             num_pixels = data['V'].shape[1]*num_gpus
-            batch_component_size = min(1000,num_components)
+            batch_component_size = min(100,num_components)
             v_chunk = (num_gpus,num_pixels//num_gpus,batch_component_size)
             f.create_dataset('V', data=data['V'], chunks=v_chunk)
 
