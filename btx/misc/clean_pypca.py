@@ -88,7 +88,8 @@ def unpack_model_file(filename):
         data['S'] = np.asarray(f.get('S')) if 'S' in f else None
         data['V'] = np.asarray(f.get('V')) if 'V' in f else None
         data['mu'] = np.asarray(f.get('mu')) if 'mu' in f else None
-        data['transformed_images'] = np.asarray(f.get('transformed_images')) if 'transformed_images' in f else None
+        if 'transformed_images' in f:
+            data['transformed_images'] = np.asarray(f.get('transformed_images'))
         data['fiducials'] = np.asarray(f.get('fiducials')) if 'fiducials' in f else None
         data['seconds'] = np.asarray(f.get('seconds')) if 'seconds' in f else None
         data['nanoseconds'] = np.asarray(f.get('nanoseconds')) if 'nanoseconds' in f else None
@@ -125,7 +126,7 @@ def write_fused_data(data, path, tag,mode = 'create'):
             batch_component_size = min(1000,num_components)
             v_chunk = (num_gpus,num_pixels//num_gpus,batch_component_size)
             f.create_dataset('V', data=data['V'], chunks=v_chunk)
-            
+
             if 'transformed_images' in data:
                 f.create_dataset('transformed_images', data=data['transformed_images'])
 
