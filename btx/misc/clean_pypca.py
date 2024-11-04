@@ -88,10 +88,7 @@ def unpack_model_file(filename):
         data['S'] = np.asarray(f.get('S')) if 'S' in f else None
         data['V'] = np.asarray(f.get('V')) if 'V' in f else None
         data['mu'] = np.asarray(f.get('mu')) if 'mu' in f else None
-
-        if 'transformed_images' in f:
-            data['transformed_images'] = np.asarray(f.get('transformed_images'))
-        
+        data['transformed_images'] = np.asarray(f.get('transformed_images')) if 'transformed_images' in f else None
         data['fiducials'] = np.asarray(f.get('fiducials')) if 'fiducials' in f else None
         data['seconds'] = np.asarray(f.get('seconds')) if 'seconds' in f else None
         data['nanoseconds'] = np.asarray(f.get('nanoseconds')) if 'nanoseconds' in f else None
@@ -104,7 +101,7 @@ def write_fused_data(data, path, tag,mode = 'create'):
         filename_with_tag = f"{path}pypca_model_{tag}.h5"
 
         with h5py.File(filename_with_tag, 'w') as f:
-            f.create_dataset('exp', data=data['exp'])
+            """f.create_dataset('exp', data=data['exp'])
             f.create_dataset('run', data=data['run'])
             f.create_dataset('num_runs', data=data['num_runs'])
             f.create_dataset('num_images', data=data['num_images'])
@@ -112,9 +109,26 @@ def write_fused_data(data, path, tag,mode = 'create'):
             f.create_dataset('start_offset', data=data['start_offset'])
             f.create_dataset('S', data=data['S'])
             f.create_dataset('V', data=data['V'])
+            f.create_dataset('mu', data=data['mu'])"""
+            small_data = f.create_group('metadata')
+            small_data.create_dataset('exp', data=data['exp'])
+            small_data.create_dataset('run', data=data['run'])
+            small_data.create_dataset('num_runs', data=data['num_runs'])
+            small_data.create_dataset('num_images', data=data['num_images'])
+            small_data.create_dataset('det_type', data=data['det_type'])
+            small_data.create_dataset('start_offset', data=data['start_offset'])
+            f.create_dataset('S', data=data['S'])
             f.create_dataset('mu', data=data['mu'])
+            num_gpus = data['S'].shape[0]
+            num_components = data['S'].shape[1]
+            num_pixels = data['V'].shape[1]*num_gpus
+            batch_component_size = min(1000,num_components)
+            v_chunk = (num_gpus,num_pixels//num_gpus,batch_component_size)
+            f.create_dataset('V', data=data['V'], chunks=v_chunk)
+            
             if 'transformed_images' in data:
                 f.create_dataset('transformed_images', data=data['transformed_images'])
+
 
     elif mode == 'reduce':
         filename_with_tag = os.path.join(path, f"{tag}.h5")
