@@ -36,6 +36,7 @@ def fuse_results(path,tag,num_nodes,mode='create'):
             all_data.append(unpack_model_file(filename_with_tag))
         
         fused_data['projected_images'] = np.concatenate([data['projected_images'] for data in all_data], axis=0)
+
         fused_data['fiducials'] = np.concatenate([data['fiducials'] for data in all_data], axis=0)
         fused_data['seconds'] = np.concatenate([data['seconds'] for data in all_data], axis=0)
         fused_data['nanoseconds'] = np.concatenate([data['nanoseconds'] for data in all_data], axis=0)
@@ -75,7 +76,10 @@ def unpack_model_file(filename):
 
         if 'projected_images' in f:
             data['projected_images'] = np.asarray(f.get('projected_images'))
-            #if reducing, only projected_images are needed
+            data['fiducials'] = np.asarray(f.get('fiducials')) if 'fiducials' in f else None
+            data['seconds'] = np.asarray(f.get('seconds')) if 'seconds' in f else None
+            data['nanoseconds'] = np.asarray(f.get('nanoseconds')) if 'nanoseconds' in f else None
+            data['times'] = np.asarray(f.get('times')) if 'times' in f else None
             return data
         
         
@@ -163,7 +167,7 @@ def write_fused_data(data, path, tag,mode = 'create'):
             batch_component_size = min(100,num_components)
             v_chunk = (num_gpus,num_pixels//num_gpus,batch_component_size)
             f.create_dataset('V', data=data['V'], chunks=v_chunk)
-            
+
         os.rename(filename_with_tag, f"{filename_with_tag}_updated_model.h5")
         
 def delete_node_models(path, tag, num_nodes, mode = 'create'):
