@@ -135,11 +135,15 @@ def write_fused_data(data, path, tag,mode = 'create'):
         filename_with_tag = os.path.join(path, f"{tag}.h5")
 
         with h5py.File(filename_with_tag, 'w') as f:
-            f.create_dataset('projected_images', data=data['projected_images'])
-            f.create_dataset('fiducials', data=data['fiducials'])
-            f.create_dataset('seconds', data=data['seconds'])
-            f.create_dataset('nanoseconds', data=data['nanoseconds'])
-            f.create_dataset('times', data=data['times'])
+            small_data = f.create_group('timestamps')
+            small_data.create_dataset('fiducials', data=data['fiducials'])
+            small_data.create_dataset('seconds', data=data['seconds'])
+            small_data.create_dataset('nanoseconds', data=data['nanoseconds'])
+            small_data.create_dataset('times', data=data['times'])
+            num_gpus, num_images, num_components = data['projected_images'].shape
+            batch_component_size = min(100,num_components)
+            projected_images_chunk = (num_gpus,num_images,batch_component_size)
+            f.create_dataset('projected_images', data=data['projected_images'], chunks=projected_images_chunk)
     
     elif mode == 'update':
         filename_with_tag = os.path.join(path, tag)
@@ -151,9 +155,15 @@ def write_fused_data(data, path, tag,mode = 'create'):
             del f['num_images']
             f.create_dataset('num_images', data=data['num_images'])
             f.create_dataset('S', data=data['S'])
-            f.create_dataset('V', data=data['V'])
             f.create_dataset('mu', data=data['mu'])
 
+            num_gpus = data['S'].shape[0]
+            num_components = data['S'].shape[1]
+            num_pixels = data['V'].shape[1]*num_gpus
+            batch_component_size = min(100,num_components)
+            v_chunk = (num_gpus,num_pixels//num_gpus,batch_component_size)
+            f.create_dataset('V', data=data['V'], chunks=v_chunk)
+            
         os.rename(filename_with_tag, f"{filename_with_tag}_updated_model.h5")
         
 def delete_node_models(path, tag, num_nodes, mode = 'create'):
