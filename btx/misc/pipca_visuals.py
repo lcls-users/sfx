@@ -722,7 +722,8 @@ def unpack_ipca_pytorch_model_file(filename,start_idx=0,end_idx=-1):
         data['S'] = np.asarray(f.get('S'))
         data['mu'] = np.asarray(f.get('mu'))
         V=np.zeros(f['V'].shape,dtype=f['V'].dtype)
-        data['V'].read_direct(V,source_sel=np.s_[start_idx:end_idx])
+        f['V'].read_direct(V,source_sel=np.s_[start_idx:end_idx])
+        data['V'] = V
 
     return data
 
