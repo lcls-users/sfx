@@ -190,6 +190,7 @@ sbatch << EOF
 ${SBATCH_CMD_ACCOUNT}
 #SBATCH -p ${QUEUE}
 #SBATCH -t ${TIME_LIMIT:-10:00:00} # Default to 10 hours if not provided
+#SBATCH --exclusive
 #SBATCH --job-name ${TASK}
 #SBATCH --ntasks=${CORES}
 ${SBATCH_CMD_RESERVATION}
@@ -205,7 +206,6 @@ export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
 export TMP_EXE=${TMP_EXE}
 export WHICHPYTHON="${WHICHPYTHON}"
-export NUMEXPR_MAX_THREADS=1
 
 if [ ${RUN_NUM} != 'None' ]; then
   echo "new config file: ${THIS_CONFIGFILE}"
