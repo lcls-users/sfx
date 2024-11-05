@@ -206,13 +206,12 @@ def display_dashboard_pytorch(filename):
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
 def display_image_pypca(filename, image_to_display=None,num_pixels=100):
-    data = unpack_ipca_pytorch_model_file(filename)
+    data = unpack_ipca_pytorch_model_file(filename,start_idx=image_to_display, end_idx=image_to_display+1)
 
     exp = data['exp']
     run = data['run']
     det_type = data['det_type']
     start_img = data['start_offset']
-    transformed_images = data['transformed_images']
     mu = data['mu']
     S = data['S']
     V = data['V']
@@ -225,8 +224,10 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
 
     psi.counter = counter
     img = psi.get_images(1)
+    print(img.shape)
+    img_split = np.split(img, len(S), axis=1)
     img = img.squeeze()
- 
+    
     # Downsample so heatmap is at most 100 x 100
     hm_data = construct_heatmap_data(img, num_pixels)
     opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
@@ -237,7 +238,9 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     rec_imgs = []
     a,b,c = psi.det.shape()
     for rank in range(len(S)):
-        rec_img = np.dot(transformed_images[rank][counter, :], V[rank].T)+mu[rank]
+        rec_img = img_split[rank]-mu[rank]
+        rec_img = np.dot(rec_img, V[rank])
+        rec_img = np.dot(rec_img, V[rank].T)+mu[rank]
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
         rec_imgs.append(rec_img)
     rec_img = np.concatenate(rec_imgs, axis=0)
@@ -687,7 +690,7 @@ def display_dashboard(filename):
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
-def unpack_ipca_pytorch_model_file(filename):
+def unpack_ipca_pytorch_model_file(filename,start_idx=0,end_idx=-1):
     """
     Reads PiPCA model information from h5 file and returns its contents
 
@@ -703,14 +706,23 @@ def unpack_ipca_pytorch_model_file(filename):
     """
     data = {}
     with h5py.File(filename, 'r') as f:
-        data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
+        """data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
         data['run'] = int(np.asarray(f.get('run')))
         data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1]
         data['start_offset'] = int(np.asarray(f.get('start_offset')))
         data['transformed_images'] = np.asarray(f.get('transformed_images'))
         data['S'] = np.asarray(f.get('S'))
         data['V'] = np.asarray(f.get('V'))
+        data['mu'] = np.asarray(f.get('mu'))"""
+        metadata = f['metadata']
+        data['exp'] = str(np.asarray(metadata.get('exp')))[2:-1]
+        data['run'] = int(np.asarray(metadata.get('run')))
+        data['det_type'] = str(np.asarray(metadata.get('det_type')))[2:-1]
+        data['start_offset'] = int(np.asarray(metadata.get('start_offset')))
+        data['S'] = np.asarray(f.get('S'))
         data['mu'] = np.asarray(f.get('mu'))
+        V=np.zeros(data['V'].shape,dtype=data['V'].dtype)
+        data['V'].read_direct(V,source_sel=np.s_[start_idx:end_idx])
 
     return data
 
