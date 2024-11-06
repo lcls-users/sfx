@@ -239,7 +239,7 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
     
     # Downsample so heatmap is at most 100 x 100
     """hm_data = construct_heatmap_data(img, num_pixels)"""
-    opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above',clim=(0, np.max(img)))
+    opts = dict(width=800, height=600, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above',clim=(0, np.max(img)))
     """heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")"""
     original_image = hv.Image(img).opts(**opts).opts(title="Original Source Image")
 
@@ -259,6 +259,7 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
     rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
     """hm_rec_data = construct_heatmap_data(rec_img, num_pixels)
     heatmap_reconstruct = hv.HeatMap(hm_rec_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")"""
+    opts = dict(width=800, height=600, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above',clim=(0, np.max(rec_img)))
     reconstructed_image = hv.Image(rec_img).opts(**opts).opts(title="PyPCA Reconstructed Image")
     """layout = (heatmap + heatmap_reconstruct).cols(2)"""
     layout = (original_image + reconstructed_image).cols(2)
