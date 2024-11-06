@@ -246,12 +246,12 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
     rec_imgs = []
     
     for rank in range(len(S)):
-        rec_img = projected_images[rank,:,:]
+        rec_img = np.zeros(projected_images[rank].shape)
         with h5py.File(model_filename, 'r') as f:
             V = f['V']
             batch_component_size = min(20, S.shape[1])
             for i in range(0, S.shape[1], batch_component_size):
-                rec_img += np.dot(projected_images[rank,i:i+batch_component_size], V[rank,:,i:i+batch_component_size].T)
+                rec_img += np.dot(projected_images[rank,:,i:i+batch_component_size], V[rank,:,i:i+batch_component_size].T)
                 print("Reconstructed image for rank %d, components %d to %d" % (rank, i, i+batch_component_size))
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
         rec_imgs.append(rec_img)
