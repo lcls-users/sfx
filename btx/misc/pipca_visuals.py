@@ -246,7 +246,7 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
     rec_imgs = []
     
     for rank in range(len(S)):
-        rec_img = np.zeros((1, a*b*c))
+        rec_img = np.zeros((1, a*b*c/S.shape[0]))
         with h5py.File(model_filename, 'r') as f:
             V = f['V']
             batch_component_size = min(20, S.shape[1])
