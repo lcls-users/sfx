@@ -215,12 +215,11 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
     start_img = data['start_offset']
     mu = data['mu']
     S = data['S']
-    V = data['V']
 
     with h5py.File(projection_filename, 'r') as f:
         projected_images = f['projected_images']
         projected_images_list = []
-        for rank in range(V.shape[0]):
+        for rank in range(S.shape[0]):
             projected_images_list.append(projected_images[rank,start_idx:end_idx,:])
         projected_images = np.array(projected_images_list)
 
@@ -248,7 +247,12 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
     
     for rank in range(len(S)):
         rec_img = projected_images[rank,:,:]
-        rec_img = np.dot(rec_img, V[rank,:,:].T)+mu[rank]
+        with h5py.File(model, 'r') as f:
+            V = f['V']
+            batch_component_size = min(20, S.shape[1])
+            for i in range(0, S.shape[1], batch_component_size):
+                rec_img += np.dot(projected_images[rank,i:i+batch_component_size], V[rank,:,i:i+batch_component_size].T)
+                print("Reconstructed image for rank %d, components %d to %d" % (rank, i, i+batch_component_size))
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
         rec_imgs.append(rec_img)
     rec_img = np.concatenate(rec_imgs, axis=0)
@@ -731,11 +735,6 @@ def unpack_ipca_pytorch_model_file(filename,start_idx=0,end_idx=-1):
         data['start_offset'] = int(np.asarray(metadata.get('start_offset')))
         data['S'] = np.asarray(f.get('S'))
         data['mu'] = np.asarray(f.get('mu'))
-        V=f['V']
-        V_list = []
-        for rank in range(data['S'].shape[0]):
-            V_list.append(V[rank,:,start_idx:end_idx])
-        data['V'] = np.array(V_list)
 
     return data
 
