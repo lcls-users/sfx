@@ -225,7 +225,8 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     psi.counter = counter
     img = psi.get_images(1)
     print(img.shape)
-    img_split = np.split(img, len(S), axis=1)
+    a,b,c = psi.det.shape()
+    img_split = np.split(img.reshape(a,b,c), len(S), axis=0)
     img = img.squeeze()
     
     # Downsample so heatmap is at most 100 x 100
@@ -236,7 +237,7 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
     rec_imgs = []
-    a,b,c = psi.det.shape()
+    
     for rank in range(len(S)):
         rec_img = img_split[rank]-mu[rank]
         rec_img = np.dot(rec_img, V[rank,:,counter])
