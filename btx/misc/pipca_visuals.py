@@ -251,6 +251,8 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
             V = f['V']
             batch_component_size = min(20, S.shape[1])
             for i in range(0, S.shape[1], batch_component_size):
+                print(projected_images[rank,:,i:i+batch_component_size].shape)
+                print(V[rank,:,i:i+batch_component_size].shape)
                 rec_img += np.dot(projected_images[rank,:,i:i+batch_component_size], V[rank,:,i:i+batch_component_size].T)
                 print("Reconstructed image for rank %d, components %d to %d" % (rank, i, i+batch_component_size))
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
