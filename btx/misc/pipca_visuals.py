@@ -205,8 +205,8 @@ def display_dashboard_pytorch(filename):
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
-def display_image_pypca(filename, image_to_display=None,num_pixels=100):
-    data = unpack_ipca_pytorch_model_file(filename,start_idx=image_to_display, end_idx=image_to_display+1)
+def display_image_pypca(model_filename, projection_filename, image_to_display=None,num_pixels=100):
+    data = unpack_ipca_pytorch_model_file(model_filename,start_idx=image_to_display, end_idx=image_to_display+1)
 
     exp = data['exp']
     run = data['run']
@@ -224,8 +224,10 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
 
     psi.counter = counter
     img = psi.get_images(1)
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
     print(img.shape)
     a,b,c = psi.det.shape()
+    assembled_img = assemble_image_stack_batch(img, pixel_index_map)
     img_split = np.split(img.reshape(a,b,c), len(S), axis=0)
     img = img.squeeze()
     
@@ -234,7 +236,6 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above',clim=(0, np.max(img)))
     """heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")"""
     original_image = hv.Image(img).opts(**opts).opts(title="Original Source Image")
-    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
     rec_imgs = []
     
