@@ -141,7 +141,8 @@ def read_model_file(filename,id_current_node=0,num_gpus=4):
         data['V'] = np.asarray(f.get('V'))[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
         data['mu'] = np.asarray(f.get('mu'))[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
         data['S'] = np.asarray(f.get('S'))[id_current_node*num_gpus:(id_current_node+1)*num_gpus]
-        data['num_images'] = f.get('num_images')[()]
+        metadata = f['metadata']
+        data['num_images'] = metadata.get('num_images')[()]
         data['num_components'] = data['V'].shape[2]
     return data
 
