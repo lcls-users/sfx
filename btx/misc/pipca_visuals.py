@@ -205,7 +205,7 @@ def display_dashboard_pytorch(filename):
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
-def display_image_pypca(model_filename, projection_filename, image_to_display=None,num_pixels=100):
+def display_image_pypca(model_filename, projection_filename, image_to_display=None,num_pixels=100,first_compo=0,last_compo=10**8):
     start_idx = image_to_display
     end_idx = image_to_display+1
     data = unpack_ipca_pytorch_model_file(model_filename,start_idx=start_idx, end_idx=end_idx)
@@ -250,7 +250,7 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
         with h5py.File(model_filename, 'r') as f:
             V = f['V']
             batch_component_size = min(20, S.shape[1])
-            for i in range(0, S.shape[1], batch_component_size):
+            for i in range(first_compo, min(S.shape[1],last_compo), batch_component_size):
                 rec_img += np.dot(projected_images[rank,:,i:i+batch_component_size], V[rank,:,i:i+batch_component_size].T)
             print("Reconstructed image on rank %d" % (rank))
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
