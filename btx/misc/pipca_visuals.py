@@ -230,7 +230,7 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     
     # Downsample so heatmap is at most 100 x 100
     """hm_data = construct_heatmap_data(img, num_pixels)"""
-    opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above',clim(0, np.max(img)))
+    opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above',clim=(0, np.max(img)))
     """heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")"""
     original_image = hv.Image(img).opts(**opts).opts(title="Original Source Image")
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
