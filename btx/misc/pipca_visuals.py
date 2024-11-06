@@ -224,6 +224,7 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
             projected_images_list.append(projected_images[rank,start_idx:end_idx,:])
         projected_images = np.array(projected_images_list)
 
+    print(projected_images.shape)
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     if image_to_display is None:
         counter = start_img
@@ -246,8 +247,8 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
     rec_imgs = []
     
     for rank in range(len(S)):
-        rec_img = projected_images[rank,counter,:]
-        rec_img = np.dot(rec_img, V[rank,:,counter].T)+mu[rank]
+        rec_img = projected_images[rank,:,:]
+        rec_img = np.dot(rec_img, V[rank,:,:].T)+mu[rank]
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
         rec_imgs.append(rec_img)
     rec_img = np.concatenate(rec_imgs, axis=0)
