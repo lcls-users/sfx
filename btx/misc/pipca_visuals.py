@@ -206,7 +206,7 @@ def display_dashboard_pytorch(filename):
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
 def display_image_pypca(filename, image_to_display=None,num_pixels=100):
-    data = unpack_ipca_pytorch_model_file(model_filename,start_idx=image_to_display, end_idx=image_to_display+1)
+    data = unpack_ipca_pytorch_model_file(filename,start_idx=image_to_display, end_idx=image_to_display+1)
 
     exp = data['exp']
     run = data['run']
