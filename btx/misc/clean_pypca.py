@@ -128,7 +128,7 @@ def write_fused_data(data, path, tag,mode = 'create'):
             num_components = data['S'].shape[1]
             num_pixels = data['V'].shape[1]*num_gpus
             batch_component_size = min(100,num_components)
-            v_chunk = (num_gpus,num_pixels//num_gpus,batch_component_size)
+            v_chunk = (1,num_pixels//num_gpus,batch_component_size) ##changed from (num_gpus,num_pixels//num_gpus,batch_component_size)
             f.create_dataset('V', data=data['V'], chunks=v_chunk)
 
             if 'transformed_images' in data:
@@ -146,7 +146,7 @@ def write_fused_data(data, path, tag,mode = 'create'):
             small_data.create_dataset('times', data=data['times'])
             num_gpus, num_images, num_components = data['projected_images'].shape
             batch_component_size = min(100,num_components)
-            projected_images_chunk = (num_gpus,num_images,batch_component_size)
+            projected_images_chunk = (1,num_images,batch_component_size) ##changed from (num_gpus,num_images,batch_component_size)
             f.create_dataset('projected_images', data=data['projected_images'], chunks=projected_images_chunk)
     
     elif mode == 'update':
@@ -165,7 +165,7 @@ def write_fused_data(data, path, tag,mode = 'create'):
             num_components = data['S'].shape[1]
             num_pixels = data['V'].shape[1]*num_gpus
             batch_component_size = min(100,num_components)
-            v_chunk = (num_gpus,num_pixels//num_gpus,batch_component_size)
+            v_chunk = (1,num_pixels//num_gpus,batch_component_size) ##changed from (num_gpus,num_pixels//num_gpus,batch_component_size)
             f.create_dataset('V', data=data['V'], chunks=v_chunk)
 
         os.rename(filename_with_tag, f"{filename_with_tag}_updated_model.h5")
