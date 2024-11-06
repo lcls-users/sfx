@@ -229,25 +229,27 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     img = img.squeeze()
     
     # Downsample so heatmap is at most 100 x 100
-    hm_data = construct_heatmap_data(img, num_pixels)
-    opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above')
-    heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")
-    
+    """hm_data = construct_heatmap_data(img, num_pixels)"""
+    opts = dict(width=400, height=300, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above',clim(0, np.max(img)))
+    """heatmap = hv.HeatMap(hm_data, label="Original Source Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="Original Source Image")"""
+    original_image = hv.Image(img).opts(**opts).opts(title="Original Source Image")
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
 
     rec_imgs = []
     a,b,c = psi.det.shape()
     for rank in range(len(S)):
         rec_img = img_split[rank]-mu[rank]
-        rec_img = np.dot(rec_img, V[rank])
-        rec_img = np.dot(rec_img, V[rank].T)+mu[rank]
+        rec_img = np.dot(rec_img, V[rank,:,counter])
+        rec_img = np.dot(rec_img, V[rank,:,counter].T)+mu[rank]
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
         rec_imgs.append(rec_img)
     rec_img = np.concatenate(rec_imgs, axis=0)
     rec_img = assemble_image_stack_batch(rec_img, pixel_index_map)
-    hm_rec_data = construct_heatmap_data(rec_img, num_pixels)
-    heatmap_reconstruct = hv.HeatMap(hm_rec_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")
-    layout = (heatmap + heatmap_reconstruct).cols(2)
+    """hm_rec_data = construct_heatmap_data(rec_img, num_pixels)
+    heatmap_reconstruct = hv.HeatMap(hm_rec_data, label="PyPCA Reconstructed Image %s" % (counter)).aggregate(function=np.mean).opts(**opts).opts(title="PyPCA Reconstructed Image")"""
+    reconstructed_image = hv.Image(rec_img).opts(**opts).opts(title="PyPCA Reconstructed Image")
+    """layout = (heatmap + heatmap_reconstruct).cols(2)"""
+    layout = (original_image + reconstructed_image).cols(2)
     layout
     hv.save(layout, 'heatmaps_layout.html')
     return layout
@@ -721,9 +723,11 @@ def unpack_ipca_pytorch_model_file(filename,start_idx=0,end_idx=-1):
         data['start_offset'] = int(np.asarray(metadata.get('start_offset')))
         data['S'] = np.asarray(f.get('S'))
         data['mu'] = np.asarray(f.get('mu'))
-        V=np.zeros(f['V'].shape,dtype=f['V'].dtype)
-        f['V'].read_direct(V,source_sel=np.s_[start_idx:end_idx+1],dest_sel=np.s_[:end_idx-start_idx+1])
-        data['V'] = V[:end_idx-start_idx+1]
+        V=f['V']
+        V_list = []
+        for rank in range(data['S'].shape[0]):
+            V_list.append(V[rank,:,start_idx:end_idx])
+        data['V'] = np.array(V_list)
 
     return data
 
