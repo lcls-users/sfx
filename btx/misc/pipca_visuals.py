@@ -205,8 +205,8 @@ def display_dashboard_pytorch(filename):
     return pn.Column(pn.Row(widgets_scatter, create_scatter, tap_dmap),
                      pn.Row(widgets_scree, create_scree, tap_dmap_reconstruct)).servable('PiPCA Dashboard')
 
-def display_image_pypca(filename, image_to_display=None,num_pixels=100):
-    data = unpack_ipca_pytorch_model_file(filename,start_idx=image_to_display, end_idx=image_to_display+1)
+def display_image_pypca(model_filename, projection_filename, image_to_display=None,num_pixels=100):
+    data = unpack_ipca_pytorch_model_file(model_filename,start_idx=image_to_display, end_idx=image_to_display+1)
 
     exp = data['exp']
     run = data['run']
@@ -216,6 +216,13 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     S = data['S']
     V = data['V']
 
+    with h5py.File(projection_filename, 'r') as f:
+        projected_images = f['projected_images']
+        projected_images_list = []
+        for rank in range(V.shape[0]):
+            projected_images_list.append(projected_images[rank,start_idx:end_idx,:])
+        projected_images = np.array(projected_images_list)
+
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     if image_to_display is None:
         counter = start_img
@@ -224,12 +231,10 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
 
     psi.counter = counter
     img = psi.get_images(1)
-    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-    print(img.shape)
-    a,b,c = psi.det.shape()
-    assembled_img = assemble_image_stack_batch(img, pixel_index_map)
-    img_split = np.split(img.reshape(a,b,c), len(S), axis=0)
     img = img.squeeze()
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+    a,b,c = psi.det.shape()
+    
     
     # Downsample so heatmap is at most 100 x 100
     """hm_data = construct_heatmap_data(img, num_pixels)"""
@@ -240,8 +245,7 @@ def display_image_pypca(filename, image_to_display=None,num_pixels=100):
     rec_imgs = []
     
     for rank in range(len(S)):
-        rec_img = img_split[rank]-mu[rank]
-        rec_img = np.dot(rec_img, V[rank,:,counter])
+        rec_img = projected_images[rank,counter,:]
         rec_img = np.dot(rec_img, V[rank,:,counter].T)+mu[rank]
         rec_img = rec_img.reshape((int(a/len(S)), b, c))
         rec_imgs.append(rec_img)
