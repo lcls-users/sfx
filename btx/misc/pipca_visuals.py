@@ -5,6 +5,7 @@ import math
 import time
 import json
 import pickle
+import xarray as xr
 
 import csv 
 from sklearn.cluster import DBSCAN
@@ -262,6 +263,8 @@ def display_image_pypca(model_filename, projection_filename, image_to_display=No
     opts = dict(width=800, height=600, cmap='plasma', colorbar=True, shared_axes=False, toolbar='above',clim=clim_rec)
     reconstructed_image = hv.Image(rec_img).opts(**opts).opts(title="PyPCA Reconstructed Image")
     """layout = (heatmap + heatmap_reconstruct).cols(2)"""
+    img = xr.DataArray(img, dims=['y', 'x'])
+    rec_img = xr.DataArray(rec_img, dims=['y', 'x'])
     img = img.assign_coords(x=np.arange(img.shape[1]), y=np.arange(img.shape[0]))
     rec_img = rec_img.assign_coords(x=np.arange(rec_img.shape[1]), y=np.arange(rec_img.shape[0]))   
     hextiles = hv.HexTiles((img, rec_img)).opts(width=800, height=600, cmap='plasma',clim=(0,1000),tools=['hover'],title="HexTiles")
