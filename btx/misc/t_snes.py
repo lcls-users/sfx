@@ -339,9 +339,9 @@ if __name__ == "__main__":
         device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
         starting_time = time.time()
-        with h5py.File(filename, 'r') as f:
-            V = f['V']
-            with Pool(processes=num_gpus) as pool:
+        with Pool(processes=num_gpus) as pool:
+            with h5py.File(filename, 'r') as f:
+                V = f['V']
                 proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,counter:counter+list_images[0].shape[0]],device_list) for rank in range(num_gpus)])
                 rank_proj_list = [u for u in proj]
                 list_proj.append(np.concatenate(rank_proj_list,axis=0))
@@ -351,8 +351,8 @@ if __name__ == "__main__":
     print("Projectors gathered",flush=True)
     print("shape of list_proj",list_proj.shape)
     print("Computing embeddings...",flush=True)
-
-    embeddings_tsne, embeddings_umap = process(0, list_proj, device_list, num_tries, threshold)
+    with Pool(processes=num_gpus) as pool:
+        embeddings_tsne, embeddings_umap = pool.apply(process,(0, list_proj, device_list, num_tries, threshold))
 
 
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
