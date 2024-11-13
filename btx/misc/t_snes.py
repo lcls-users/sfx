@@ -325,7 +325,7 @@ if __name__ == "__main__":
         dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
         dataloader_iter = iter(dataloader)
         
-        list_imgs = np.array([])
+        list_imgs = []
 
         for batch in dataloader_iter:
             list_imgs.append(batch)
