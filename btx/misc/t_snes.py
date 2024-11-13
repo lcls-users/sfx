@@ -178,6 +178,8 @@ def process(rank, proj ,device_list,num_tries,threshold):
 def get_projectors(rank,imgs,V,device_list):
     V = torch.tensor(V,device=device_list[rank])
     imgs = torch.tensor(imgs,device=device_list[rank])
+    print("Shape of V",V.shape,flush=True)
+    print("Shape of imgs",imgs.shape,flush=True)
     proj = torch.mm(imgs,V)
     return proj.cpu().detach().numpy()
 
@@ -245,7 +247,7 @@ def unpack_ipca_pytorch_model_file(filename):
         data['det_type'] = str(np.asarray(metadata.get('det_type')))[2:-1]
         data['start_offset'] = int(np.asarray(metadata.get('start_offset')))
         data['S']=np.asarray(f['S'])
-        data['num_images'] = int(np.asarray(metadata.get('num_images')))
+        data['num_images'] = int(metadata.get('num_images'))
     return data
 
 def parse_input():
