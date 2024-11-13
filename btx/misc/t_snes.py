@@ -176,8 +176,8 @@ def process(rank, proj ,device_list,num_tries,threshold):
     return embedding_tsne, embedding_umap
 
 def get_projectors(rank,imgs,V,device_list):
-    V = torch.tensor(V,device=device_list[rank])
-    imgs = torch.tensor(imgs.reshape(imgs.shape[0],-1),device=device_list[rank])
+    V = torch.tensor(V,device=device_list[rank%4])#the 4 is hardcoded but is the number of GPUs available on one node on ampere
+    imgs = torch.tensor(imgs.reshape(imgs.shape[0],-1),device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
     print("Shape of V",V.shape,flush=True)
     print("Shape of imgs",imgs.shape,flush=True)
     proj = torch.mm(imgs,V)
@@ -352,6 +352,7 @@ if __name__ == "__main__":
     print("shape of list_proj",list_proj.shape)
     print("Computing embeddings...",flush=True)
     with Pool(processes=num_gpus) as pool:
+        
         embeddings_tsne, embeddings_umap = pool.apply(process,(0, list_proj, device_list, num_tries, threshold))
 
 
