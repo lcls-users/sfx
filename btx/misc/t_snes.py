@@ -330,8 +330,8 @@ if __name__ == "__main__":
         for batch in dataloader_iter:
             list_images.append(batch)
 
-        list_images = np.concatenate(list_images, axis=0)
-        list_images = list_images[[i for i in range (list_images.shape[0]) if not np.isnan(list_imgs[i : i + 1]).any()]]
+        list_images = np.concatenate(list_imgs, axis=0)
+        list_images = list_images[[i for i in range (list_images.shape[0]) if not np.isnan(list_images[i : i + 1]).any()]]
         list_images = np.split(list_images,num_gpus,axis=1)
 
         device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
