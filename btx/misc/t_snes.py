@@ -177,7 +177,7 @@ def process(rank, proj ,device_list,num_tries,threshold):
 
 def get_projectors(rank,imgs,V,device_list):
     V = torch.tensor(V,device=device_list[rank])
-    imgs = torch.tensor(imgs,device=device_list[rank])
+    imgs = torch.tensor(imgs.reshape(imgs.shape[0],-1),device=device_list[rank])
     print("Shape of V",V.shape,flush=True)
     print("Shape of imgs",imgs.shape,flush=True)
     proj = torch.mm(imgs,V)
