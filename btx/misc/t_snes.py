@@ -307,7 +307,8 @@ if __name__ == "__main__":
     S = data['S']
     num_images = data['num_images']
 
-    num_gpus, num_components, _ = S.shape
+    num_gpus, num_components = S.shape
+    print(S.shape,flush=True)
 
     mp.set_start_method('spawn', force=True)
 
