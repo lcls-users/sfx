@@ -342,11 +342,11 @@ if __name__ == "__main__":
         with Pool(processes=num_gpus) as pool:
             with h5py.File(filename, 'r') as f:
                 V = f['V']
-                proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,counter:counter+list_images[0].shape[0]],device_list) for rank in range(num_gpus)])
+                proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list) for rank in range(num_gpus)])
         
         rank_proj_list = [u for u in proj]
         print("Temporary shape",np.array(rank_proj_list).shape)
-        list_proj = list_proj @ np.concatenate(rank_proj_list,axis=0)
+        list_proj.append(np.concatenate(rank_proj_list,axis=0))
         
         counter += list_images[0].shape[0]
     
