@@ -247,7 +247,7 @@ def unpack_ipca_pytorch_model_file(filename):
         data['det_type'] = str(np.asarray(metadata.get('det_type')))[2:-1]
         data['start_offset'] = int(np.asarray(metadata.get('start_offset')))
         data['S']=np.asarray(f['S'])
-        data['num_images'] = int(metadata.get('num_images'))
+        data['num_images'] = int(np.asarray(metadata.get('num_images'))[0])
     return data
 
 def parse_input():
