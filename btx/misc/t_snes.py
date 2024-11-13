@@ -96,15 +96,8 @@ class IPCRemotePsanaDataset(Dataset):
 
             return result
 
-
-def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
-    S = torch.tensor(np.diag(S[rank]), device=device_list[rank])
-    V = torch.tensor(V[rank],device=device_list[rank])
-    imgs = torch.tensor(imgs[rank].reshape(num_images,-1),device=device_list[rank])
-    U = torch.mm(torch.mm(imgs,V),torch.inverse(S))
-    print(f"Projectors on GPU {rank} computed",flush=True)
-    U = U.cpu().detach().numpy()
-    U = np.array([u.flatten() for u in U]) ##
+def process(rank, proj ,device_list,num_tries,threshold):
+    proj = torch.tensor(proj,device=device_list[rank])
 
     torch.cuda.empty_cache()
     gc.collect()
@@ -117,15 +110,15 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
     max_iters = num_tries
 
     for i in range(max_iters):
-        if i%2000 == 0:
+        if i%100 == 0:
             print(f"UMAP fitting on GPU {rank} iteration {i}",flush=True)
 
         n_neighbors = np.random.randint(5, 200)
         min_dist = np.random.uniform(0.0, 0.99) 
         umap = cumlUMAP(n_components=2,n_neighbors=n_neighbors,min_dist=min_dist)
-        embedding_umap = umap.fit_transform(U)
+        embedding_umap = umap.fit_transform(proj)
         
-        trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
+        trustworthiness_score_umap = cuml_trustworthiness(proj, embedding_umap)
 
         if trustworthiness_score_umap > trustworthiness_threshold:
             print(f"Trustworthiness UMAP threshold reached on GPU {rank}!",flush=True)
@@ -137,8 +130,8 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
             best_score_umap = trustworthiness_score_umap
     
     umap = cumlUMAP(n_components=2,n_neighbors=best_params_umap[0],min_dist=best_params_umap[1])
-    embedding_umap = umap.fit_transform(U)
-    trustworthiness_score_umap = cuml_trustworthiness(U, embedding_umap)
+    embedding_umap = umap.fit_transform(proj)
+    trustworthiness_score_umap = cuml_trustworthiness(proj, embedding_umap)
 
     for i in range(max_iters):
         if i%2000 == 0:
@@ -148,9 +141,9 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
         n_neighbors = np.random.randint(3*perplexity, 6*perplexity)
         learning_rate = np.random.uniform(10, 1000)
         tsne = TSNE(n_components=2,perplexity=perplexity,n_neighbors=n_neighbors,learning_rate=learning_rate,verbose=0)
-        embedding_tsne = tsne.fit_transform(U)
+        embedding_tsne = tsne.fit_transform(proj)
 
-        trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
+        trustworthiness_score_tsne = cuml_trustworthiness(proj, embedding_tsne)
 
         if trustworthiness_score_tsne > trustworthiness_threshold:
             print(f"Trustworthiness t-SNE threshold reached on GPU {rank}!", flush=True)
@@ -166,8 +159,8 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
 
     if best_score_tsne < trustworthiness_threshold:
         tsne = TSNE(n_components=2,learning_rate_method='adaptive')
-        embedding_tsne = tsne.fit_transform(U)
-        trustworthiness_score_tsne = cuml_trustworthiness(U, embedding_tsne)
+        embedding_tsne = tsne.fit_transform(proj)
+        trustworthiness_score_tsne = cuml_trustworthiness(proj, embedding_tsne)
 
     print("=====================================\n"
           f"t-SNE and UMAP {rank} fitting done\n"
@@ -182,7 +175,13 @@ def process(rank, imgs, V, S, num_images,device_list,num_tries,threshold):
 
     return embedding_tsne, embedding_umap
 
-def plot_scatters(embedding,S,type_of_embedding):
+def get_projectors(rank,imgs,V,device_list):
+    V = torch.tensor(V,device=device_list[rank])
+    imgs = torch.tensor(imgs,device=device_list[rank])
+    proj = torch.mm(imgs,V)
+    return proj.cpu().detach().numpy()
+
+def plot_scatters(embedding,type_of_embedding):
 
     if type_of_embedding == 't-SNE':
         fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
@@ -240,15 +239,12 @@ def unpack_ipca_pytorch_model_file(filename):
     """
     data = {}
     with h5py.File(filename, 'r') as f:
-        data['exp'] = str(np.asarray(f.get('exp')))[2:-1]
-        data['run'] = int(np.asarray(f.get('run')))
-        data['det_type'] = str(np.asarray(f.get('det_type')))[2:-1]
-        data['start_offset'] = int(np.asarray(f.get('start_offset')))
-        data['transformed_images'] = np.asarray(f.get('transformed_images'))
-        data['S'] = np.asarray(f.get('S'))
-        data['V'] = np.asarray(f.get('V'))
-        data['mu'] = np.asarray(f.get('mu'))
-
+        metadata = f['metadata']
+        data['exp'] = str(np.asarray(metadata.get('exp')))[2:-1]
+        data['run'] = int(np.asarray(metadata.get('run')))
+        data['det_type'] = str(np.asarray(metadata.get('det_type')))[2:-1]
+        data['start_offset'] = int(np.asarray(metadata.get('start_offset')))
+        data['S']=np.asarray(f['S'])
     return data
 
 def parse_input():
@@ -307,18 +303,18 @@ if __name__ == "__main__":
     run = data['run']
     det_type = data['det_type']
     start_img = data['start_offset']
-    transformed_images = data['transformed_images']
-    mu = data['mu']
     S = data['S']
-    V = data['V']
-    num_components = S.shape[0]
-    num_gpus = len(V)
+    num_images = f['V'].shape[1]
+
+    num_gpus, num_components, _ = S.shape
 
     mp.set_start_method('spawn', force=True)
 
-    list_images=[]
+    list_proj = []
+    
     print("Unpacking done",flush=True)
     print("Gathering images...",flush=True)
+    counter = start_img
     for event in range(start_img, start_img + num_images, loading_batch_size):
         requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
 
@@ -327,29 +323,38 @@ if __name__ == "__main__":
         dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
         dataloader_iter = iter(dataloader)
         
+        list_imgs = np.array([])
+
         for batch in dataloader_iter:
             list_images.append(batch)
-    
-    list_images = np.concatenate(list_images, axis=0)
-    list_images = np.split(list_images,num_gpus,axis=1)
-    print("Gathering and splitting done",flush=True)
+           
+        list_images = np.concatenate(list_images, axis=0)
+        list_images = list_images[[i for i in range (list_images.shape[0]) if not np.isnan(list_imgs[i : i + 1]).any()]]
+        list_images = np.split(list_images,num_gpus,axis=1)
 
-    device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+        device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-    starting_time = time.time()
-    with Pool(processes=num_gpus) as pool:
-        t_snes_and_umap = pool.starmap(process,[(rank,list_images,V,S,num_images,device_list,num_tries,threshold) for rank in range(num_gpus)])
-        embeddings_tsne = []
-        embeddings_umap = []
-        for embedding in t_snes_and_umap:
-            tsne,umap = embedding
-            embeddings_tsne.append(tsne)
-            embeddings_umap.append(umap)
+        starting_time = time.time()
+        with h5py.File(filename, 'r') as f:
+            V = f['V']
+            with Pool(processes=num_gpus) as pool:
+                proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,counter:counter+list_images.shape[1]],device_list) for rank in range(num_gpus)])
+                rank_proj_list = [u for u in proj]
+                list_proj.append(np.concatenate(rank_proj_list,axis=0))
+        
+        counter += list_images.shape[0]
     
+    print("Projectors gathered",flush=True)
+    print("shape of list_proj",list_proj.shape)
+    print("Computing embeddings...",flush=True)
+
+    embeddings_tsne, embeddings_umap = process(0, list_proj, device_list, num_tries, threshold)
+
+
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
     data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S}
-    with open(f"embedding_data_{num_images}.pkl", "wb") as f:
+    with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
         pickle.dump(data, f)
     
     print("All done, closing server...",flush=True)
