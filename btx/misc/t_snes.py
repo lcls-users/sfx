@@ -349,7 +349,7 @@ if __name__ == "__main__":
         counter += list_images[0].shape[0]
     
     print("Projectors gathered",flush=True)
-    print("shape of list_proj",list_proj.shape)
+    print("shape of list_proj",np.array(list_proj).shape)
     print("Computing embeddings...",flush=True)
     with Pool(processes=num_gpus) as pool:
         
