@@ -245,6 +245,7 @@ def unpack_ipca_pytorch_model_file(filename):
         data['det_type'] = str(np.asarray(metadata.get('det_type')))[2:-1]
         data['start_offset'] = int(np.asarray(metadata.get('start_offset')))
         data['S']=np.asarray(f['S'])
+        data['num_images'] = int(np.asarray(metadata.get('num_images')))
     return data
 
 def parse_input():
@@ -304,7 +305,7 @@ if __name__ == "__main__":
     det_type = data['det_type']
     start_img = data['start_offset']
     S = data['S']
-    num_images = f['V'].shape[1]
+    num_images = data['num_images']
 
     num_gpus, num_components, _ = S.shape
 
@@ -327,7 +328,7 @@ if __name__ == "__main__":
 
         for batch in dataloader_iter:
             list_images.append(batch)
-           
+
         list_images = np.concatenate(list_images, axis=0)
         list_images = list_images[[i for i in range (list_images.shape[0]) if not np.isnan(list_imgs[i : i + 1]).any()]]
         list_images = np.split(list_images,num_gpus,axis=1)
