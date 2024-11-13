@@ -328,7 +328,7 @@ if __name__ == "__main__":
         list_imgs = np.array([])
 
         for batch in dataloader_iter:
-            list_images.append(batch)
+            list_imgs.append(batch)
 
         list_images = np.concatenate(list_imgs, axis=0)
         list_images = list_images[[i for i in range (list_images.shape[0]) if not np.isnan(list_images[i : i + 1]).any()]]
