@@ -183,47 +183,33 @@ def get_projectors(rank,imgs,V,device_list):
     proj = torch.mm(imgs,V)
     return proj.cpu().detach().numpy()
 
-def plot_scatters(embedding,type_of_embedding):
-
+def plot_scatters(embedding, type_of_embedding):
     if type_of_embedding == 't-SNE':
-        fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f't-SNE projection (GPU {rank})' for rank in range(num_gpus)])
+        df = pd.DataFrame({
+            't-SNE1': embedding[:, 0],
+            't-SNE2': embedding[:, 1],
+            'Index': range(len(embedding))
+        })
+        
+        fig = px.scatter(df, x='t-SNE1', y='t-SNE2', 
+                         hover_data={'Index': True},
+                         labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
+                         title='t-SNE projection')
+        
+    else:  # UMAP
+        df = pd.DataFrame({
+            'UMAP1': embedding[:, 0],
+            'UMAP2': embedding[:, 1],
+            'Index': range(len(embedding))
+        })
+        
+        fig = px.scatter(df, x='UMAP1', y='UMAP2', 
+                         hover_data={'Index': True},
+                         labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
+                         title='UMAP projection')
 
-        for rank in range(num_gpus):
-            df = pd.DataFrame({
-                't-SNE1': embedding[rank][:, 0],
-                't-SNE2': embedding[rank][:, 1],
-                'Index': np.arange(len(embedding[rank])),
-            })
-            
-            scatter = px.scatter(df, x='t-SNE1', y='t-SNE2', 
-                                hover_data={'Index': True},
-                                labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
-                                title=f't-SNE projection (GPU {rank})')
-            
-            fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
-
-        fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
-        fig.show()
-
-    else :
-        fig = sp.make_subplots(rows=2, cols=2, subplot_titles=[f'UMAP projection (GPU {rank})' for rank in range(num_gpus)])
-
-        for rank in range(num_gpus):
-            df = pd.DataFrame({
-                'UMAP1': embedding[rank][:, 0],
-                'UMAP2': embedding[rank][:, 1],
-                'Index': np.arange(len(embedding[rank])),
-            })
-            
-            scatter = px.scatter(df, x='UMAP1', y='UMAP2', 
-                                hover_data={'Index': True},
-                                labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
-                                title=f'UMAP projection (GPU {rank})')
-            
-            fig.add_trace(scatter.data[0], row=(rank // 2) + 1, col=(rank % 2) + 1)
-
-        fig.update_layout(height=800, width=800, showlegend=False, title_text="UMAP Projections Across GPUs")
-        fig.show()
+    fig.update_layout(height=800, width=800, showlegend=False)
+    fig.show()
 
 def unpack_ipca_pytorch_model_file(filename):
     """
@@ -355,7 +341,6 @@ if __name__ == "__main__":
     print("shape of list_proj",np.array(list_proj).shape)
     print("Computing embeddings...",flush=True)
     with Pool(processes=num_gpus) as pool:
-        
         embeddings_tsne, embeddings_umap = pool.apply(process,(0, list_proj, device_list, num_tries, threshold))
 
 
