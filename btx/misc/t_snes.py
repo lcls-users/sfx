@@ -350,6 +350,7 @@ if __name__ == "__main__":
         
         counter += list_images[0].shape[0]
     
+    list_proj = np.vstack(list_proj)
     print("Projectors gathered",flush=True)
     print("shape of list_proj",np.array(list_proj).shape)
     print("Computing embeddings...",flush=True)
