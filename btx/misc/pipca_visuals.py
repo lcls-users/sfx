@@ -443,33 +443,46 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_sample
     S = np.array(data["S"])
     num_gpus = len(S)
 
+    photon_energy = []
+    psana_interface = PsanaInterface(exp='mfxp23120',run=91,det_type='epix10k2M')
+    for x in range (0,len(embedding_tsne)):
+        psana_interface.counter = x
+        evt = psana_interface.runner.event(psana_interface.times[psana_interface.counter])
+        photon_energy.append(psana_interface.get_photon_energy(evt))
+    
+
     if type_of_embedding == 't-SNE':
         embedding = embedding_tsne
         df = pd.DataFrame({
             't-SNE1': embedding[:, 0],
             't-SNE2': embedding[:, 1],
-            'Index': range(len(embedding))
+            'Index': range(len(embedding)),
+            'Photon Energy': photon_energy
         })
         
         fig = px.scatter(df, x='t-SNE1', y='t-SNE2', 
-                         hover_data={'Index': True},
-                         labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
-                         title='t-SNE projection')
+                        color='Photon Energy',
+                        hover_data={'Index': True, 'Photon Energy': ':.2f'},
+                        labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
+                        title='t-SNE projection colored by Photon Energy')
         
     else:  # UMAP
         embedding = embedding_umap
         df = pd.DataFrame({
             'UMAP1': embedding[:, 0],
             'UMAP2': embedding[:, 1],
-            'Index': range(len(embedding))
+            'Index': range(len(embedding)),
+            'Photon Energy': photon_energy
         })
         
         fig = px.scatter(df, x='UMAP1', y='UMAP2', 
-                         hover_data={'Index': True},
-                         labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
-                         title='UMAP projection')
+                        color='Photon Energy',
+                        hover_data={'Index': True, 'Photon Energy': ':.2f'},
+                        labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
+                        title='UMAP projection colored by Photon Energy')
 
-    fig.update_layout(height=800, width=800, showlegend=False)
+    fig.update_layout(height=800, width=800, showlegend=True)
+    fig.update_coloraxes(colorbar_title='Photon Energy')
     fig.show()
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
