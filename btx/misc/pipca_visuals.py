@@ -444,119 +444,31 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_sample
     num_gpus = len(S)
 
     if type_of_embedding == 't-SNE':
-        embedding = embedding_tsne
-        projection_title = 't-SNE projection'
-    else:
-        embedding = embedding_umap
-        projection_title = 'UMAP projection'
-    
-    # Initialize dictionaries to store indices of each cluster
-    clusters_per_gpu = [defaultdict(set) for _ in range(num_gpus)]
-
-    fig = make_subplots(rows=2, cols=2, subplot_titles=[f'{projection_title} (GPU {rank})' for rank in range(num_gpus)])
-
-    for rank in range(num_gpus):
         df = pd.DataFrame({
-            'Projection1': embedding[rank][:, 0],
-            'Projection2': embedding[rank][:, 1],
-            'Index': np.arange(len(embedding[rank])),
+            't-SNE1': embedding[:, 0],
+            't-SNE2': embedding[:, 1],
+            'Index': range(len(embedding))
         })
-
-        dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-        df['Cluster'] = dbscan.fit_predict(df[['Projection1', 'Projection2']])
         
-        # Check if there are valid clusters
-        if len(set(df['Cluster'])) > 1 or (len(set(df['Cluster'])) == 1 and -1 not in df['Cluster']):
-            # Store indices in each cluster
-            for cluster, indices in df.groupby('Cluster')['Index']:
-                clusters_per_gpu[rank][cluster].update(indices)
-            
-            # Separate noise points from clustered points
-            noise_points = df[df['Cluster'] == -1]
-            clustered_points = df[df['Cluster'] != -1]
+        fig = px.scatter(df, x='t-SNE1', y='t-SNE2', 
+                         hover_data={'Index': True},
+                         labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
+                         title='t-SNE projection')
+        
+    else:  # UMAP
+        df = pd.DataFrame({
+            'UMAP1': embedding[:, 0],
+            'UMAP2': embedding[:, 1],
+            'Index': range(len(embedding))
+        })
+        
+        fig = px.scatter(df, x='UMAP1', y='UMAP2', 
+                         hover_data={'Index': True},
+                         labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
+                         title='UMAP projection')
 
-            # Create scatter plot for clustered points
-            scatter = px.scatter(clustered_points, x='Projection1', y='Projection2', 
-                                color='Cluster',
-                                color_discrete_sequence=px.colors.qualitative.Dark24,
-                                hover_data={'Index': True},
-                                title=f'{projection_title} (GPU {rank})')
-
-            # Add noise points in light grey
-            scatter.add_trace(go.Scatter(
-                x=noise_points['Projection1'],
-                y=noise_points['Projection2'],
-                mode='markers',
-                marker=dict(color='lightgrey', size=5),
-                hoverinfo='text',
-                text=noise_points['Index'],
-                name='Noise'
-            ))
-
-            for trace in scatter.data:
-                fig.add_trace(trace, row=(rank // 2) + 1, col=(rank % 2) + 1)
-        else:
-            print(f"Warning: No valid clusters found for GPU {rank}")
-            fig.add_annotation(
-                text="No valid clusters",
-                xref="x domain", yref="y domain",
-                x=0.5, y=0.5, showarrow=False,
-                row=(rank // 2) + 1, col=(rank % 2) + 1
-            )
-
-    fig.update_layout(
-        height=800, width=800, showlegend=False, 
-        title_text=f"{projection_title} Across GPUs",
-        plot_bgcolor='white', paper_bgcolor='white', font=dict(color='black')
-    )
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey')
+    fig.update_layout(height=800, width=800, showlegend=False)
     fig.show()
-
-    # Calculate similarity between clusters of each GPU pair
-    def jaccard_index(set1, set2):
-        intersection = len(set1.intersection(set2))
-        union = len(set1.union(set2))
-        return intersection / union if union != 0 else 0
-
-    # Initialize similarity matrices
-    cluster_similarity = defaultdict(lambda: defaultdict(float))
-
-    for i in range(num_gpus):
-        for cluster_i, indices_i in clusters_per_gpu[i].items():
-            for j in range(num_gpus):
-                if i != j:
-                    for cluster_j, indices_j in clusters_per_gpu[j].items():
-                        similarity = jaccard_index(indices_i, indices_j)
-                        cluster_similarity[(i, cluster_i)][(j, cluster_j)] = similarity
-
-    # Prepare data for heatmap
-    clusters_pairs = sorted(set([(i, cluster) for i in range(num_gpus) for cluster in clusters_per_gpu[i].keys()]))
-    cluster_pairs_idx = {pair: idx for idx, pair in enumerate(clusters_pairs)}
-
-    num_pairs = len(clusters_pairs)
-    similarity_matrix = np.zeros((num_pairs, num_pairs))
-
-    # Ensure keys are properly unpacked
-    for key in cluster_similarity:
-        i, cluster_i = key
-        for sub_key in cluster_similarity[key]:
-            j, cluster_j = sub_key
-            idx_i = cluster_pairs_idx[(i, cluster_i)]
-            idx_j = cluster_pairs_idx[(j, cluster_j)]
-            similarity_matrix[idx_i, idx_j] = cluster_similarity[key].get(sub_key, 0)
-
-    # Check if similarity matrix contains valid data
-    if np.any(similarity_matrix) and len(clusters_pairs) > 0:
-        # Display similarity matrix
-        plt.figure(figsize=(12, 10))
-        sns.heatmap(similarity_matrix, annot=True, cmap="YlGnBu", 
-                    xticklabels=[f'GPU {p[0]}-Cluster {p[1]}' for p in clusters_pairs], 
-                    yticklabels=[f'GPU {p[0]}-Cluster {p[1]}' for p in clusters_pairs])
-        plt.title('Cluster Similarity Matrix')
-        plt.show()
-    else:
-        print("Warning: No valid clusters found to create similarity heatmap.")
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
@@ -741,6 +653,7 @@ def unpack_ipca_pytorch_model_file(filename,start_idx=0,end_idx=-1):
         data['start_offset'] = int(np.asarray(metadata.get('start_offset')))
         data['S'] = np.asarray(f.get('S'))
         data['mu'] = np.asarray(f.get('mu'))
+
 
     return data
 
