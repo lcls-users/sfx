@@ -444,6 +444,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_sample
     num_gpus = len(S)
 
     if type_of_embedding == 't-SNE':
+        embedding = embedding_tsne
         df = pd.DataFrame({
             't-SNE1': embedding[:, 0],
             't-SNE2': embedding[:, 1],
@@ -456,6 +457,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_sample
                          title='t-SNE projection')
         
     else:  # UMAP
+        embedding = embedding_umap
         df = pd.DataFrame({
             'UMAP1': embedding[:, 0],
             'UMAP2': embedding[:, 1],
