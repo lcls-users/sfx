@@ -178,8 +178,6 @@ def process(rank, proj ,device_list,num_tries,threshold):
 def get_projectors(rank,imgs,V,device_list):
     V = torch.tensor(V,device=device_list[rank%4])#the 4 is hardcoded but is the number of GPUs available on one node on ampere
     imgs = torch.tensor(imgs.reshape(imgs.shape[0],-1),device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
-    print("Shape of V",V.shape,flush=True)
-    print("Shape of imgs",imgs.shape,flush=True)
     proj = torch.mm(imgs,V)
     return proj.cpu().detach().numpy()
 
@@ -331,10 +329,10 @@ if __name__ == "__main__":
                 proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list) for rank in range(num_gpus)])
         
         rank_proj_list = [u for u in proj]
-        print("Temporary shape",np.array(rank_proj_list).shape)
         list_proj.append(np.vstack(rank_proj_list))
         
         counter += list_images[0].shape[0]
+        print("Number of projectors gathered : ",counter,flush=True)
     
     list_proj = np.vstack(list_proj)
     print("Projectors gathered",flush=True)
