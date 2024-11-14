@@ -448,7 +448,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_sample
     for x in range (0,len(embedding_tsne)):
         psana_interface.counter = x
         evt = psana_interface.runner.event(psana_interface.times[psana_interface.counter])
-        photon_energy.append(psana_interface.get_photon_energy(evt))
+        photon_energy.append(psana_interface.get_photon_energy_eV_evt(evt))
     
 
     if type_of_embedding == 't-SNE':
