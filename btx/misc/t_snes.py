@@ -346,7 +346,7 @@ if __name__ == "__main__":
         
         rank_proj_list = [u for u in proj]
         print("Temporary shape",np.array(rank_proj_list).shape)
-        list_proj.append(np.concatenate(rank_proj_list,axis=0))
+        list_proj.append(np.vstack(rank_proj_list))
         
         counter += list_images[0].shape[0]
     
