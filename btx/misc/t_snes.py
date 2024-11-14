@@ -270,6 +270,10 @@ def parse_input():
         "--threshold",
         type=float
     )
+    parser.add_argument(
+        "--num_runs",
+        type=list
+    )
 
     return parser.parse_args()
 
@@ -282,6 +286,7 @@ if __name__ == "__main__":
     loading_batch_size = params.loading_batch_size
     threshold = params.threshold
     num_tries = params.num_tries
+    num_runs = params.num_runs
     ##
     print("Unpacking model file...",flush=True)
     data = unpack_ipca_pytorch_model_file(filename)
@@ -303,36 +308,37 @@ if __name__ == "__main__":
     print("Unpacking done",flush=True)
     print("Gathering images...",flush=True)
     counter = start_img
-    for event in range(start_img, start_img + num_images, loading_batch_size):
-        requests_list = [ (exp, run, 'idx', det_type, img) for img in range(event,event+loading_batch_size) ]
+    for current_run in range(run, run + num_runs):
+        for event in range(start_img, start_img + num_images[current_run-run], loading_batch_size):
+            requests_list = [ (exp, current_run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[current_run-run])) ]
 
-        server_address = ('localhost', 5000)
-        dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
-        dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
-        dataloader_iter = iter(dataloader)
-        
-        list_imgs = []
+            server_address = ('localhost', 5000)
+            dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
+            dataloader = DataLoader(dataset, batch_size=20, num_workers=4, prefetch_factor = None)
+            dataloader_iter = iter(dataloader)
+            
+            list_imgs = []
 
-        for batch in dataloader_iter:
-            list_imgs.append(batch)
+            for batch in dataloader_iter:
+                list_imgs.append(batch)
 
-        list_images = np.concatenate(list_imgs, axis=0)
-        list_images = list_images[[i for i in range (list_images.shape[0]) if not np.isnan(list_images[i : i + 1]).any()]]
-        list_images = np.split(list_images,num_gpus,axis=1)
+            list_images = np.concatenate(list_imgs, axis=0)
+            list_images = list_images[[i for i in range (list_images.shape[0]) if not np.isnan(list_images[i : i + 1]).any()]]
+            list_images = np.split(list_images,num_gpus,axis=1)
 
-        device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
+            device_list = [torch.device(f'cuda:{i}' if torch.cuda.is_available() else "cpu") for i in range(num_gpus)]
 
-        starting_time = time.time()
-        with Pool(processes=num_gpus) as pool:
-            with h5py.File(filename, 'r') as f:
-                V = f['V']
-                proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list) for rank in range(num_gpus)])
-        
-        rank_proj_list = [u for u in proj]
-        list_proj.append(np.vstack(rank_proj_list))
-        
-        counter += list_images[0].shape[0]
-        print("Number of projectors gathered : ",counter,flush=True)
+            starting_time = time.time()
+            with Pool(processes=num_gpus) as pool:
+                with h5py.File(filename, 'r') as f:
+                    V = f['V']
+                    proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list) for rank in range(num_gpus)])
+            
+            rank_proj_list = [u for u in proj]
+            list_proj.append(np.vstack(rank_proj_list))
+            
+            counter += list_images[0].shape[0]
+            print("Number of projectors gathered : ",counter,flush=True)
     
     list_proj = np.vstack(list_proj)
     print("Projectors gathered",flush=True)
