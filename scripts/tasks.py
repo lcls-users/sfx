@@ -786,6 +786,10 @@ def t_sne(config):
     threshold = task.threshold
     num_runs = 0
     distribution_images = []
+    exp = setup.exp
+    run = task.run
+    det_type = setup.det_type
+    
     while num_images > 0:
         max_event = compute_max_events(exp, run+num_runs, det_type)
         images_for_run = min(max_event, num_images)
