@@ -308,9 +308,9 @@ if __name__ == "__main__":
     print("Unpacking done",flush=True)
     print("Gathering images...",flush=True)
     counter = start_img
-    for current_run in range(run[0], run[0] + num_runs):
+    for current_run in range(run, run + len(num_runs)):
         for event in range(start_img, start_img + num_images[current_run-run], loading_batch_size):
-            requests_list = [ (exp, current_run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[current_run-run[0]])) ]
+            requests_list = [ (exp, current_run, 'idx', det_type, img) for img in range(event,min(event+loading_batch_size,num_images[current_run-run])) ]
 
             server_address = ('localhost', 5000)
             dataset = IPCRemotePsanaDataset(server_address = server_address, requests_list = requests_list)
