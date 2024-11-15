@@ -250,8 +250,7 @@ def parse_input():
     parser.add_argument(
         "-n",
         "--num_images",
-        required=True,
-        type=int,
+        required=True
     )
 
     parser.add_argument(
