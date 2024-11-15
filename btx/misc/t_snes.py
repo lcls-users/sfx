@@ -296,7 +296,7 @@ if __name__ == "__main__":
     det_type = data['det_type']
     start_img = data['start_offset']
     S = data['S']
-    num_images = data['num_images']
+    #num_images = data['num_images'] #####
 
     num_gpus, num_components = S.shape
     print(S.shape,flush=True)
