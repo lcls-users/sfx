@@ -282,6 +282,7 @@ if __name__ == "__main__":
     ##
     filename = params.filename
     num_images = params.num_images
+    num_images = json.loads(num_images)
     loading_batch_size = params.loading_batch_size
     threshold = params.threshold
     num_tries = params.num_tries
