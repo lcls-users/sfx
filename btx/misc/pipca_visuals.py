@@ -434,7 +434,7 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_samples=3):
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', compute_photon_energy=False):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -444,12 +444,14 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.5, min_sample
     num_gpus = len(S)
 
     photon_energy = []
-    psana_interface = PsanaInterface(exp='mfxp23120',run=91,det_type='epix10k2M')
-    for x in range (0,len(embedding_tsne)):
-        psana_interface.counter = x
-        evt = psana_interface.runner.event(psana_interface.times[psana_interface.counter])
-        photon_energy.append(psana_interface.get_photon_energy_eV_evt(evt))
-    
+    if compute_photon_energy:
+        psana_interface = PsanaInterface(exp='mfxp23120',run=91,det_type='epix10k2M')
+        for x in range (0,len(embedding_tsne)):
+            psana_interface.counter = x
+            evt = psana_interface.runner.event(psana_interface.times[psana_interface.counter])
+            photon_energy.append(psana_interface.get_photon_energy_eV_evt(evt))
+    else:
+        photon_energy = [0] * len(embedding_tsne)
 
     if type_of_embedding == 't-SNE':
         embedding = embedding_tsne
