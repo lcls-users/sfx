@@ -337,7 +337,6 @@ if __name__ == "__main__":
             print("Shape of projector on rank 0",proj[0].shape)
             rank_proj_list = [u for u in proj]
             list_proj.append(np.vstack(rank_proj_list))
-            print("Shape of the stacked projectors:",np.array(list_proj).shape)
             
             counter += list_images[0].shape[0]
             print("Number of projectors gathered : ",counter,flush=True)
