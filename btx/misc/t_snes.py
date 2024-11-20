@@ -179,6 +179,7 @@ def get_projectors(rank,imgs,V,device_list):
     V = torch.tensor(V,device=device_list[rank%4])#the 4 is hardcoded but is the number of GPUs available on one node on ampere
     imgs = torch.tensor(imgs.reshape(imgs.shape[0],-1),device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
     proj = torch.mm(imgs,V)
+    proj = proj/torch.linalg.matrix_norm(proj)
     return proj.cpu().detach().numpy()
 
 def plot_scatters(embedding, type_of_embedding):
