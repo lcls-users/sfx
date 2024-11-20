@@ -434,7 +434,7 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1,min_samples=10):
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1,min_samples=10,save_clusters=False):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -478,6 +478,17 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1,min_samples
     fig.update_layout(height=800, width=800, showlegend=True)
     print("Plot created successfully!")
     fig.show()
+
+    if save_clusters:
+        unique_clusters = sorted(df['Cluster'].unique())
+
+        index_by_cluster = [list(df.index[df['Cluster'] == cluster]) for cluster in unique_clusters]
+
+        index_df = pd.DataFrame(index_by_cluster)
+
+        filename = f'index_by_cluster_{len(S)}.csv'
+        index_df.to_csv(filename, index=False, header=False)
+        print(f"Index by cluster saved in {filename}")
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
