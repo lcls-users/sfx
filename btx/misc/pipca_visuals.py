@@ -434,57 +434,49 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', compute_photon_energy=False):
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1,min_samples=10):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
+    # Extraction des données
     embedding_tsne = np.array(data["embeddings_tsne"])
     embedding_umap = np.array(data["embeddings_umap"])
     S = np.array(data["S"])
     num_gpus = len(S)
 
-    photon_energy = []
-    if compute_photon_energy:
-        psana_interface = PsanaInterface(exp='mfxp23120',run=91,det_type='epix10k2M')
-        for x in range (0,len(embedding_tsne)):
-            psana_interface.counter = x
-            evt = psana_interface.runner.event(psana_interface.times[psana_interface.counter])
-            photon_energy.append(psana_interface.get_photon_energy_eV_evt(evt))
-    else:
-        photon_energy = [0] * len(embedding_tsne)
-
     if type_of_embedding == 't-SNE':
         embedding = embedding_tsne
+        clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(embedding)
         df = pd.DataFrame({
-            't-SNE1': embedding[:, 0],
-            't-SNE2': embedding[:, 1],
+            'Dimension1': embedding[:, 0],
+            'Dimension2': embedding[:, 1],
             'Index': range(len(embedding)),
-            'Photon Energy': photon_energy
+            'Cluster': clustering.labels_
         })
-        
-        fig = px.scatter(df, x='t-SNE1', y='t-SNE2', 
-                        color='Photon Energy',
-                        hover_data={'Index': True, 'Photon Energy': ':.2f'},
-                        labels={'t-SNE1': 't-SNE1', 't-SNE2': 't-SNE2'},
-                        title='t-SNE projection colored by Photon Energy')
-        
+        title = 't-SNE Projection'
     else:  # UMAP
         embedding = embedding_umap
+        clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(embedding)
         df = pd.DataFrame({
-            'UMAP1': embedding[:, 0],
-            'UMAP2': embedding[:, 1],
+            'Dimension1': embedding[:, 0],
+            'Dimension2': embedding[:, 1],
             'Index': range(len(embedding)),
-            'Photon Energy': photon_energy
+            'Cluster': clustering.labels_
         })
-        
-        fig = px.scatter(df, x='UMAP1', y='UMAP2', 
-                        color='Photon Energy',
-                        hover_data={'Index': True, 'Photon Energy': ':.2f'},
-                        labels={'UMAP1': 'UMAP1', 'UMAP2': 'UMAP2'},
-                        title='UMAP projection colored by Photon Energy')
+        title = 'UMAP Projection'
+
+    fig = px.scatter(
+        df, 
+        x='Dimension1', 
+        y='Dimension2', 
+        color='Cluster' if 'Cluster' in df else None,
+        hover_data={'Index': True},
+        labels={'Dimension1': 'Dimension 1', 'Dimension2': 'Dimension 2'},
+        title=title
+    )
 
     fig.update_layout(height=800, width=800, showlegend=True)
-    fig.update_coloraxes(colorbar_title='Photon Energy')
+    print("Plot created successfully!")
     fig.show()
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
