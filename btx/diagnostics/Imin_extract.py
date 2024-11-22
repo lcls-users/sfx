@@ -252,9 +252,6 @@ class IminExtractor():
         # centroid: Mean center of the true centers
         if len(nice_clusters) != 0:
             centroid = np.mean(centers[true_centers][filtered_indices], axis=0)
-            if (centroid[0] >= 0 and centroid[0] < self.detector.ss_size) and (centroid[1] >= 0 and centroid[1] < self.detector.fs_size) and (len(np.unique(labels_c)) > 2):
-                print(f"Found {len(np.unique(labels_c))} center clusters and label {label} is unsatisfactory, looking at label {label+1}")
-                nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter, 5*eps, label+1)
         else:
             centroid = np.array([0, 0])
         return nice_clusters, centroid
