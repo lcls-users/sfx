@@ -104,14 +104,14 @@ class IminExtractor():
     radius_tol : float
         Absolute tolerance for merging radii of concentric rings
     """
-    def __init__(self, exp, run, det_type, powder, Imin_range, eps_range, filter=50, radius_tol=20):
+    def __init__(self, exp, run, det_type, powder, Imin_range, eps, filter=50, radius_tol=20):
         self.exp = exp
         self.run = run
         self.det_type = det_type
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
         self.detector = self.get_detector(det_type)
-        self.extract_Imin_score(Imin_range=Imin_range, eps_range=eps_range, filter=filter, radius_tol=radius_tol)
+        self.extract_Imin_score(Imin_range=Imin_range, eps=eps, filter=filter, radius_tol=radius_tol)
 
     def get_detector(self, det_type):
         """
@@ -147,9 +147,7 @@ class IminExtractor():
         X = np.nonzero(binary_powder)
         print(f'Extracted {len(X[0])} control points')
         X = np.array(list(zip(X[0], X[1])))
-        N = X.shape[0]
         self.X = X
-        print(f"Extracted {N} control points after dilation and thinning")
 
     def regroup_by_panel(self):
         """
@@ -369,9 +367,9 @@ class IminExtractor():
             scores.append(score)
         return eps_range[np.argmax(scores)]
 
-    def extract_Imin_score(self, Imin_range, eps_range, filter, radius_tol):
+    def extract_Imin_score(self, Imin_range, eps, filter, radius_tol):
         """
-        Extract control points from powder, cluster them into concentric rings and find appropriate ring index
+        Extract control points from powder, cluster them into concentric rings and score the ring fitting
         """
         scores = []
         for Imin in Imin_range:
@@ -385,8 +383,6 @@ class IminExtractor():
                     print(f"Skipping panel {k} as no control points were found")
                     continue
                 print(f"Processing panel {k}...")
-                eps = self.hyperparameter_eps_search(X, eps_range, filter, radius_tol)
-                print(f"Best eps for panel {k}: {eps}")
                 labels = self.clusterise(X, eps=eps, min_samples=4)
                 centers, radii = self.fit_circles_on_clusters(X, labels)
                 centroid = []
