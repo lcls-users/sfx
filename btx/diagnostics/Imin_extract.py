@@ -95,30 +95,23 @@ class IminExtractor():
         Detector type
     powder : str
         Path to powder diffraction data
-    calibrant : str
-        Calibrant name
+    Imin_range : array
+        Range of Imin values to search
     eps_range : array
         Range of eps values to search
-    threshold : float
-        Threshold value for binarization
     filter : float
         Minimum radius gor a cluster to be considered nice
     radius_tol : float
         Absolute tolerance for merging radii of concentric rings
-    ring_tol : float
-        Absolute tolerance for finding ring index based on ratio of radii between data and calibrant
     """
-    def __init__(self, exp, run, det_type, powder, calibrant, eps_range, threshold=1, filter=100, radius_tol=20, ring_tol=0.02):
+    def __init__(self, exp, run, det_type, powder, Imin_range, eps_range, filter=50, radius_tol=20):
         self.exp = exp
         self.run = run
         self.det_type = det_type
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
-        self.calibrant = CALIBRANT_FACTORY(calibrant)
-        wavelength = self.diagnostics.get_wavelength() * 1e-10
-        self.calibrant.set_wavelength(wavelength)
         self.detector = self.get_detector(det_type)
-        self.extract_control_points(eps_range=eps_range, threshold=threshold, filter=filter, radius_tol=radius_tol, ring_tol=ring_tol, plot=True)
+        self.extract_control_points(Imin_range=Imin_range, eps_range=eps_range, filter=filter, radius_tol=radius_tol)
 
     def get_detector(self, det_type):
         """
