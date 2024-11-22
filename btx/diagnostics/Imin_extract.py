@@ -376,8 +376,9 @@ class IminExtractor():
         """
         Extract control points from powder, cluster them into concentric rings and find appropriate ring index
         """
-        scores = {}
+        scores = []
         for Imin in Imin_range:
+            score_Imin = 0
             print(f"Extracting control points from binarized powder with threshold={Imin}...")
             self.extract(Imin)
             print("Regrouping control points by panel...")
@@ -393,12 +394,14 @@ class IminExtractor():
                 centers, radii = self.fit_circles_on_clusters(X, labels)
                 centroid = []
                 if len(centers) == 0:
-                    print(f"All data clustered as noise in panel {k}")                
+                    print(f"All data clustered as noise in panel {k}")
+                    score_Imin += 0        
                 else:
                     nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
                     radii, costs = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
                     labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
                     print(f"Number of nice clusters for panel {k}: {len(nice_clusters)}")
                     radii, costs = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
-                    scores[Imin][f'panel_{k}'] = np.mean(costs)
+                    score_Imin += np.mean(costs)
+            scores.append(score_Imin)
             self.scores = scores
