@@ -366,7 +366,7 @@ class IminExtractor():
             if len(centers) > 0:
                 nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
                 if len(nice_clusters) > 0:
-                    radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
+                    radii, _ = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
                     labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
                     score = self.score_clutering(X, labels, nice_clusters)
             scores.append(score)
