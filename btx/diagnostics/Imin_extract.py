@@ -111,7 +111,7 @@ class IminExtractor():
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
         self.detector = self.get_detector(det_type)
-        self.extract_control_points(Imin_range=Imin_range, eps_range=eps_range, filter=filter, radius_tol=radius_tol)
+        self.extract_Imin_score(Imin_range=Imin_range, eps_range=eps_range, filter=filter, radius_tol=radius_tol)
 
     def get_detector(self, det_type):
         """
@@ -371,42 +371,8 @@ class IminExtractor():
                     score = self.score_clutering(X, labels, nice_clusters)
             scores.append(score)
         return eps_range[np.argmax(scores)]
-        
-    def plot_final_clustering(self, X, labels, nice_clusters, centroid, radii, plot):
-        """ 
-        Plot final clustering after fitting concentric rings
-        """
-        fig, ax = plt.subplots(figsize=(6, 6))
-        unique_labels = np.unique(labels)
-        colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
-        for i, col in zip(unique_labels, colors):
-            if i == -1:
-                # Black used for noise.
-                col = [0, 0, 0, 1]
 
-            cluster = labels == i
-
-            xy = X[cluster]
-            plt.plot(
-                xy[:, 1],
-                xy[:, 0],
-                "o",
-                markerfacecolor=tuple(col),
-                markeredgecolor="k",
-                markersize=10,
-                label=i
-            )
-        if len(nice_clusters) > 0:
-            cx, cy = centroid
-            for i in range(len(nice_clusters)):
-                circle = plt.Circle((cx, cy), radii[i], color='r', fill=False, linestyle='--')
-                plt.gca().add_artist(circle)
-            plt.legend()
-        plt.title(f"Final estimation of number of nice clusters: {len(nice_clusters)}")
-        plt.axis("equal")
-        fig.savefig(plot)
-
-    def extract_control_points(self, Imin_range, eps_range, filter, radius_tol, ring_tol, plot=True):
+    def extract_Imin_score(self, Imin_range, eps_range, filter, radius_tol):
         """
         Extract control points from powder, cluster them into concentric rings and find appropriate ring index
         """
