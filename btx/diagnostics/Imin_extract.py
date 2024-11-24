@@ -162,7 +162,8 @@ class IminExtractor():
         if self.detector.n_modules > 1:
             nb_points_per_panel = [len(panel) for panel in self.panels]
             mean = np.mean(nb_points_per_panel)
-            self.central_panels = np.where(nb_points_per_panel > mean)[0]
+            std_dev = np.std(nb_points_per_panel)
+            self.central_panels = np.where(nb_points_per_panel > mean+std_dev)[0]
             print(f"Central panels are {self.central_panels}")
         else:
             self.central_panels = [0]
@@ -220,9 +221,9 @@ class IminExtractor():
                 radii.append(params[2])
         centers = np.array(centers)
         radii = np.array(radii)
-        return centers
+        return centers, radii
     
-    def find_nice_clusters(self, centers, eps=100, label=0):
+    def find_nice_clusters(self, centers, radii, min_radius=20, eps=100, label=0):
         """
         Find nicely clustered control points based on fitted centers
 
@@ -232,7 +233,7 @@ class IminExtractor():
             Fitted centers of the clusters
         radii : array
             Fitted radii of the clusters
-        filter : int
+        min_radii : float
             Minimum radius gor a cluster to be considered nice
         eps : int
             Hyperparameter for DBSCAN
@@ -246,6 +247,11 @@ class IminExtractor():
         # Nice cluters are the ones with label 0
         true_centers = labels_c == label
         nice_clusters = np.arange(0, len(true_centers))[true_centers]
+        nice_cluster_radii = radii[true_centers]
+
+        # Filter out clusters where the radius is less than min_radius pix
+        filtered_indices = nice_cluster_radii >= min_radius
+        nice_clusters = nice_clusters[filtered_indices]
 
         # centroid: Mean center of the true centers
         if len(nice_clusters) != 0:
@@ -303,7 +309,7 @@ class IminExtractor():
         labels : array
             Cluster labels
         nice_clusters : array
-            Nice clusters obtained after radius filtering and merging
+            Nice clusters obtained after radius filtering
         """
         cp = [len(X[labels==i]) for i in nice_clusters]
         score = len(nice_clusters) + np.sum(cp)/len(X)
@@ -319,18 +325,14 @@ class IminExtractor():
             Control points
         eps_range : array
             Range of eps values to search
-        filter : float
-            Minimum radius gor a cluster to be considered nice
-        radius_tol : float
-            Absolute tolerance for merging radii of concentric rings
         """
         scores = []
         for eps in eps_range:
             labels = self.clusterise(X, eps=eps, min_samples=4)
-            centers = self.fit_circles_on_clusters(X, labels)
+            centers, radii = self.fit_circles_on_clusters(X, labels)
             score = 0
             if len(centers) > 0:
-                nice_clusters, _ = self.find_nice_clusters(centers)
+                nice_clusters, _ = self.find_nice_clusters(centers, radii, min_radius=20)
                 if len(nice_clusters) > 0:
                     score = self.score_clutering(X, labels, nice_clusters)
             scores.append(score)

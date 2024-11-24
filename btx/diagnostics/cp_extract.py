@@ -103,14 +103,14 @@ class ControlPointExtractor():
         Range of eps values to search
     threshold : float
         Threshold value for binarization
-    filter : float
+    min_radius : float
         Minimum radius gor a cluster to be considered nice
     radius_tol : float
         Absolute tolerance for merging radii of concentric rings
     ring_tol : float
         Absolute tolerance for finding ring index based on ratio of radii between data and calibrant
     """
-    def __init__(self, exp, run, det_type, powder, calibrant, eps_range, threshold=1, filter=100, radius_tol=20, ring_tol=0.02):
+    def __init__(self, exp, run, det_type, powder, calibrant, eps_range, threshold=1, min_radius=100, radius_tol=20, ring_tol=0.02):
         self.exp = exp
         self.run = run
         self.det_type = det_type
@@ -239,7 +239,7 @@ class ControlPointExtractor():
         radii = np.array(radii)
         return centers, radii
     
-    def find_nice_clusters(self, centers, radii, filter, eps=100, label=0):
+    def find_nice_clusters(self, centers, radii, min_radius, eps=100, label=0):
         """
         Find nicely clustered control points based on fitted centers
 
@@ -265,8 +265,8 @@ class ControlPointExtractor():
         nice_clusters = np.arange(0, len(true_centers))[true_centers]
         nice_cluster_radii = radii[true_centers]
 
-        # Filter out clusters where the radius is less than N pix
-        filtered_indices = nice_cluster_radii >= filter
+        # Filter out clusters where the radius is less than min_radius pix
+        filtered_indices = nice_cluster_radii >= min_radius
         nice_clusters = nice_clusters[filtered_indices]
 
         # centroid: Mean center of the true centers
@@ -274,7 +274,7 @@ class ControlPointExtractor():
             centroid = np.mean(centers[true_centers][filtered_indices], axis=0)
             if (centroid[0] >= 0 and centroid[0] < self.detector.ss_size) and (centroid[1] >= 0 and centroid[1] < self.detector.fs_size) and (len(np.unique(labels_c)) > 2):
                 print(f"Found {len(np.unique(labels_c))} center clusters and label {label} is unsatisfactory, looking at label {label+1}")
-                nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter, 5*eps, label+1)
+                nice_clusters, centroid = self.find_nice_clusters(centers, radii, min_radius, 5*eps, label+1)
         else:
             centroid = np.array([0, 0])
         return nice_clusters, centroid
@@ -360,7 +360,7 @@ class ControlPointExtractor():
         score = len(nice_clusters) + np.sum(cp)/len(X)
         return score
 
-    def hyperparameter_eps_search(self, X, eps_range, filter, radius_tol):
+    def hyperparameter_eps_search(self, X, eps_range, min_radius, radius_tol):
         """
         Search for the best eps hyperparameter
 
@@ -381,7 +381,7 @@ class ControlPointExtractor():
             centers, radii = self.fit_circles_on_clusters(X, labels)
             score = 0
             if len(centers) > 0:
-                nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
+                nice_clusters, centroid = self.find_nice_clusters(centers, radii, min_radius)
                 if len(nice_clusters) > 0:
                     radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
                     labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
@@ -442,7 +442,7 @@ class ControlPointExtractor():
         plt.axis("equal")
         fig.savefig(plot)
 
-    def extract_control_points(self, eps_range, threshold, filter, radius_tol, ring_tol, plot=True):
+    def extract_control_points(self, eps_range, threshold, min_radius, radius_tol, ring_tol, plot=True):
         """
         Extract control points from powder, cluster them into concentric rings and find appropriate ring index
         """
@@ -458,7 +458,7 @@ class ControlPointExtractor():
                 print(f"Skipping panel {k} as no control points were found")
                 continue
             print(f"Processing panel {k}...")
-            eps = self.hyperparameter_eps_search(X, eps_range, filter, radius_tol)
+            eps = self.hyperparameter_eps_search(X, eps_range, min_radius, radius_tol)
             print(f"Best eps for panel {k}: {eps}")
             labels = self.clusterise(X, eps=eps, min_samples=4)
             centers, radii = self.fit_circles_on_clusters(X, labels)
@@ -468,7 +468,7 @@ class ControlPointExtractor():
             if len(centers) == 0:
                 print(f"All data clustered as noise in panel {k}")                
             else:
-                nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
+                nice_clusters, centroid = self.find_nice_clusters(centers, radii, min_radius)
                 radii = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
                 labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
                 print(f"Number of nice clusters for panel {k}: {len(nice_clusters)}")
