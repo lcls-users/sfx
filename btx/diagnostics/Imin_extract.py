@@ -356,7 +356,7 @@ class IminExtractor():
                 print("Extracting central panels...")
                 self.extract_central_panels()
                 for k, X in enumerate(self.central_panels):
-                    if len(X) == 0:
+                    if self.nb_points_per_panel[k] == 0:
                         print(f"Skipping panel {k} as no control points were found")
                         continue
                     print(f"Computing best ring clustering score for panel {k}...")
