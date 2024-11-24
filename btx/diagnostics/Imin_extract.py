@@ -149,12 +149,10 @@ class IminExtractor():
         """
         Regroup points by panel
         """
-        self.panels = np.array([])
-        self.nb_points_per_panel = np.zeros(self.detector.n_modules)
+        self.panels = []
         for module in range(self.detector.n_modules):
             panel = self.X[(self.X[:, 0] >= module * self.detector.asics_shape[0] * self.detector.ss_size) & (self.X[:, 0] < (module + 1) * self.detector.asics_shape[0] * self.detector.ss_size)]
-            self.panels = np.append(self.panels, panel)
-            self.nb_points_per_panel[module] = len(panel)
+            self.panels.append(panel)
             print(f"Panel {module} has {len(panel)} control points")
 
     def extract_central_panels(self):
@@ -162,12 +160,12 @@ class IminExtractor():
         Extract central panels which contains the most of the control points
         """
         if self.detector.n_modules > 1:
-            mean = np.mean(self.nb_points_per_panel)
-            central_panels = np.where(self.nb_points_per_panel > mean)[0]
-            print(f"Central panels are {central_panels}")
-            self.central_panels = self.panels[central_panels]
+            nb_points_per_panel = [len(panel) for panel in self.panels]
+            mean = np.mean(nb_points_per_panel)
+            self.central_panels = np.where(nb_points_per_panel > mean)[0]
+            print(f"Central panels are {self.central_panels}")
         else:
-            self.central_panels = self.panels
+            self.central_panels = [0]
 
     def clusterise(self, X, eps, min_samples):
         """
@@ -355,8 +353,9 @@ class IminExtractor():
                 self.regroup_by_panel()
                 print("Extracting central panels...")
                 self.extract_central_panels()
-                for k, X in enumerate(self.central_panels):
-                    if self.nb_points_per_panel[k] == 0:
+                for k in self.central_panels:
+                    X = self.panels[k]
+                    if len(X) == 0:
                         print(f"Skipping panel {k} as no control points were found")
                         continue
                     print(f"Computing best ring clustering score for panel {k}...")
