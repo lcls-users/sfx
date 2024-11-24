@@ -99,19 +99,15 @@ class IminExtractor():
         Range of Imin values to search
     eps_range : array
         Range of eps values to search
-    filter : float
-        Minimum radius gor a cluster to be considered nice
-    radius_tol : float
-        Absolute tolerance for merging radii of concentric rings
     """
-    def __init__(self, exp, run, det_type, powder, Imin_range, eps, filter=50, radius_tol=20):
+    def __init__(self, exp, run, det_type, powder, Imin_range, eps):
         self.exp = exp
         self.run = run
         self.det_type = det_type
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
         self.detector = self.get_detector(det_type)
-        self.extract_Imin_score(Imin_range=Imin_range, eps=eps, filter=filter, radius_tol=radius_tol)
+        self.extract_Imin_score(Imin_range=Imin_range, eps=eps)
 
     def get_detector(self, det_type):
         """
