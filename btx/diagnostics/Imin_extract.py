@@ -217,7 +217,7 @@ class IminExtractor():
         radii = np.array(radii)
         return centers, radii
     
-    def find_nice_clusters(self, centers, radii, filter, eps=100, label=0):
+    def find_nice_clusters(self, centers, eps=100, label=0):
         """
         Find nicely clustered control points based on fitted centers
 
@@ -241,15 +241,10 @@ class IminExtractor():
         # Nice cluters are the ones with label 0
         true_centers = labels_c == label
         nice_clusters = np.arange(0, len(true_centers))[true_centers]
-        nice_cluster_radii = radii[true_centers]
-
-        # Filter out clusters where the radius is less than N pix
-        filtered_indices = nice_cluster_radii >= filter
-        nice_clusters = nice_clusters[filtered_indices]
 
         # centroid: Mean center of the true centers
         if len(nice_clusters) != 0:
-            centroid = np.mean(centers[true_centers][filtered_indices], axis=0)
+            centroid = np.mean(centers[true_centers], axis=0)
         else:
             centroid = np.array([0, 0])
         return nice_clusters, centroid
@@ -292,35 +287,6 @@ class IminExtractor():
             scores.append(cost)
         return np.array(radii), np.array(scores)
     
-    def merge_rings(self, labels, nice_clusters, radii, radius_tol=20):
-        """
-        Merge radii of concentric rings if radii are close to each other
-
-        Parameters
-        ----------
-        labels : array
-            Cluster labels
-        nice_clusters : array
-            Nice clusters obtained after radius filtering
-        radii : array
-            Fitted radii of the concentric rings
-        radius_tol : float
-            Tolerance for merging radii
-        """
-        # Find close clusters based on radii
-        diff_matrix = np.abs(radii[:, np.newaxis] - radii)
-        close_clusters = np.argwhere((diff_matrix <= radius_tol) & (diff_matrix != 0))
-
-        # Retrieve the pairs
-        pairs = [(nice_clusters[i], nice_clusters[j]) for i, j in close_clusters if i < j]
-
-        # Merge labels
-        for i, j in pairs:
-            nice_clusters[nice_clusters == j] = i
-            labels[labels == j] = i
-        nice_clusters = np.unique(nice_clusters)
-        return labels, nice_clusters
-    
     def score_clutering(self, X, labels, nice_clusters):
         """
         Score of the current clustering with given hyperparameter eps
@@ -338,7 +304,7 @@ class IminExtractor():
         score = len(nice_clusters) + np.sum(cp)/len(X)
         return score
 
-    def hyperparameter_eps_search(self, X, eps_range, filter, radius_tol):
+    def hyperparameter_eps_search(self, X, eps_range):
         """
         Search for the best eps hyperparameter
 
@@ -359,21 +325,19 @@ class IminExtractor():
             centers, radii = self.fit_circles_on_clusters(X, labels)
             score = 0
             if len(centers) > 0:
-                nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
+                nice_clusters, centroid = self.find_nice_clusters(centers, radii)
                 if len(nice_clusters) > 0:
                     radii, _ = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
-                    labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
                     score = self.score_clutering(X, labels, nice_clusters)
             scores.append(score)
-        return eps_range[np.argmax(scores)]
+        return np.max(scores), eps_range[np.argmax(scores)]
 
-    def extract_Imin_score(self, Imin_range, eps, filter, radius_tol):
+    def extract_Imin_score(self, Imin_range, eps_range):
         """
         Extract control points from powder, cluster them into concentric rings and score the ring fitting
         """
         scores = []
         for Imin in Imin_range:
-            score_Imin = 0
             print(f"Extracting control points from binarized powder with threshold={Imin}...")
             self.extract(Imin)
             print("Regrouping control points by panel...")
@@ -382,19 +346,8 @@ class IminExtractor():
                 if len(X) == 0:
                     print(f"Skipping panel {k} as no control points were found")
                     continue
-                print(f"Processing panel {k}...")
-                labels = self.clusterise(X, eps=eps, min_samples=4)
-                centers, radii = self.fit_circles_on_clusters(X, labels)
-                centroid = []
-                if len(centers) == 0:
-                    print(f"All data clustered as noise in panel {k}")
-                    score_Imin += 0        
-                else:
-                    nice_clusters, centroid = self.find_nice_clusters(centers, radii, filter)
-                    radii, costs = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
-                    labels, nice_clusters = self.merge_rings(labels, nice_clusters, radii, radius_tol)
-                    print(f"Number of nice clusters for panel {k}: {len(nice_clusters)}")
-                    radii, costs = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
-                    score_Imin += np.mean(costs)
+                print(f"Computing best ring clustering score for panel {k}...")
+                score_Imin, best_eps = self.hyperparameter_eps_search(X, eps_range)
+                print(f"Best score for panel {k} is {score_Imin} with eps={best_eps}")
             scores.append(score_Imin)
             self.scores = scores
