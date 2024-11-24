@@ -161,10 +161,12 @@ class IminExtractor():
         Extract central panels which contains the most of the control points
         """
         self.central_panels = self.panels
+        panels = np.arange(self.detector.n_modules)
         if self.detector.n_modules > 1:
             mean = np.mean([len(panel) for panel in self.panels])
             central_panels = np.where([len(panel) > mean for panel in self.panels])[0]
-            print(f"Central panels are {central_panels}")
+            central_panels_indx = panels[central_panels]
+            print(f"Central panels are {central_panels_indx} and {central_panels}")
             self.central_panels = self.panels[central_panels]
 
     def clusterise(self, X, eps, min_samples):
