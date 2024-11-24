@@ -100,14 +100,14 @@ class IminExtractor():
     eps_range : array
         Range of eps values to search
     """
-    def __init__(self, exp, run, det_type, powder, Imin_range, eps):
+    def __init__(self, exp, run, det_type, powder, Imin_range, eps_range):
         self.exp = exp
         self.run = run
         self.det_type = det_type
         self.diagnostics = PsanaInterface(exp, run, det_type)
         self.powder = np.load(powder)
         self.detector = self.get_detector(det_type)
-        self.extract_Imin_score(Imin_range=Imin_range, eps=eps)
+        self.extract_Imin_score(Imin_range=Imin_range, eps_range=eps_range)
 
     def get_detector(self, det_type):
         """
