@@ -333,18 +333,22 @@ class IminExtractor():
         """
         scores = []
         for Imin in Imin_range:
-            scores_Imin = []
+            scores_Imin = np.zeros(self.detector.n_modules)
             print(f"Extracting control points from binarized powder with threshold={Imin}...")
             self.extract(Imin)
-            print("Regrouping control points by panel...")
-            self.regroup_by_panel()
-            for k, X in enumerate(self.panels):
-                if len(X) == 0:
-                    print(f"Skipping panel {k} as no control points were found")
-                    continue
-                print(f"Computing best ring clustering score for panel {k}...")
-                score_panel, best_eps = self.hyperparameter_eps_search(X, eps_range)
-                print(f"Best score for panel {k} is {score_panel} with eps={best_eps}")
-                scores_Imin.append(score_panel)
+            if len(self.X) == 0:
+                print(f"Skipping Imin={Imin} as no control points were found")
+                continue
+            else:
+                print("Regrouping control points by panel...")
+                self.regroup_by_panel()
+                for k, X in enumerate(self.panels):
+                    if len(X) == 0:
+                        print(f"Skipping panel {k} as no control points were found")
+                        continue
+                    print(f"Computing best ring clustering score for panel {k}...")
+                    score_panel, best_eps = self.hyperparameter_eps_search(X, eps_range)
+                    print(f"Best score for panel {k} is {score_panel} with eps={best_eps}")
+                    scores_Imin[k] = score_panel
             scores.append(np.mean(scores_Imin))
             self.scores = scores
