@@ -211,7 +211,7 @@ class IminExtractor():
                 radii.append(params[2])
         centers = np.array(centers)
         radii = np.array(radii)
-        return centers, radii
+        return centers
     
     def find_nice_clusters(self, centers, eps=100, label=0):
         """
@@ -318,12 +318,11 @@ class IminExtractor():
         scores = []
         for eps in eps_range:
             labels = self.clusterise(X, eps=eps, min_samples=4)
-            centers, radii = self.fit_circles_on_clusters(X, labels)
+            centers = self.fit_circles_on_clusters(X, labels)
             score = 0
             if len(centers) > 0:
-                nice_clusters, centroid = self.find_nice_clusters(centers, radii)
+                nice_clusters, _ = self.find_nice_clusters(centers)
                 if len(nice_clusters) > 0:
-                    radii, _ = self.fit_concentric_rings(X, labels, nice_clusters, centroid)
                     score = self.score_clutering(X, labels, nice_clusters)
             scores.append(score)
         return np.max(scores), eps_range[np.argmax(scores)]
