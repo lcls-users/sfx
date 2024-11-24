@@ -149,7 +149,7 @@ class IminExtractor():
         """
         Regroup points by panel
         """
-        self.panels = []
+        self.panels = np.array([])
         for module in range(self.detector.n_modules):
             panel = self.X[(self.X[:, 0] >= module * self.detector.asics_shape[0] * self.detector.ss_size) & (self.X[:, 0] < (module + 1) * self.detector.asics_shape[0] * self.detector.ss_size)]
             self.panels.append(panel)
@@ -161,11 +161,9 @@ class IminExtractor():
         Extract central panels which contains the most of the control points
         """
         self.central_panels = self.panels
-        panels = np.arange(self.detector.n_modules)
         if self.detector.n_modules > 1:
             mean = np.mean([len(panel) for panel in self.panels])
             central_panels = np.array(np.where([len(panel) > mean for panel in self.panels])[0])
-            print(f"Central panels are {central_panels}")
             self.central_panels = self.panels[central_panels]
 
     def clusterise(self, X, eps, min_samples):
