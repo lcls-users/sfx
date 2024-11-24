@@ -158,6 +158,13 @@ class IminExtractor():
             self.panels_normalized.append(panel)
             print(f"Panel {module} has {len(panel)} control points")
 
+    def extract_central_panels(self):
+        """
+        Extract central panels which contains the most of the control points
+        """
+        central_panels = np.where([len(panel) > np.mean(self.panels) for panel in self.panels])[0]
+        self.central_panels = self.panels[central_panels]
+
     def clusterise(self, X, eps, min_samples):
         """
         Cluster data using Density-Based Spatial Clustering of Applications with Noise (DBSCAN) algorithm
@@ -342,7 +349,9 @@ class IminExtractor():
             else:
                 print("Regrouping control points by panel...")
                 self.regroup_by_panel()
-                for k, X in enumerate(self.panels):
+                print("Extracting central panels...")
+                self.extract_central_panels()
+                for k, X in enumerate(self.central_panels):
                     if len(X) == 0:
                         print(f"Skipping panel {k} as no control points were found")
                         continue
