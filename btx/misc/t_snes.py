@@ -241,8 +241,11 @@ def create_average_proj(proj_list, bins):
     
     for key, indices in bins.items():
         if indices:
-            avg_projections = np.mean(proj_list[:, indices], axis=1)
-            proj_binned[key] = avg_projections
+            list_proj = []
+            for rank in range(proj_list.shape[0]):
+                avg_projections = np.mean(proj_list[rank][indices], axis=0)
+                list_proj.append(avg_projections)
+            proj_binned[key] = list_proj
     
     return proj_binned
 
