@@ -358,13 +358,13 @@ if __name__ == "__main__":
 
     embeddings_tsne_rank = [[] for _ in range(num_gpus)]
     embeddings_umap_rank = [[] for _ in range(num_gpus)]
-    
+
     for i, (tsne_result, umap_result) in enumerate(results):
         embeddings_tsne_rank[i] = tsne_result
         embeddings_umap_rank[i] = umap_result
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
-    data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddegins_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
+    data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddings_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
     with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
         pickle.dump(data, f)
     
