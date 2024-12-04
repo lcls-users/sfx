@@ -210,6 +210,54 @@ def plot_scatters(embedding, type_of_embedding):
     fig.update_layout(height=800, width=800, showlegend=False)
     fig.show()
 
+def binning_indices(embedding, grid_size=10):
+    x_min, x_max = embedding[:, 0].min(), embedding[:, 0].max()
+    y_min, y_max = embedding[:, 1].min(), embedding[:, 1].max()
+
+    x_bin_size = (x_max - x_min) / grid_size
+    y_bin_size = (y_max - y_min) / grid_size
+
+    bins = {}
+
+    for index, (x, y) in enumerate(embedding):
+        x_bin = int((x - x_min) / x_bin_size)
+        y_bin = int((y - y_min) / y_bin_size)
+
+        x_bin = min(x_bin, grid_size - 1)
+        y_bin = min(y_bin, grid_size - 1)
+
+        bin_key = (x_bin, y_bin)
+
+        if bin_key not in bins:
+            bins[bin_key] = []
+        
+        bins[bin_key].append(index)
+
+    return bins
+
+def create_average_proj(proj_list, bins):
+    proj_binned = {}
+    proj_list = np.array(proj_list)
+    
+    for key, indices in bins.items():
+        if indices:
+            avg_projections = np.mean(proj_list[:, indices], axis=1)
+            proj_binned[key] = avg_projections
+    
+    return proj_binned
+
+def create_average_img(proj_binned, V):
+    img_binned = {}
+    V = np.array(V)
+    
+    for key, proj in proj_binned.items():
+        avg_img = []
+        for rank in V.shape[0]:
+            avg_img.append(np.dot(proj, V[rank].T))
+        img_binned[key] = np.array(avg_img)
+    
+    return img_binned
+
 def unpack_ipca_pytorch_model_file(filename):
     """
     Reads PiPCA model information from h5 file and returns its contents
@@ -364,10 +412,26 @@ if __name__ == "__main__":
         embeddings_umap_rank[i] = umap_result
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
-    data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddings_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
+    print("Starting binning...",flush=True)
+    bins_tsne = binning_indices(embeddings_tsne)
+    bins_umap = binning_indices(embeddings_umap)
+
+    proj_binned_tsne = create_average_proj(list_proj, bins_tsne)
+    proj_binned_umap = create_average_proj(list_proj, bins_umap)
+
+    with h5py.File(filename, 'r') as f:
+        V = f['V']
+        img_binned_tsne = create_average_img(proj_binned_tsne, V)
+        img_binned_umap = create_average_img(proj_binned_umap, V)
+    
+    print("Binning done",flush=True)
+    print("Saving data...",flush=True)
+
+    data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddings_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank, "img_binned_tsne": img_binned_tsne, "img_binned_umap": img_binned_umap}
     with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
         pickle.dump(data, f)
     
+    print("Data saved",flush=True)
     print("All done, closing server...",flush=True)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:

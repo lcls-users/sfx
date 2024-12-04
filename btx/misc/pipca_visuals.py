@@ -28,6 +28,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import matplotlib.animation as animation
 
 import holoviews as hv
 hv.extension('bokeh')
@@ -584,6 +585,85 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
         index_df.to_csv(filename, index=False, header=False)
         print(f"Index by cluster saved in {filename}")
 
+def averaged_imgs_t_sne(filename, type_of_embedding='t-SNE'):
+    with open(filename, "rb") as f:
+        data = pickle.load(f)
+    
+    img_binned_tsne = np.array(data["img_binned_tsne"])
+    img_binned_umap = np.array(data["img_binned_umap"])
+
+    if type_of_embedding == 't-SNE':
+        img_binned = img_binned_tsne
+        title = 't-SNE Averaged Images'
+    else:  # UMAP
+        img_binned = img_binned_umap
+        title = 'UMAP Averaged Images'
+    
+    fig = make_subplots(rows=1, cols=1, subplot_titles=[title])
+
+    ## ICI CA VA HARDCODER DE FOU
+    exp = 'mfxp23120'
+    run = 91
+    det_type = 'epix10k2M'
+    ##
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    a,b,c = psi.det.shape()
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+    
+    for key in img_binned:
+        img = img_binned[key]
+        for rank in range(img.shape[0]):
+            img[rank] = img[rank].reshape((a,b,c))
+        img = np.concatenate(img, axis=0)
+        img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
+        img_binned[key] = img
+    
+    random_walk_animation(img_binned, (0, 0), 100, save_path="averaged_imgs_t_sne.gif", interval=500, fps=2)
+    
+def random_walk_animation(graph, start_bin, steps, save_path="random_walk_animation.gif", interval=500, fps=2):    
+    def random_walk(graph, start_bin, steps):
+        walk_bins = [start_bin]
+        current_bin = start_bin
+
+        for _ in range(steps):
+            # Trouver les voisins possibles (bins adjacents)
+            neighbors = [
+                (current_bin[0] + dx, current_bin[1] + dy)
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Haut, Bas, Gauche, Droite
+                if (current_bin[0] + dx, current_bin[1] + dy) in graph
+            ]
+
+            # Si aucun voisin disponible, arrêter le walk
+            if not neighbors:
+                break
+
+            # Choisir un voisin aléatoire
+            next_bin = random.choice(neighbors)
+            walk_bins.append(next_bin)
+            current_bin = next_bin
+
+        return walk_bins
+
+    # Effectuer un random walk
+    walk_bins = random_walk(graph, start_bin, steps)
+
+    # Créer l'animation pour visualiser le random walk
+    fig, ax = plt.subplots()
+
+    def update(frame):
+        bin_coordinates = walk_bins[frame]
+        ax.clear()
+        ax.imshow(graph[bin_coordinates], cmap="viridis")
+        ax.set_title(f"Bin: {bin_coordinates}")
+        ax.axis("off")
+
+    ani = animation.FuncAnimation(fig, update, frames=len(walk_bins), interval=interval)
+
+    # Sauvegarder l'animation en GIF
+    ani.save(save_path, writer="pillow", fps=fps)
+    print(f"Animation saved at {save_path}")
+    plt.close(fig)
+    
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
 
