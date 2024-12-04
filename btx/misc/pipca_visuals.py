@@ -434,15 +434,18 @@ def display_umap(filename,num_images):
     fig.update_layout(height=800, width=800, showlegend=False, title_text="t-SNE Projections Across GPUs")
     fig.show()
 
-def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1,min_samples=10,save_clusters=False):
+"""def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1,min_samples=10, num_panels=16,save_clusters=False):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
     # Extraction des données
     embedding_tsne = np.array(data["embeddings_tsne"])
     embedding_umap = np.array(data["embeddings_umap"])
+    embedding_tsne_rank = np.array(data["embeddings_tsne_rank"])
+    embedding_umap_rank = np.array(data["embeddings_umap_rank"])
     S = np.array(data["S"])
     num_gpus = len(S)
+    num_panels = min(num_panels,num_gpus)
 
     if type_of_embedding == 't-SNE':
         embedding = embedding_tsne
@@ -486,6 +489,97 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1,min_samples
 
         index_df = pd.DataFrame(index_by_cluster)
 
+        filename = f'index_by_cluster_{len(S)}.csv'
+        index_df.to_csv(filename, index=False, header=False)
+        print(f"Index by cluster saved in {filename}")"""
+
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_samples=10, num_panels=16, save_clusters=False):
+    with open(filename, "rb") as f:
+        data = pickle.load(f)
+
+    embedding_tsne = np.array(data["embeddings_tsne"])
+    embedding_umap = np.array(data["embeddings_umap"])
+    embedding_tsne_rank = np.array(data["embeddings_tsne_rank"])
+    embedding_umap_rank = np.array(data["embeddings_umap_rank"])
+    S = np.array(data["S"])
+    num_gpus = len(S)
+    num_panels = min(num_panels, num_gpus)
+
+    if type_of_embedding == 't-SNE':
+        global_embedding = embedding_tsne
+        panel_embeddings = embedding_tsne_rank
+        title = 't-SNE Projections'
+    else:  # UMAP
+        global_embedding = embedding_umap
+        panel_embeddings = embedding_umap_rank
+        title = 'UMAP Projections'
+
+    # Calculate the number of rows and columns for the subplots
+    n_rows = int(np.ceil(np.sqrt(num_panels + 1)))
+    n_cols = int(np.ceil((num_panels + 1) / n_rows))
+
+    fig = make_subplots(rows=n_rows, cols=n_cols, 
+                        subplot_titles=["Global Projection"] + [f"Panel {i+1}" for i in range(num_panels)])
+
+    # Plot global projection
+    global_clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(global_embedding)
+    global_df = pd.DataFrame({
+        'Dimension1': global_embedding[:, 0],
+        'Dimension2': global_embedding[:, 1],
+        'Index': range(len(global_embedding)),
+        'Cluster': global_clustering.labels_
+    })
+
+    global_scatter = go.Scatter(
+        x=global_df['Dimension1'],
+        y=global_df['Dimension2'],
+        mode='markers',
+        marker=dict(color=global_df['Cluster'], colorscale='Viridis', showscale=False),
+        text=global_df['Index'],
+        hoverinfo='text',
+        showlegend=False
+    )
+
+    fig.add_trace(global_scatter, row=1, col=1)
+
+    # Plot individual panel projections
+    for i in range(num_panels):
+        row = (i + 1) // n_cols + 1
+        col = (i + 1) % n_cols + 1
+
+        embedding = panel_embeddings[i]
+        clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(embedding)
+        
+        df = pd.DataFrame({
+            'Dimension1': embedding[:, 0],
+            'Dimension2': embedding[:, 1],
+            'Index': range(len(embedding)),
+            'Cluster': clustering.labels_
+        })
+
+        scatter = go.Scatter(
+            x=df['Dimension1'],
+            y=df['Dimension2'],
+            mode='markers',
+            marker=dict(color=df['Cluster'], colorscale='Viridis', showscale=False),
+            text=df['Index'],
+            hoverinfo='text',
+            showlegend=False
+        )
+
+        fig.add_trace(scatter, row=row, col=col)
+
+    fig.update_layout(height=300*n_rows, width=300*n_cols, title_text=title)
+    fig.update_xaxes(title_text="Dimension 1")
+    fig.update_yaxes(title_text="Dimension 2")
+
+    print("Plot created successfully!")
+    fig.show()
+
+    if save_clusters:
+        unique_clusters = sorted(global_df['Cluster'].unique())
+        index_by_cluster = [list(global_df.index[global_df['Cluster'] == cluster]) for cluster in unique_clusters]
+        index_df = pd.DataFrame(index_by_cluster)
         filename = f'index_by_cluster_{len(S)}.csv'
         index_df.to_csv(filename, index=False, header=False)
         print(f"Index by cluster saved in {filename}")

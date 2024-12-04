@@ -97,7 +97,7 @@ class IPCRemotePsanaDataset(Dataset):
             return result
 
 def process(rank, proj ,device_list,num_tries,threshold):
-    proj = torch.tensor(proj,device=device_list[rank])
+    proj = torch.tensor(proj,device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
 
     torch.cuda.empty_cache()
     gc.collect()
@@ -277,7 +277,6 @@ def parse_input():
 
     return parser.parse_args()
 
-
 if __name__ == "__main__":
     params = parse_input()
     ##
@@ -305,6 +304,7 @@ if __name__ == "__main__":
     mp.set_start_method('spawn', force=True)
 
     list_proj = []
+    list_proj_rank = [[] for _ in range(num_gpus)]
     
     print("Unpacking done",flush=True)
     print("Gathering images...",flush=True)
@@ -338,21 +338,27 @@ if __name__ == "__main__":
             print("Shape of projector on rank 0",proj[0].shape)
             rank_proj_list = [u for u in proj]
             list_proj.append(np.vstack(rank_proj_list))
+            for i in range(num_gpus):
+                list_proj_rank[i].append(rank_proj_list[i])
             
             counter += list_images[0].shape[0]
             print("Number of projectors gathered : ",counter,flush=True)
     
     list_proj = np.vstack(list_proj)
+    for i in range(num_gpus):
+        list_proj_rank[i] = np.vstack(list_proj_rank[i])
+        print("Shape of projector on rank ",i,list_proj_rank[i].shape)
+
     print("Projectors gathered",flush=True)
     print("shape of list_proj",np.array(list_proj).shape)
     print("Computing embeddings...",flush=True)
     with Pool(processes=num_gpus) as pool:
         embeddings_tsne, embeddings_umap = pool.apply(process,(0, list_proj, device_list, num_tries, threshold))
-
+        embeddegins_tsne_rank, embeddings_umap_rank = pool.starmap(process, [(i, list_proj_rank[i], device_list, num_tries, threshold) for i in range(num_gpus)])
 
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
-    data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S}
+    data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddegins_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
     with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
         pickle.dump(data, f)
     

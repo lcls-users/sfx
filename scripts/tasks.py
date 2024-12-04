@@ -1059,3 +1059,12 @@ def reduce_pypca_multinodes(config):
         clean_pypca(model_path, tag, num_nodes,mode='reduce')
 
     print('All nodes done!')
+
+
+def average_img_cluster(config):
+    average_img_cluster = config.average_img_cluster
+    exp = config.setup.exp
+    run = average_img_cluster.run
+    det_type = config.setup.det_type
+
+    from btx.processing.average_img_cluster import AverageImgCluster
