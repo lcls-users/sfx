@@ -354,8 +354,14 @@ if __name__ == "__main__":
     print("Computing embeddings...",flush=True)
     with Pool(processes=num_gpus) as pool:
         embeddings_tsne, embeddings_umap = pool.apply(process,(0, list_proj, device_list, num_tries, threshold))
-        embeddegins_tsne_rank, embeddings_umap_rank = pool.starmap(process, [(i, list_proj_rank[i], device_list, num_tries, threshold) for i in range(num_gpus)])
+        results = pool.starmap(process, [(i, list_proj_rank[i], device_list, num_tries, threshold) for i in range(num_gpus)])
 
+    embeddings_tsne_rank = [[] for _ in range(num_gpus)]
+    embeddings_umap_rank = [[] for _ in range(num_gpus)]
+    
+    for i, (tsne_result, umap_result) in enumerate(results):
+        embeddings_tsne_rank[i] = tsne_result
+        embeddings_umap_rank[i] = umap_result
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
     data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddegins_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
