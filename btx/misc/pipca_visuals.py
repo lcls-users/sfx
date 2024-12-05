@@ -587,11 +587,9 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
 
 def averaged_imgs_t_sne(filename, type_of_embedding='t-SNE'):
     with h5py.File(filename, "r") as f:
-        data = {key: f[key][()] for key in f.keys()}
-    
-    img_binned_tsne = np.array(data["img_binned_tsne"])
-    img_binned_umap = np.array(data["img_binned_umap"])
-
+        img_binned_tsne = np.array(f["img_binned_tsne"])
+        img_binned_umap = np.array(f["img_binned_umap"])
+        
     if type_of_embedding == 't-SNE':
         img_binned = img_binned_tsne
         title = 't-SNE Averaged Images'
