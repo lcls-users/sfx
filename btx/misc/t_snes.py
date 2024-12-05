@@ -449,12 +449,14 @@ if __name__ == "__main__":
     print("Saving data...",flush=True)
 
     data_bin = {"img_binned_tsne": img_binned_tsne, "img_binned_umap": img_binned_umap}
+    with open(f"binned_data_{num_components}_{num_images}.pkl", "wb") as f:
+        pickle.dump(data_bin, f)
+        
     data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddings_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
     with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
         pickle.dump(data, f)
     
-    with open(f"binned_data_{num_components}_{num_images}.pkl", "wb") as f:
-        pickle.dump(data_bin, f)
+    
     
     print("Data saved",flush=True)
     print("All done, closing server...",flush=True)
