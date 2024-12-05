@@ -610,6 +610,7 @@ def averaged_imgs_t_sne(filename, type_of_embedding='t-SNE'):
     a,b,c = psi.det.shape()
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
     
+    print("Reconstructing average images...",flush=True)
     for key in img_binned:
         img = img_binned[key]
         for rank in range(img.shape[0]):
@@ -617,15 +618,19 @@ def averaged_imgs_t_sne(filename, type_of_embedding='t-SNE'):
         img = np.concatenate(img, axis=0)
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         img_binned[key] = img
+    print("Reconstruction done!",flush=True)
     
     random_walk_animation(img_binned, (0, 0), 100, save_path="averaged_imgs_t_sne.gif", interval=500, fps=2)
     
 def random_walk_animation(graph, start_bin, steps, save_path="random_walk_animation.gif", interval=500, fps=2):    
     def random_walk(graph, start_bin, steps):
+        print("Starting random walk...")
         walk_bins = [start_bin]
         current_bin = start_bin
 
         for _ in range(steps):
+            if _ % 10 == 0:
+                print(f"Step {_} / {steps}")
             # Trouver les voisins possibles (bins adjacents)
             neighbors = [
                 (current_bin[0] + dx, current_bin[1] + dy)
@@ -646,7 +651,7 @@ def random_walk_animation(graph, start_bin, steps, save_path="random_walk_animat
 
     # Effectuer un random walk
     walk_bins = random_walk(graph, start_bin, steps)
-
+    print("Random walk done!")
     # Créer l'animation pour visualiser le random walk
     fig, ax = plt.subplots()
 
