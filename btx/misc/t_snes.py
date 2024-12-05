@@ -450,7 +450,7 @@ if __name__ == "__main__":
     print("Binning done",flush=True)
     print("Saving data...",flush=True)
 
-    with h5py.File(f"binned_data_{num_components}_{num_images}.h5", "w") as f:
+    with h5py.File(f"binned_data_{num_components}_{num_images}.h5", "w") as hdf:
             tsne_group = hdf.create_group('img_binned_tsne')
             for key, value in img_binned_tsne.items():
                 tsne_group.create_dataset(key, data=value)

@@ -586,7 +586,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
         print(f"Index by cluster saved in {filename}")
 
 def averaged_imgs_t_sne(filename, type_of_embedding='t-SNE'):
-    with h5py.File(filename, "r") as f:
+    with h5py.File(filename, "r") as hdf:
         img_binned_tsne = {}
         tsne_group = hdf['img_binned_tsne']
         for key in tsne_group.keys():
