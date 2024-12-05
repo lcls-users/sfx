@@ -235,7 +235,7 @@ def binning_indices(embedding, grid_size=10):
 
     return bins
 
-def create_average_proj(proj_list, bins):
+"""def create_average_proj(proj_list, bins):
     proj_binned = {}
     proj_list = np.array(proj_list)
     
@@ -246,6 +246,24 @@ def create_average_proj(proj_list, bins):
                 avg_projections = np.mean(proj_list[rank][indices], axis=0)
                 list_proj.append(avg_projections)
             proj_binned[key] = list_proj
+    
+    return proj_binned"""
+    
+def create_average_proj(proj_list, bins):
+    proj_binned = {}
+    proj_list = np.array(proj_list)
+    
+    for key, indices in bins.items():
+        if indices:
+            list_proj = []
+            for rank in range(proj_list.shape[0]):
+                # Filtrer les indices valides
+                valid_indices = [idx for idx in indices if idx < proj_list[rank].shape[0]]
+                if valid_indices:
+                    avg_projections = np.mean(proj_list[rank][valid_indices], axis=0)
+                    list_proj.append(avg_projections)
+            if list_proj:
+                proj_binned[key] = list_proj
     
     return proj_binned
 
