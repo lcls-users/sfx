@@ -451,13 +451,17 @@ if __name__ == "__main__":
     print("Saving data...",flush=True)
 
     with h5py.File(f"binned_data_{num_components}_{num_images}.h5", "w") as hdf:
-            tsne_group = hdf.create_group('img_binned_tsne')
-            for key, value in img_binned_tsne.items():
-                tsne_group.create_dataset(key, data=value)
-            
-            umap_group = hdf.create_group('img_binned_umap')
-            for key, value in img_binned_umap.items():
-                umap_group.create_dataset(key, data=value)
+        tsne_group = hdf.create_group('img_binned_tsne')
+        for key, value in img_binned_tsne.items():
+            if isinstance(key, tuple):
+                key = "_".join(map(str, key))
+            tsne_group.create_dataset(key, data=value)
+        
+        umap_group = hdf.create_group('img_binned_umap')
+        for key, value in img_binned_umap.items():
+            if isinstance(key, tuple):
+                key = "_".join(map(str, key))
+            umap_group.create_dataset(key, data=value)
 
     data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddings_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
     with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
