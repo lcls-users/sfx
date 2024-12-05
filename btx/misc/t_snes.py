@@ -419,8 +419,8 @@ if __name__ == "__main__":
     bins_tsne = binning_indices(embeddings_tsne)
     bins_umap = binning_indices(embeddings_umap)
 
-    proj_binned_tsne = create_average_proj(list_proj, bins_tsne)
-    proj_binned_umap = create_average_proj(list_proj, bins_umap)
+    proj_binned_tsne = create_average_proj(list_proj_rank, bins_tsne)
+    proj_binned_umap = create_average_proj(list_proj_rank, bins_umap)
 
     with h5py.File(filename, 'r') as f:
         V = f['V']
