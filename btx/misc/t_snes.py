@@ -248,7 +248,7 @@ def binning_indices(embedding, grid_size=10):
             proj_binned[key] = list_proj
     
     return proj_binned"""
-    
+
 def create_average_proj(proj_list, bins):
     proj_binned = {}
     proj_list = np.array(proj_list)
@@ -273,7 +273,7 @@ def create_average_img(proj_binned, V):
     
     for key, proj in proj_binned.items():
         avg_img = []
-        for rank in V.shape[0]:
+        for rank in range(V.shape[0]):
             avg_img.append(np.dot(proj, V[rank].T))
         img_binned[key] = np.array(avg_img)
     
