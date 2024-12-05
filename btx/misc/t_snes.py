@@ -275,9 +275,6 @@ def create_average_img(proj_binned, V):
         avg_img = []
         for rank in range(V.shape[0]):
             panel = np.dot(proj, V[rank].T)
-            print("====================================\n")
-            print(panel.shape)
-            print("\n====================================")
             avg_img.append(panel)
 
         img_binned[key] = np.array(avg_img)
@@ -454,8 +451,9 @@ if __name__ == "__main__":
     print("Saving data...",flush=True)
 
     data_bin = {"img_binned_tsne": img_binned_tsne, "img_binned_umap": img_binned_umap}
-    with open(f"binned_data_{num_components}_{num_images}.pkl", "wb") as f:
-        pickle.dump(data_bin, f)
+    with h5py.File(f"binned_data_{num_components}_{num_images}.h5", "w") as f:
+        for key, value in data_bin.items():
+            f.create_dataset(key, data=np.array(value))
 
     data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddings_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
     with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
