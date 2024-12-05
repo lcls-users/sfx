@@ -450,10 +450,9 @@ if __name__ == "__main__":
     print("Binning done",flush=True)
     print("Saving data...",flush=True)
 
-    data_bin = {"img_binned_tsne": img_binned_tsne, "img_binned_umap": img_binned_umap}
     with h5py.File(f"binned_data_{num_components}_{num_images}.h5", "w") as f:
-        for key, value in data_bin.items():
-            f.create_dataset(key, data=np.array(value))
+        f.create_dataset("img_binned_tsne", data=img_binned_tsne)
+        f.create_dataset("img_binned_umap", data=img_binned_umap)
 
     data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddings_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
     with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
