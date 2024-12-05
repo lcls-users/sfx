@@ -590,6 +590,9 @@ def averaged_imgs_t_sne(filename, type_of_embedding='t-SNE'):
         img_binned_tsne = f.get("img_binned_tsne")
         img_binned_umap = f.get("img_binned_umap")
 
+    print(img_binned_tsne.keys())
+    print(img_binned_umap.keys())
+    
     if type_of_embedding == 't-SNE':
         img_binned = img_binned_tsne
         title = 't-SNE Averaged Images'
@@ -609,7 +612,7 @@ def averaged_imgs_t_sne(filename, type_of_embedding='t-SNE'):
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
     
     print("Reconstructing average images...",flush=True)
-    for key in img_binned:
+    for key in img_binned.keys():
         img = img_binned[key]
         for rank in range(img.shape[0]):
             img[rank] = img[rank].reshape((a,b,c))
