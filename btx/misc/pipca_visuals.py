@@ -655,7 +655,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
             img[rank] = img[rank].reshape((-1,b,c)) ##"""
         img = img.reshape((a,b,c))
         print(img.shape)
-        img = np.concatenate(img, axis=0)
+        """img = np.concatenate(img, axis=0)"""
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         img_binned[key] = img
     print("Reconstruction done!",flush=True)
