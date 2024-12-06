@@ -672,33 +672,27 @@ def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", i
         for _ in range(steps):
             if _ % 10 == 0:
                 print(f"Step {_} / {steps}")
-            # Find possible neighbors (adjacent bins)
             neighbors = [
                 (current_bin[0] + dx, current_bin[1] + dy)
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Up, Down, Left, Right
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
                 if (current_bin[0] + dx, current_bin[1] + dy) in graph
             ]
 
-            # If no available neighbors, stop the walk
             if not neighbors:
                 break
 
-            # Choose a random neighbor
             next_bin = random.choice(neighbors)
             walk_bins.append(next_bin)
             current_bin = next_bin
 
         return walk_bins
 
-    # Find a valid starting bin
     start_bin = find_valid_start_bin(graph)
     print(f"Starting from bin: {start_bin}")
 
-    # Perform a random walk
     walk_bins = random_walk(graph, start_bin, steps)
     print("Random walk done!")
 
-    # Create the animation to visualize the random walk
     fig, ax = plt.subplots()
 
     def update(frame):
@@ -707,15 +701,14 @@ def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", i
         if bin_coordinates in graph:
             ax.imshow(graph[bin_coordinates], cmap="viridis")
             ax.set_title(f"Bin: {bin_coordinates}")
-            ax.axis("off")
         else:
             ax.text(0.5, 0.5, "No data for this bin", ha='center', va='center')
             ax.set_title(f"Empty Bin: {bin_coordinates}")
-            ax.axis("off")
+        ax.axis("off")
+        return ax.artists
 
-    ani = animation.FuncAnimation(fig, update, frames=len(walk_bins), interval=interval)
+    ani = animation.FuncAnimation(fig, update, frames=len(walk_bins), interval=interval, blit=True)
 
-    # Save the animation as a GIF
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     print(f"Animation saved at {save_path}")
