@@ -704,14 +704,20 @@ def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", i
     def update(frame):
         bin_coordinates = walk_bins[frame]
         ax.clear()
-        ax.imshow(graph[bin_coordinates], cmap="viridis")
-        ax.set_title(f"Bin: {bin_coordinates}")
-        ax.axis("off")
+        if bin_coordinates in graph:
+            ax.imshow(graph[bin_coordinates], cmap="viridis")
+            ax.set_title(f"Bin: {bin_coordinates}")
+            ax.axis("off")
+        else:
+            ax.text(0.5, 0.5, "No data for this bin", ha='center', va='center')
+            ax.set_title(f"Empty Bin: {bin_coordinates}")
+            ax.axis("off")
 
     ani = animation.FuncAnimation(fig, update, frames=len(walk_bins), interval=interval)
 
     # Save the animation as a GIF
-    ani.save(save_path, writer="pillow", fps=fps)
+    writer = animation.PillowWriter(fps=fps)
+    ani.save(save_path, writer=writer)
     print(f"Animation saved at {save_path}")
     plt.close(fig)
 
