@@ -664,24 +664,30 @@ def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", i
     def find_valid_start_bin(graph):
         return next(iter(graph.keys()))
 
+    def clean_bin(bin_value):
+        cleaned = ''.join(char for char in str(bin_value) if char.isdigit())
+        return int(cleaned) if cleaned else None
+
     def random_walk(graph, start_bin, steps):
         print("Starting random walk...")
         walk_bins = [start_bin]
         current_bin = start_bin
 
-        for _ in range(steps):
-            if _ % 10 == 0:
-                print(f"Step {_} / {steps}")
-            def clean_bin(bin_value):
-                return ''.join(char for char in bin_value if char.isdigit())
+        for step in range(steps):
+            if step % 10 == 0:
+                print(f"Step {step} / {steps}")
 
-            neighbors = [
-                (int(clean_bin(current_bin[0])) + dx, int(clean_bin(current_bin[1])) + dy)
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
-                if (int(clean_bin(current_bin[0])) + dx, int(clean_bin(current_bin[1])) + dy) in graph
-            ]
+            neighbors = []
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                x = clean_bin(current_bin[0])
+                y = clean_bin(current_bin[1])
+                if x is not None and y is not None:
+                    new_x, new_y = x + dx, y + dy
+                    if (new_x, new_y) in graph:
+                        neighbors.append((new_x, new_y))
 
             if not neighbors:
+                print(f"No valid neighbors found at step {step}. Stopping walk.")
                 break
 
             next_bin = random.choice(neighbors)
