@@ -175,11 +175,13 @@ def process(rank, proj ,device_list,num_tries,threshold):
 
     return embedding_tsne, embedding_umap
 
-def get_projectors(rank,imgs,V,device_list):
-    V = torch.tensor(V,device=device_list[rank%4])#the 4 is hardcoded but is the number of GPUs available on one node on ampere
+def get_projectors(rank,imgs,V,device_list,mu):
+    V = torch.tensor(V,device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
+    mu = torch.tensor(mu,device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
     imgs = torch.tensor(imgs.reshape(imgs.shape[0],-1),device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
+    imgs = imgs - mu
     proj = torch.mm(imgs,V)
-    proj = proj/torch.linalg.matrix_norm(proj)
+    proj = proj + mu ##deleted the normalization step
     return proj.cpu().detach().numpy()
 
 def plot_scatters(embedding, type_of_embedding):
