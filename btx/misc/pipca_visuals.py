@@ -587,17 +587,19 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
         print(f"Index by cluster saved in {filename}")
 
 def create_average_img(proj_binned, V):
+    count=0
     img_binned = {}
     V = np.array(V)
     
     for key, proj in proj_binned.items():
+        count+=1
         avg_img = []
         for rank in range(V.shape[0]):
             panel = np.dot(proj[rank], V[rank].T)
             avg_img.append(panel)
 
         img_binned[key] = np.array(avg_img)
-    
+    print("Number of bins:",count)
     return img_binned
 
 def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=None,vmax=None):
