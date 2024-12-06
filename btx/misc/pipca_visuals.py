@@ -650,9 +650,11 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
     for key in img_binned.keys():
         img = img_binned[key]
         print(img.shape)
-        for rank in range(img.shape[0]):
+        """for rank in range(img.shape[0]):
             print(img[rank].shape)
-            img[rank] = img[rank].reshape((-1,b,c)) ##
+            img[rank] = img[rank].reshape((-1,b,c)) ##"""
+        img = img.reshape((a,b,c))
+        print(img.shape)
         img = np.concatenate(img, axis=0)
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         img_binned[key] = img
