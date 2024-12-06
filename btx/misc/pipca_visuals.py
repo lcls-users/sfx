@@ -673,10 +673,10 @@ def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", i
             if _ % 10 == 0:
                 print(f"Step {_} / {steps}")
             neighbors = [
-                (current_bin[0] + dx, current_bin[1] + dy)
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
-                if (current_bin[0] + dx, current_bin[1] + dy) in graph
-            ]
+                            (int(current_bin[0]) + dx, int(current_bin[1]) + dy)
+                            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                            if (int(current_bin[0]) + dx, int(current_bin[1]) + dy) in graph
+                        ]
 
             if not neighbors:
                 break
