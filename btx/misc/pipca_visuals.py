@@ -624,6 +624,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
 
     with h5py.File(model_filename, 'r') as f:
         V = f['V']
+        num_gpus = V.shape[0]
         img_binned_tsne = create_average_img(img_binned_tsne, V)
         print("t-SNE Averaged Images done!")
         img_binned_umap = create_average_img(img_binned_umap, V)
@@ -653,7 +654,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
         print(img.shape)
         for rank in range(img.shape[0]):
             print(img[rank].shape)
-            img[rank] = img[rank].reshape((a,b,c))
+            img[rank] = img[rank].reshape((a/num_gpus,b,c))
         img = np.concatenate(img, axis=0)
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         img_binned[key] = img
