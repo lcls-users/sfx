@@ -666,6 +666,9 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
                      cbar_pad=0.05)
 
     print("Creating graph...", flush=True)
+    inf_vmin = None
+    sup_vmax = None
+
     for i, key in enumerate(keys):
         img = img_binned[key]
         img = img.reshape((a, b, c))  # Assuming a, b, c are defined
@@ -675,10 +678,17 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
             im = grid[i].imshow(img, cmap='viridis',vmin=vmin,vmax=vmax)
         else:
             im = grid[i].imshow(img, cmap='viridis')
-            print("Vmin and vmax:",im.get_clim())
+            val1,val2 = im.get_clim() 
+            if inf_vmin is None or val1 < inf_vmin:
+                inf_vmin = val1
+            if sup_vmax is None or val2 > sup_vmax:
+                sup_vmax = val2
 
         grid[i].set_title(f"Bin: {key}")
         grid[i].axis('off')
+    
+    if vmin is None and vmax is None:
+        print (inf_vmin,sup_vmax)
 
     # Add a colorbar
     plt.colorbar(im, cax=grid.cbar_axes[0])
