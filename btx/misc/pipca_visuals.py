@@ -596,7 +596,6 @@ def create_average_img(proj_binned, V):
             avg_img.append(panel)
 
         img_binned[key] = np.array(avg_img)
-        print("Shape of average image: ",img_binned[key].shape)
     
     return img_binned
 
@@ -654,7 +653,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
         print(img.shape)
         for rank in range(img.shape[0]):
             print(img[rank].shape)
-            img[rank] = img[rank].reshape((a/num_gpus,b,c))
+            img[rank] = img[rank].reshape((int(a/num_gpus),b,c))
         img = np.concatenate(img, axis=0)
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         img_binned[key] = img
