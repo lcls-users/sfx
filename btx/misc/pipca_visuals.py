@@ -649,6 +649,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
     print("Reconstructing average images...",flush=True)
     for key in img_binned.keys():
         img = img_binned[key]
+        print(img.shape)
         for rank in range(img.shape[0]):
             print(img[rank].shape)
             img[rank] = img[rank].reshape((a,b,c))
