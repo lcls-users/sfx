@@ -212,7 +212,7 @@ def plot_scatters(embedding, type_of_embedding):
     fig.update_layout(height=800, width=800, showlegend=False)
     fig.show()
 
-def binning_indices(embedding, grid_size=1):
+def binning_indices(embedding, grid_size=50):
     x_min, x_max = embedding[:, 0].min(), embedding[:, 0].max()
     y_min, y_max = embedding[:, 1].min(), embedding[:, 1].max()
 
