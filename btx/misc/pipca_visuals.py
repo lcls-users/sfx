@@ -6,6 +6,7 @@ import time
 import json
 import pickle
 import xarray as xr
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 import csv 
 from sklearn.cluster import DBSCAN
@@ -636,7 +637,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
         title = 'UMAP Averaged Images'
     
     fig = make_subplots(rows=1, cols=1, subplot_titles=[title])
-
+    
     ## ICI CA VA HARDCODER DE FOU
     exp = 'mfxp23120'
     run = 91
@@ -646,20 +647,58 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
     a,b,c = psi.det.shape()
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
     
-    print("Reconstructing average images...",flush=True)
+        # Determine the grid size
+    keys = list(img_binned.keys())
+    grid_size = int(np.ceil(np.sqrt(len(keys))))
+
+    # Create a figure with a grid of subplots
+    fig = plt.figure(figsize=(20, 20))
+    grid = ImageGrid(fig, 111,
+                     nrows_ncols=(grid_size, grid_size),
+                     axes_pad=0.1,
+                     share_all=True,
+                     cbar_location="right",
+                     cbar_mode="single",
+                     cbar_size="5%",
+                     cbar_pad=0.05)
+
+    print("Creating graph...", flush=True)
+    for i, key in enumerate(keys):
+        img = img_binned[key]
+        img = img.reshape((a, b, c))  # Assuming a, b, c are defined
+        img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
+        
+        im = grid[i].imshow(img, cmap='viridis')
+        grid[i].set_title(f"Bin: {key}")
+        grid[i].axis('off')
+
+    # Add a colorbar
+    plt.colorbar(im, cax=grid.cbar_axes[0])
+
+    plt.suptitle(title, fontsize=16)
+    plt.tight_layout()
+    
+    # Save the figure
+    save_path = f"{type_of_embedding.lower()}_binned_images.png"
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"Graph saved at {save_path}", flush=True)
+    plt.close(fig)
+
+    """print("Reconstructing average images...",flush=True)
     for key in img_binned.keys():
         img = img_binned[key]
-        """for rank in range(img.shape[0]):
-            print(img[rank].shape)
-            img[rank] = img[rank].reshape((-1,b,c)) ##"""
+        ##for rank in range(img.shape[0]):
+            ##print(img[rank].shape)
+            ##img[rank] = img[rank].reshape((-1,b,c)) ##
         img = img.reshape((a,b,c))
-        """img = np.concatenate(img, axis=0)"""
+        #img = np.concatenate(img, axis=0)
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         img_binned[key] = img
     print("Reconstruction done!",flush=True)
-    
+
     random_walk_animation(img_binned, 10, save_path="averaged_imgs_t_sne.gif", interval=500, fps=2, max_attempts=100)
-    
+    """
+
 def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", interval=500, fps=2, max_attempts=10):
     def find_valid_start_bin(graph):
         return random.choice(list(graph.keys()))
