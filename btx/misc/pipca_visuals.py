@@ -673,6 +673,8 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
             im = grid[i].imshow(img, cmap='viridis',vmin=vmin,vmax=vmax)
         else:
             im = grid[i].imshow(img, cmap='viridis')
+            print("Vmin and vmax:",im.get_clim())
+
         grid[i].set_title(f"Bin: {key}")
         grid[i].axis('off')
 
