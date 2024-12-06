@@ -392,7 +392,8 @@ if __name__ == "__main__":
             with Pool(processes=num_gpus) as pool:
                 with h5py.File(filename, 'r') as f:
                     V = f['V']
-                    proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list) for rank in range(num_gpus)])
+                    mu = f['mu']
+                    proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list,mu) for rank in range(num_gpus)])
             
             print("Shape of projector on rank 0",proj[0].shape)
             rank_proj_list = [u for u in proj]
