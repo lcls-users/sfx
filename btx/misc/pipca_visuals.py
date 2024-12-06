@@ -598,13 +598,13 @@ def create_average_img(proj_binned, V):
         img_binned[key] = np.array(avg_img)
     
     return img_binned
-    
+
 def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
     img_binned_tsne = {}
     img_binned_umap = {}
 
     # Open the HDF5 file in read mode
-    with h5py.File(f"binned_data_{num_components}_{num_images}.h5", "r") as hdf:
+    with h5py.File(filename, "r") as hdf:
         # Access the 'img_binned_tsne' group
         tsne_group = hdf['proj_binned_tsne']
         
