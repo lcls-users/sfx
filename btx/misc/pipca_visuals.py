@@ -658,7 +658,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
         img_binned[key] = img
     print("Reconstruction done!",flush=True)
     
-    random_walk_animation(img_binned, (0, 0), 100, save_path="averaged_imgs_t_sne.gif", interval=500, fps=2)
+    random_walk_animation(img_binned, 100, save_path="averaged_imgs_t_sne.gif", interval=500, fps=2)
     
 def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", interval=500, fps=2):
     def find_valid_start_bin(graph):
@@ -714,7 +714,7 @@ def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", i
     ani.save(save_path, writer="pillow", fps=fps)
     print(f"Animation saved at {save_path}")
     plt.close(fig)
-    
+
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
 
