@@ -619,10 +619,14 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
         for dataset_name in umap_group.keys():
             img_binned_umap[dataset_name] = umap_group[dataset_name][()]
 
+    print("Gathering average projectors done!")
+
     with h5py.File(model_filename, 'r') as f:
         V = f['V']
         img_binned_tsne = create_average_img(img_binned_tsne, V)
+        print("t-SNE Averaged Images done!")
         img_binned_umap = create_average_img(img_binned_umap, V)
+        print("UMAP Averaged Images done!")
     
     if type_of_embedding == 't-SNE':
         img_binned = img_binned_tsne
