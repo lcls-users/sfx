@@ -658,48 +658,54 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
         img_binned[key] = img
     print("Reconstruction done!",flush=True)
     
-    random_walk_animation(img_binned, 100, save_path="averaged_imgs_t_sne.gif", interval=500, fps=2)
+    random_walk_animation(img_binned, 10, save_path="averaged_imgs_t_sne.gif", interval=500, fps=2, max_attempts=100)
     
-def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", interval=500, fps=2):
+def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", interval=500, fps=2, max_attempts=10):
     def find_valid_start_bin(graph):
-        return next(iter(graph.keys()))
+        return random.choice(list(graph.keys()))
 
     def clean_bin(bin_value):
         cleaned = ''.join(char for char in str(bin_value) if char.isdigit())
         return int(cleaned) if cleaned else None
 
-    def random_walk(graph, start_bin, steps):
-        print("Starting random walk...")
-        walk_bins = [start_bin]
-        current_bin = start_bin
+    def random_walk(graph, steps, max_attempts):
+        for attempt in range(max_attempts):
+            print(f"Attempt {attempt + 1} of {max_attempts}")
+            start_bin = find_valid_start_bin(graph)
+            print(f"Starting from bin: {start_bin}")
+            
+            walk_bins = [start_bin]
+            current_bin = start_bin
 
-        for step in range(steps):
-            if step % 10 == 0:
-                print(f"Step {step} / {steps}")
+            for step in range(steps):
+                if step % 10 == 0:
+                    print(f"Step {step} / {steps}")
 
-            neighbors = []
-            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                x = clean_bin(current_bin[0])
-                y = clean_bin(current_bin[1])
-                if x is not None and y is not None:
-                    new_x, new_y = x + dx, y + dy
-                    if (new_x, new_y) in graph:
-                        neighbors.append((new_x, new_y))
+                neighbors = []
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    x = clean_bin(current_bin[0])
+                    y = clean_bin(current_bin[1])
+                    if x is not None and y is not None:
+                        new_x, new_y = x + dx, y + dy
+                        if (new_x, new_y) in graph:
+                            neighbors.append((new_x, new_y))
 
-            if not neighbors:
-                print(f"No valid neighbors found at step {step}. Stopping walk.")
-                break
+                if not neighbors:
+                    print(f"No valid neighbors found at step {step}. Restarting walk.")
+                    break
 
-            next_bin = random.choice(neighbors)
-            walk_bins.append(next_bin)
-            current_bin = next_bin
+                next_bin = random.choice(neighbors)
+                walk_bins.append(next_bin)
+                current_bin = next_bin
 
+            if len(walk_bins) == steps + 1:
+                print("Successful walk completed!")
+                return walk_bins
+
+        print(f"Failed to complete a full walk after {max_attempts} attempts.")
         return walk_bins
 
-    start_bin = find_valid_start_bin(graph)
-    print(f"Starting from bin: {start_bin}")
-
-    walk_bins = random_walk(graph, start_bin, steps)
+    walk_bins = random_walk(graph, steps, max_attempts)
     print("Random walk done!")
 
     fig, ax = plt.subplots()
@@ -722,7 +728,7 @@ def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", i
     ani.save(save_path, writer=writer)
     print(f"Animation saved at {save_path}")
     plt.close(fig)
-       
+
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
 
