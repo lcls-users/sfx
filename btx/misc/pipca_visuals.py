@@ -669,7 +669,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
         img = img.reshape((a, b, c))  # Assuming a, b, c are defined
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         
-        if vmin and vmax:
+        if vmin is not None and vmax is not None:
             im = grid[i].imshow(img, cmap='viridis',vmin=vmin,vmax=vmax)
         else:
             im = grid[i].imshow(img, cmap='viridis')
