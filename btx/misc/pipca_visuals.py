@@ -660,7 +660,10 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
     
     random_walk_animation(img_binned, (0, 0), 100, save_path="averaged_imgs_t_sne.gif", interval=500, fps=2)
     
-def random_walk_animation(graph, start_bin, steps, save_path="random_walk_animation.gif", interval=500, fps=2):    
+def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", interval=500, fps=2):
+    def find_valid_start_bin(graph):
+        return next(iter(graph.keys()))
+
     def random_walk(graph, start_bin, steps):
         print("Starting random walk...")
         walk_bins = [start_bin]
@@ -669,28 +672,33 @@ def random_walk_animation(graph, start_bin, steps, save_path="random_walk_animat
         for _ in range(steps):
             if _ % 10 == 0:
                 print(f"Step {_} / {steps}")
-            # Trouver les voisins possibles (bins adjacents)
+            # Find possible neighbors (adjacent bins)
             neighbors = [
                 (current_bin[0] + dx, current_bin[1] + dy)
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Haut, Bas, Gauche, Droite
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Up, Down, Left, Right
                 if (current_bin[0] + dx, current_bin[1] + dy) in graph
             ]
 
-            # Si aucun voisin disponible, arrêter le walk
+            # If no available neighbors, stop the walk
             if not neighbors:
                 break
 
-            # Choisir un voisin aléatoire
+            # Choose a random neighbor
             next_bin = random.choice(neighbors)
             walk_bins.append(next_bin)
             current_bin = next_bin
 
         return walk_bins
 
-    # Effectuer un random walk
+    # Find a valid starting bin
+    start_bin = find_valid_start_bin(graph)
+    print(f"Starting from bin: {start_bin}")
+
+    # Perform a random walk
     walk_bins = random_walk(graph, start_bin, steps)
     print("Random walk done!")
-    # Créer l'animation pour visualiser le random walk
+
+    # Create the animation to visualize the random walk
     fig, ax = plt.subplots()
 
     def update(frame):
@@ -702,7 +710,7 @@ def random_walk_animation(graph, start_bin, steps, save_path="random_walk_animat
 
     ani = animation.FuncAnimation(fig, update, frames=len(walk_bins), interval=interval)
 
-    # Sauvegarder l'animation en GIF
+    # Save the animation as a GIF
     ani.save(save_path, writer="pillow", fps=fps)
     print(f"Animation saved at {save_path}")
     plt.close(fig)
