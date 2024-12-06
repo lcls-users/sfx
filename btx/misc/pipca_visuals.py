@@ -600,7 +600,7 @@ def create_average_img(proj_binned, V):
     
     return img_binned
 
-def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=0,vmax=1000):
+def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=None,vmax=None):
     img_binned_tsne = {}
     img_binned_umap = {}
 
@@ -669,7 +669,10 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
         img = img.reshape((a, b, c))  # Assuming a, b, c are defined
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         
-        im = grid[i].imshow(img, cmap='viridis',vmin=vmin,vmax=vmax)
+        if vmin and vmax:
+            im = grid[i].imshow(img, cmap='viridis',vmin=vmin,vmax=vmax)
+        else:
+            im = grid[i].imshow(img, cmap='viridis')
         grid[i].set_title(f"Bin: {key}")
         grid[i].axis('off')
 
