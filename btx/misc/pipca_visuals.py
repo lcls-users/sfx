@@ -669,7 +669,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
         img = img.reshape((a, b, c))  # Assuming a, b, c are defined
         img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
         
-        im = grid[i].imshow(img, cmap='viridis')
+        im = grid[i].imshow(img, cmap='viridis',vmin=0,vmax=300)
         grid[i].set_title(f"Bin: {key}")
         grid[i].axis('off')
 
