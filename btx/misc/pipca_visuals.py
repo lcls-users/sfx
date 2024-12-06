@@ -585,26 +585,45 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
         index_df.to_csv(filename, index=False, header=False)
         print(f"Index by cluster saved in {filename}")
 
-def averaged_imgs_t_sne(filename, type_of_embedding='t-SNE'):
+def create_average_img(proj_binned, V):
+    img_binned = {}
+    V = np.array(V)
+    
+    for key, proj in proj_binned.items():
+        avg_img = []
+        for rank in range(V.shape[0]):
+            panel = np.dot(proj, V[rank].T)
+            avg_img.append(panel)
+
+        img_binned[key] = np.array(avg_img)
+    
+    return img_binned
+    
+def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
     img_binned_tsne = {}
     img_binned_umap = {}
 
     # Open the HDF5 file in read mode
     with h5py.File(f"binned_data_{num_components}_{num_images}.h5", "r") as hdf:
         # Access the 'img_binned_tsne' group
-        tsne_group = hdf['img_binned_tsne']
+        tsne_group = hdf['proj_binned_tsne']
         
         # Loop through all datasets in 'img_binned_tsne' and populate the dictionary
         for dataset_name in tsne_group.keys():
             img_binned_tsne[dataset_name] = tsne_group[dataset_name][()]  # Load dataset into memory
         
         # Access the 'img_binned_umap' group
-        umap_group = hdf['img_binned_umap']
+        umap_group = hdf['proj_binned_umap']
         
         # Loop through all datasets in 'img_binned_umap' and populate the dictionary
         for dataset_name in umap_group.keys():
             img_binned_umap[dataset_name] = umap_group[dataset_name][()]
 
+    with h5py.File(model_filename, 'r') as f:
+        V = f['V']
+        img_binned_tsne = create_average_img(img_binned_tsne, V)
+        img_binned_umap = create_average_img(img_binned_umap, V)
+    
     if type_of_embedding == 't-SNE':
         img_binned = img_binned_tsne
         title = 't-SNE Averaged Images'

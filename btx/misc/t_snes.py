@@ -267,20 +267,6 @@ def create_average_proj(proj_list, bins):
     
     return proj_binned
 
-def create_average_img(proj_binned, V):
-    img_binned = {}
-    V = np.array(V)
-    
-    for key, proj in proj_binned.items():
-        avg_img = []
-        for rank in range(V.shape[0]):
-            panel = np.dot(proj, V[rank].T)
-            avg_img.append(panel)
-
-        img_binned[key] = np.array(avg_img)
-    
-    return img_binned
-
 def unpack_ipca_pytorch_model_file(filename):
     """
     Reads PiPCA model information from h5 file and returns its contents
@@ -441,24 +427,19 @@ if __name__ == "__main__":
 
     proj_binned_tsne = create_average_proj(list_proj_rank, bins_tsne)
     proj_binned_umap = create_average_proj(list_proj_rank, bins_umap)
-
-    with h5py.File(filename, 'r') as f:
-        V = f['V']
-        img_binned_tsne = create_average_img(proj_binned_tsne, V)
-        img_binned_umap = create_average_img(proj_binned_umap, V)
     
     print("Binning done",flush=True)
     print("Saving data...",flush=True)
 
     with h5py.File(f"binned_data_{num_components}_{num_images}.h5", "w") as hdf:
-        tsne_group = hdf.create_group('img_binned_tsne')
-        for key, value in img_binned_tsne.items():
+        tsne_group = hdf.create_group('proj_binned_tsne')
+        for key, value in proj_binned_tsne.items():
             if isinstance(key, tuple):
                 key = "_".join(map(str, key))
             tsne_group.create_dataset(key, data=value)
         
-        umap_group = hdf.create_group('img_binned_umap')
-        for key, value in img_binned_umap.items():
+        umap_group = hdf.create_group('proj_binned_umap')
+        for key, value in proj_binned_umap.items():
             if isinstance(key, tuple):
                 key = "_".join(map(str, key))
             umap_group.create_dataset(key, data=value)
@@ -466,8 +447,6 @@ if __name__ == "__main__":
     data = {"embeddings_tsne": embeddings_tsne, "embeddings_umap": embeddings_umap, "S": S, "embeddings_tsne_rank": embeddings_tsne_rank, "embeddings_umap_rank": embeddings_umap_rank}
     with open(f"embedding_data_{num_components}_{num_images}.pkl", "wb") as f:
         pickle.dump(data, f)
-    
-    
     
     print("Data saved",flush=True)
     print("All done, closing server...",flush=True)
