@@ -593,9 +593,11 @@ def create_average_img(proj_binned, V):
         avg_img = []
         for rank in range(V.shape[0]):
             panel = np.dot(proj, V[rank].T)
+            print("Shape of average image on a panel: ",panel.shape)
             avg_img.append(panel)
 
         img_binned[key] = np.array(avg_img)
+        print("Shape of average image: ",img_binned[key].shape)
     
     return img_binned
 
