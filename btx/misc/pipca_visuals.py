@@ -624,6 +624,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
 
     with h5py.File(model_filename, 'r') as f:
         V = f['V']
+        num_components = V.shape[2]
         img_binned_tsne = create_average_img(img_binned_tsne, V)
         print("t-SNE Averaged Images done!")
         img_binned_umap = create_average_img(img_binned_umap, V)
@@ -679,7 +680,7 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE'):
     plt.tight_layout()
     
     # Save the figure
-    save_path = f"{type_of_embedding.lower()}_binned_images.png"
+    save_path = f"{type_of_embedding.lower()}_binned_images_{num_components}.png"
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     print(f"Graph saved at {save_path}", flush=True)
     plt.close(fig)
