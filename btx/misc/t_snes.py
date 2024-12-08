@@ -175,13 +175,11 @@ def process(rank, proj ,device_list,num_tries,threshold):
 
     return embedding_tsne, embedding_umap
 
-def get_projectors(rank,imgs,V,device_list,mu):
+def get_projectors(rank,imgs,V,device_list):
     V = torch.tensor(V,device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
     mu = torch.tensor(mu,device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
     imgs = torch.tensor(imgs.reshape(imgs.shape[0],-1),device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
-    imgs = imgs - mu[rank]
-    proj = torch.mm(imgs,V)
-    proj = proj + torch.mm(mu[rank],V) ##deleted the normalization step
+    proj = torch.mm(imgs,V) ##deleted the normalization step
     return proj.cpu().detach().numpy()
 
 def plot_scatters(embedding, type_of_embedding):
@@ -391,9 +389,8 @@ if __name__ == "__main__":
             starting_time = time.time()
             with Pool(processes=num_gpus) as pool:
                 with h5py.File(filename, 'r') as f:
-                    V = f['V']
-                    mu = f['mu'][:]    
-                    proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list,mu) for rank in range(num_gpus)])
+                    V = f['V'] 
+                    proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list) for rank in range(num_gpus)])
             
             print("Shape of projector on rank 0",proj[0].shape)
             rank_proj_list = [u for u in proj]
