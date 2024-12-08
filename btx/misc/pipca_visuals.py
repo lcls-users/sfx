@@ -704,76 +704,61 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
     print(f"Graph saved at {save_path}", flush=True)
     plt.close(fig)
 
-def random_walk_animation(image_dir, steps, save_path="random_walk_animation.gif", interval=500, fps=2, max_attempts=10):
-
-    image_files = [f for f in os.listdir(image_dir) if f.endswith('.png')]
+def random_walk_animation(image_path, steps=50, save_path="random_walk_animation.gif", interval=500, fps=2):
+    # Charger l'image principale
+    img = Image.open(image_path)
+    img_array = np.array(img)
     
-    def parse_bin_from_filename(filename):
-        # Extract bin coordinates from filename
-        parts = filename.split('_')
-        for part in reversed(parts):
-            if ',' in part:
-                try:
-                    return tuple(map(int, part.split(',')))
-                except ValueError:
-                    continue
-        # If no valid bin coordinates found, return a default value or raise an exception
-        return (-1, -1)  # or raise ValueError("No valid bin coordinates found in filename")
+    # Calculer la taille de chaque bin
+    height, width = img_array.shape[:2]
+    bin_height = height // 20  # 20x20 grille visible dans l'image
+    bin_width = width // 22    # ~22 colonnes visibles
     
-    # Create a dictionary mapping bin coordinates to filenames
-    bin_to_file = {parse_bin_from_filename(f): f for f in image_files}
+    # Créer une liste de positions valides (non blanches)
+    valid_positions = []
+    for i in range(20):
+        for j in range(22):
+            y = i * bin_height
+            x = j * bin_width
+            bin_img = img_array[y:y+bin_height, x:x+bin_width]
+            if not np.all(bin_img > 250):  # Vérifier si le bin n'est pas blanc
+                valid_positions.append((i, j))
     
-    def find_valid_start_bin():
-        return random.choice(list(bin_to_file.keys()))
+    # Générer un chemin aléatoire
+    current_pos = random.choice(valid_positions)
+    path = [current_pos]
     
-    def random_walk(steps, max_attempts):
-        for attempt in range(max_attempts):
-            start_bin = find_valid_start_bin()
-            walk_bins = [start_bin]
-            current_bin = start_bin
-            
-            for _ in range(steps):
-                neighbors = []
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    new_x, new_y = current_bin[0] + dx, current_bin[1] + dy
-                    if (new_x, new_y) in bin_to_file:
-                        neighbors.append((new_x, new_y))
-                
-                if not neighbors:
-                    break
-                
-                next_bin = random.choice(neighbors)
-                walk_bins.append(next_bin)
-                current_bin = next_bin
-            
-            if len(walk_bins) == steps + 1:
-                return walk_bins
+    for _ in range(steps):
+        neighbors = []
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            new_pos = (current_pos[0] + dx, current_pos[1] + dy)
+            if new_pos in valid_positions:
+                neighbors.append(new_pos)
         
-        return walk_bins
+        if not neighbors:
+            break
+            
+        current_pos = random.choice(neighbors)
+        path.append(current_pos)
     
-    walk_bins = random_walk(steps, max_attempts)
-    
+    # Créer l'animation
     fig, ax = plt.subplots()
     
     def update(frame):
-        bin_coordinates = walk_bins[frame]
         ax.clear()
-        if bin_coordinates in bin_to_file:
-            img_path = os.path.join(image_dir, bin_to_file[bin_coordinates])
-            img = Image.open(img_path)
-            ax.imshow(np.array(img))
-            ax.set_title(f"Bin: {bin_coordinates}")
-        else:
-            ax.text(0.5, 0.5, "No image for this bin", ha='center', va='center')
-            ax.set_title(f"Empty Bin: {bin_coordinates}")
-        ax.axis("off")
+        i, j = path[frame]
+        y = i * bin_height
+        x = j * bin_width
+        bin_img = img_array[y:y+bin_height, x:x+bin_width]
+        ax.imshow(bin_img)
+        ax.set_title(f"Position: ({i}, {j})")
+        ax.axis('off')
         return ax.artists
     
-    ani = animation.FuncAnimation(fig, update, frames=len(walk_bins), interval=interval, blit=True)
-    
+    ani = animation.FuncAnimation(fig, update, frames=len(path), interval=interval, blit=True)
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
-    plt.close(fig)
+    plt.close()
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
