@@ -711,8 +711,8 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
     
     # Calculer la taille de chaque bin
     height, width = img_array.shape[:2]
-    bin_height = height // 20  # 20x20 grille visible dans l'image
-    bin_width = width // 22    # ~22 colonnes visibles
+    bin_height = height // 20
+    bin_width = width // 22
     
     # Créer une liste de positions valides (non blanches)
     valid_positions = []
@@ -742,7 +742,8 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
         path.append(current_pos)
     
     # Créer l'animation
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(4, 4))
+    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
     
     def update(frame):
         ax.clear()
@@ -750,8 +751,7 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
         y = i * bin_height
         x = j * bin_width
         bin_img = img_array[y:y+bin_height, x:x+bin_width]
-        ax.imshow(bin_img)
-        ax.set_title(f"Position: ({i}, {j})")
+        ax.imshow(bin_img, interpolation='nearest')
         ax.axis('off')
         return ax.artists
     
