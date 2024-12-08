@@ -703,61 +703,66 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
     print(f"Graph saved at {save_path}", flush=True)
     plt.close(fig)
 
-    random_walk_animation(img_binned, steps=100, save_path="random_walk_animation.gif")
-
-def random_walk_animation(graph, steps, save_path="random_walk_animation.gif", interval=500, fps=2, max_attempts=10):
-    def find_valid_start_bin(graph):
-        return random.choice(list(graph.keys()))
-
-    def clean_bin(bin_value):
-        cleaned = ''.join(char for char in str(bin_value) if char.isdigit())
-        return int(cleaned) if cleaned else None
-
-    def random_walk(graph, steps, max_attempts):
+def random_walk_animation(image_dir, steps, save_path="random_walk_animation.gif", interval=500, fps=2, max_attempts=10):
+    # Get list of image files
+    image_files = [f for f in os.listdir(image_dir) if f.endswith('.png')]
+    
+    def parse_bin_from_filename(filename):
+        # Extract bin coordinates from filename
+        parts = filename.split('_')
+        return tuple(map(int, parts[-2].split(',')))
+    
+    # Create a dictionary mapping bin coordinates to filenames
+    bin_to_file = {parse_bin_from_filename(f): f for f in image_files}
+    
+    def find_valid_start_bin():
+        return random.choice(list(bin_to_file.keys()))
+    
+    def random_walk(steps, max_attempts):
         for attempt in range(max_attempts):
-            start_bin = find_valid_start_bin(graph)
+            start_bin = find_valid_start_bin()
             walk_bins = [start_bin]
             current_bin = start_bin
-
+            
             for _ in range(steps):
                 neighbors = []
                 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    x, y = clean_bin(current_bin[0]), clean_bin(current_bin[1])
-                    if x is not None and y is not None:
-                        new_x, new_y = x + dx, y + dy
-                        if (new_x, new_y) in graph:
-                            neighbors.append((new_x, new_y))
-
+                    new_x, new_y = current_bin[0] + dx, current_bin[1] + dy
+                    if (new_x, new_y) in bin_to_file:
+                        neighbors.append((new_x, new_y))
+                
                 if not neighbors:
                     break
-
+                
                 next_bin = random.choice(neighbors)
                 walk_bins.append(next_bin)
                 current_bin = next_bin
-
+            
             if len(walk_bins) == steps + 1:
                 return walk_bins
-
+        
         return walk_bins
-
-    walk_bins = random_walk(graph, steps, max_attempts)
-
+    
+    walk_bins = random_walk(steps, max_attempts)
+    
     fig, ax = plt.subplots()
-
+    
     def update(frame):
         bin_coordinates = walk_bins[frame]
         ax.clear()
-        if bin_coordinates in graph:
-            ax.imshow(graph[bin_coordinates], cmap="viridis")
+        if bin_coordinates in bin_to_file:
+            img_path = os.path.join(image_dir, bin_to_file[bin_coordinates])
+            img = Image.open(img_path)
+            ax.imshow(np.array(img))
             ax.set_title(f"Bin: {bin_coordinates}")
         else:
-            ax.text(0.5, 0.5, "No data for this bin", ha='center', va='center')
+            ax.text(0.5, 0.5, "No image for this bin", ha='center', va='center')
             ax.set_title(f"Empty Bin: {bin_coordinates}")
         ax.axis("off")
         return ax.artists
-
+    
     ani = animation.FuncAnimation(fig, update, frames=len(walk_bins), interval=interval, blit=True)
-
+    
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     plt.close(fig)
