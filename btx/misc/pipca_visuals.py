@@ -759,6 +759,7 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     plt.close()
+    print(f"Animation saved at {save_path}")
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
