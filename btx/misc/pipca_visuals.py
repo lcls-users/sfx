@@ -704,10 +704,8 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
     print(f"Graph saved at {save_path}", flush=True)
     plt.close(fig)
 
-def random_walk_animation(image_dir, steps, save_path="random_walk_animation.gif", interval=500, fps=2, max_attempts=10):
-    # Get list of image files
-    image_files = [f for f in os.listdir(image_dir) if f.endswith('.png')]
-    
+def random_walk_animation(image_files, steps, save_path="random_walk_animation.gif", interval=500, fps=2, max_attempts=10):
+
     def parse_bin_from_filename(filename):
         # Extract bin coordinates from filename
         parts = filename.split('_')
