@@ -709,7 +709,14 @@ def random_walk_animation(image_files, steps, save_path="random_walk_animation.g
     def parse_bin_from_filename(filename):
         # Extract bin coordinates from filename
         parts = filename.split('_')
-        return tuple(map(int, parts[-2].split(',')))
+        for part in reversed(parts):
+            if ',' in part:
+                try:
+                    return tuple(map(int, part.split(',')))
+                except ValueError:
+                    continue
+        # If no valid bin coordinates found, return a default value or raise an exception
+        return (-1, -1)  # or raise ValueError("No valid bin coordinates found in filename")
     
     # Create a dictionary mapping bin coordinates to filenames
     bin_to_file = {parse_bin_from_filename(f): f for f in image_files}
