@@ -721,7 +721,7 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
             y = i * bin_height
             x = j * bin_width
             bin_img = img_array[y:y+bin_height, x:x+bin_width]
-            if not np.all(bin_img > 250):  # Vérifier si le bin n'est pas blanc
+            if not np.all(bin_img > 250):
                 valid_positions.append((i, j))
     
     # Générer un chemin aléatoire
@@ -741,9 +741,11 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
         current_pos = random.choice(neighbors)
         path.append(current_pos)
     
-    # Créer l'animation
-    fig, ax = plt.subplots(figsize=(4, 4))
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    # Créer l'animation avec une figure ajustée
+    fig = plt.figure(frameon=False)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
     
     def update(frame):
         ax.clear()
@@ -752,14 +754,14 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
         x = j * bin_width
         bin_img = img_array[y:y+bin_height, x:x+bin_width]
         ax.imshow(bin_img, interpolation='nearest')
-        ax.axis('off')
+        ax.set_axis_off()
         return ax.artists
     
     ani = animation.FuncAnimation(fig, update, frames=len(path), interval=interval, blit=True)
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     plt.close()
-    print(f"Animation saved at {save_path}")
+    print(f"Animation saved at {save_path}")  
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
