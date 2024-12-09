@@ -688,55 +688,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
                 dpi=300, bbox_inches='tight')
     plt.close()
 
-"""def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2):
-    # Load bin data
-    bin_data = np.load('bin_data.npy', allow_pickle=True).item()
-    keys = list(bin_data.keys())
-    grid_size = int(np.ceil(np.sqrt(len(keys))))
-    
-    # Generate random walk path
-    current_idx = random.randrange(len(keys))
-    path = [current_idx]
-    
-    for _ in range(steps):
-        # Calculate valid neighbors (up, down, left, right)
-        row, col = path[-1] // grid_size, path[-1] % grid_size
-        possible_moves = []
-        
-        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
-            new_row, new_col = row + dr, col + dc
-            if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
-                new_idx = new_row * grid_size + new_col
-                if new_idx < len(keys):
-                    possible_moves.append(new_idx)
-        
-        if not possible_moves:
-            break
-            
-        next_idx = random.choice(possible_moves)
-        path.append(next_idx)
-    
-    # Create animation
-    fig = plt.figure(frameon=False)
-    ax = plt.Axes(fig, [0., 0., 1., 1.])
-    ax.set_axis_off()
-    fig.add_axes(ax)
-    
-    def update(frame):
-        ax.clear()
-        key = keys[path[frame]]
-        ax.imshow(bin_data[key], cmap='viridis')
-        ax.set_axis_off()
-        return ax.artists
-    
-    ani = animation.FuncAnimation(fig, update, frames=len(path), 
-                                interval=interval, blit=True)
-    writer = animation.PillowWriter(fps=fps)
-    ani.save(save_path, writer=writer)
-    plt.close()
-"""
-
-def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2, fade_frames=5):
+"""def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2, fade_frames=5):
     # Load bin data
     bin_data = np.load('bin_data.npy', allow_pickle=True).item()
     keys = list(bin_data.keys())
@@ -803,6 +755,115 @@ def random_walk_animation(steps=50, save_path="random_walk_animation.gif", inter
         
         ax.set_axis_off()
         return ax.artists
+    
+    total_frames = (len(path) - 1) * (fade_frames + 1) + 1
+    ani = animation.FuncAnimation(fig, update, 
+                                frames=total_frames, 
+                                interval=interval, 
+                                blit=True)
+    
+    writer = animation.PillowWriter(fps=fps)
+    ani.save(save_path, writer=writer)
+    plt.close()"""
+
+def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2, fade_frames=5):
+    # Load bin data
+    bin_data = np.load('bin_data.npy', allow_pickle=True).item()
+    keys = list(bin_data.keys())
+    grid_size = int(np.ceil(np.sqrt(len(keys))))
+    
+    # Generate random walk path
+    current_idx = random.randrange(len(keys))
+    path = [current_idx]
+    
+    for _ in range(steps):
+        row, col = path[-1] // grid_size, path[-1] % grid_size
+        possible_moves = []
+        
+        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
+            new_row, new_col = row + dr, col + dc
+            if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
+                new_idx = new_row * grid_size + new_col
+                if new_idx < len(keys):
+                    possible_moves.append(new_idx)
+        
+        if not possible_moves:
+            break
+            
+        next_idx = random.choice(possible_moves)
+        path.append(next_idx)
+    
+    # Create figure with two subplots side by side
+    fig = plt.figure(figsize=(20, 10))
+    gs = GridSpec(1, 2, width_ratios=[1, 1])
+    
+    # Left subplot for detector image
+    ax_det = fig.add_subplot(gs[0])
+    ax_det.set_axis_off()
+    
+    # Right subplot for position visualization
+    ax_pos = fig.add_subplot(gs[1])
+    ax_pos.set_axis_off()
+    
+    def update(frame):
+        # Clear both axes
+        ax_det.clear()
+        ax_pos.clear()
+        
+        # Calculate which transition we're in
+        main_frame = frame // (fade_frames + 1)
+        sub_frame = frame % (fade_frames + 1)
+        
+        # Update detector image (left subplot)
+        if main_frame >= len(path) - 1:
+            key = keys[path[-1]]
+            img = bin_data[key]
+        else:
+            current_key = keys[path[main_frame]]
+            next_key = keys[path[main_frame + 1]]
+            
+            current_img = bin_data[current_key]
+            next_img = bin_data[next_key]
+            
+            alpha = sub_frame / (fade_frames + 1)
+            img = (1 - alpha) * current_img + alpha * next_img
+        
+        ax_det.imshow(img, cmap='viridis')
+        
+        # Add bin coordinates
+        row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
+        ax_det.text(0.02, 0.98, f'Bin: ({row}, {col})', 
+                   transform=ax_det.transAxes, 
+                   color='white', 
+                   fontsize=12,
+                   verticalalignment='top')
+        
+        # Update position visualization (right subplot)
+        # Create full grid visualization
+        full_grid = np.zeros((grid_size, grid_size))
+        
+        # Mark all valid positions
+        for idx, key in enumerate(keys):
+            r, c = idx // grid_size, idx % grid_size
+            full_grid[r, c] = 0.3  # Light marking for valid positions
+            
+        # Mark path
+        for idx in path[:main_frame+1]:
+            r, c = idx // grid_size, idx % grid_size
+            full_grid[r, c] = 0.7  # Stronger marking for path
+            
+        # Mark current position
+        r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
+        full_grid[r, c] = 1.0  # Brightest marking for current position
+        
+        ax_pos.imshow(full_grid, cmap='viridis')
+        ax_pos.grid(True, color='white', alpha=0.3)
+        
+        # Set both axes off
+        ax_det.set_axis_off()
+        ax_pos.set_axis_off()
+        
+        return ax_det.artists + ax_pos.artists
     
     total_frames = (len(path) - 1) * (fade_frames + 1) + 1
     ani = animation.FuncAnimation(fig, update, 
