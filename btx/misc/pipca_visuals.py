@@ -604,7 +604,7 @@ def create_average_img(proj_binned, V):
     print("Number of bins:",count)
     return img_binned
 
-def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=None,vmax=None):
+"""def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=None,vmax=None):
     img_binned_tsne = {}
     img_binned_umap = {}
 
@@ -761,7 +761,139 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
     ani.save(save_path, writer=writer)
     plt.close()
     print(f"Animation saved at {save_path}")
+"""
 
+def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmin=None, vmax=None):
+    img_binned_tsne = {}
+    img_binned_umap = {}
+
+    # Load data from HDF5 files
+    with h5py.File(filename, "r") as hdf:
+        tsne_group = hdf['proj_binned_tsne']
+        for dataset_name in tsne_group.keys():
+            img_binned_tsne[dataset_name] = tsne_group[dataset_name][()]
+        
+        umap_group = hdf['proj_binned_umap']
+        for dataset_name in umap_group.keys():
+            img_binned_umap[dataset_name] = umap_group[dataset_name][()]
+
+    # Process images
+    with h5py.File(model_filename, 'r') as f:
+        V = f['V']
+        num_components = V.shape[2]
+        img_binned_tsne = create_average_img(img_binned_tsne, V)
+        img_binned_umap = create_average_img(img_binned_umap, V)
+    
+    # Select embedding type
+    if type_of_embedding == 't-SNE':
+        img_binned = img_binned_tsne
+        title = 't-SNE Averaged Images'
+    else:
+        img_binned = img_binned_umap
+        title = 'UMAP Averaged Images'
+    
+    # Setup detector
+    exp = 'mfxp23120'
+    run = 91
+    det_type = 'epix10k2M'
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    a, b, c = psi.det.shape()
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+    
+    # Create image grid
+    keys = list(img_binned.keys())
+    grid_size = int(np.ceil(np.sqrt(len(keys))))
+    
+    # Process and store individual bins
+    bin_data = {}
+    for key in keys:
+        img = img_binned[key]
+        img = img.reshape((a, b, c))
+        img = assemble_image_stack_batch(img, pixel_index_map)
+        bin_data[key] = img
+    
+    # Save bin data for animation
+    np.save('bin_data.npy', bin_data)
+    
+    # Create visualization
+    fig = plt.figure(figsize=(20, 20))
+    grid = ImageGrid(fig, 111,
+                    nrows_ncols=(grid_size, grid_size),
+                    axes_pad=0.1,
+                    share_all=True,
+                    cbar_location="right",
+                    cbar_mode="single",
+                    cbar_size="5%",
+                    cbar_pad=0.05)
+
+    inf_vmin = None
+    sup_vmax = None
+
+    for i, key in enumerate(keys):
+        if vmin is not None and vmax is not None:
+            im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
+        else:
+            im = grid[i].imshow(bin_data[key], cmap='viridis')
+            val1, val2 = im.get_clim()
+            if inf_vmin is None or val1 < inf_vmin:
+                inf_vmin = val1
+            if sup_vmax is None or val2 > sup_vmax:
+                sup_vmax = val2
+        grid[i].axis('off')
+
+    plt.colorbar(im, cax=grid.cbar_axes[0])
+    plt.suptitle(title, fontsize=16)
+    plt.savefig(f"{type_of_embedding.lower()}_binned_images_{num_components}.png", 
+                dpi=300, bbox_inches='tight')
+    plt.close()
+
+def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2):
+    # Load bin data
+    bin_data = np.load('bin_data.npy', allow_pickle=True).item()
+    keys = list(bin_data.keys())
+    grid_size = int(np.ceil(np.sqrt(len(keys))))
+    
+    # Generate random walk path
+    current_idx = random.randrange(len(keys))
+    path = [current_idx]
+    
+    for _ in range(steps):
+        # Calculate valid neighbors (up, down, left, right)
+        row, col = path[-1] // grid_size, path[-1] % grid_size
+        possible_moves = []
+        
+        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
+            new_row, new_col = row + dr, col + dc
+            if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
+                new_idx = new_row * grid_size + new_col
+                if new_idx < len(keys):
+                    possible_moves.append(new_idx)
+        
+        if not possible_moves:
+            break
+            
+        next_idx = random.choice(possible_moves)
+        path.append(next_idx)
+    
+    # Create animation
+    fig = plt.figure(frameon=False)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    
+    def update(frame):
+        ax.clear()
+        key = keys[path[frame]]
+        ax.imshow(bin_data[key], cmap='viridis')
+        ax.set_axis_off()
+        return ax.artists
+    
+    ani = animation.FuncAnimation(fig, update, frames=len(path), 
+                                interval=interval, blit=True)
+    writer = animation.PillowWriter(fps=fps)
+    ani.save(save_path, writer=writer)
+    plt.close()
+    
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
 
