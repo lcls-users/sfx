@@ -8,6 +8,7 @@ import pickle
 import xarray as xr
 from mpl_toolkits.axes_grid1 import ImageGrid
 import os
+from matplotlib.gridspec import GridSpec
 
 import csv 
 from sklearn.cluster import DBSCAN
@@ -874,7 +875,7 @@ def random_walk_animation(steps=50, save_path="random_walk_animation.gif", inter
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     plt.close()
-    
+
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
 
