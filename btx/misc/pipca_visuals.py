@@ -604,165 +604,6 @@ def create_average_img(proj_binned, V):
     print("Number of bins:",count)
     return img_binned
 
-"""def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=None,vmax=None):
-    img_binned_tsne = {}
-    img_binned_umap = {}
-
-    # Open the HDF5 file in read mode
-    with h5py.File(filename, "r") as hdf:
-        # Access the 'img_binned_tsne' group
-        tsne_group = hdf['proj_binned_tsne']
-        
-        # Loop through all datasets in 'img_binned_tsne' and populate the dictionary
-        for dataset_name in tsne_group.keys():
-            img_binned_tsne[dataset_name] = tsne_group[dataset_name][()]  # Load dataset into memory
-        
-        # Access the 'img_binned_umap' group
-        umap_group = hdf['proj_binned_umap']
-        
-        # Loop through all datasets in 'img_binned_umap' and populate the dictionary
-        for dataset_name in umap_group.keys():
-            img_binned_umap[dataset_name] = umap_group[dataset_name][()]
-
-    print("Gathering average projectors done!")
-
-    with h5py.File(model_filename, 'r') as f:
-        V = f['V']
-        num_components = V.shape[2]
-        img_binned_tsne = create_average_img(img_binned_tsne, V)
-        print("t-SNE Averaged Images done!")
-        img_binned_umap = create_average_img(img_binned_umap, V)
-        print("UMAP Averaged Images done!")
-    
-    if type_of_embedding == 't-SNE':
-        img_binned = img_binned_tsne
-        title = 't-SNE Averaged Images'
-    else:  # UMAP
-        img_binned = img_binned_umap
-        title = 'UMAP Averaged Images'
-    
-    fig = make_subplots(rows=1, cols=1, subplot_titles=[title])
-    
-    ## ICI CA VA HARDCODER DE FOU
-    exp = 'mfxp23120'
-    run = 91
-    det_type = 'epix10k2M'
-    ##
-    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
-    a,b,c = psi.det.shape()
-    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
-    
-        # Determine the grid size
-    keys = list(img_binned.keys())
-    grid_size = int(np.ceil(np.sqrt(len(keys))))
-
-    # Create a figure with a grid of subplots
-    fig = plt.figure(figsize=(20, 20))
-    grid = ImageGrid(fig, 111,
-                     nrows_ncols=(grid_size, grid_size),
-                     axes_pad=0.1,
-                     share_all=True,
-                     cbar_location="right",
-                     cbar_mode="single",
-                     cbar_size="5%",
-                     cbar_pad=0.05)
-
-    print("Creating graph...", flush=True)
-    inf_vmin = None
-    sup_vmax = None
-
-    for i, key in enumerate(keys):
-        img = img_binned[key]
-        img = img.reshape((a, b, c))  # Assuming a, b, c are defined
-        img = assemble_image_stack_batch(img, retrieve_pixel_index_map(psi.det.geometry(psi.run)))
-        
-        if vmin is not None and vmax is not None:
-            im = grid[i].imshow(img, cmap='viridis',vmin=vmin,vmax=vmax)
-        else:
-            im = grid[i].imshow(img, cmap='viridis')
-            val1,val2 = im.get_clim() 
-            if inf_vmin is None or val1 < inf_vmin:
-                inf_vmin = val1
-            if sup_vmax is None or val2 > sup_vmax:
-                sup_vmax = val2
-
-        grid[i].set_title(f"Bin: {key}")
-        grid[i].axis('off')
-    
-    if vmin is None and vmax is None:
-        print (inf_vmin,sup_vmax)
-
-    # Add a colorbar
-    plt.colorbar(im, cax=grid.cbar_axes[0])
-
-    plt.suptitle(title, fontsize=16)
-    plt.tight_layout()
-    
-    # Save the figure
-    save_path = f"{type_of_embedding.lower()}_binned_images_{num_components}.png"
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    print(f"Graph saved at {save_path}", flush=True)
-    plt.close(fig)
-
-def random_walk_animation(image_path, steps=50, save_path="random_walk_animation.gif", interval=500, fps=2):
-    # Load the main image
-    img = Image.open(image_path)
-    img_array = np.array(img)
-    
-    # Calculate dimensions of actual bins (excluding white space)
-    height, width = img_array.shape[:2]
-    n_rows, n_cols = 20, 22  # Grid dimensions
-    
-    # Create a mask for non-white regions
-    valid_positions = []
-    bin_images = {}  # Store actual bin images
-    
-    for i in range(n_rows):
-        for j in range(n_cols):
-            # Find the actual bin content by detecting non-white regions
-            region = img_array[i*height//n_rows:(i+1)*height//n_rows, 
-                             j*width//n_cols:(j+1)*width//n_cols]
-            if not np.all(region > 250):  # If not all white
-                valid_positions.append((i, j))
-                bin_images[(i, j)] = region
-    
-    # Generate random walk path
-    current_pos = random.choice(valid_positions)
-    path = [current_pos]
-    
-    for _ in range(steps):
-        neighbors = []
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            new_pos = (current_pos[0] + dx, current_pos[1] + dy)
-            if new_pos in valid_positions:
-                neighbors.append(new_pos)
-        
-        if not neighbors:
-            break
-            
-        current_pos = random.choice(neighbors)
-        path.append(current_pos)
-    
-    # Create animation
-    fig = plt.figure(frameon=False)
-    ax = plt.Axes(fig, [0., 0., 1., 1.])
-    ax.set_axis_off()
-    fig.add_axes(ax)
-    
-    def update(frame):
-        ax.clear()
-        pos = path[frame]
-        ax.imshow(bin_images[pos], interpolation='nearest')
-        ax.set_axis_off()
-        return ax.artists
-    
-    ani = animation.FuncAnimation(fig, update, frames=len(path), interval=interval, blit=True)
-    writer = animation.PillowWriter(fps=fps)
-    ani.save(save_path, writer=writer)
-    plt.close()
-    print(f"Animation saved at {save_path}")
-"""
-
 def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmin=None, vmax=None):
     img_binned_tsne = {}
     img_binned_umap = {}
@@ -847,7 +688,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
                 dpi=300, bbox_inches='tight')
     plt.close()
 
-def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2):
+"""def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2):
     # Load bin data
     bin_data = np.load('bin_data.npy', allow_pickle=True).item()
     keys = list(bin_data.keys())
@@ -890,6 +731,85 @@ def random_walk_animation(steps=50, save_path="random_walk_animation.gif", inter
     
     ani = animation.FuncAnimation(fig, update, frames=len(path), 
                                 interval=interval, blit=True)
+    writer = animation.PillowWriter(fps=fps)
+    ani.save(save_path, writer=writer)
+    plt.close()
+"""
+
+def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2, fade_frames=5):
+    # Load bin data
+    bin_data = np.load('bin_data.npy', allow_pickle=True).item()
+    keys = list(bin_data.keys())
+    grid_size = int(np.ceil(np.sqrt(len(keys))))
+    
+    # Generate random walk path
+    current_idx = random.randrange(len(keys))
+    path = [current_idx]
+    
+    for _ in range(steps):
+        row, col = path[-1] // grid_size, path[-1] % grid_size
+        possible_moves = []
+        
+        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
+            new_row, new_col = row + dr, col + dc
+            if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
+                new_idx = new_row * grid_size + new_col
+                if new_idx < len(keys):
+                    possible_moves.append(new_idx)
+        
+        if not possible_moves:
+            break
+            
+        next_idx = random.choice(possible_moves)
+        path.append(next_idx)
+    
+    # Create animation with transitions
+    fig = plt.figure(frameon=False)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    
+    def update(frame):
+        ax.clear()
+        
+        # Calculate which transition we're in
+        main_frame = frame // (fade_frames + 1)
+        sub_frame = frame % (fade_frames + 1)
+        
+        if main_frame >= len(path) - 1:
+            key = keys[path[-1]]
+            img = bin_data[key]
+        else:
+            # Create transition between frames
+            current_key = keys[path[main_frame]]
+            next_key = keys[path[main_frame + 1]]
+            
+            current_img = bin_data[current_key]
+            next_img = bin_data[next_key]
+            
+            # Linear interpolation for fade effect
+            alpha = sub_frame / (fade_frames + 1)
+            img = (1 - alpha) * current_img + alpha * next_img
+        
+        im = ax.imshow(img, cmap='viridis')
+        
+        # Add bin coordinates
+        row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
+        ax.text(0.02, 0.98, f'Bin: ({row}, {col})', 
+                transform=ax.transAxes, 
+                color='white', 
+                fontsize=12,
+                verticalalignment='top')
+        
+        ax.set_axis_off()
+        return ax.artists
+    
+    total_frames = (len(path) - 1) * (fade_frames + 1) + 1
+    ani = animation.FuncAnimation(fig, update, 
+                                frames=total_frames, 
+                                interval=interval, 
+                                blit=True)
+    
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     plt.close()
