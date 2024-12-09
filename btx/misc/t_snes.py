@@ -110,7 +110,7 @@ def process(rank, proj ,device_list,num_tries,threshold):
     max_iters = num_tries
 
     for i in range(max_iters):
-        if i%20 == 0:
+        if i%10 == 0:
             print(f"UMAP fitting on GPU {rank} iteration {i}",flush=True)
 
         n_neighbors = np.random.randint(5, 200)
@@ -136,7 +136,7 @@ def process(rank, proj ,device_list,num_tries,threshold):
     trustworthiness_score_umap = cuml_trustworthiness(proj, embedding_umap)
 
     for i in range(max_iters):
-        if i%20 == 0:
+        if i%10 == 0:
             print(f"t-SNE fitting on GPU {rank} iteration {i}",flush=True)
 
         perplexity = np.random.randint(5, 50)
