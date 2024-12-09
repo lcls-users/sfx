@@ -626,8 +626,12 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     with h5py.File(model_filename, 'r') as f:
         V = f['V']
         num_components = V.shape[2]
-        img_binned_tsne = create_average_img(img_binned_tsne, V)
-        img_binned_umap = create_average_img(img_binned_umap, V)
+        if type_of_embedding == 't-SNE':
+            img_binned_tsne = create_average_img(img_binned_tsne, V)
+            print("t-SNE Average Images created!")
+        else:
+            img_binned_umap = create_average_img(img_binned_umap, V)
+            print("UMAP Average Images created!")
     print("Average Images created!")
     
     # Select embedding type
