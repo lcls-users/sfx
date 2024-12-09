@@ -705,26 +705,28 @@ def averaged_imgs_t_sne(model_filename,filename, type_of_embedding='t-SNE',vmin=
     plt.close(fig)
 
 def random_walk_animation(image_path, steps=50, save_path="random_walk_animation.gif", interval=500, fps=2):
-    # Charger l'image principale
+    # Load the main image
     img = Image.open(image_path)
     img_array = np.array(img)
     
-    # Calculer la taille de chaque bin
+    # Calculate dimensions of actual bins (excluding white space)
     height, width = img_array.shape[:2]
-    bin_height = height // 20
-    bin_width = width // 22
+    n_rows, n_cols = 20, 22  # Grid dimensions
     
-    # Créer une liste de positions valides (non blanches)
+    # Create a mask for non-white regions
     valid_positions = []
-    for i in range(20):
-        for j in range(22):
-            y = i * bin_height
-            x = j * bin_width
-            bin_img = img_array[y:y+bin_height, x:x+bin_width]
-            if not np.all(bin_img > 250):
-                valid_positions.append((i, j))
+    bin_images = {}  # Store actual bin images
     
-    # Générer un chemin aléatoire
+    for i in range(n_rows):
+        for j in range(n_cols):
+            # Find the actual bin content by detecting non-white regions
+            region = img_array[i*height//n_rows:(i+1)*height//n_rows, 
+                             j*width//n_cols:(j+1)*width//n_cols]
+            if not np.all(region > 250):  # If not all white
+                valid_positions.append((i, j))
+                bin_images[(i, j)] = region
+    
+    # Generate random walk path
     current_pos = random.choice(valid_positions)
     path = [current_pos]
     
@@ -741,7 +743,7 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
         current_pos = random.choice(neighbors)
         path.append(current_pos)
     
-    # Créer l'animation avec une figure ajustée
+    # Create animation
     fig = plt.figure(frameon=False)
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
@@ -749,11 +751,8 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
     
     def update(frame):
         ax.clear()
-        i, j = path[frame]
-        y = i * bin_height
-        x = j * bin_width
-        bin_img = img_array[y:y+bin_height, x:x+bin_width]
-        ax.imshow(bin_img, interpolation='nearest')
+        pos = path[frame]
+        ax.imshow(bin_images[pos], interpolation='nearest')
         ax.set_axis_off()
         return ax.artists
     
@@ -761,7 +760,7 @@ def random_walk_animation(image_path, steps=50, save_path="random_walk_animation
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     plt.close()
-    print(f"Animation saved at {save_path}")  
+    print(f"Animation saved at {save_path}")
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
