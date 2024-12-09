@@ -209,7 +209,7 @@ def plot_scatters(embedding, type_of_embedding):
     fig.update_layout(height=800, width=800, showlegend=False)
     fig.show()
 
-def binning_indices(embedding, grid_size=200):
+def binning_indices(embedding, grid_size=50):
     x_min, x_max = embedding[:, 0].min(), embedding[:, 0].max()
     y_min, y_max = embedding[:, 1].min(), embedding[:, 1].max()
 
@@ -330,6 +330,10 @@ def parse_input():
         "--num_runs",
         type=list
     )
+    parser.add_argument(
+        "--grid_size",
+        type=int
+    )
 
     return parser.parse_args()
 
@@ -343,6 +347,7 @@ if __name__ == "__main__":
     threshold = params.threshold
     num_tries = params.num_tries
     num_runs = params.num_runs
+    grid_size = params.grid_size
     ##
     print("Unpacking model file...",flush=True)
     data = unpack_ipca_pytorch_model_file(filename)
@@ -421,8 +426,8 @@ if __name__ == "__main__":
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
     print("Starting binning...",flush=True)
-    bins_tsne = binning_indices(embeddings_tsne)
-    bins_umap = binning_indices(embeddings_umap)
+    bins_tsne = binning_indices(embeddings_tsne,grid_size=grid_size)
+    bins_umap = binning_indices(embeddings_umap,grid_size=grid_size)
 
     proj_binned_tsne = create_average_proj(list_proj_rank, bins_tsne)
     proj_binned_umap = create_average_proj(list_proj_rank, bins_umap)

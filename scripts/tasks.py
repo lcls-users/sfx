@@ -788,6 +788,7 @@ def t_sne(config):
     distribution_images = []
     exp = setup.exp
     run = task.run
+    grid_size = task.grid_size
     det_type = setup.det_type
     copy_num_images = num_images
     while num_images > 0:
@@ -815,7 +816,7 @@ def t_sne(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
-    command += f"; python {client_path} --filename {filename} --num_images {num_images_str} --loading_batch_size {loading_batch_size} --num_tries {num_tries} --threshold {threshold} --num_runs {num_runs}"
+    command += f"; python {client_path} --filename {filename} --num_images {num_images_str} --loading_batch_size {loading_batch_size} --num_tries {num_tries} --threshold {threshold} --num_runs {num_runs} --grid_size {grid_size}"
 
     js = JobScheduler(os.path.join(".", f't_snes_{copy_num_images}.sh'),queue = 'ampere', ncores=  1, jobname=f't_snes_{copy_num_images}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = 4) ##
     js.write_header()
