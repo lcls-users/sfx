@@ -596,6 +596,8 @@ def create_average_img(proj_binned, V):
     
     for key, proj in proj_binned.items():
         count+=1
+        if count%20==0:
+            print(f"Processing bin {count}/{len(proj_binned)}")
         avg_img = []
         for rank in range(V.shape[0]):
             panel = np.dot(proj[rank], V[rank].T)
@@ -620,11 +622,13 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
             img_binned_umap[dataset_name] = umap_group[dataset_name][()]
 
     # Process images
+    print("Processing images...")
     with h5py.File(model_filename, 'r') as f:
         V = f['V']
         num_components = V.shape[2]
         img_binned_tsne = create_average_img(img_binned_tsne, V)
         img_binned_umap = create_average_img(img_binned_umap, V)
+    print("Average Images created!")
     
     # Select embedding type
     if type_of_embedding == 't-SNE':
@@ -672,6 +676,8 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     sup_vmax = None
 
     for i, key in enumerate(keys):
+        if i % 20 == 0:
+            print(f"Processing bin {i+1}/{len(keys)}")
         if vmin is not None and vmax is not None:
             im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
         else:
