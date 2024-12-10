@@ -662,6 +662,8 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
         img = assemble_image_stack_batch(img, pixel_index_map)
         bin_data[key] = img
     
+    print("Images assembled!")
+    
     # Save bin data for animation
     np.save('bin_data.npy', bin_data)
     
