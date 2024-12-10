@@ -788,6 +788,8 @@ def random_walk_animation(steps=50, save_path="random_walk_animation.gif", inter
     path = [current_idx]
     
     for _ in range(steps):
+        if _ % 5 == 0:
+            print(f"Processing step {_}/{steps}")
         row, col = path[-1] // grid_size, path[-1] % grid_size
         possible_moves = []
         
