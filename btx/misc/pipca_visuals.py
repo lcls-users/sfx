@@ -26,8 +26,6 @@ import plotly.express as px
 import plotly.subplots as sp
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import plotly.io as pio
-import io
 
 import pandas as pd
 import seaborn as sns
@@ -581,10 +579,6 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     fig.update_yaxes(title_text="Dimension 2")
 
     print("Plot created successfully!")
-    fig_matplotlib = pio.to_matplotlib(fig)
-    fig_matplotlib.savefig(f'{type_of_embedding}_scatter.pdf')
-    plt.close(fig_matplotlib)
-
     fig.show()
 
     if save_clusters:
