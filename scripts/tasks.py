@@ -856,8 +856,7 @@ def create_pypca(config, num_nodes = 1, id_current_node = 0):
     path = task.path
     tag = task.tag
 
-    if num_nodes >1:
-        tag = f"{tag}_node_{id_current_node}"
+    tag = f"{tag}_node_{id_current_node}"
 
     num_gpus = task.num_gpus
     training_percentage = task.training_percentage
