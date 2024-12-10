@@ -663,9 +663,11 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
         bin_data[key] = img
     
     print("Images assembled!")
-    
+
     # Save bin data for animation
     np.save('bin_data.npy', bin_data)
+    
+    print("Images saved!")
     
     # Create visualization
     fig = plt.figure(figsize=(20, 20))
