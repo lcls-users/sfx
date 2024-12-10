@@ -777,9 +777,9 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     ani.save(save_path, writer=writer)
     plt.close()"""
 
-def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2, fade_frames=5):
+def random_walk_animation(bin_data_path='bin_data.npy',steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
     # Load bin data
-    bin_data = np.load('bin_data.npy', allow_pickle=True).item()
+    bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
     grid_size = int(np.ceil(np.sqrt(len(keys))))
     
@@ -884,6 +884,7 @@ def random_walk_animation(steps=50, save_path="random_walk_animation.gif", inter
                                 interval=interval, 
                                 blit=True)
     
+    save_path += f'_{fps}fps.gif'
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     plt.close()
