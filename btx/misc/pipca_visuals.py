@@ -579,6 +579,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     fig.update_yaxes(title_text="Dimension 2")
 
     print("Plot created successfully!")
+    fig.write_image("t_sne_scatters.png")
     fig.show()
 
     if save_clusters:
