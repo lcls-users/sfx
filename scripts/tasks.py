@@ -1073,11 +1073,14 @@ def average_img_cluster(config):
 
 def t_sne_pipeline(config):
     """! Run the t-SNE pipeline."""
-
     create_pypca_multinodes(config)
     print("Create done")
     t_sne(config)
     print("t-SNE done")
+
+    from btx.misc.pipca_visuals import averaged_imgs_t_sne
+    averaged_imgs_t_sne(config.t_sne.filename,f"binned_data_{config.create_pypca_multinodes.num_components}_{config.create_pypca_multinodes.num_images}.h5")
+    print("Averaged images done")
 
 
 

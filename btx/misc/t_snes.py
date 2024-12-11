@@ -179,10 +179,11 @@ def process(rank, proj ,device_list,num_tries,threshold):
 
     return embedding_tsne, embedding_umap
 
-def get_projectors(rank,imgs,V,device_list):
+def get_projectors(rank,imgs,V,device_list,mu):
     V = torch.tensor(V,device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
     imgs = torch.tensor(imgs.reshape(imgs.shape[0],-1),device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
-    proj = torch.mm(imgs,V) ##deleted the normalization step
+    mu = torch.tensor(mu,device=device_list[rank%4]) #the 4 is hardcoded but is the number of GPUs available on one node on ampere
+    proj = torch.mm(imgs-mu[rank],V) ##deleted the normalization step
 
     return proj.cpu().detach().numpy()
 
@@ -260,15 +261,12 @@ def create_average_proj(proj_list, bins):
     for key, indices in bins.items():
         if indices:
             list_proj = []
-            for rank in range(proj_list.shape[0]):
-                # Filtrer les indices valides
-                valid_indices = [idx for idx in indices if idx < proj_list[rank].shape[0]]
-                if valid_indices:
-                    avg_projections = np.mean(proj_list[rank][valid_indices], axis=0)
-                    list_proj.append(avg_projections)
-            if list_proj:
-                proj_binned[key] = list_proj
-    
+            for indice in indices:
+                list_proj.append(proj_list[indice])
+            proj_binned[key] = np.mean(list_proj, axis=1)
+        else:
+            proj_binned[key] = []
+
     return proj_binned
 
 def unpack_ipca_pytorch_model_file(filename):
@@ -399,8 +397,9 @@ if __name__ == "__main__":
             starting_time = time.time()
             with Pool(processes=num_gpus) as pool:
                 with h5py.File(filename, 'r') as f:
-                    V = f['V'] 
-                    proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list) for rank in range(num_gpus)])
+                    V = f['V']
+                    mu = f['mu'][:]
+                    proj = pool.starmap(get_projectors, [(rank,list_images[rank],V[rank,:,:],device_list,mu) for rank in range(num_gpus)])
             
             print("Shape of projector on rank 0",proj[0].shape)
             rank_proj_list = [u for u in proj]
@@ -435,8 +434,8 @@ if __name__ == "__main__":
     bins_tsne = binning_indices(embeddings_tsne,grid_size=grid_size)
     bins_umap = binning_indices(embeddings_umap,grid_size=grid_size)
 
-    proj_binned_tsne = create_average_proj(list_proj_rank, bins_tsne)
-    proj_binned_umap = create_average_proj(list_proj_rank, bins_umap)
+    proj_binned_tsne = create_average_proj(list_proj, bins_tsne) ## modify here if you want one panel as a guide
+    proj_binned_umap = create_average_proj(list_proj, bins_umap)
     
     print("Binning done",flush=True)
     print("Saving data...",flush=True)

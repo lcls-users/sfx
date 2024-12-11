@@ -601,6 +601,7 @@ def create_average_img(proj_binned, V):
         avg_img = []
         for rank in range(V.shape[0]):
             panel = np.dot(proj[rank], V[rank].T)
+            panel = panel+mu[rank]
             avg_img.append(panel)
 
         img_binned[key] = np.array(avg_img)
@@ -625,12 +626,13 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     print("Processing images...")
     with h5py.File(model_filename, 'r') as f:
         V = f['V']
+        mu = f['mu'][:]
         num_components = V.shape[2]
         if type_of_embedding == 't-SNE':
-            img_binned_tsne = create_average_img(img_binned_tsne, V)
+            img_binned_tsne = create_average_img(img_binned_tsne, V, mu)
             print("t-SNE Average Images created!")
         else:
-            img_binned_umap = create_average_img(img_binned_umap, V)
+            img_binned_umap = create_average_img(img_binned_umap, V, mu)
             print("UMAP Average Images created!")
     print("Average Images created!")
     
@@ -668,7 +670,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     np.save('bin_data.npy', bin_data)
     
     print("Images saved!")
-    
+
     # Create visualization
     fig = plt.figure(figsize=(20, 20))
     grid = ImageGrid(fig, 111,
@@ -686,6 +688,9 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     for i, key in enumerate(keys):
         if i % 20 == 0:
             print(f"Processing bin {i+1}/{len(keys)}")
+        if bin_data[key].size == 0 or np.all(np.isnan(bin_data[key])):
+            blank_image = np.ones_like(next(iter(bin_data.values())))
+            im = grid[i].imshow(blank_image, cmap='gray', vmin=0, vmax=1)
         if vmin is not None and vmax is not None:
             im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
         else:
