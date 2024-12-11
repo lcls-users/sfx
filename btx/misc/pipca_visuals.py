@@ -589,7 +589,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
         index_df.to_csv(filename, index=False, header=False)
         print(f"Index by cluster saved in {filename}")
 
-def create_average_img(proj_binned, V):
+def create_average_img(proj_binned, V,mu):
     count=0
     img_binned = {}
     V = np.array(V)
