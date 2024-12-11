@@ -593,6 +593,7 @@ def create_average_img(proj_binned, V,mu):
     count=0
     img_binned = {}
     V = np.array(V)
+    mu = np.array(mu)
     
     for key, proj in proj_binned.items():
         count+=1
