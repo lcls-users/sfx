@@ -602,6 +602,8 @@ def create_average_img(proj_binned, V,mu):
         if count%20==0:
             print(f"Processing bin {count}/{len(proj_binned)}")
         avg_img = []
+        if len(proj) == 0:
+            avg_img = np.ones_like(mu)
         for rank in range(V.shape[0]):
             panel = np.dot(proj[rank], V[rank].T)
             panel = panel+mu[rank]
