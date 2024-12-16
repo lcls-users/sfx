@@ -268,6 +268,8 @@ def create_average_proj(proj_list, bins):
                         list_proj.append(proj_list[rank][indice])
                 if list_proj!=[]:
                     proj_binned[key].append(np.mean(list_proj, axis=1))
+                else:
+                    proj_binned[key]=[]
 
     print("Shape of proj_binned",np.array(proj_binned[list(proj_binned.keys())[0]]).shape)
     return proj_binned

@@ -603,7 +603,7 @@ def create_average_img(proj_binned, V,mu):
         if count%20==0:
             print(f"Processing bin {count}/{len(proj_binned)}")
         avg_img = []
-        if len(proj[0]) ==0:
+        if len(proj) ==0:
             avg_img = np.ones_like(mu)
         else:
             for rank in range(V.shape[0]):
