@@ -604,10 +604,11 @@ def create_average_img(proj_binned, V,mu):
         avg_img = []
         if len(proj) == 0:
             avg_img = np.ones_like(mu)
-        for rank in range(V.shape[0]):
-            panel = np.dot(proj[rank], V[rank].T)
-            panel = panel+mu[rank]
-            avg_img.append(panel)
+        else:
+            for rank in range(V.shape[0]):
+                panel = np.dot(proj[rank], V[rank].T)
+                panel = panel+mu[rank]
+                avg_img.append(panel)
 
         img_binned[key] = np.array(avg_img)
     print("Number of bins:",count)
