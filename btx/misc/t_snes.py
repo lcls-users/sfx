@@ -267,6 +267,7 @@ def create_average_proj(proj_list, bins):
                     list_proj.append(proj_list[rank][indice])
                 proj_binned[key].append(np.mean(list_proj, axis=1))
 
+    print("Shape of proj_binned",proj_binned[list(proj_binned.keys())[0]].shape)
     return proj_binned
 
 def unpack_ipca_pytorch_model_file(filename):
