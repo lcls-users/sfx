@@ -257,7 +257,7 @@ def binning_indices(embedding, grid_size=50):
 def create_average_proj(proj_list, bins):
     proj_binned = {}
     proj_list = np.array(proj_list)
-    
+    print("Shape of proj_list",proj_list.shape)
     for key, indices in bins.items():
         proj_binned[key] = []
         if indices:
