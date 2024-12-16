@@ -267,11 +267,12 @@ def create_average_proj(proj_list, bins):
                     if 0 <= indice < proj_list.shape[1]:
                         list_proj.append(proj_list[rank][indice])
                 if list_proj!=[]:
-                    proj_binned[key].append(np.mean(list_proj, axis=1))
+                    proj_binned[key].append(np.mean(list_proj, axis=0))
                 else:
                     proj_binned[key]=[]
 
-    print("Shape of proj_binned",np.array(proj_binned[list(proj_binned.keys())[0]]).shape)
+    print("Shape of proj_binned",[np.array(proj_binned[key]).shape for key in proj_binned.keys()])
+
     return proj_binned
 
 def unpack_ipca_pytorch_model_file(filename):
