@@ -265,7 +265,7 @@ def create_average_proj(proj_list, bins):
                 list_proj = []
                 for indice in indices:
                     list_proj.append(proj_list[rank][indice])
-                proj_binned[key] = proj_binned[key].append(np.mean(list_proj, axis=1))
+                proj_binned[key].append(np.mean(list_proj, axis=1))
 
     return proj_binned
 
