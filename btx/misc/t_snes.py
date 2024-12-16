@@ -416,13 +416,16 @@ if __name__ == "__main__":
         list_proj_rank[i] = np.vstack(list_proj_rank[i])
         print("Shape of projector on rank ",i,list_proj_rank[i].shape)
 
+    print("Shape of list_proj_rank",np.array(list_proj_rank).shape)
     print("Projectors gathered",flush=True)
     print("shape of list_proj",np.array(list_proj).shape)
+
     print("Computing embeddings...",flush=True)
     with Pool(processes=num_gpus) as pool:
         embeddings_tsne, embeddings_umap = pool.apply(process,(0, list_proj, device_list, num_tries, threshold))
         results = pool.starmap(process, [(i, list_proj_rank[i], device_list, num_tries, threshold) for i in range(num_gpus)])
 
+    print("Shape of list_proj_rank",np.array(list_proj_rank).shape)
     embeddings_tsne_rank = [[] for _ in range(num_gpus)]
     embeddings_umap_rank = [[] for _ in range(num_gpus)]
 
