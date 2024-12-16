@@ -595,6 +595,8 @@ def create_average_img(proj_binned, V,mu):
     V = np.array(V)
     mu = np.array(mu)
     
+    print("Shape of V : ", V.shape)
+    print("Shape of proj : ", proj_binned[list(proj_binned.keys())[0]].shape)
     for key, proj in proj_binned.items():
         count+=1
         if count%20==0:

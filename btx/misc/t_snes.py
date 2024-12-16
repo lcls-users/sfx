@@ -259,13 +259,13 @@ def create_average_proj(proj_list, bins):
     proj_list = np.array(proj_list)
     
     for key, indices in bins.items():
+        proj_binned[key] = []
         if indices:
-            list_proj = []
-            for indice in indices:
-                list_proj.append(proj_list[indice])
-            proj_binned[key] = np.mean(list_proj, axis=1)
-        else:
-            proj_binned[key] = []
+            for rank in range(proj_list.shape[0]):
+                list_proj = []
+                for indice in indices:
+                    list_proj.append(proj_list[rank][indice])
+                proj_binned[key] = proj_binned[key].append(np.mean(list_proj, axis=1))
 
     return proj_binned
 
@@ -434,8 +434,8 @@ if __name__ == "__main__":
     bins_tsne = binning_indices(embeddings_tsne,grid_size=grid_size)
     bins_umap = binning_indices(embeddings_umap,grid_size=grid_size)
 
-    proj_binned_tsne = create_average_proj(list_proj, bins_tsne) ## modify here if you want one panel as a guide
-    proj_binned_umap = create_average_proj(list_proj, bins_umap)
+    proj_binned_tsne = create_average_proj(list_proj_rank, bins_tsne) ## modify here if you want one panel as a guide
+    proj_binned_umap = create_average_proj(list_proj_rank, bins_umap)
     
     print("Binning done",flush=True)
     print("Saving data...",flush=True)
