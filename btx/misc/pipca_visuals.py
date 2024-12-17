@@ -673,7 +673,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     print("Images assembled!")
 
     # Save bin data for animation
-    np.save('bin_data.npy', bin_data)
+    np.save('/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy', bin_data) ##HARDCODED
     
     print("Images saved!")
 
@@ -792,7 +792,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     ani.save(save_path, writer=writer)
     plt.close()"""
 
-def random_walk_animation(bin_data_path='bin_data.npy',steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
+def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy',steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
     # Load bin data
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
