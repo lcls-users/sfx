@@ -698,7 +698,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
         if i % 20 == 0:
             print(f"Processing bin {i+1}/{len(keys)}")
         if bin_data[key] is None:
-            blank_image = np.ones_like(next(iter(bin_data.values())))
+            blank_image = np.full_like(next(iter(bin_data.values())), fill_value=np.nan)
             im = grid[i].imshow(blank_image, cmap='gray', vmin=0, vmax=1)
         elif vmin is not None and vmax is not None:
             im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
