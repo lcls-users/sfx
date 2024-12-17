@@ -610,7 +610,7 @@ def create_average_img(proj_binned, V,mu):
                 panel = panel+mu[rank]
                 avg_img.append(panel)
 
-        img_binned[key] = np.array(avg_img)
+        img_binned[key] = np.array(avg_img) if avg_img is not None else None
     print("Number of bins:",count)
     return img_binned
 
