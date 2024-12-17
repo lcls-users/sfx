@@ -665,7 +665,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     # Process and store individual bins
     bin_data = {}
     for key in keys:
-        if img_binned[key]:
+        if img_binned[key] is not None:
             img = img_binned[key]
             img = img.reshape((a, b, c))
             img = assemble_image_stack_batch(img, pixel_index_map)
