@@ -603,7 +603,7 @@ def create_average_img(proj_binned, V,mu):
             print(f"Processing bin {count}/{len(proj_binned)}")
         avg_img = []
         if len(proj) ==0:
-            avg_img = np.ones_like(mu)
+            avg_img = None
         else:
             for rank in range(V.shape[0]):
                 panel = np.dot(proj[rank], V[rank].T)
@@ -665,10 +665,13 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     # Process and store individual bins
     bin_data = {}
     for key in keys:
-        img = img_binned[key]
-        img = img.reshape((a, b, c))
-        img = assemble_image_stack_batch(img, pixel_index_map)
-        bin_data[key] = img
+        if img_binned[key]:
+            img = img_binned[key]
+            img = img.reshape((a, b, c))
+            img = assemble_image_stack_batch(img, pixel_index_map)
+            bin_data[key] = img
+        else:
+            bin_data[key] = np.array([])
     
     print("Images assembled!")
 
