@@ -795,7 +795,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     ani.save(save_path, writer=writer)
     plt.close()"""
 
-def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy',steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
+def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy', steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
     # Load bin data
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
@@ -805,24 +805,32 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
     current_idx = random.randrange(len(keys))
     path = [current_idx]
     
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Up, Down, Left, Right
+    
     for _ in range(steps):
         if _ % 5 == 0:
             print(f"Processing step {_}/{steps}")
-        row, col = path[-1] // grid_size, path[-1] % grid_size
-        possible_moves = []
         
-        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
-            new_row, new_col = row + dr, col + dc
+        row, col = path[-1] // grid_size, path[-1] % grid_size
+        
+        # Choose a random direction
+        direction = random.choice(directions)
+        dr, dc = direction
+        
+        # Find the closest valid position in the chosen direction
+        new_row, new_col = row, col
+        while True:
+            new_row += dr
+            new_col += dc
             if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
                 new_idx = new_row * grid_size + new_col
                 if new_idx < len(keys):
-                    possible_moves.append(new_idx)
-        
-        if not possible_moves:
-            break
-            
-        next_idx = random.choice(possible_moves)
-        path.append(next_idx)
+                    path.append(new_idx)
+                    break
+            else:
+                # If we've reached the edge, stop searching
+                path.append(path[-1])  # Stay in the same position
+                break
     
     # Create figure with two subplots side by side
     fig = plt.figure(figsize=(20, 10))
@@ -856,10 +864,15 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
             current_img = bin_data[current_key]
             next_img = bin_data[next_key]
             
-            alpha = sub_frame / (fade_frames + 1)
-            img = (1 - alpha) * current_img + alpha * next_img
+            # Check if either image is None
+            if current_img is None or next_img is None:
+                img = current_img if current_img is not None else next_img
+            else:
+                alpha = sub_frame / (fade_frames + 1)
+                img = (1 - alpha) * current_img + alpha * next_img
         
-        ax_det.imshow(img, cmap='viridis')
+        if img is not None:
+            ax_det.imshow(img, cmap='viridis')
         
         # Add bin coordinates
         row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
