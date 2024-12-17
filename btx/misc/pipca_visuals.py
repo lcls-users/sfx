@@ -796,28 +796,34 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     plt.close()"""
 
 def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy', steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
-    # Load bin data
+    # Charger les données des bins
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
     grid_size = int(np.ceil(np.sqrt(len(keys))))
     
-    # Generate random walk path
+    # Créer une grille représentant les positions réelles des bins
+    real_grid = np.full((grid_size, grid_size), np.nan)
+    for idx, key in enumerate(keys):
+        row, col = idx // grid_size, idx % grid_size
+        real_grid[row, col] = 0.5  # Marquer les positions valides
+    
+    # Générer le chemin de la marche aléatoire
     current_idx = random.randrange(len(keys))
     path = [current_idx]
     
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Up, Down, Left, Right
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Haut, Bas, Gauche, Droite
     
     for _ in range(steps):
         if _ % 5 == 0:
-            print(f"Processing step {_}/{steps}")
+            print(f"Traitement de l'étape {_}/{steps}")
         
         row, col = path[-1] // grid_size, path[-1] % grid_size
         
-        # Choose a random direction
+        # Choisir une direction aléatoire
         direction = random.choice(directions)
         dr, dc = direction
         
-        # Find the closest valid position in the chosen direction
+        # Trouver la position valide la plus proche dans la direction choisie
         new_row, new_col = row, col
         while True:
             new_row += dr
@@ -828,32 +834,32 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
                     path.append(new_idx)
                     break
             else:
-                # If we've reached the edge, stop searching
-                path.append(path[-1])  # Stay in the same position
+                # Si on atteint le bord, on arrête la recherche
+                path.append(path[-1])  # Rester à la même position
                 break
     
-    # Create figure with two subplots side by side
+    # Créer la figure avec deux sous-plots côte à côte
     fig = plt.figure(figsize=(20, 10))
     gs = GridSpec(1, 2, width_ratios=[1, 1])
     
-    # Left subplot for detector image
+    # Sous-plot de gauche pour l'image du détecteur
     ax_det = fig.add_subplot(gs[0])
     ax_det.set_axis_off()
     
-    # Right subplot for position visualization
+    # Sous-plot de droite pour la visualisation de la position
     ax_pos = fig.add_subplot(gs[1])
     ax_pos.set_axis_off()
     
     def update(frame):
-        # Clear both axes
+        # Effacer les deux axes
         ax_det.clear()
         ax_pos.clear()
         
-        # Calculate which transition we're in
+        # Calculer dans quelle transition nous sommes
         main_frame = frame // (fade_frames + 1)
         sub_frame = frame % (fade_frames + 1)
         
-        # Update detector image (left subplot)
+        # Mettre à jour l'image du détecteur (sous-plot de gauche)
         if main_frame >= len(path) - 1:
             key = keys[path[-1]]
             img = bin_data[key]
@@ -864,7 +870,7 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
             current_img = bin_data[current_key]
             next_img = bin_data[next_key]
             
-            # Check if either image is None
+            # Vérifier si l'une des images est None
             if current_img is None or next_img is None:
                 img = current_img if current_img is not None else next_img
             else:
@@ -874,7 +880,7 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
         if img is not None:
             ax_det.imshow(img, cmap='viridis')
         
-        # Add bin coordinates
+        # Ajouter les coordonnées du bin
         row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
         ax_det.text(0.02, 0.98, f'Bin: ({row}, {col})', 
                    transform=ax_det.transAxes, 
@@ -882,28 +888,24 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
                    fontsize=12,
                    verticalalignment='top')
         
-        # Update position visualization (right subplot)
-        # Create full grid visualization
-        full_grid = np.zeros((grid_size, grid_size))
+        # Mettre à jour la visualisation de la position (sous-plot de droite)
+        position_grid = real_grid.copy()
         
-        # Mark all valid positions
-        for idx, key in enumerate(keys):
-            r, c = idx // grid_size, idx % grid_size
-            full_grid[r, c] = 0.3  # Light marking for valid positions
-            
-        # Mark path
+        # Marquer le chemin
         for idx in path[:main_frame+1]:
             r, c = idx // grid_size, idx % grid_size
-            full_grid[r, c] = 0.7  # Stronger marking for path
-            
-        # Mark current position
-        r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
-        full_grid[r, c] = 1.0  # Brightest marking for current position
+            position_grid[r, c] = 0.7  # Marquage plus fort pour le chemin
         
-        ax_pos.imshow(full_grid, cmap='viridis')
+        # Marquer la position actuelle
+        r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
+        position_grid[r, c] = 1.0  # Marquage le plus lumineux pour la position actuelle
+        
+        # Afficher la grille avec un masque pour les valeurs NaN (bins vides)
+        masked_grid = np.ma.masked_where(np.isnan(position_grid), position_grid)
+        ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
         ax_pos.grid(True, color='white', alpha=0.3)
         
-        # Set both axes off
+        # Définir les deux axes comme invisibles
         ax_det.set_axis_off()
         ax_pos.set_axis_off()
         
