@@ -870,23 +870,26 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
             current_img = bin_data[current_key]
             next_img = bin_data[next_key]
             
-            # Vérifier si l'une des images est None
-            if current_img is None or next_img is None:
-                img = current_img if current_img is not None else next_img
-            else:
-                alpha = sub_frame / (fade_frames + 1)
-                img = (1 - alpha) * current_img + alpha * next_img
+            # Remplacer les images None par des images blanches
+            if current_img is None:
+                current_img = blank_image
+            if next_img is None:
+                next_img = blank_image
+            
+            alpha = sub_frame / (fade_frames + 1)
+            img = (1 - alpha) * current_img + alpha * next_img
         
-        if img is not None:
-            ax_det.imshow(img, cmap='viridis')
+        # Masquer les valeurs NaN pour l'affichage
+        masked_img = np.ma.masked_where(np.isnan(img), img)
+        ax_det.imshow(masked_img, cmap='viridis')
         
         # Ajouter les coordonnées du bin
         row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
         ax_det.text(0.02, 0.98, f'Bin: ({row}, {col})', 
-                   transform=ax_det.transAxes, 
-                   color='white', 
-                   fontsize=12,
-                   verticalalignment='top')
+                transform=ax_det.transAxes, 
+                color='white', 
+                fontsize=12,
+                verticalalignment='top')
         
         # Mettre à jour la visualisation de la position (sous-plot de droite)
         position_grid = real_grid.copy()
@@ -910,7 +913,7 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
         ax_pos.set_axis_off()
         
         return ax_det.artists + ax_pos.artists
-    
+
     total_frames = (len(path) - 1) * (fade_frames + 1) + 1
     ani = animation.FuncAnimation(fig, update, 
                                 frames=total_frames, 
