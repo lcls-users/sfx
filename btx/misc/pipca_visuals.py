@@ -671,7 +671,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
             img = assemble_image_stack_batch(img, pixel_index_map)
             bin_data[key] = img
         else:
-            bin_data[key] = np.array([])
+            bin_data[key] = None
     
     print("Images assembled!")
 
@@ -697,10 +697,10 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     for i, key in enumerate(keys):
         if i % 20 == 0:
             print(f"Processing bin {i+1}/{len(keys)}")
-        if bin_data[key].size == 0 or np.all(np.isnan(bin_data[key])):
+        if bin_data[key] is None:
             blank_image = np.ones_like(next(iter(bin_data.values())))
             im = grid[i].imshow(blank_image, cmap='gray', vmin=0, vmax=1)
-        if vmin is not None and vmax is not None:
+        elif vmin is not None and vmax is not None:
             im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
         else:
             im = grid[i].imshow(bin_data[key], cmap='viridis')
