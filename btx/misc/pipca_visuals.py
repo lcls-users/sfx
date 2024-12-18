@@ -795,52 +795,49 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     ani.save(save_path, writer=writer)
     plt.close()"""
 
-def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
+def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy', steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
+    # Load bin data
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
     grid_size = int(np.ceil(np.sqrt(len(keys))))
+    blank_image = np.full_like(next(iter(bin_data.values())), fill_value=np.nan)
     
-    # Create grid marking valid (non-blank) positions
-    valid_positions = np.full((grid_size, grid_size), False)
+    # Create grid representing real bin positions
+    real_grid = np.full((grid_size, grid_size), np.nan)
     for idx, key in enumerate(keys):
-        if bin_data[key] is not None:  # Only mark non-blank positions
-            row, col = idx // grid_size, idx % grid_size
-            valid_positions[row, col] = True
+        row, col = idx // grid_size, idx % grid_size
+        real_grid[row, col] = 0.5  # Mark valid positions
     
-    def find_closest_valid_position(row, col, direction):
+    # Generate random walk path
+    current_idx = random.randrange(len(keys))
+    path = [current_idx]
+    
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Up, Down, Left, Right
+    
+    for _ in range(steps):
+        if _ % 5 == 0:
+            print(f"Processing step {_}/{steps}")
+        
+        row, col = path[-1] // grid_size, path[-1] % grid_size
+        
+        # Choose random direction
+        direction = random.choice(directions)
         dr, dc = direction
+        
+        # Find closest valid position in chosen direction
         new_row, new_col = row, col
-        steps_taken = 0
-        while steps_taken < grid_size:  # Limit search distance
+        while True:
             new_row += dr
             new_col += dc
             if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
                 new_idx = new_row * grid_size + new_col
-                if new_idx < len(keys) and valid_positions[new_row, new_col]:
-                    return new_idx
-            steps_taken += 1
-        return None
-    
-    # Generate path avoiding blank images
-    current_idx = random.choice([idx for idx, key in enumerate(keys) 
-                               if bin_data[key] is not None])
-    path = [current_idx]
-    
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    
-    for _ in range(steps):
-        row, col = path[-1] // grid_size, path[-1] % grid_size
-        random.shuffle(directions)  # Randomize direction order
-        
-        # Try each direction until finding a valid position
-        next_idx = None
-        for direction in directions:
-            next_idx = find_closest_valid_position(row, col, direction)
-            if next_idx is not None:
+                if new_idx < len(keys):
+                    path.append(new_idx)
+                    break
+            else:
+                # If edge reached, stop searching
+                path.append(path[-1])  # Stay at same position
                 break
-        
-        path.append(next_idx if next_idx is not None else path[-1])
-
     
     # Create figure with two side-by-side subplots
     fig = plt.figure(figsize=(20, 10))
