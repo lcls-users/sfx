@@ -871,18 +871,16 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
             current_img = bin_data[current_key]
             next_img = bin_data[next_key]
             
-            # Remplacer les images None par des images blanches
-            if current_img is None or next_img is None:
-                img = current_img if current_img is not None else next_img
+            # Handle cases where images might be None
+            if current_img is None and next_img is None:
+                img = blank_image
+            elif current_img is None:
+                img = next_img
+            elif next_img is None:
+                img = current_img
             else:
                 alpha = sub_frame / (fade_frames + 1)
                 img = (1 - alpha) * current_img + alpha * next_img
-            
-            if img is not None:
-                ax_det.imshow(img, cmap='viridis')
-            
-            alpha = sub_frame / (fade_frames + 1)
-            img = (1 - alpha) * current_img + alpha * next_img
         
         # Masquer les valeurs NaN pour l'affichage
         masked_img = np.ma.masked_where(np.isnan(img), img)
