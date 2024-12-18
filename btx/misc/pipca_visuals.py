@@ -796,35 +796,35 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     plt.close()"""
 
 def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy', steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
-    # Charger les données des bins
+    # Load bin data
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
     grid_size = int(np.ceil(np.sqrt(len(keys))))
     blank_image = np.full_like(next(iter(bin_data.values())), fill_value=np.nan)
     
-    # Créer une grille représentant les positions réelles des bins
+    # Create grid representing real bin positions
     real_grid = np.full((grid_size, grid_size), np.nan)
     for idx, key in enumerate(keys):
         row, col = idx // grid_size, idx % grid_size
-        real_grid[row, col] = 0.5  # Marquer les positions valides
+        real_grid[row, col] = 0.5  # Mark valid positions
     
-    # Générer le chemin de la marche aléatoire
+    # Generate random walk path
     current_idx = random.randrange(len(keys))
     path = [current_idx]
     
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Haut, Bas, Gauche, Droite
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Up, Down, Left, Right
     
     for _ in range(steps):
         if _ % 5 == 0:
-            print(f"Traitement de l'étape {_}/{steps}")
+            print(f"Processing step {_}/{steps}")
         
         row, col = path[-1] // grid_size, path[-1] % grid_size
         
-        # Choisir une direction aléatoire
+        # Choose random direction
         direction = random.choice(directions)
         dr, dc = direction
         
-        # Trouver la position valide la plus proche dans la direction choisie
+        # Find closest valid position in chosen direction
         new_row, new_col = row, col
         while True:
             new_row += dr
@@ -835,32 +835,32 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
                     path.append(new_idx)
                     break
             else:
-                # Si on atteint le bord, on arrête la recherche
-                path.append(path[-1])  # Rester à la même position
+                # If edge reached, stop searching
+                path.append(path[-1])  # Stay at same position
                 break
     
-    # Créer la figure avec deux sous-plots côte à côte
+    # Create figure with two side-by-side subplots
     fig = plt.figure(figsize=(20, 10))
     gs = GridSpec(1, 2, width_ratios=[1, 1])
     
-    # Sous-plot de gauche pour l'image du détecteur
+    # Left subplot for detector image
     ax_det = fig.add_subplot(gs[0])
     ax_det.set_axis_off()
     
-    # Sous-plot de droite pour la visualisation de la position
+    # Right subplot for position visualization
     ax_pos = fig.add_subplot(gs[1])
     ax_pos.set_axis_off()
     
     def update(frame):
-        # Effacer les deux axes
+        # Clear both axes
         ax_det.clear()
         ax_pos.clear()
         
-        # Calculer dans quelle transition nous sommes
+        # Calculate which transition we're in
         main_frame = frame // (fade_frames + 1)
         sub_frame = frame % (fade_frames + 1)
         
-        # Mettre à jour l'image du détecteur (sous-plot de gauche)
+        # Update detector image (left subplot)
         if main_frame >= len(path) - 1:
             key = keys[path[-1]]
             img = bin_data[key]
@@ -882,11 +882,12 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
                 alpha = sub_frame / (fade_frames + 1)
                 img = (1 - alpha) * current_img + alpha * next_img
         
-        # Masquer les valeurs NaN pour l'affichage
-        masked_img = np.ma.masked_where(np.isnan(img), img)
-        ax_det.imshow(masked_img, cmap='viridis')
+        # Mask NaN values for display
+        if img is not None:
+            masked_img = np.ma.masked_where(np.isnan(img), img)
+            ax_det.imshow(masked_img, cmap='viridis')
         
-        # Ajouter les coordonnées du bin
+        # Add bin coordinates
         row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
         ax_det.text(0.02, 0.98, f'Bin: ({row}, {col})', 
                 transform=ax_det.transAxes, 
@@ -894,24 +895,24 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
                 fontsize=12,
                 verticalalignment='top')
         
-        # Mettre à jour la visualisation de la position (sous-plot de droite)
+        # Update position visualization (right subplot)
         position_grid = real_grid.copy()
         
-        # Marquer le chemin
+        # Mark path
         for idx in path[:main_frame+1]:
             r, c = idx // grid_size, idx % grid_size
-            position_grid[r, c] = 0.7  # Marquage plus fort pour le chemin
+            position_grid[r, c] = 0.7  # Stronger marking for path
         
-        # Marquer la position actuelle
+        # Mark current position
         r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
-        position_grid[r, c] = 1.0  # Marquage le plus lumineux pour la position actuelle
+        position_grid[r, c] = 1.0  # Brightest marking for current position
         
-        # Afficher la grille avec un masque pour les valeurs NaN (bins vides)
+        # Display grid with mask for NaN values (empty bins)
         masked_grid = np.ma.masked_where(np.isnan(position_grid), position_grid)
         ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
         ax_pos.grid(True, color='white', alpha=0.3)
         
-        # Définir les deux axes comme invisibles
+        # Set both axes as invisible
         ax_det.set_axis_off()
         ax_pos.set_axis_off()
         
