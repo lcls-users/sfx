@@ -872,10 +872,14 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
             next_img = bin_data[next_key]
             
             # Remplacer les images None par des images blanches
-            if current_img is None:
-                current_img = blank_image
-            if next_img is None:
-                next_img = blank_image
+            if current_img is None or next_img is None:
+                img = current_img if current_img is not None else next_img
+            else:
+                alpha = sub_frame / (fade_frames + 1)
+                img = (1 - alpha) * current_img + alpha * next_img
+            
+            if img is not None:
+                ax_det.imshow(img, cmap='viridis')
             
             alpha = sub_frame / (fade_frames + 1)
             img = (1 - alpha) * current_img + alpha * next_img
