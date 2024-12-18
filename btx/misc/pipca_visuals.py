@@ -904,23 +904,27 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
                 fontsize=12,
                 verticalalignment='top')
         
-        # Update position visualization (right subplot)
         position_grid = real_grid.copy()
-        
+
         # Mark path
         for idx in path[:main_frame+1]:
             r, c = idx // grid_size, idx % grid_size
             position_grid[r, c] = 0.7  # Stronger marking for path
-        
+
         # Mark current position
         r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
         position_grid[r, c] = 1.0  # Brightest marking for current position
-        
+
         # Display grid with mask for NaN values (empty bins)
         masked_grid = np.ma.masked_where(np.isnan(position_grid), position_grid)
         ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
-        ax_pos.grid(True, color='white', alpha=0.3)
-        
+
+        # Add these lines to set the background color to white
+        ax_pos.set_facecolor('white')  # Set subplot background to white
+        fig.patch.set_facecolor('white')  # Set figure background to white
+
+        # Optional: Add a white background to masked values
+        masked_grid.set_fill_value('white')
         # Set both axes as invisible
         ax_det.set_axis_off()
         ax_pos.set_axis_off()
