@@ -893,7 +893,12 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
         position_grid[r, c] = 1.0
         
-        ax_pos.imshow(position_grid, cmap='viridis', interpolation='nearest')
+        # Set background color for the subplot
+        ax_pos.set_facecolor('white')
+        
+        # Display the grid with proper masking
+        masked_grid = np.ma.masked_where(position_grid == 0, position_grid)
+        ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
         
         return ax_det.artists + ax_pos.artists
 
