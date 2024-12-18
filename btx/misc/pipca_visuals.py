@@ -864,6 +864,8 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
         if main_frame >= len(path) - 1:
             key = keys[path[-1]]
             img = bin_data[key]
+            if img is None:
+                img = blank_image
         else:
             current_key = keys[path[main_frame]]
             next_key = keys[path[main_frame + 1]]
@@ -893,7 +895,7 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
         else:
             print(img)
             raise TypeError("The input img contains non-numeric data.")
-            
+
         # Add bin coordinates
         row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
         ax_det.text(0.02, 0.98, f'Bin: ({row}, {col})', 
