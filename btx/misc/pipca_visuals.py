@@ -884,10 +884,16 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
         
         if np.issubdtype(img.dtype, np.number):
             masked_img = np.ma.masked_where(np.isnan(img), img)
+        elif img.dtype == object:
+            # Convert string 'nan' to np.nan
+            img = np.where(img == 'nan', np.nan, img)
+            # Try to convert the array to float
+            img = img.astype(float)
+            masked_img = np.ma.masked_where(np.isnan(img), img)
         else:
             print(img)
             raise TypeError("The input img contains non-numeric data.")
-
+            
         # Add bin coordinates
         row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
         ax_det.text(0.02, 0.98, f'Bin: ({row}, {col})', 
