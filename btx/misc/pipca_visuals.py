@@ -854,46 +854,83 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     ax_pos.set_axis_off()
     
     def update(frame):
+        # Clear both axes
         ax_det.clear()
         ax_pos.clear()
         
+        # Calculate which transition we're in
         main_frame = frame // (fade_frames + 1)
         sub_frame = frame % (fade_frames + 1)
         
-        # Display detector image
-        current_idx = path[main_frame]
-        current_key = keys[current_idx]
-        img = bin_data[current_key]
-        
-        if main_frame < len(path) - 1:
-            next_idx = path[main_frame + 1]
-            next_key = keys[next_idx]
+        # Update detector image (left subplot)
+        if main_frame >= len(path) - 1:
+            key = keys[path[-1]]
+            img = bin_data[key]
+            if img is None:
+                img = blank_image
+        else:
+            current_key = keys[path[main_frame]]
+            next_key = keys[path[main_frame + 1]]
+            
+            current_img = bin_data[current_key]
             next_img = bin_data[next_key]
             
-            if img is not None and next_img is not None:
+            # Handle cases where images might be None
+            if current_img is None and next_img is None:
+                img = blank_image
+            elif current_img is None:
+                img = next_img
+            elif next_img is None:
+                img = current_img
+            else:
                 alpha = sub_frame / (fade_frames + 1)
-                img = (1 - alpha) * img + alpha * next_img
+                img = (1 - alpha) * current_img + alpha * next_img
         
-        if img is not None:
+        if np.issubdtype(img.dtype, np.number):
             masked_img = np.ma.masked_where(np.isnan(img), img)
-            im = ax_det.imshow(masked_img, cmap='viridis')
-            fig.colorbar(im, ax=ax_det)
+        elif img.dtype == object:
+            # Convert string 'nan' to np.nan
+            img = np.where(img == 'nan', np.nan, img)
+            # Try to convert the array to float
+            img = img.astype(float)
+            masked_img = np.ma.masked_where(np.isnan(img), img)
+        else:
+            print(img)
+            raise TypeError("The input img contains non-numeric data.")
+
+        # Add bin coordinates
+        row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
+        ax_det.text(0.02, 0.98, f'Bin: ({row}, {col})', 
+                transform=ax_det.transAxes, 
+                color='white', 
+                fontsize=12,
+                verticalalignment='top')
         
-        # Update position visualization
-        position_grid = np.zeros((grid_size, grid_size))
-        for idx, key in enumerate(keys):
-            if bin_data[key] is not None:
-                r, c = idx // grid_size, idx % grid_size
-                position_grid[r, c] = 0.3
-        
+        # Update position visualization (right subplot)
+        position_grid = real_grid.copy()
+
+        # Mark path
         for idx in path[:main_frame+1]:
             r, c = idx // grid_size, idx % grid_size
-            position_grid[r, c] = 0.7
-        
+            position_grid[r, c] = 0.7  # Stronger marking for path
+
+        # Mark current position
         r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
-        position_grid[r, c] = 1.0
-        
-        ax_pos.imshow(position_grid, cmap='viridis', interpolation='nearest')
+        position_grid[r, c] = 1.0  # Brightest marking for current position
+
+        # Display grid with mask for NaN values (empty bins)
+        masked_grid = np.ma.masked_where(np.isnan(position_grid), position_grid)
+
+        # Set background colors
+        ax_pos.set_facecolor('white')  # Set subplot background to white
+        fig.patch.set_facecolor('white')  # Set figure background to white
+
+        # Display the grid
+        ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
+
+        # Set both axes as invisible
+        ax_det.set_axis_off()
+        ax_pos.set_axis_off()
         
         return ax_det.artists + ax_pos.artists
 
