@@ -904,6 +904,7 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
                 fontsize=12,
                 verticalalignment='top')
         
+        # Update position visualization (right subplot)
         position_grid = real_grid.copy()
 
         # Mark path
@@ -917,14 +918,14 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
 
         # Display grid with mask for NaN values (empty bins)
         masked_grid = np.ma.masked_where(np.isnan(position_grid), position_grid)
-        ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
 
-        # Add these lines to set the background color to white
+        # Set background colors
         ax_pos.set_facecolor('white')  # Set subplot background to white
         fig.patch.set_facecolor('white')  # Set figure background to white
 
-        # Optional: Add a white background to masked values
-        masked_grid.set_fill_value('white')
+        # Display the grid
+        ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
+
         # Set both axes as invisible
         ax_det.set_axis_off()
         ax_pos.set_axis_off()
