@@ -800,6 +800,7 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
     grid_size = int(np.ceil(np.sqrt(len(keys))))
+    blank_image = np.full_like(next(iter(bin_data.values())), fill_value=np.nan)
     
     # Créer une grille représentant les positions réelles des bins
     real_grid = np.full((grid_size, grid_size), np.nan)
