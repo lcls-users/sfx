@@ -882,11 +882,12 @@ def random_walk_animation(bin_data_path='/sdf/data/lcls/ds/mfx/mfxp23120/scratch
                 alpha = sub_frame / (fade_frames + 1)
                 img = (1 - alpha) * current_img + alpha * next_img
         
-        # Mask NaN values for display
-        if img is not None:
+        if np.issubdtype(img.dtype, np.number):
             masked_img = np.ma.masked_where(np.isnan(img), img)
-            ax_det.imshow(masked_img, cmap='viridis')
-        
+        else:
+            print(img)
+            raise TypeError("The input img contains non-numeric data.")
+
         # Add bin coordinates
         row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
         ax_det.text(0.02, 0.98, f'Bin: ({row}, {col})', 
