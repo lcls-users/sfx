@@ -840,6 +840,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
                 break
         
         path.append(next_idx if next_idx is not None else path[-1])
+
     
     # Create figure with two side-by-side subplots
     fig = plt.figure(figsize=(20, 10))
