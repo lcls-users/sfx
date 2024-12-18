@@ -877,7 +877,6 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         if img is not None:
             masked_img = np.ma.masked_where(np.isnan(img), img)
             im = ax_det.imshow(masked_img, cmap='viridis')
-            fig.colorbar(im, ax=ax_det)
         
         # Update position visualization
         position_grid = np.zeros((grid_size, grid_size))
