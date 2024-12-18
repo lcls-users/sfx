@@ -695,7 +695,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     sup_vmax = None
 
     for i, key in enumerate(keys):
-        if i % 20 == 0:
+        if i % 500 == 0:
             print(f"Processing bin {i+1}/{len(keys)}")
         if bin_data[key] is None:
             blank_image = np.full_like(next(iter(bin_data.values())), fill_value=np.nan)
