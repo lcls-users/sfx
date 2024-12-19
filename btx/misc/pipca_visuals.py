@@ -718,141 +718,19 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
                 dpi=300, bbox_inches='tight')
     plt.close()
 
-"""def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2, fade_frames=5):
-    # Load bin data
-    bin_data = np.load('bin_data.npy', allow_pickle=True).item()
-    keys = list(bin_data.keys())
-    grid_size = int(np.ceil(np.sqrt(len(keys))))
+def random_walk_animation(bin_data_path, filename, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
+    with open(filename, "rb") as f:
+        data = pickle.load(f)
     
-    # Generate random walk path
-    current_idx = random.randrange(len(keys))
-    path = [current_idx]
-    
-    for _ in range(steps):
-        row, col = path[-1] // grid_size, path[-1] % grid_size
-        possible_moves = []
-        
-        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
-            new_row, new_col = row + dr, col + dc
-            if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
-                new_idx = new_row * grid_size + new_col
-                if new_idx < len(keys):
-                    possible_moves.append(new_idx)
-        
-        if not possible_moves:
-            break
-            
-        next_idx = random.choice(possible_moves)
-        path.append(next_idx)
-    
-    # Create animation with transitions
-    fig = plt.figure(frameon=False)
-    ax = plt.Axes(fig, [0., 0., 1., 1.])
-    ax.set_axis_off()
-    fig.add_axes(ax)
-    
-    def update(frame):
-        ax.clear()
-        
-        # Calculate which transition we're in
-        main_frame = frame // (fade_frames + 1)
-        sub_frame = frame % (fade_frames + 1)
-        
-        if main_frame >= len(path) - 1:
-            key = keys[path[-1]]
-            img = bin_data[key]
-        else:
-            # Create transition between frames
-            current_key = keys[path[main_frame]]
-            next_key = keys[path[main_frame + 1]]
-            
-            current_img = bin_data[current_key]
-            next_img = bin_data[next_key]
-            
-            # Linear interpolation for fade effect
-            alpha = sub_frame / (fade_frames + 1)
-            img = (1 - alpha) * current_img + alpha * next_img
-        
-        im = ax.imshow(img, cmap='viridis')
-        
-        # Add bin coordinates
-        row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
-        ax.text(0.02, 0.98, f'Bin: ({row}, {col})', 
-                transform=ax.transAxes, 
-                color='white', 
-                fontsize=12,
-                verticalalignment='top')
-        
-        ax.set_axis_off()
-        return ax.artists
-    
-    total_frames = (len(path) - 1) * (fade_frames + 1) + 1
-    ani = animation.FuncAnimation(fig, update, 
-                                frames=total_frames, 
-                                interval=interval, 
-                                blit=True)
-    
-    writer = animation.PillowWriter(fps=fps)
-    ani.save(save_path, writer=writer)
-    plt.close()"""
-
-def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
+    embedding = np.array(data["embeddings_tsne"])
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
-    grid_size = int(np.ceil(np.sqrt(len(keys))))
     
-    # Create grid marking valid (non-blank) positions
-    valid_positions = np.full((grid_size, grid_size), False)
-    for idx, key in enumerate(keys):
-        if bin_data[key] is not None:  # Only mark non-blank positions
-            row, col = idx // grid_size, idx % grid_size
-            valid_positions[row, col] = True
-    
-    def find_closest_valid_position(row, col, direction):
-        dr, dc = direction
-        new_row, new_col = row, col
-        steps_taken = 0
-        while steps_taken < grid_size:  # Limit search distance
-            new_row += dr
-            new_col += dc
-            if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
-                new_idx = new_row * grid_size + new_col
-                if new_idx < len(keys) and valid_positions[new_row, new_col]:
-                    return new_idx
-            steps_taken += 1
-        return None
-    
-    # Generate path avoiding blank images
-    current_idx = random.choice([idx for idx, key in enumerate(keys) 
-                               if bin_data[key] is not None])
-    path = [current_idx]
-    
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    
-    for _ in range(steps):
-        row, col = path[-1] // grid_size, path[-1] % grid_size
-        random.shuffle(directions)  # Randomize direction order
-        
-        # Try each direction until finding a valid position
-        next_idx = None
-        for direction in directions:
-            next_idx = find_closest_valid_position(row, col, direction)
-            if next_idx is not None:
-                break
-        
-        path.append(next_idx if next_idx is not None else path[-1])
-    
-    # Create figure with two side-by-side subplots
+    # Création de la figure
     fig = plt.figure(figsize=(20, 10))
     gs = GridSpec(1, 2, width_ratios=[1, 1])
-    
-    # Left subplot for detector image
     ax_det = fig.add_subplot(gs[0])
-    ax_det.set_axis_off()
-    
-    # Right subplot for position visualization
     ax_pos = fig.add_subplot(gs[1])
-    ax_pos.set_axis_off()
     
     def update(frame):
         ax_det.clear()
@@ -861,44 +739,28 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         main_frame = frame // (fade_frames + 1)
         sub_frame = frame % (fade_frames + 1)
         
-        # Display detector image
+        # Affichage détecteur (partie gauche)
         current_idx = path[main_frame]
-        current_key = keys[current_idx]
-        img = bin_data[current_key]
-        
-        if main_frame < len(path) - 1:
-            next_idx = path[main_frame + 1]
-            next_key = keys[next_idx]
-            next_img = bin_data[next_key]
-            
-            if img is not None and next_img is not None:
-                alpha = sub_frame / (fade_frames + 1)
-                img = (1 - alpha) * img + alpha * next_img
+        img = bin_data[keys[current_idx]]
         
         if img is not None:
             masked_img = np.ma.masked_where(np.isnan(img), img)
-            im = ax_det.imshow(masked_img, cmap='viridis')
+            ax_det.imshow(masked_img, cmap='viridis')
         
-        # Update position visualization
-        position_grid = np.zeros((grid_size, grid_size))
-        for idx, key in enumerate(keys):
-            if bin_data[key] is not None:
-                r, c = idx // grid_size, idx % grid_size
-                position_grid[r, c] = 0.3
+        # Affichage t-SNE (partie droite)
+        # Scatter plot de tous les points t-SNE
+        ax_pos.scatter(embedding[:, 0], embedding[:, 1], c='lightgray', alpha=0.3)
         
-        for idx in path[:main_frame+1]:
-            r, c = idx // grid_size, idx % grid_size
-            position_grid[r, c] = 0.7
+        # Tracer le chemin parcouru
+        path_coords = embedding[path[:main_frame+1]]
+        ax_pos.plot(path_coords[:, 0], path_coords[:, 1], 'r-', linewidth=2)
         
-        r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
-        position_grid[r, c] = 1.0
+        # Point actuel
+        current_pos = embedding[path[main_frame]]
+        ax_pos.scatter(current_pos[0], current_pos[1], c='red', s=100)
         
-        # Set background color for the subplot
-        ax_pos.set_facecolor('white')
-        
-        # Display the grid with proper masking
-        masked_grid = np.ma.masked_where(position_grid == 0, position_grid)
-        ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
+        ax_det.set_axis_off()
+        ax_pos.set_axis_off()
         
         return ax_det.artists + ax_pos.artists
 
