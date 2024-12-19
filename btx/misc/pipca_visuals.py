@@ -804,6 +804,8 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     valid_positions = np.full((grid_size, grid_size), False)
     for idx, key in enumerate(keys):
         if bin_data[key] is not None:  # Only mark non-blank positions
+            print("Bin index:",idx)
+            print("Binning key:",key)
             row, col = idx // grid_size, idx % grid_size
             valid_positions[row, col] = True
     
