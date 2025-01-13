@@ -804,9 +804,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     valid_positions = np.full((grid_size, grid_size), False)
     for idx, key in enumerate(keys):
         if bin_data[key] is not None:  # Only mark non-blank positions
-            print("Bin index:",idx)
-            print("Binning key:",key)
-            row, col = idx // grid_size, idx % grid_size
+            row, col = map(int, key.split("_"))
             valid_positions[row, col] = True
     
     def find_closest_valid_position(row, col, direction):
@@ -831,7 +829,8 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
     
     for _ in range(steps):
-        row, col = path[-1] // grid_size, path[-1] % grid_size
+        #row, col = path[-1] // grid_size, path[-1] % grid_size
+        row, col = map(int, keys[path[-1]].split("_"))
         random.shuffle(directions)  # Randomize direction order
         
         # Try each direction until finding a valid position
@@ -884,14 +883,14 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         position_grid = np.zeros((grid_size, grid_size))
         for idx, key in enumerate(keys):
             if bin_data[key] is not None:
-                r, c = idx // grid_size, idx % grid_size
+                r, c = map(int, keys[idx].split("_"))
                 position_grid[r, c] = 0.3
         
         for idx in path[:main_frame+1]:
-            r, c = idx // grid_size, idx % grid_size
+            r, c = map(int, keys[idx].split("_"))
             position_grid[r, c] = 0.7
         
-        r, c = path[main_frame] // grid_size, path[main_frame] % grid_size
+        r, c = map(int, keys[path[main_frame]].split("_"))
         position_grid[r, c] = 1.0
         
         # Set background color for the subplot

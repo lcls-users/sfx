@@ -223,7 +223,7 @@ def binning_indices(embedding, grid_size=50):
     y_bin_size = (y_max - y_min) / grid_size
 
     bins = {}
-
+    count=0
     for index, (x, y) in enumerate(embedding):
         x_bin = int((x - x_min) / x_bin_size)
         y_bin = int((y - y_min) / y_bin_size)
@@ -239,7 +239,6 @@ def binning_indices(embedding, grid_size=50):
         bins[bin_key].append(index)
 
         ##Test
-        count=0
         if count <5:
             print("Bin key",bin_key,flush=True)
             print("Index",index,flush=True)
