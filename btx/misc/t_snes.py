@@ -215,6 +215,31 @@ def plot_scatters(embedding, type_of_embedding):
     fig.update_layout(height=800, width=800, showlegend=False)
     fig.show()
 
+"""def binning_indices(embedding, grid_size=50):
+    x_min, x_max = embedding[:, 0].min(), embedding[:, 0].max()
+    y_min, y_max = embedding[:, 1].min(), embedding[:, 1].max()
+
+    x_bin_size = (x_max - x_min) / grid_size
+    y_bin_size = (y_max - y_min) / grid_size
+
+    bins = {}
+
+    for index, (x, y) in enumerate(embedding):
+        x_bin = int((x - x_min) / x_bin_size)
+        y_bin = int((y - y_min) / y_bin_size)
+
+        x_bin = min(x_bin, grid_size - 1)
+        y_bin = min(y_bin, grid_size - 1)
+
+        bin_key = (x_bin, y_bin)
+
+        if bin_key not in bins:
+            bins[bin_key] = []
+        
+        bins[bin_key].append(index)
+
+    return bins"""
+
 def binning_indices(embedding, grid_size=50):
     x_min, x_max = embedding[:, 0].min(), embedding[:, 0].max()
     y_min, y_max = embedding[:, 1].min(), embedding[:, 1].max()
@@ -240,19 +265,6 @@ def binning_indices(embedding, grid_size=50):
 
     return bins
 
-"""def create_average_proj(proj_list, bins):
-    proj_binned = {}
-    proj_list = np.array(proj_list)
-    
-    for key, indices in bins.items():
-        if indices:
-            list_proj = []
-            for rank in range(proj_list.shape[0]):
-                avg_projections = np.mean(proj_list[rank][indices], axis=0)
-                list_proj.append(avg_projections)
-            proj_binned[key] = list_proj
-    
-    return proj_binned"""
 
 def create_average_proj(proj_list, bins):
     proj_binned = {}
