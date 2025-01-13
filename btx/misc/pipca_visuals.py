@@ -725,6 +725,19 @@ def random_walk_animation(bin_data_path, filename, steps=50, save_path="random_w
     embedding = np.array(data["embeddings_tsne"])
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
+<<<<<<< HEAD
+=======
+    grid_size = int(np.ceil(np.sqrt(len(keys))))
+    
+    # Create grid marking valid (non-blank) positions
+    valid_positions = np.full((grid_size, grid_size), False)
+    for idx, key in enumerate(keys):
+        if bin_data[key] is not None:  # Only mark non-blank positions
+            print("Bin index:",idx)
+            print("Binning key:",key)
+            row, col = idx // grid_size, idx % grid_size
+            valid_positions[row, col] = True
+>>>>>>> 41a1b4e7e237a69c429bb87718cd1fb4bccaeb1e
     
     # Création de la figure
     fig = plt.figure(figsize=(20, 10))
