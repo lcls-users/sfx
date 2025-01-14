@@ -728,7 +728,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
                     cbar_pad=0.05)
 
     for i, key in enumerate(keys):
-        print(f"Processing bin {i+1}/{len(keys)}")
+        print(f"Processing bin {i+1}/{len(keys)}",flush=True)
 
         if bin_data[key] is None:
             # Create a blank image if bin data is None
@@ -744,8 +744,12 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
 
     plt.colorbar(im, cax=grid.cbar_axes[0])
     plt.suptitle(title, fontsize=16)
-    plt.savefig(f"{type_of_embedding.lower()}_binned_images_{num_components}.png", 
-                dpi=300, bbox_inches='tight')
+    
+    file_name = f"{type_of_embedding.lower()}_binned_images_{num_components}.png"
+    print(f"Saving file: {file_name}")
+    plt.savefig(file_name, dpi=300, bbox_inches='tight')
+    print(f"File saved: {os.path.exists(file_name)}")
+    plt.show()
     plt.close()
 
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
