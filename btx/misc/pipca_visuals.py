@@ -684,7 +684,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     
     print("Images saved!", flush=True)
 
-    # Create visualization
+    """# Create visualization
     fig = plt.figure(figsize=(20, 20))
     grid = ImageGrid(fig, 111,
                     nrows_ncols=(grid_size, grid_size),
@@ -711,6 +711,36 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
             im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
 
         grid[i].axis('off')  # Supprimer l'axe
+
+    plt.colorbar(im, cax=grid.cbar_axes[0])
+    plt.suptitle(title, fontsize=16)
+    plt.savefig(f"{type_of_embedding.lower()}_binned_images_{num_components}.png", 
+                dpi=300, bbox_inches='tight')
+    plt.close()"""
+    fig = plt.figure(figsize=(20, 20))
+    grid = ImageGrid(fig, 111,
+                    nrows_ncols=(grid_size, grid_size),
+                    axes_pad=0.1,
+                    share_all=True,
+                    cbar_location="right",
+                    cbar_mode="single",
+                    cbar_size="5%",
+                    cbar_pad=0.05)
+
+    for i, key in enumerate(keys):
+        print(f"Processing bin {i+1}/{len(keys)}")
+
+        if bin_data[key] is None:
+            # Create a blank image if bin data is None
+            reference_image = next((img for img in bin_data.values() if img is not None), None)
+            blank_image = np.full(reference_image.shape, fill_value=np.nan, dtype=np.float32)
+            im = grid[i].imshow(blank_image, cmap='gray', vmin=0, vmax=1)
+        else:
+            # Display a black image when bin data is not None
+            black_image = np.zeros_like(bin_data[key])
+            im = grid[i].imshow(black_image, cmap='gray', vmin=0, vmax=1)
+
+        grid[i].axis('off')  # Remove axis
 
     plt.colorbar(im, cax=grid.cbar_axes[0])
     plt.suptitle(title, fontsize=16)
