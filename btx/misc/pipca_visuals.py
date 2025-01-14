@@ -842,57 +842,66 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         ax_det.clear()
         ax_pos.clear()
         
-        # Ajout de la grille
-        ax_pos.set_xticks(np.arange(0, grid_size, 1))
-        ax_pos.set_yticks(np.arange(0, grid_size, 1))
-        ax_pos.grid(True, color='gray', alpha=0.3, linestyle='--')
+        main_frame = frame // (fade_frames + 1)
+        sub_frame = frame % (fade_frames + 1)
         
-        # Définir les limites et l'aspect
-        ax_pos.set_xlim(-0.5, grid_size - 0.5)
-        ax_pos.set_ylim(-0.5, grid_size - 0.5)
-        ax_pos.set_aspect('equal')
-        
-        # Affichage de l'image du détecteur
-        current_idx = path[min(frame, len(path) - 1)]
+        # Display detector image with fade effect
+        current_idx = path[min(main_frame, len(path)-1)]
         current_key = keys[current_idx]
         img = bin_data[current_key]
         
-        if img is not None:
-            ax_det.imshow(img, cmap='viridis')
+        if main_frame < len(path) - 1 and sub_frame > 0:
+            next_idx = path[main_frame + 1]
+            next_key = keys[next_idx]
+            next_img = bin_data[next_key]
+            
+            if img is not None and next_img is not None:
+                alpha = sub_frame / (fade_frames + 1)
+                img = (1 - alpha) * img + alpha * next_img
         
-        # Visualisation de la position
+        if img is not None:
+            masked_img = np.ma.masked_where(np.isnan(img), img)
+            ax_det.imshow(masked_img, cmap='viridis')
+        
+        # Update position visualization
         position_grid = np.zeros((grid_size, grid_size))
         
-        # Marquer les positions visitées
-        for idx in path[:frame + 1]:
+        # Mark all valid positions
+        for key in keys:
+            if bin_data[key] is not None:
+                r, c = map(int, key.split("_"))
+                position_grid[r, c] = 0.3
+        
+        # Mark visited positions
+        for idx in path[:main_frame+1]:
             r, c = map(int, keys[idx].split("_"))
             position_grid[r, c] = 0.7
         
-        # Marquer la position actuelle
-        r, c = map(int, keys[path[min(frame, len(path) - 1)]].split("_"))
+        # Mark current position
+        r, c = map(int, keys[path[min(main_frame, len(path)-1)]].split("_"))
         position_grid[r, c] = 1.0
         
+        # Display position grid
+        ax_pos.set_facecolor('white')
         masked_grid = np.ma.masked_where(position_grid == 0, position_grid)
         ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
         
-        # Ajouter les coordonnées pour les positions visitées
-        for i in range(grid_size):
-            for j in range(grid_size):
-                if position_grid[i, j] > 0:
-                    ax_pos.text(j, i, f'({i},{j})', 
-                            ha='center', va='center', 
-                            fontsize=8, color='white')
-
-        total_frames = (len(path) - 1) * (fade_frames + 1) + 1
-        ani = animation.FuncAnimation(fig, update, 
-                                    frames=total_frames, 
-                                    interval=interval, 
-                                    blit=True)
+        # Set proper axis limits and remove ticks
+        ax_det.set_axis_off()
+        ax_pos.set_axis_off()
         
-        save_path += f'_{fps}fps.gif'
-        writer = animation.PillowWriter(fps=fps)
-        ani.save(save_path, writer=writer)
-        plt.close()
+        return ax_det.artists + ax_pos.artists
+    
+    total_frames = (len(path) - 1) * (fade_frames + 1) + 1
+    ani = animation.FuncAnimation(fig, update, 
+                                frames=total_frames, 
+                                interval=interval, 
+                                blit=True)
+    
+    save_path += f'_{fps}fps.gif'
+    writer = animation.PillowWriter(fps=fps)
+    ani.save(save_path, writer=writer)
+    plt.close()
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
