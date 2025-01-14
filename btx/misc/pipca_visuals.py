@@ -614,7 +614,7 @@ def create_average_img(proj_binned, V,mu):
     print("Number of bins:",count)
     return img_binned
 
-def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmin=None, vmax=None):
+def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmin=None, vmax=None, grid_size=50):
     img_binned_tsne = {}
     img_binned_umap = {}
 
@@ -660,7 +660,6 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     
     # Create image grid
     keys = list(img_binned.keys())
-    grid_size = int(np.ceil(np.sqrt(len(keys))))
     
     # Process and store individual bins
     bin_data = {}
@@ -795,10 +794,9 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     ani.save(save_path, writer=writer)
     plt.close()"""
 
-def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
+def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size = 50):
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
-    grid_size = int(np.ceil(np.sqrt(len(keys))))
     
     # Create grid marking valid (non-blank) positions
     valid_positions = np.full((grid_size, grid_size), False)
