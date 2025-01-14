@@ -721,8 +721,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     grid = np.ones((grid_size, grid_size), dtype=np.uint8)
     
     for i, (key, data) in enumerate(bin_data.items()):
-        row = i // grid_size
-        col = i % grid_size
+        row, col = map(int, key.split("_"))
         grid[row, col] = 0 if data is not None else 1
     
     # Create the plot
