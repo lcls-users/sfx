@@ -696,20 +696,30 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     for i, key in enumerate(keys):
         if i % 500 == 0:
             print(f"Processing bin {i+1}/{len(keys)}")
+            
+        # Create blank image if bin data is None
         if bin_data[key] is None:
-            blank_image = np.full_like(next(iter(bin_data.values())), fill_value=np.nan, dtype=np.float32)
-            blank_image = np.array(blank_image, dtype=np.float32)
+            # Get shape from first non-None value in bin_data
+            reference_image = next(iter(bin_data.values()))
+            while reference_image is None:
+                reference_image = next(iter(bin_data.values()))
+                
+            blank_image = np.full(reference_image.shape, fill_value=np.nan, dtype=np.float32)
             im = grid[i].imshow(blank_image, cmap='gray', vmin=0, vmax=1)
+            
+        # Display image with provided value range
         elif vmin is not None and vmax is not None:
             im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
+            
+        # Display image and update min/max values
         else:
             im = grid[i].imshow(bin_data[key], cmap='viridis')
             val1, val2 = im.get_clim()
-            if inf_vmin is None or val1 < inf_vmin:
-                inf_vmin = val1
-            if sup_vmax is None or val2 > sup_vmax:
-                sup_vmax = val2
-        grid[i].axis('off')
+            inf_vmin = min(inf_vmin, val1) if inf_vmin is not None else val1
+            sup_vmax = max(sup_vmax, val2) if sup_vmax is not None else val2
+            
+        grid[i].axis('off')  # Remove axis
+
 
     plt.colorbar(im, cax=grid.cbar_axes[0])
     plt.suptitle(title, fontsize=16)
