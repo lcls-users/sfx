@@ -694,8 +694,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     sup_vmax = None
 
     for i, key in enumerate(keys):
-        if i % 50 == 0:
-            print(f"Processing bin {i+1}/{len(keys)}")
+        print(f"Processing bin {i+1}/{len(keys)}")
             
         # Create blank image if bin data is None
         if bin_data[key] is None:
