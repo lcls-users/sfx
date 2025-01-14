@@ -674,6 +674,11 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     
     print("Images assembled!")
 
+    print("====================================")
+    print(list(bin_data.keys())[:5])
+    print(list(bin_data.items())[:5])
+    print("====================================")
+
     # Save bin data for animation
     np.save('/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy', bin_data) ##HARDCODED
     
@@ -695,30 +700,17 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
 
     for i, key in enumerate(keys):
         print(f"Processing bin {i+1}/{len(keys)}")
-            
-        # Create blank image if bin data is None
+
         if bin_data[key] is None:
-            # Get shape from first non-None value in bin_data
-            reference_image = next(iter(bin_data.values()))
-            while reference_image is None:
-                reference_image = next(iter(bin_data.values()))
-                
+            # Créer une image blanche si les données du bin sont None
+            reference_image = next((img for img in bin_data.values() if img is not None), None)
             blank_image = np.full(reference_image.shape, fill_value=np.nan, dtype=np.float32)
             im = grid[i].imshow(blank_image, cmap='gray', vmin=0, vmax=1)
-            
-        # Display image with provided value range
-        elif vmin is not None and vmax is not None:
-            im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
-            
-        # Display image and update min/max values
         else:
-            im = grid[i].imshow(bin_data[key], cmap='viridis')
-            val1, val2 = im.get_clim()
-            inf_vmin = min(inf_vmin, val1) if inf_vmin is not None else val1
-            sup_vmax = max(sup_vmax, val2) if sup_vmax is not None else val2
-            
-        grid[i].axis('off')  # Remove axis
+            # Afficher l'image avec la plage de valeurs fournie
+            im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
 
+        grid[i].axis('off')  # Supprimer l'axe
 
     plt.colorbar(im, cax=grid.cbar_axes[0])
     plt.suptitle(title, fontsize=16)
