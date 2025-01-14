@@ -694,7 +694,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     sup_vmax = None
 
     for i, key in enumerate(keys):
-        if i % 500 == 0:
+        if i % 50 == 0:
             print(f"Processing bin {i+1}/{len(keys)}")
             
         # Create blank image if bin data is None
@@ -726,84 +726,6 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     plt.savefig(f"{type_of_embedding.lower()}_binned_images_{num_components}.png", 
                 dpi=300, bbox_inches='tight')
     plt.close()
-
-"""def random_walk_animation(steps=50, save_path="random_walk_animation.gif", interval=500, fps=2, fade_frames=5):
-    # Load bin data
-    bin_data = np.load('bin_data.npy', allow_pickle=True).item()
-    keys = list(bin_data.keys())
-    grid_size = int(np.ceil(np.sqrt(len(keys))))
-    
-    # Generate random walk path
-    current_idx = random.randrange(len(keys))
-    path = [current_idx]
-    
-    for _ in range(steps):
-        row, col = path[-1] // grid_size, path[-1] % grid_size
-        possible_moves = []
-        
-        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
-            new_row, new_col = row + dr, col + dc
-            if 0 <= new_row < grid_size and 0 <= new_col < grid_size:
-                new_idx = new_row * grid_size + new_col
-                if new_idx < len(keys):
-                    possible_moves.append(new_idx)
-        
-        if not possible_moves:
-            break
-            
-        next_idx = random.choice(possible_moves)
-        path.append(next_idx)
-    
-    # Create animation with transitions
-    fig = plt.figure(frameon=False)
-    ax = plt.Axes(fig, [0., 0., 1., 1.])
-    ax.set_axis_off()
-    fig.add_axes(ax)
-    
-    def update(frame):
-        ax.clear()
-        
-        # Calculate which transition we're in
-        main_frame = frame // (fade_frames + 1)
-        sub_frame = frame % (fade_frames + 1)
-        
-        if main_frame >= len(path) - 1:
-            key = keys[path[-1]]
-            img = bin_data[key]
-        else:
-            # Create transition between frames
-            current_key = keys[path[main_frame]]
-            next_key = keys[path[main_frame + 1]]
-            
-            current_img = bin_data[current_key]
-            next_img = bin_data[next_key]
-            
-            # Linear interpolation for fade effect
-            alpha = sub_frame / (fade_frames + 1)
-            img = (1 - alpha) * current_img + alpha * next_img
-        
-        im = ax.imshow(img, cmap='viridis')
-        
-        # Add bin coordinates
-        row, col = path[main_frame] // grid_size, path[main_frame] % grid_size
-        ax.text(0.02, 0.98, f'Bin: ({row}, {col})', 
-                transform=ax.transAxes, 
-                color='white', 
-                fontsize=12,
-                verticalalignment='top')
-        
-        ax.set_axis_off()
-        return ax.artists
-    
-    total_frames = (len(path) - 1) * (fade_frames + 1) + 1
-    ani = animation.FuncAnimation(fig, update, 
-                                frames=total_frames, 
-                                interval=interval, 
-                                blit=True)
-    
-    writer = animation.PillowWriter(fps=fps)
-    ani.save(save_path, writer=writer)
-    plt.close()"""
 
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
