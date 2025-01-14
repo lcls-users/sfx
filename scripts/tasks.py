@@ -1030,7 +1030,7 @@ def reduce_pypca(config,num_nodes = 1, id_current_node = 0):
     command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images_str}'"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
-    command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
+    command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'; conda list"
     command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --model {model} --num_gpus {num_gpus} --num_nodes {num_nodes} --id_current_node {id_current_node}"
 
     js = JobScheduler(os.path.join(".", f'reduce_pypca_{num_tot_images}_{batch_size}_node_{id_current_node}.sh'),queue = 'ampere', ncores=  1, jobname=f'reduce_pypca_{num_tot_images}_{batch_size}_node_{id_current_node}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
