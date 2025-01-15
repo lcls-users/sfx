@@ -623,7 +623,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     print("Plot created successfully!")
     fig.show()
 
-    binned_centers, binned_indices = binning_indices_with_centroids(global_embedding, grid_size=grid_size)
+    _,binned_centers, binned_indices = binning_indices_with_centroids(global_embedding, grid_size=grid_size)
     binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
     binned_df['Index'] = binned_indices
 
