@@ -782,10 +782,10 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     plt.close()"""
      # Create a 2D numpy array to represent the grid
     grid = np.ones((grid_size, grid_size), dtype=np.uint8)
-    
-    for i, (key, data) in enumerate(bin_data.items()):
+
+    for key in keys:
         row, col = map(int, key.split("_"))
-        grid[row, col] = 0 if data is not None else 1
+        grid[row, col] = 0 if img_binned[key] is None else 1
     
     # Create the plot
     fig, ax = plt.subplots(figsize=(10, 10))
