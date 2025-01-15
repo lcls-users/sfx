@@ -498,7 +498,49 @@ def display_umap(filename,num_images):
         index_df.to_csv(filename, index=False, header=False)
         print(f"Index by cluster saved in {filename}")"""
 
-def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_samples=10, num_panels=16, save_clusters=False):
+def binning_indices(embedding, grid_size=50):
+    x_min, x_max = embedding[:, 0].min(), embedding[:, 0].max()
+    y_min, y_max = embedding[:, 1].min(), embedding[:, 1].max()
+
+    x_bin_size = (x_max - x_min) / grid_size
+    y_bin_size = (y_max - y_min) / grid_size
+
+    bins = {}
+    bin_centers = []
+    binned_indices = []
+
+    count=0
+    for index, (x, y) in enumerate(embedding):
+        x_bin = int((x - x_min) / x_bin_size)
+        y_bin = int((y - y_min) / y_bin_size)
+
+        x_bin = min(x_bin, grid_size - 1)
+        y_bin = min(y_bin, grid_size - 1)
+
+        bin_key = (x_bin, y_bin)
+
+        if bin_key not in bins:
+            bins[bin_key] = []
+        
+        bins[bin_key].append(index)
+
+        ##Test
+        if count <5:
+            print("Bin key",bin_key,flush=True)
+            print("Index",index,flush=True)
+            print("Original coordinates",x,y,flush=True)
+            count+=1
+
+        # Calculate bin center coordinates
+        x_center = x_min + (x_bin + 0.5) * x_bin_size
+        y_center = y_min + (y_bin + 0.5) * y_bin_size
+
+        bin_centers.append((x_center, y_center))
+        binned_indices.append(index)
+
+    return bins,np.array(bin_centers), binned_indices
+
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_samples=10, num_panels=16, save_clusters=False, grid_size=50):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -581,6 +623,26 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     print("Plot created successfully!")
     fig.show()
 
+    binned_centers, binned_indices = binning_indices_with_centroids(global_embedding, grid_size=grid_size)
+    binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
+    binned_df['Index'] = binned_indices
+
+    binned_scatter = go.Scatter(
+        x=binned_df['Binned_Dimension1'],
+        y=binned_df['Binned_Dimension2'],
+        mode='markers',
+        marker=dict(color='rgba(0,0,255,0.5)', size=8),
+        text=binned_df['Index'],
+        hoverinfo='text',
+        showlegend=False,
+        name='Binned'
+    )
+
+    fig = go.Figure(data= binned_scatter)
+    fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2')
+    fig.show()
+
+
     if save_clusters:
         unique_clusters = sorted(global_df['Cluster'].unique())
         index_by_cluster = [list(global_df.index[global_df['Cluster'] == cluster]) for cluster in unique_clusters]
@@ -657,6 +719,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     a, b, c = psi.det.shape()
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+    
     
     # Create image grid
     keys = list(img_binned.keys())
