@@ -498,7 +498,7 @@ def display_umap(filename,num_images):
         index_df.to_csv(filename, index=False, header=False)
         print(f"Index by cluster saved in {filename}")"""
 
-def binning_indices(embedding, grid_size=50):
+def binning_indices_with_centroids(embedding, grid_size=50):
     x_min, x_max = embedding[:, 0].min(), embedding[:, 0].max()
     y_min, y_max = embedding[:, 1].min(), embedding[:, 1].max()
 
