@@ -810,8 +810,9 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     binned_centers = []
     for key in keys:
         x,y = map(float, key.split("_"))
-        binned_centers.append(x,y)
+        binned_centers.append((x,y))
 
+    binned_centers = np.array(binned_centers)
     binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
 
     binned_scatter = go.Scatter(
