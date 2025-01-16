@@ -644,7 +644,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     fig.show()"""
 
     # Créer une matrice 2D pour représenter la grille
-    grid = np.zeros((grid_size, grid_size))
+    grid = np.zeros((grid_size+1, grid_size+1))
 
     # Remplir la grille
     for _, row in binned_df.iterrows():
