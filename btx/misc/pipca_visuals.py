@@ -815,18 +815,19 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     def find_closest_valid_position(row, col, direction, valid_positions, keys):
         dr, dc = direction
         new_row, new_col = row, col
-        while True:
+        steps = 1
+        
+        # Continue searching until we find a valid position or hit the boundary
+        while (0 <= new_row + dr < valid_positions.shape[0] and 
+            0 <= new_col + dc < valid_positions.shape[1]):
             new_row += dr
             new_col += dc
-            if (0 <= new_row < valid_positions.shape[0] and 
-                0 <= new_col < valid_positions.shape[1] and 
-                valid_positions[new_row, new_col]):
-                key = f"{new_col}_{new_row}"
-                if key in keys:
-                    return keys.index(key)
-            if (new_row < 0 or new_row >= valid_positions.shape[0] or
-                new_col < 0 or new_col >= valid_positions.shape[1]):
-                return None
+            key = f"{new_col}_{new_row}"
+            
+            # Return immediately when we find the first valid position
+            if valid_positions[new_row, new_col] and key in keys:
+                return keys.index(key)
+                
         return None
     
     # Create grid marking valid (non-blank) positions
