@@ -26,6 +26,7 @@ import plotly.express as px
 import plotly.subplots as sp
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import plotly.io as pio
 
 import pandas as pd
 import seaborn as sns
