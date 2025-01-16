@@ -253,20 +253,6 @@ def binning_indices(embedding, grid_size=50):
 
     return bins
 
-"""def create_average_proj(proj_list, bins):
-    proj_binned = {}
-    proj_list = np.array(proj_list)
-    
-    for key, indices in bins.items():
-        if indices:
-            list_proj = []
-            for rank in range(proj_list.shape[0]):
-                avg_projections = np.mean(proj_list[rank][indices], axis=0)
-                list_proj.append(avg_projections)
-            proj_binned[key] = list_proj
-    
-    return proj_binned"""
-
 def create_average_proj(proj_list, bins):
     proj_binned = {}
     proj_list = np.array(proj_list)
@@ -357,6 +343,10 @@ def parse_input():
         "--grid_size",
         type=int
     )
+    parser.add_argument( 
+        "--guiding_panel",
+        type=int
+    )
 
     return parser.parse_args()
 
@@ -371,6 +361,7 @@ if __name__ == "__main__":
     num_tries = params.num_tries
     num_runs = params.num_runs
     grid_size = params.grid_size
+    guiding_panel = params.guiding_panel
     ##
     print("Unpacking model file...",flush=True)
     data = unpack_ipca_pytorch_model_file(filename)
@@ -453,10 +444,15 @@ if __name__ == "__main__":
     print(f"t-SNE and UMAP fitting done in {time.time()-starting_time} seconds",flush=True)
 
     print("Starting binning...",flush=True)
-    bins_tsne = binning_indices(embeddings_tsne,grid_size=grid_size)
-    bins_umap = binning_indices(embeddings_umap,grid_size=grid_size)
+    if guiding_panel==-1:
+        bins_tsne = binning_indices(embeddings_tsne,grid_size=grid_size)
+        bins_umap = binning_indices(embeddings_umap,grid_size=grid_size)
+    else:
+        guiding_panel = int(guiding_panel)%num_gpus
+        bins_tsne = binning_indices(embeddings_tsne_rank[guiding_panel],grid_size=grid_size)
+        bins_umap = binning_indices(embeddings_umap_rank[guiding_panel],grid_size=grid_size)
 
-    proj_binned_tsne = create_average_proj(list_proj_rank, bins_tsne) ## modify here if you want one panel as a guide
+    proj_binned_tsne = create_average_proj(list_proj_rank, bins_tsne) 
     proj_binned_umap = create_average_proj(list_proj_rank, bins_umap)
     
     print("Binning done",flush=True)
