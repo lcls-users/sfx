@@ -721,7 +721,6 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     a, b, c = psi.det.shape()
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
     
-    
     # Create image grid
     keys = list(img_binned.keys())
     
@@ -782,7 +781,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
                 dpi=300, bbox_inches='tight')
     plt.close()"""
 
-     # Create a 2D numpy array to represent the grid
+    """# Create a 2D numpy array to represent the grid
     grid = np.ones((grid_size, grid_size), dtype=np.uint8)
 
     for key in keys:
@@ -807,7 +806,26 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     print(f"File saved: {file_name}")
     
     plt.show()
-    plt.close()
+    plt.close()"""
+    binne_centers = []
+    for key in keys:
+        x,y = map(float, key.split("_"))
+        binned_centers.append(x,y)
+
+    binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
+
+    binned_scatter = go.Scatter(
+        x=binned_df['Binned_Dimension1'],
+        y=binned_df['Binned_Dimension2'],
+        mode='markers',
+        marker=dict(color='rgba(0,0,255,0.5)', size=8),
+        showlegend=False,
+        name='Binned'
+    )
+
+    fig = go.Figure(data= binned_scatter)
+    fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2',height= 800, width=800)
+    fig.show()
 
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
     bin_data = np.load(bin_data_path, allow_pickle=True).item()

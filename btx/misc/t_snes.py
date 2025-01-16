@@ -234,8 +234,8 @@ def binning_indices(embedding, grid_size=50):
         x_center = x_min + (x_bin + 0.5) * x_bin_size
         y_center = y_min + (y_bin + 0.5) * y_bin_size
 
-        bin_key = (x_bin, y_bin)
-        #bin_key = (x_center, y_center)
+        #bin_key = (x_bin, y_bin)
+        bin_key = (x_center, y_center)
 
         if bin_key not in bins:
             bins[bin_key] = []
