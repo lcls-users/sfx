@@ -542,7 +542,7 @@ def binning_indices_with_centroids(embedding, grid_size=50):
 
     return bins,np.array(bin_centers), binned_indices
 
-def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_samples=10, num_panels=16, save_clusters=False, grid_size=50):
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_samples=10, num_panels=[0], save_clusters=False, grid_size=50):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -552,7 +552,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     embedding_umap_rank = np.array(data["embeddings_umap_rank"])
     S = np.array(data["S"])
     num_gpus = len(S)
-    num_panels = min(num_panels, num_gpus)
+    nb_panels = min(len(num_panels), num_gpus)
 
     if type_of_embedding == 't-SNE':
         global_embedding = embedding_tsne
@@ -564,11 +564,11 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
         title = 'UMAP Projections'
 
     # Calculate the number of rows and columns for the subplots
-    n_rows = int(np.ceil(np.sqrt(num_panels + 1)))
-    n_cols = int(np.ceil((num_panels + 1) / n_rows))
+    n_rows = int(np.ceil(np.sqrt(nb_panels + 1)))
+    n_cols = int(np.ceil((nb_panels + 1) / n_rows))
 
     fig = make_subplots(rows=n_rows, cols=n_cols, 
-                        subplot_titles=["Global Projection"] + [f"Panel {i+1}" for i in range(num_panels)])
+                        subplot_titles=["Global Projection"] + [f"Panel {i+1}" for i in range(nb_panels)])
 
     # Plot global projection
     global_clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(global_embedding)
@@ -592,11 +592,11 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     fig.add_trace(global_scatter, row=1, col=1)
 
     # Plot individual panel projections
-    for i in range(num_panels):
+    for i in range(nb_panels):
         row = (i + 1) // n_cols + 1
         col = (i + 1) % n_cols + 1
 
-        embedding = panel_embeddings[i]
+        embedding = panel_embeddings[num_panels[i]]
         clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(embedding)
         
         df = pd.DataFrame({
