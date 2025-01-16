@@ -980,18 +980,22 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     def find_closest_valid_position(x, y, direction, valid_positions, keys):
         dx, dy = direction
         new_x, new_y = x, y
+        step = 0.1  # Smaller step size for more precise movement
+        max_steps = 100  # Limit the number of steps to prevent infinite loops
         
-        while True:
-            new_x += dx
-            new_y += dy
-            key = f"{new_x}_{new_y}"
+        for _ in range(max_steps):
+            new_x += dx * step
+            new_y += dy * step
             
-            if key in keys and valid_positions[key]:
-                return keys.index(key)
-            
-            # Check if we're out of bounds
-            if key not in keys:
-                return None
+            # Check all nearby keys
+            for nearby_key in keys:
+                nearby_x, nearby_y = map(float, nearby_key.split("_"))
+                if (abs(nearby_x - new_x) < step and 
+                    abs(nearby_y - new_y) < step and 
+                    valid_positions[nearby_key]):
+                    return keys.index(nearby_key)
+        
+        return None  # If no valid position found within max_steps
 
     # Create dictionary marking valid (non-blank) positions
     valid_positions = {key: bin_data[key] is not None for key in keys}
