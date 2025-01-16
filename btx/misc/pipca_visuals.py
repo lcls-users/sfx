@@ -781,6 +781,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     plt.savefig(f"{type_of_embedding.lower()}_binned_images_{num_components}.png", 
                 dpi=300, bbox_inches='tight')
     plt.close()"""
+
      # Create a 2D numpy array to represent the grid
     grid = np.ones((grid_size, grid_size), dtype=np.uint8)
 
@@ -811,7 +812,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
-    print(keys[:5])
+    print(keys[-5:])
 
     def find_closest_valid_position(row, col, direction, valid_positions, keys):
         dr, dc = direction
