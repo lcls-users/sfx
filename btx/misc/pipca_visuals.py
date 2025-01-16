@@ -530,10 +530,10 @@ def binning_indices_with_centroids(embedding, grid_size=50):
 
         ##Test
         if count <5:
-            print("Bin key",bin_key,flush=True)
-            print("Index",index,flush=True)
-            print("Original coordinates",x,y,flush=True)
-            print("Bin center coordinates",x_center,y_center,flush=True)
+            print(
+                f"Bin key: {bin_key}, Index: {index}, Original coordinates: ({x}, {y}), Center coordinates: ({x_center}, {y_center})",
+                flush=True
+            )
             count+=1
 
         bin_centers.append((x_center, y_center))
@@ -826,6 +826,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
 
     fig = go.Figure(data= binned_scatter)
     fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2',height= 800, width=800)
+    fig.write_image("embedding_binne.png")
     fig.show()
 
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
