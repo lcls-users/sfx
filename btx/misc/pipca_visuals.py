@@ -836,9 +836,9 @@ def averaged_img_t_sne_png(csv_path):
     fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2', height=800, width=800)
 
     fig.show()
-    
 
-def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
+
+"""def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
     print(keys[-5:])
@@ -953,6 +953,131 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         ax_pos.set_facecolor('white')
         masked_grid = np.ma.masked_where(position_grid == 0, position_grid)
         ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
+        
+        # Set proper axis limits and remove ticks
+        ax_det.set_axis_off()
+        ax_pos.set_axis_off()
+        
+        return ax_det.artists + ax_pos.artists
+    
+    total_frames = (len(path) - 1) * (fade_frames + 1) + 1
+    ani = animation.FuncAnimation(fig, update, 
+                                frames=total_frames, 
+                                interval=interval, 
+                                blit=True)
+    
+    save_path += f'_{fps}fps.gif'
+    writer = animation.PillowWriter(fps=fps)
+    ani.save(save_path, writer=writer)
+    plt.close()
+"""
+
+def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
+    bin_data = np.load(bin_data_path, allow_pickle=True).item()
+    keys = list(bin_data.keys())
+    print(keys[-5:])
+
+    def find_closest_valid_position(x, y, direction, valid_positions, keys):
+        dx, dy = direction
+        new_x, new_y = x, y
+        
+        while True:
+            new_x += dx
+            new_y += dy
+            key = f"{new_x}_{new_y}"
+            
+            if key in keys and valid_positions[key]:
+                return keys.index(key)
+            
+            # Check if we're out of bounds
+            if key not in keys:
+                return None
+
+    # Create dictionary marking valid (non-blank) positions
+    valid_positions = {key: bin_data[key] is not None for key in keys}
+    
+    # Modified path generation
+    valid_keys = [key for key in keys if valid_positions[key]]
+    current_key = random.choice(valid_keys)
+    path = [keys.index(current_key)]
+    
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    
+    for _ in range(steps):
+        x, y = map(float, keys[path[-1]].split("_"))
+        valid_neighbors = []
+        
+        for dx, dy in directions:
+            new_x, new_y = x + dx, y + dy
+            key = f"{new_x}_{new_y}"
+            if key in keys and valid_positions[key]:
+                valid_neighbors.append(keys.index(key))
+        
+        if valid_neighbors:
+            next_idx = random.choice(valid_neighbors)
+            path.append(next_idx)
+        else:
+            # If no immediate neighbors, choose a random direction and find the closest valid position
+            random_direction = random.choice(directions)
+            closest_idx = find_closest_valid_position(x, y, random_direction, valid_positions, keys)
+            if closest_idx is not None:
+                path.append(closest_idx)
+            else:
+                path.append(path[-1])  # Stay in place if no valid position found in that direction
+    
+    # Create figure with two side-by-side subplots
+    fig = plt.figure(figsize=(20, 10))
+    gs = GridSpec(1, 2, width_ratios=[1, 1])
+    
+    ax_det = fig.add_subplot(gs[0])
+    ax_pos = fig.add_subplot(gs[1])
+    
+    def update(frame):
+        ax_det.clear()
+        ax_pos.clear()
+        
+        main_frame = frame // (fade_frames + 1)
+        sub_frame = frame % (fade_frames + 1)
+        
+        # Display detector image with fade effect
+        current_idx = path[min(main_frame, len(path)-1)]
+        current_key = keys[current_idx]
+        img = bin_data[current_key]
+        
+        if main_frame < len(path) - 1 and sub_frame > 0:
+            next_idx = path[main_frame + 1]
+            next_key = keys[next_idx]
+            next_img = bin_data[next_key]
+            
+            if img is not None and next_img is not None:
+                alpha = sub_frame / (fade_frames + 1)
+                img = (1 - alpha) * img + alpha * next_img
+        
+        if img is not None:
+            masked_img = np.ma.masked_where(np.isnan(img), img)
+            ax_det.imshow(masked_img, cmap='viridis')
+        
+        # Update position visualization
+        x_coords, y_coords = zip(*[map(float, key.split("_")) for key in keys])
+        x_min, x_max = min(x_coords), max(x_coords)
+        y_min, y_max = min(y_coords), max(y_coords)
+        
+        ax_pos.set_xlim(x_min, x_max)
+        ax_pos.set_ylim(y_min, y_max)
+        
+        # Mark all valid positions
+        valid_x = [float(key.split("_")[0]) for key in keys if valid_positions[key]]
+        valid_y = [float(key.split("_")[1]) for key in keys if valid_positions[key]]
+        ax_pos.scatter(valid_x, valid_y, c='lightgray', alpha=0.5)
+        
+        # Mark visited positions
+        visited_x = [float(keys[idx].split("_")[0]) for idx in path[:main_frame+1]]
+        visited_y = [float(keys[idx].split("_")[1]) for idx in path[:main_frame+1]]
+        ax_pos.scatter(visited_x, visited_y, c='blue', alpha=0.7)
+        
+        # Mark current position
+        current_x, current_y = map(float, keys[path[min(main_frame, len(path)-1)]].split("_"))
+        ax_pos.scatter([current_x], [current_y], c='red', s=100)
         
         # Set proper axis limits and remove ticks
         ax_det.set_axis_off()
