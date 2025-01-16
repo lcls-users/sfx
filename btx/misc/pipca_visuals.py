@@ -628,7 +628,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
     binned_df['Index'] = binned_indices
 
-    binned_scatter = go.Scatter(
+    """binned_scatter = go.Scatter(
         x=binned_df['Binned_Dimension1'],
         y=binned_df['Binned_Dimension2'],
         mode='markers',
@@ -641,6 +641,38 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
 
     fig = go.Figure(data= binned_scatter)
     fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2')
+    fig.show()"""
+
+    # Créer une matrice 2D pour représenter la grille
+    grid = np.zeros((grid_size, grid_size))
+
+    # Remplir la grille
+    for _, row in binned_df.iterrows():
+        x = int(row['Binned_Dimension1'])
+        y = int(row['Binned_Dimension2'])
+        grid[y, x] = 1  # Marquer les cases occupées
+
+    # Créer le heatmap
+    heatmap = go.Heatmap(
+        z=grid,
+        colorscale=[[0, 'white'], [1, 'blue']],
+        showscale=False,
+        hoverinfo='none'
+    )
+
+    # Créer la figure
+    fig = go.Figure(data=[heatmap])
+
+    # Personnaliser la mise en page
+    fig.update_layout(
+        title='Grille de distribution des éléments',
+        xaxis=dict(title='Dimension 1', showgrid=False, zeroline=False),
+        yaxis=dict(title='Dimension 2', showgrid=False, zeroline=False),
+        width=600,
+        height=600
+    )
+
+    # Afficher la figure
     fig.show()
 
 
