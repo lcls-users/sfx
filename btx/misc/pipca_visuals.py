@@ -980,7 +980,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     def find_closest_valid_position(x, y, direction, valid_positions, keys):
         dx, dy = direction
         new_x, new_y = x, y
-        step = 0.1  # Smaller step size for more precise movement
+        step = 1.0  # Smaller step size for more precise movement
         max_steps = 100  # Limit the number of steps to prevent infinite loops
         
         for _ in range(max_steps):
