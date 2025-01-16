@@ -816,23 +816,27 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     binned_centers = np.array(binned_centers)
     binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
 
+    binned_df.to_csv(f"{type_of_embedding.lower()}_binned_centers.csv", index=False)
+    print(f"Binned centers saved in {type_of_embedding.lower()}_binned_centers.csv")
+
+def averaged_img_t_sne_png(csv_path):
+
+    binned_df = pd.read_csv(csv_path)
+
     binned_scatter = go.Scatter(
-        x=binned_df['Binned_Dimension1'],
-        y=binned_df['Binned_Dimension2'],
-        mode='markers',
-        marker=dict(color='rgba(0,0,255,0.5)', size=8),
-        showlegend=False,
-        name='Binned'
+    x=binned_df['Binned_Dimension1'],
+    y=binned_df['Binned_Dimension2'],
+    mode='markers',
+    marker=dict(color='rgba(0,0,255,0.5)', size=8),
+    showlegend=False,
+    name='Binned'
     )
 
-    fig = go.Figure(data= binned_scatter)
-    fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2',height= 800, width=800)
-    img_bytes = pio.to_image(fig, format="png", engine="svg")
+    fig = go.Figure(data=binned_scatter)
+    fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2', height=800, width=800)
 
-    # Write the bytes to a file
-    with open("embedding_binne.png", "wb") as f:
-        f.write(img_bytes)
     fig.show()
+    
 
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
