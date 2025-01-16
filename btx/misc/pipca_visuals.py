@@ -807,7 +807,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     
     plt.show()
     plt.close()"""
-    binne_centers = []
+    binned_centers = []
     for key in keys:
         x,y = map(float, key.split("_"))
         binned_centers.append(x,y)
