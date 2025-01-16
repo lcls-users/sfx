@@ -811,6 +811,23 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
+
+    def find_closest_valid_position(row, col, direction, valid_positions, keys):
+        dr, dc = direction
+        new_row, new_col = row, col
+        while True:
+            new_row += dr
+            new_col += dc
+            if (0 <= new_row < valid_positions.shape[0] and 
+                0 <= new_col < valid_positions.shape[1] and 
+                valid_positions[new_row, new_col]):
+                key = f"{new_col}_{new_row}"
+                if key in keys:
+                    return keys.index(key)
+            if (new_row < 0 or new_row >= valid_positions.shape[0] or
+                new_col < 0 or new_col >= valid_positions.shape[1]):
+                return None
+        return None
     
     # Create grid marking valid (non-blank) positions
     valid_positions = np.full((grid_size, grid_size), False)
@@ -834,7 +851,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
             new_row, new_col = row + dr, col + dc
             if (0 <= new_row < grid_size and 0 <= new_col < grid_size and 
                 valid_positions[new_row, new_col]):
-                key = f"{new_row}_{new_col}"
+                key = f"{new_col}_{new_row}"
                 if key in keys:
                     valid_neighbors.append(keys.index(key))
         
@@ -842,7 +859,13 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
             next_idx = random.choice(valid_neighbors)
             path.append(next_idx)
         else:
-            path.append(path[-1])
+            # If no immediate neighbors, choose a random direction and find the closest valid position
+            random_direction = random.choice(directions)
+            closest_idx = find_closest_valid_position(row, col, random_direction, valid_positions, keys)
+            if closest_idx is not None:
+                path.append(closest_idx)
+            else:
+                path.append(path[-1])  # Stay in place if no valid position found in that direction
     
     # Create figure with two side-by-side subplots
     fig = plt.figure(figsize=(20, 10))
