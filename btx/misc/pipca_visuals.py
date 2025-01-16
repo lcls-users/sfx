@@ -1111,7 +1111,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         while True:
             new_x += dx
             new_y += dy
-            key = f"{new_x}_{new_y}"
+            key = f"{new_x:.6f}_{new_y:.6f}"
             
             if key in keys and valid_positions[key]:
                 return keys.index(key)
@@ -1131,12 +1131,12 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
     
     for _ in range(steps):
-        x, y = map(int, keys[path[-1]].split("_"))
+        x, y = map(float, keys[path[-1]].split("_"))
         valid_neighbors = []
         
         for dx, dy in directions:
             new_x, new_y = x + dx, y + dy
-            key = f"{new_x}_{new_y}"
+            key = f"{new_x:.6f}_{new_y:.6f}"
             if key in keys and valid_positions[key]:
                 valid_neighbors.append(keys.index(key))
         
@@ -1160,11 +1160,9 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     ax_pos = fig.add_subplot(gs[1])
     
     # Calculate grid dimensions
-    x_coords, y_coords = zip(*[map(int, key.split("_")) for key in keys])
+    x_coords, y_coords = zip(*[map(float, key.split("_")) for key in keys])
     x_min, x_max = min(x_coords), max(x_coords)
     y_min, y_max = min(y_coords), max(y_coords)
-    grid_width = x_max - x_min + 1
-    grid_height = y_max - y_min + 1
     
     def update(frame):
         ax_det.clear()
@@ -1192,24 +1190,22 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
             ax_det.imshow(masked_img, cmap='viridis')
         
         # Update position visualization
-        grid = np.zeros((grid_height, grid_width))
+        ax_pos.set_xlim(x_min, x_max)
+        ax_pos.set_ylim(y_min, y_max)
         
         # Mark all valid positions
-        for key in keys:
-            if valid_positions[key]:
-                x, y = map(int, key.split("_"))
-                grid[y - y_min, x - x_min] = 0.3
+        valid_x = [float(key.split("_")[0]) for key in keys if valid_positions[key]]
+        valid_y = [float(key.split("_")[1]) for key in keys if valid_positions[key]]
+        ax_pos.scatter(valid_x, valid_y, c='lightgray', alpha=0.5, s=100)
         
         # Mark visited positions
-        for idx in path[:main_frame+1]:
-            x, y = map(int, keys[idx].split("_"))
-            grid[y - y_min, x - x_min] = 0.6
+        visited_x = [float(keys[idx].split("_")[0]) for idx in path[:main_frame+1]]
+        visited_y = [float(keys[idx].split("_")[1]) for idx in path[:main_frame+1]]
+        ax_pos.scatter(visited_x, visited_y, c='blue', alpha=0.7, s=100)
         
         # Mark current position
-        current_x, current_y = map(int, keys[path[min(main_frame, len(path)-1)]].split("_"))
-        grid[current_y - y_min, current_x - x_min] = 1
-        
-        ax_pos.imshow(grid, cmap='Blues', interpolation='nearest')
+        current_x, current_y = map(float, keys[path[min(main_frame, len(path)-1)]].split("_"))
+        ax_pos.scatter([current_x], [current_y], c='red', s=200)
         
         # Set proper axis limits and remove ticks
         ax_det.set_axis_off()
@@ -1227,7 +1223,6 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     writer = animation.PillowWriter(fps=fps)
     ani.save(save_path, writer=writer)
     plt.close()
-
 
 def ipca_execution_time(num_components,num_images,batch_size,filename):
     data = unpack_ipca_pytorch_model_file(filename)
