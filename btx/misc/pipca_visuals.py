@@ -834,7 +834,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     valid_positions = np.full((grid_size, grid_size), False)
     for key in keys:
         if bin_data[key] is not None:
-            col, row = map(int, key.split("_"))
+            row, col = map(int, key.split("_"))
             valid_positions[row, col] = True
     
     # Modified path generation
