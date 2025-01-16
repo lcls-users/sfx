@@ -524,16 +524,17 @@ def binning_indices_with_centroids(embedding, grid_size=50):
         
         bins[bin_key].append(index)
 
+        # Calculate bin center coordinates
+        x_center = x_min + (x_bin + 0.5) * x_bin_size
+        y_center = y_min + (y_bin + 0.5) * y_bin_size
+
         ##Test
         if count <5:
             print("Bin key",bin_key,flush=True)
             print("Index",index,flush=True)
             print("Original coordinates",x,y,flush=True)
+            print("Bin center coordinates",x_center,y_center,flush=True)
             count+=1
-
-        # Calculate bin center coordinates
-        x_center = x_min + (x_bin + 0.5) * x_bin_size
-        y_center = y_min + (y_bin + 0.5) * y_bin_size
 
         bin_centers.append((x_center, y_center))
         binned_indices.append(index)
@@ -815,7 +816,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     valid_positions = np.full((grid_size, grid_size), False)
     for key in keys:
         if bin_data[key] is not None:
-            row, col = map(int, key.split("_"))
+            col, row = map(int, key.split("_"))
             valid_positions[row, col] = True
     
     # Modified path generation

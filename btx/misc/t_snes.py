@@ -240,9 +240,13 @@ def binning_indices(embedding, grid_size=50):
 
         ##Test
         if count <5:
+            # Calculate bin center coordinates
+            x_center = x_min + (x_bin + 0.5) * x_bin_size
+            y_center = y_min + (y_bin + 0.5) * y_bin_size
             print("Bin key",bin_key,flush=True)
             print("Index",index,flush=True)
             print("Original coordinates",x,y,flush=True)
+            print("Bin center coordinates",x_center,y_center,flush=True)
             count+=1
 
     return bins
