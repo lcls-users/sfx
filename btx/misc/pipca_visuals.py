@@ -826,7 +826,11 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
 
     fig = go.Figure(data= binned_scatter)
     fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2',height= 800, width=800)
-    fig.write_image("embedding_binne.png")
+    img_bytes = pio.to_image(fig, format="png", engine="svg")
+
+    # Write the bytes to a file
+    with open("embedding_binne.png", "wb") as f:
+        f.write(img_bytes)
     fig.show()
 
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
