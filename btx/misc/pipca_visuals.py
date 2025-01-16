@@ -740,7 +740,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
 
     print("====================================")
     print(list(bin_data.keys())[:5])
-    print(list(bin_data.items())[:5])
+    print(keys[:5])
     print("====================================")
 
     # Save bin data for animation
@@ -811,6 +811,7 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
 def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
     bin_data = np.load(bin_data_path, allow_pickle=True).item()
     keys = list(bin_data.keys())
+    print(keys[:5])
 
     def find_closest_valid_position(row, col, direction, valid_positions, keys):
         dr, dc = direction
