@@ -822,7 +822,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
             0 <= new_col + dc < valid_positions.shape[1]):
             new_row += dr
             new_col += dc
-            key = f"{new_col}_{new_row}"
+            key = f"{new_row}_{new_col}"
             
             # Return immediately when we find the first valid position
             if valid_positions[new_row, new_col] and key in keys:
