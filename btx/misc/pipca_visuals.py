@@ -618,7 +618,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
 
         fig.add_trace(scatter, row=row, col=col)
 
-    fig.update_layout(height=300*n_rows, width=300*n_cols, title_text=title)
+    fig.update_layout(height=500*n_rows, width=500*n_cols, title_text=title)
     fig.update_xaxes(title_text="Dimension 1")
     fig.update_yaxes(title_text="Dimension 2")
 
@@ -641,7 +641,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     )
 
     fig = go.Figure(data= binned_scatter)
-    fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2',height= 800, width=800)
+    fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2',height= 700, width=700)
     fig.show()
 
 

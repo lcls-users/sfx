@@ -1081,5 +1081,5 @@ def t_sne_pipeline(config):
     print("t-SNE done")
 
     from btx.misc.pipca_visuals import averaged_imgs_t_sne
-    averaged_imgs_t_sne(config.t_sne.filename,f"binned_data_{config.create_pypca_multinodes.num_components}_[{config.create_pypca_multinodes.num_images}].h5",grid_size=config.t_sne.grid_size)
+    averaged_imgs_t_sne(config.t_sne.filename,f"binned_data_{config.create_pypca_multinodes.num_components}_[{config.create_pypca_multinodes.num_images}].h5",grid_size=config.t_sne.grid_size, type_of_embedding=config.t_sne.type_of_embedding)
     print("Averaged images done")
