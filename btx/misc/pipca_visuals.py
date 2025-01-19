@@ -766,9 +766,14 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
         print(f"Processing bin {i+1}/{len(keys)}")
 
         if bin_data[key] is None:
+<<<<<<< HEAD
+            sample_shape = next(iter(bin_data.values())).shape
+            blank_image = np.full(sample_shape, fill_value=np.nan, dtype=float)
+=======
             # Créer une image blanche si les données du bin sont None
             reference_image = next((img for img in bin_data.values() if img is not None), None)
             blank_image = np.full(reference_image.shape, fill_value=np.nan, dtype=np.float32)
+>>>>>>> 5495f8afd2406293adf43e75e0bf27131f8e14fd
             im = grid[i].imshow(blank_image, cmap='gray', vmin=0, vmax=1)
         else:
             # Afficher l'image avec la plage de valeurs fournie
@@ -816,6 +821,32 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     binned_centers = np.array(binned_centers)
     binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
 
+<<<<<<< HEAD
+def random_walk_animation(bin_data_path, filename, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
+    with open(filename, "rb") as f:
+        data = pickle.load(f)
+    
+    embedding = np.array(data["embeddings_tsne"])
+    bin_data = np.load(bin_data_path, allow_pickle=True).item()
+    keys = list(bin_data.keys())
+<<<<<<< HEAD
+=======
+    grid_size = int(np.ceil(np.sqrt(len(keys))))
+    
+    # Create grid marking valid (non-blank) positions
+    valid_positions = np.full((grid_size, grid_size), False)
+    for idx, key in enumerate(keys):
+        if bin_data[key] is not None:  # Only mark non-blank positions
+            print("Bin index:",idx)
+            print("Binning key:",key)
+            row, col = idx // grid_size, idx % grid_size
+            valid_positions[row, col] = True
+>>>>>>> 41a1b4e7e237a69c429bb87718cd1fb4bccaeb1e
+    
+    # Création de la figure
+    fig = plt.figure(figsize=(20, 10))
+    gs = GridSpec(1, 2, width_ratios=[1, 1])
+=======
     binned_df.to_csv(f"{type_of_embedding.lower()}_binned_centers.csv", index=False)
     print(f"Binned centers saved in {type_of_embedding.lower()}_binned_centers.csv")
 
@@ -1033,6 +1064,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
     fig = plt.figure(figsize=(20, 10))
     gs = GridSpec(1, 2, width_ratios=[1, 1])
     
+>>>>>>> 5495f8afd2406293adf43e75e0bf27131f8e14fd
     ax_det = fig.add_subplot(gs[0])
     ax_pos = fig.add_subplot(gs[1])
     
@@ -1043,6 +1075,11 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         main_frame = frame // (fade_frames + 1)
         sub_frame = frame % (fade_frames + 1)
         
+<<<<<<< HEAD
+        # Affichage détecteur (partie gauche)
+        current_idx = path[main_frame]
+        img = bin_data[keys[current_idx]]
+=======
         # Display detector image with fade effect
         current_idx = path[min(main_frame, len(path)-1)]
         current_key = keys[current_idx]
@@ -1056,10 +1093,26 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
             if img is not None and next_img is not None:
                 alpha = sub_frame / (fade_frames + 1)
                 img = (1 - alpha) * img + alpha * next_img
+>>>>>>> 5495f8afd2406293adf43e75e0bf27131f8e14fd
         
         if img is not None:
             masked_img = np.ma.masked_where(np.isnan(img), img)
             ax_det.imshow(masked_img, cmap='viridis')
+<<<<<<< HEAD
+        
+        # Affichage t-SNE (partie droite)
+        # Scatter plot de tous les points t-SNE
+        ax_pos.scatter(embedding[:, 0], embedding[:, 1], c='lightgray', alpha=0.3)
+        
+        # Tracer le chemin parcouru
+        path_coords = embedding[path[:main_frame+1]]
+        ax_pos.plot(path_coords[:, 0], path_coords[:, 1], 'r-', linewidth=2)
+        
+        # Point actuel
+        current_pos = embedding[path[main_frame]]
+        ax_pos.scatter(current_pos[0], current_pos[1], c='red', s=100)
+        
+=======
         
         # Update position visualization
         x_coords, y_coords = zip(*[map(float, key.split("_")) for key in keys])
@@ -1084,6 +1137,7 @@ def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animat
         ax_pos.scatter([current_x], [current_y], c='red', s=100)
         
         # Set proper axis limits and remove ticks
+>>>>>>> 5495f8afd2406293adf43e75e0bf27131f8e14fd
         ax_det.set_axis_off()
         ax_pos.set_axis_off()
         
