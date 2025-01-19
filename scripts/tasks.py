@@ -791,6 +791,8 @@ def t_sne(config):
     grid_size = task.grid_size
     det_type = setup.det_type
     copy_num_images = num_images
+    guiding_panel = task.guiding_panel
+
     while num_images > 0:
         max_event = compute_max_events(exp, run+num_runs, det_type)
         images_for_run = min(max_event, num_images)
@@ -816,7 +818,7 @@ def t_sne(config):
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
     command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
-    command += f"; python {client_path} --filename {filename} --num_images {num_images_str} --loading_batch_size {loading_batch_size} --num_tries {num_tries} --threshold {threshold} --num_runs {num_runs} --grid_size {grid_size}"
+    command += f"; python {client_path} --filename {filename} --num_images {num_images_str} --loading_batch_size {loading_batch_size} --num_tries {num_tries} --threshold {threshold} --num_runs {num_runs} --grid_size {grid_size} --guiding_panel {guiding_panel}"
 
     js = JobScheduler(os.path.join(".", f't_snes_{copy_num_images}.sh'),queue = 'ampere', ncores=  1, jobname=f't_snes_{copy_num_images}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus) ##
     js.write_header()
@@ -1030,7 +1032,7 @@ def reduce_pypca(config,num_nodes = 1, id_current_node = 0):
     command += f"; echo 'Number of images: {num_tot_images}'; echo 'Number of events to collect per run: {num_images_str}'"
     command += "; sleep 10"
     command += ";conda deactivate; echo 'Server environment deactivated'"
-    command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'"
+    command += "; conda activate /sdf/group/lcls/ds/tools/conda_envs/py3.11-nopsana-torch-rapids; which python; echo 'Client environment activated'; conda list"
     command += f"; python {client_path} -e {exp} -r {run} -d {det_type} --start_offset {start_offset} --num_images '{num_images_str}' --loading_batch_size {loading_batch_size} --batch_size {batch_size} --num_runs {num_runs} --model {model} --num_gpus {num_gpus} --num_nodes {num_nodes} --id_current_node {id_current_node}"
 
     js = JobScheduler(os.path.join(".", f'reduce_pypca_{num_tot_images}_{batch_size}_node_{id_current_node}.sh'),queue = 'ampere', ncores=  1, jobname=f'reduce_pypca_{num_tot_images}_{batch_size}_node_{id_current_node}',logdir='/sdf/home/n/nathfrn/btx/scripts',account='lcls',mem = '200G',num_gpus = num_gpus)
@@ -1077,10 +1079,6 @@ def t_sne_pipeline(config):
     print("Create done")
     t_sne(config)
     print("t-SNE done")
-
     from btx.misc.pipca_visuals import averaged_imgs_t_sne
-    averaged_imgs_t_sne(config.t_sne.filename,f"binned_data_{config.create_pypca_multinodes.num_components}_[{config.create_pypca_multinodes.num_images}].h5")
+    averaged_imgs_t_sne(config.t_sne.filename,f"binned_data_{config.create_pypca_multinodes.num_components}_[{config.create_pypca_multinodes.num_images}].h5",grid_size=config.t_sne.grid_size, type_of_embedding=config.t_sne.type_of_embedding)
     print("Averaged images done")
-
-
-

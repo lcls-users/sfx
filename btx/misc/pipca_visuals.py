@@ -26,6 +26,7 @@ import plotly.express as px
 import plotly.subplots as sp
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import plotly.io as pio
 
 import pandas as pd
 import seaborn as sns
@@ -498,7 +499,50 @@ def display_umap(filename,num_images):
         index_df.to_csv(filename, index=False, header=False)
         print(f"Index by cluster saved in {filename}")"""
 
-def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_samples=10, num_panels=16, save_clusters=False):
+def binning_indices_with_centroids(embedding, grid_size=50):
+    x_min, x_max = embedding[:, 0].min(), embedding[:, 0].max()
+    y_min, y_max = embedding[:, 1].min(), embedding[:, 1].max()
+
+    x_bin_size = (x_max - x_min) / grid_size
+    y_bin_size = (y_max - y_min) / grid_size
+
+    bins = {}
+    bin_centers = []
+    binned_indices = []
+
+    count=0
+    for index, (x, y) in enumerate(embedding):
+        x_bin = int((x - x_min) / x_bin_size)
+        y_bin = int((y - y_min) / y_bin_size)
+
+        x_bin = min(x_bin, grid_size - 1)
+        y_bin = min(y_bin, grid_size - 1)
+
+        bin_key = (x_bin, y_bin)
+
+        if bin_key not in bins:
+            bins[bin_key] = []
+        
+        bins[bin_key].append(index)
+
+        # Calculate bin center coordinates
+        x_center = x_min + (x_bin + 0.5) * x_bin_size
+        y_center = y_min + (y_bin + 0.5) * y_bin_size
+
+        ##Test
+        if count <5:
+            print(
+                f"Bin key: {bin_key}, Index: {index}, Original coordinates: ({x}, {y}), Center coordinates: ({x_center}, {y_center})",
+                flush=True
+            )
+            count+=1
+
+        bin_centers.append((x_center, y_center))
+        binned_indices.append(index)
+
+    return bins,np.array(bin_centers), binned_indices
+
+def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_samples=10, num_panels=[0], save_clusters=False, grid_size=50):
     with open(filename, "rb") as f:
         data = pickle.load(f)
 
@@ -508,7 +552,7 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     embedding_umap_rank = np.array(data["embeddings_umap_rank"])
     S = np.array(data["S"])
     num_gpus = len(S)
-    num_panels = min(num_panels, num_gpus)
+    nb_panels = min(len(num_panels), num_gpus)
 
     if type_of_embedding == 't-SNE':
         global_embedding = embedding_tsne
@@ -520,11 +564,11 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
         title = 'UMAP Projections'
 
     # Calculate the number of rows and columns for the subplots
-    n_rows = int(np.ceil(np.sqrt(num_panels + 1)))
-    n_cols = int(np.ceil((num_panels + 1) / n_rows))
+    n_rows = int(np.ceil(np.sqrt(nb_panels + 1)))
+    n_cols = int(np.ceil((nb_panels + 1) / n_rows))
 
     fig = make_subplots(rows=n_rows, cols=n_cols, 
-                        subplot_titles=["Global Projection"] + [f"Panel {i+1}" for i in range(num_panels)])
+                        subplot_titles=["Global Projection"] + [f"Panel {i+1}" for i in range(nb_panels)])
 
     # Plot global projection
     global_clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(global_embedding)
@@ -548,11 +592,11 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
     fig.add_trace(global_scatter, row=1, col=1)
 
     # Plot individual panel projections
-    for i in range(num_panels):
+    for i in range(nb_panels):
         row = (i + 1) // n_cols + 1
         col = (i + 1) % n_cols + 1
 
-        embedding = panel_embeddings[i]
+        embedding = panel_embeddings[num_panels[i]]
         clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(embedding)
         
         df = pd.DataFrame({
@@ -574,12 +618,32 @@ def plot_t_sne_scatters(filename, type_of_embedding='t-SNE', eps=0.1, min_sample
 
         fig.add_trace(scatter, row=row, col=col)
 
-    fig.update_layout(height=300*n_rows, width=300*n_cols, title_text=title)
+    fig.update_layout(height=500*n_rows, width=500*n_cols, title_text=title)
     fig.update_xaxes(title_text="Dimension 1")
     fig.update_yaxes(title_text="Dimension 2")
 
     print("Plot created successfully!")
     fig.show()
+
+    _,binned_centers, binned_indices = binning_indices_with_centroids(global_embedding, grid_size=grid_size)
+    binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
+    binned_df['Index'] = binned_indices
+
+    binned_scatter = go.Scatter(
+        x=binned_df['Binned_Dimension1'],
+        y=binned_df['Binned_Dimension2'],
+        mode='markers',
+        marker=dict(color='rgba(0,0,255,0.5)', size=8),
+        text=binned_df['Index'],
+        hoverinfo='text',
+        showlegend=False,
+        name='Binned'
+    )
+
+    fig = go.Figure(data= binned_scatter)
+    fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2',height= 700, width=700)
+    fig.show()
+
 
     if save_clusters:
         unique_clusters = sorted(global_df['Cluster'].unique())
@@ -614,7 +678,7 @@ def create_average_img(proj_binned, V,mu):
     print("Number of bins:",count)
     return img_binned
 
-def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmin=None, vmax=None):
+def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmin=None, vmax=None, grid_size=50):
     img_binned_tsne = {}
     img_binned_umap = {}
 
@@ -660,7 +724,6 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     
     # Create image grid
     keys = list(img_binned.keys())
-    grid_size = int(np.ceil(np.sqrt(len(keys))))
     
     # Process and store individual bins
     bin_data = {}
@@ -675,12 +738,17 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     
     print("Images assembled!")
 
+    print("====================================")
+    print(list(bin_data.keys())[:5])
+    print(keys[:5])
+    print("====================================")
+
     # Save bin data for animation
     np.save('/sdf/data/lcls/ds/mfx/mfxp23120/scratch/test_btx/pipca/bin_data.npy', bin_data) ##HARDCODED
     
-    print("Images saved!")
+    print("Images saved!", flush=True)
 
-    # Create visualization
+    """# Create visualization
     fig = plt.figure(figsize=(20, 20))
     grid = ImageGrid(fig, 111,
                     nrows_ncols=(grid_size, grid_size),
@@ -695,29 +763,65 @@ def averaged_imgs_t_sne(model_filename, filename, type_of_embedding='t-SNE', vmi
     sup_vmax = None
 
     for i, key in enumerate(keys):
-        if i % 500 == 0:
-            print(f"Processing bin {i+1}/{len(keys)}")
+        print(f"Processing bin {i+1}/{len(keys)}")
+
         if bin_data[key] is None:
+<<<<<<< HEAD
             sample_shape = next(iter(bin_data.values())).shape
             blank_image = np.full(sample_shape, fill_value=np.nan, dtype=float)
+=======
+            # Créer une image blanche si les données du bin sont None
+            reference_image = next((img for img in bin_data.values() if img is not None), None)
+            blank_image = np.full(reference_image.shape, fill_value=np.nan, dtype=np.float32)
+>>>>>>> 5495f8afd2406293adf43e75e0bf27131f8e14fd
             im = grid[i].imshow(blank_image, cmap='gray', vmin=0, vmax=1)
-        elif vmin is not None and vmax is not None:
-            im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
         else:
-            im = grid[i].imshow(bin_data[key], cmap='viridis')
-            val1, val2 = im.get_clim()
-            if inf_vmin is None or val1 < inf_vmin:
-                inf_vmin = val1
-            if sup_vmax is None or val2 > sup_vmax:
-                sup_vmax = val2
-        grid[i].axis('off')
+            # Afficher l'image avec la plage de valeurs fournie
+            im = grid[i].imshow(bin_data[key], cmap='viridis', vmin=vmin, vmax=vmax)
+
+        grid[i].axis('off')  # Supprimer l'axe
 
     plt.colorbar(im, cax=grid.cbar_axes[0])
     plt.suptitle(title, fontsize=16)
     plt.savefig(f"{type_of_embedding.lower()}_binned_images_{num_components}.png", 
                 dpi=300, bbox_inches='tight')
-    plt.close()
+    plt.close()"""
 
+    """# Create a 2D numpy array to represent the grid
+    grid = np.ones((grid_size, grid_size), dtype=np.uint8)
+
+    for key in keys:
+        col, row = map(int, key.split("_"))
+        grid[row, col] = 0 if img_binned[key] is None else 1
+    
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.imshow(grid, cmap='binary', interpolation='nearest')
+    
+    # Remove axes
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.axis('off')
+    
+    # Add title
+    plt.title(title, fontsize=16)
+    
+    # Save the figure
+    file_name = f"{title.lower().replace(' ', '_')}.png"
+    plt.savefig(file_name, dpi=300, bbox_inches='tight')
+    print(f"File saved: {file_name}")
+    
+    plt.show()
+    plt.close()"""
+    binned_centers = []
+    for key in keys:
+        x,y = map(float, key.split("_"))
+        binned_centers.append((x,y))
+
+    binned_centers = np.array(binned_centers)
+    binned_df = pd.DataFrame(binned_centers, columns=['Binned_Dimension1', 'Binned_Dimension2'])
+
+<<<<<<< HEAD
 def random_walk_animation(bin_data_path, filename, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5):
     with open(filename, "rb") as f:
         data = pickle.load(f)
@@ -742,6 +846,94 @@ def random_walk_animation(bin_data_path, filename, steps=50, save_path="random_w
     # Création de la figure
     fig = plt.figure(figsize=(20, 10))
     gs = GridSpec(1, 2, width_ratios=[1, 1])
+=======
+    binned_df.to_csv(f"{type_of_embedding.lower()}_binned_centers.csv", index=False)
+    print(f"Binned centers saved in {type_of_embedding.lower()}_binned_centers.csv")
+
+def averaged_img_t_sne_png(csv_path):
+
+    binned_df = pd.read_csv(csv_path)
+
+    binned_scatter = go.Scatter(
+    x=binned_df['Binned_Dimension1'],
+    y=binned_df['Binned_Dimension2'],
+    mode='markers',
+    marker=dict(color='rgba(0,0,255,0.5)', size=8),
+    showlegend=False,
+    name='Binned'
+    )
+
+    fig = go.Figure(data=binned_scatter)
+    fig.update_layout(title='Embedding Binné', xaxis_title='Dimension 1', yaxis_title='Dimension 2', height=800, width=800)
+
+    fig.show()
+
+
+"""def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
+    bin_data = np.load(bin_data_path, allow_pickle=True).item()
+    keys = list(bin_data.keys())
+    print(keys[-5:])
+
+    def find_closest_valid_position(row, col, direction, valid_positions, keys):
+        dr, dc = direction
+        new_row, new_col = row, col
+        steps = 1
+        
+        # Continue searching until we find a valid position or hit the boundary
+        while (0 <= new_row + dr < valid_positions.shape[0] and 
+            0 <= new_col + dc < valid_positions.shape[1]):
+            new_row += dr
+            new_col += dc
+            key = f"{new_row}_{new_col}"
+            
+            # Return immediately when we find the first valid position
+            if valid_positions[new_row, new_col] and key in keys:
+                return keys.index(key)
+                
+        return None
+    
+    # Create grid marking valid (non-blank) positions
+    valid_positions = np.full((grid_size, grid_size), False)
+    for key in keys:
+        if bin_data[key] is not None:
+            col, row = map(int, key.split("_"))
+            valid_positions[row, col] = True
+    
+    # Modified path generation
+    valid_indices = [idx for idx, key in enumerate(keys) if bin_data[key] is not None]
+    current_idx = random.choice(valid_indices)
+    path = [current_idx]
+    
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    
+    for _ in range(steps):
+        row, col = map(int, keys[path[-1]].split("_"))
+        valid_neighbors = []
+        
+        for dr, dc in directions:
+            new_row, new_col = row + dr, col + dc
+            if (0 <= new_row < grid_size and 0 <= new_col < grid_size and 
+                valid_positions[new_row, new_col]):
+                key = f"{new_row}_{new_col}"
+                if key in keys:
+                    valid_neighbors.append(keys.index(key))
+        
+        if valid_neighbors:
+            next_idx = random.choice(valid_neighbors)
+            path.append(next_idx)
+        else:
+            # If no immediate neighbors, choose a random direction and find the closest valid position
+            random_direction = random.choice(directions)
+            closest_idx = find_closest_valid_position(row, col, random_direction, valid_positions, keys)
+            if closest_idx is not None:
+                path.append(closest_idx)
+            else:
+                path.append(path[-1])  # Stay in place if no valid position found in that direction
+    
+    # Create figure with two side-by-side subplots
+    fig = plt.figure(figsize=(20, 10))
+    gs = GridSpec(1, 2, width_ratios=[1, 1])
+    
     ax_det = fig.add_subplot(gs[0])
     ax_pos = fig.add_subplot(gs[1])
     
@@ -752,13 +944,161 @@ def random_walk_animation(bin_data_path, filename, steps=50, save_path="random_w
         main_frame = frame // (fade_frames + 1)
         sub_frame = frame % (fade_frames + 1)
         
-        # Affichage détecteur (partie gauche)
-        current_idx = path[main_frame]
-        img = bin_data[keys[current_idx]]
+        # Display detector image with fade effect
+        current_idx = path[min(main_frame, len(path)-1)]
+        current_key = keys[current_idx]
+        img = bin_data[current_key]
+        
+        if main_frame < len(path) - 1 and sub_frame > 0:
+            next_idx = path[main_frame + 1]
+            next_key = keys[next_idx]
+            next_img = bin_data[next_key]
+            
+            if img is not None and next_img is not None:
+                alpha = sub_frame / (fade_frames + 1)
+                img = (1 - alpha) * img + alpha * next_img
         
         if img is not None:
             masked_img = np.ma.masked_where(np.isnan(img), img)
             ax_det.imshow(masked_img, cmap='viridis')
+        
+        # Update position visualization
+        position_grid = np.zeros((grid_size, grid_size))
+        
+        # Mark all valid positions
+        for key in keys:
+            if bin_data[key] is not None:
+                r, c = map(int, key.split("_"))
+                position_grid[r, c] = 0.3
+        
+        # Mark visited positions
+        for idx in path[:main_frame+1]:
+            r, c = map(int, keys[idx].split("_"))
+            position_grid[r, c] = 0.7
+        
+        # Mark current position
+        r, c = map(int, keys[path[min(main_frame, len(path)-1)]].split("_"))
+        position_grid[r, c] = 1.0
+        
+        # Display position grid
+        ax_pos.set_facecolor('white')
+        masked_grid = np.ma.masked_where(position_grid == 0, position_grid)
+        ax_pos.imshow(masked_grid, cmap='viridis', interpolation='nearest')
+        
+        # Set proper axis limits and remove ticks
+        ax_det.set_axis_off()
+        ax_pos.set_axis_off()
+        
+        return ax_det.artists + ax_pos.artists
+    
+    total_frames = (len(path) - 1) * (fade_frames + 1) + 1
+    ani = animation.FuncAnimation(fig, update, 
+                                frames=total_frames, 
+                                interval=interval, 
+                                blit=True)
+    
+    save_path += f'_{fps}fps.gif'
+    writer = animation.PillowWriter(fps=fps)
+    ani.save(save_path, writer=writer)
+    plt.close()
+"""
+
+def random_walk_animation(bin_data_path, steps=50, save_path="random_walk_animation", interval=500, fps=2, fade_frames=5, grid_size=50):
+    bin_data = np.load(bin_data_path, allow_pickle=True).item()
+    keys = list(bin_data.keys())
+    print(keys[-5:])
+
+    def find_closest_valid_position(x, y, direction, valid_positions, keys):
+        dx, dy = direction
+        new_x, new_y = x, y
+        step = 1.0  # Smaller step size for more precise movement
+        max_steps = 100  # Limit the number of steps to prevent infinite loops
+        
+        for _ in range(max_steps):
+            new_x += dx * step
+            new_y += dy * step
+            
+            # Check all nearby keys
+            for nearby_key in keys:
+                nearby_x, nearby_y = map(float, nearby_key.split("_"))
+                if (abs(nearby_x - new_x) < step and 
+                    abs(nearby_y - new_y) < step and 
+                    valid_positions[nearby_key]):
+                    return keys.index(nearby_key)
+        
+        return None  # If no valid position found within max_steps
+
+    # Create dictionary marking valid (non-blank) positions
+    valid_positions = {key: bin_data[key] is not None for key in keys}
+    
+    # Modified path generation
+    valid_keys = [key for key in keys if valid_positions[key]]
+    current_key = random.choice(valid_keys)
+    path = [keys.index(current_key)]
+    
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    
+    for _ in range(steps):
+        x, y = map(float, keys[path[-1]].split("_"))
+        valid_neighbors = []
+        
+        for dx, dy in directions:
+            new_x, new_y = x + dx, y + dy
+            key = f"{new_x}_{new_y}"
+            if key in keys and valid_positions[key]:
+                valid_neighbors.append(keys.index(key))
+        
+        if valid_neighbors:
+            next_idx = random.choice(valid_neighbors)
+            path.append(next_idx)
+        else:
+            # If no immediate neighbors, choose a random direction and find the closest valid position
+            random_direction = random.choice(directions)
+            closest_idx = find_closest_valid_position(x, y, random_direction, valid_positions, keys)
+            if closest_idx is not None:
+                path.append(closest_idx)
+            else:
+                path.append(path[-1])  # Stay in place if no valid position found in that direction
+    
+    # Create figure with two side-by-side subplots
+    fig = plt.figure(figsize=(20, 10))
+    gs = GridSpec(1, 2, width_ratios=[1, 1])
+    
+>>>>>>> 5495f8afd2406293adf43e75e0bf27131f8e14fd
+    ax_det = fig.add_subplot(gs[0])
+    ax_pos = fig.add_subplot(gs[1])
+    
+    def update(frame):
+        ax_det.clear()
+        ax_pos.clear()
+        
+        main_frame = frame // (fade_frames + 1)
+        sub_frame = frame % (fade_frames + 1)
+        
+<<<<<<< HEAD
+        # Affichage détecteur (partie gauche)
+        current_idx = path[main_frame]
+        img = bin_data[keys[current_idx]]
+=======
+        # Display detector image with fade effect
+        current_idx = path[min(main_frame, len(path)-1)]
+        current_key = keys[current_idx]
+        img = bin_data[current_key]
+        
+        if main_frame < len(path) - 1 and sub_frame > 0:
+            next_idx = path[main_frame + 1]
+            next_key = keys[next_idx]
+            next_img = bin_data[next_key]
+            
+            if img is not None and next_img is not None:
+                alpha = sub_frame / (fade_frames + 1)
+                img = (1 - alpha) * img + alpha * next_img
+>>>>>>> 5495f8afd2406293adf43e75e0bf27131f8e14fd
+        
+        if img is not None:
+            masked_img = np.ma.masked_where(np.isnan(img), img)
+            ax_det.imshow(masked_img, cmap='viridis')
+<<<<<<< HEAD
         
         # Affichage t-SNE (partie droite)
         # Scatter plot de tous les points t-SNE
@@ -772,11 +1112,37 @@ def random_walk_animation(bin_data_path, filename, steps=50, save_path="random_w
         current_pos = embedding[path[main_frame]]
         ax_pos.scatter(current_pos[0], current_pos[1], c='red', s=100)
         
+=======
+        
+        # Update position visualization
+        x_coords, y_coords = zip(*[map(float, key.split("_")) for key in keys])
+        x_min, x_max = min(x_coords), max(x_coords)
+        y_min, y_max = min(y_coords), max(y_coords)
+        
+        ax_pos.set_xlim(x_min, x_max)
+        ax_pos.set_ylim(y_min, y_max)
+        
+        # Mark all valid positions
+        valid_x = [float(key.split("_")[0]) for key in keys if valid_positions[key]]
+        valid_y = [float(key.split("_")[1]) for key in keys if valid_positions[key]]
+        ax_pos.scatter(valid_x, valid_y, c='lightgray', alpha=0.5)
+        
+        # Mark visited positions
+        visited_x = [float(keys[idx].split("_")[0]) for idx in path[:main_frame+1]]
+        visited_y = [float(keys[idx].split("_")[1]) for idx in path[:main_frame+1]]
+        ax_pos.scatter(visited_x, visited_y, c='blue', alpha=0.7)
+        
+        # Mark current position
+        current_x, current_y = map(float, keys[path[min(main_frame, len(path)-1)]].split("_"))
+        ax_pos.scatter([current_x], [current_y], c='red', s=100)
+        
+        # Set proper axis limits and remove ticks
+>>>>>>> 5495f8afd2406293adf43e75e0bf27131f8e14fd
         ax_det.set_axis_off()
         ax_pos.set_axis_off()
         
         return ax_det.artists + ax_pos.artists
-
+    
     total_frames = (len(path) - 1) * (fade_frames + 1) + 1
     ani = animation.FuncAnimation(fig, update, 
                                 frames=total_frames, 
