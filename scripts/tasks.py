@@ -167,11 +167,14 @@ def opt_geom(config):
         logger.debug('Done!')
 
 def find_peaks(config):
-    from btx.processing.peak_finder import PeakFinder
     from btx.misc.shortcuts import fetch_latest
     from btx.interfaces.ielog import update_summary
     setup = config.setup
     task = config.find_peaks
+    if task.pypca_model and task.projections_filename:
+        from btx.processing.peak_finder_pypca import PeakFinder
+    else:
+        from btx.processing.peak_finder import PeakFinder
     """ Perform adaptive peak finding on run. """
     taskdir = os.path.join(setup.root_dir, 'index')
     os.makedirs(taskdir, exist_ok=True)
@@ -182,7 +185,7 @@ def find_peaks(config):
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr,
                     son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm,
                     calibdir=task.get('calibdir'), pv_camera_length=setup.get('pv_camera_length'),
-                    pypca_model_filename=task.get('pypca_model_filename'), pypca_reduced_filename=task.get('pypca_reduced_filename'))
+                    pypca_model=task.get('pypca_model'), projections_filename=task.get('projections_filename'))
     logger.info(f'Performing peak finding for run {setup.run} of {setup.exp}...')
     pf.find_peaks()
     pf.curate_cxi()
