@@ -322,7 +322,10 @@ class PeakFinder:
         empty_images = 0
     
         for idx in np.arange(start_idx, end_idx):
-
+            
+            if self.rank==0 and (idx-start_idx+1) % 20 == 0:
+                print(f"Rank {self.rank} processed {idx-start_idx+1} events")
+            
             # retrieve image
             if self.pypca_model is not None and self.projections_filename is not None:
                 img = self.reconstruct_pypca([idx])[0]
