@@ -325,7 +325,7 @@ class PeakFinder:
 
             # retrieve image
             if self.pypca_model is not None and self.projections_filename is not None:
-                img = self.reconstruct_pypca([idx])
+                img = self.reconstruct_pypca([idx])[0]
             
             else:
                 evt = self.psi.runner.event(self.psi.times[idx])

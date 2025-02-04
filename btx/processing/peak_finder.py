@@ -324,10 +324,6 @@ class PeakFinder:
                 if img is None:
                     empty_images += 1
                     continue
-                
-                if self.rank==0:
-                    print(img.shape)
-                    print(img.dtype)
 
                 # search for peaks and store if found
                 peaks = self.find_peaks_event(img)
