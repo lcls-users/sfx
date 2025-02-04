@@ -320,15 +320,12 @@ class PeakFinder:
         start_idx, end_idx = self.psi.counter, self.psi.max_events
         outh5 = h5py.File(self.fname,"r+")
         empty_images = 0
-
-        if self.pypca_model is not None and self.projections_filename is not None:
-            imgs = self.reconstruct_pypca(range(start_idx, end_idx))
     
         for idx in np.arange(start_idx, end_idx):
 
             # retrieve image
             if self.pypca_model is not None and self.projections_filename is not None:
-                img = imgs[idx - start_idx]
+                img = self.reconstruct_pypca([idx])
             
             else:
                 evt = self.psi.runner.event(self.psi.times[idx])
