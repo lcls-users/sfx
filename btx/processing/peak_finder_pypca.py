@@ -564,7 +564,7 @@ class PeakFinder:
                     rec_img.append(np.dot(U[r, idx, :],V[r, :, :].T) + mu[r])
                 rec_imgs.append(np.array(rec_img))
             rec_imgs = np.array(rec_imgs)
-        logger.info(f"Shape of reconstructed images on rank {self.rank} : {rec_images.shape}")
+        logger.info(f"Shape of reconstructed images on rank {self.rank} : {rec_imgs.shape}")
         
         return rec_imgs.reshape(len(idx_list), *self.psi.det.shape())
             
