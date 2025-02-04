@@ -552,11 +552,18 @@ class PeakFinder:
         with h5py.File(self.projections_filename, 'r') as f:
             U = f['projected_images']
             
-            rec_imgs = np.zeros((len(idx_list), mu.shape[0], mu.shape[1]))
+            """rec_imgs = np.zeros((len(idx_list), mu.shape[0], mu.shape[1]))
             
             for i, idx in enumerate(idx_list):
                 rec_imgs[i] = np.einsum('ij,ijk->ik', U[:, idx, :], V[:, idx, :]) + mu
-
+"""
+            rec_imgs = []
+            for idx in idx_list:
+                rec_img = []
+                for r in range(V.shape[0]):
+                    rec_img.append(np.dot(U[r, idx, :],V[r, :, :].T) + mu[r])
+                rec_imgs.append(np.array(rec_img))
+            rec_imgs = np.array(rec_imgs)
         logger.info(f"Shape of reconstructed images on rank {self.rank} : {rec_images.shape}")
         
         return rec_imgs.reshape(len(idx_list), *self.psi.det.shape())
