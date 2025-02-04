@@ -171,10 +171,7 @@ def find_peaks(config):
     from btx.interfaces.ielog import update_summary
     setup = config.setup
     task = config.find_peaks
-    if task.pypca_model and task.projections_filename:
-        from btx.processing.peak_finder_pypca import PeakFinder
-    else:
-        from btx.processing.peak_finder import PeakFinder
+    from btx.processing.peak_finder_pypca import PeakFinder
     """ Perform adaptive peak finding on run. """
     taskdir = os.path.join(setup.root_dir, 'index')
     os.makedirs(taskdir, exist_ok=True)
