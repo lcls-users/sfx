@@ -430,6 +430,7 @@ def merge(config):
                                  space_group=task.get('space_group') if task.get('space_group') is not None else 1)
     stream_to_mtz.cmd_report(foms=foms, nshells=task.nshells)
     stream_to_mtz.launch()
+    stream_to_mtz.report()
     logger.info(f'Merging launched!')
 
 def solve(config):
