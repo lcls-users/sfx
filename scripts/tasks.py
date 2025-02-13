@@ -280,6 +280,7 @@ def index(config):
                           slurm_reservation=setup.reservation)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.launch()
+    indexer_ob.report()
     logger.info(f'Indexing launched!')
 
 def index_multiple_runs(config):
