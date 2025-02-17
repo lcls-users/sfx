@@ -297,8 +297,8 @@ def wrangle_shells_dat(shells_file, outfile=None):
             directory_path = os.path.dirname(outfile)
             filename = os.path.basename(outfile)
             tag = os.path.splitext(filename)
-            print(f"{directory_path}/{list_points}_{tag}")
-            with open(f"./list_points_{tag}", "wb") as f:
+            print(f"{directory_path}/{list_points}_{tag}", flush=True)
+            with open(f"list_points_{tag}", "wb") as f:
                 pickle.dump(points, f)
 
 def get_most_recent_summary(path: str) -> str:
