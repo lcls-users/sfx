@@ -294,8 +294,11 @@ def wrangle_shells_dat(shells_file, outfile=None):
         if outfile is not None:
             f.savefig(outfile, dpi=300, bbox_inches='tight')
             points = list(zip(shells[:, 0].tolist(), shells[:, 1].tolist()))
-            print(outfile)
-            with open("points.pkl", "wb") as f:
+            directory_path = os.path.dirname(outfile)
+            filename = os.path.basename(outfile)
+            tag = os.path.splitext(filename)
+            print(f"{directory_path}/{list_points}_{tag}")
+            with open(f"{directory_path}/{list_points}_{tag}", "wb") as f:
                 pickle.dump(points, f)
 
 def get_most_recent_summary(path: str) -> str:
