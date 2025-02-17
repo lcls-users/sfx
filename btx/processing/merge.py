@@ -9,6 +9,7 @@ from btx.interfaces.ischeduler import *
 from btx.interfaces.istream import read_cell_file
 from btx.interfaces.imtz import *
 from btx.interfaces.ielog import update_summary, elog_report_post
+import pickle
 
 class StreamtoMtz:
     
@@ -293,7 +294,7 @@ def wrangle_shells_dat(shells_file, outfile=None):
         if outfile is not None:
             f.savefig(outfile, dpi=300, bbox_inches='tight')
             points = list(zip(shells[:, 0].tolist(), shells[:, 1].tolist()))
-
+            print(outfile)
             with open("points.pkl", "wb") as f:
                 pickle.dump(points, f)
 
