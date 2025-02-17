@@ -292,6 +292,10 @@ def wrangle_shells_dat(shells_file, outfile=None):
 
         if outfile is not None:
             f.savefig(outfile, dpi=300, bbox_inches='tight')
+            points = list(zip(shells[:, 0].tolist(), shells[:, 1].tolist()))
+
+            with open("points.pkl", "wb") as f:
+                pickle.dump(points, f)
 
 def get_most_recent_summary(path: str) -> str:
     """Given a root directory return the path of most recent summary.
